@@ -22,6 +22,7 @@ const resources = {
         phonePlaceholder: 'Your phone number',
         addressPlaceholder: 'Your address',
         address: 'Address', city: 'City', wilaya: 'Wilaya',
+        allFieldsRequired: 'Name, email, phone and password are required',
         forgotPassword: 'Forgot password?',
         noAccount: "Don't have an account?", hasAccount: 'Already have an account?',
         storeOwnerLogin: 'Store Owner Login', platformAdmin: 'Platform Admin'
@@ -57,6 +58,7 @@ const resources = {
         phonePlaceholder: 'Votre numéro de téléphone',
         addressPlaceholder: 'Votre adresse',
         address: 'Adresse', city: 'Ville', wilaya: 'Wilaya',
+        allFieldsRequired: 'Nom, email, téléphone et mot de passe sont obligatoires',
         forgotPassword: 'Mot de passe oublié ?',
         noAccount: "Pas de compte ?", hasAccount: 'Déjà un compte ?'
       },
@@ -91,6 +93,7 @@ const resources = {
         phonePlaceholder: 'رقم هاتفك',
         addressPlaceholder: 'عنوانك',
         address: 'العنوان', city: 'المدينة', wilaya: 'الولاية',
+        allFieldsRequired: 'الاسم والبريد الإلكتروني ورقم الهاتف وكلمة المرور مطلوبة',
         noAccount: 'ليس لديك حساب؟', hasAccount: 'لديك حساب بالفعل؟'
       },
       dashboard: { welcome: 'مرحباً بعودتك', storeVisits: 'زيارات المتجر', totalSales: 'إجمالي المبيعات', totalOrders: 'إجمالي الطلبات', avgOrderValue: 'متوسط قيمة الطلب', products: 'المنتجات', recentOrders: 'الطلبات الأخيرة', addProduct: 'إضافة منتج', viewOrders: 'عرض الطلبات', customers: 'العملاء', settings: 'الإعدادات' },
