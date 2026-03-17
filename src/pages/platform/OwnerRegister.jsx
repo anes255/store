@@ -16,7 +16,12 @@ export default function OwnerRegister() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setLoading(true);
+    e.preventDefault();
+    if (!form.name || !form.email || !form.phone || !form.password) {
+      toast.error(t('auth.allFieldsRequired'));
+      return;
+    }
+    setLoading(true);
     try {
       const { data } = await ownerApi.register(form);
       setAuth(data.owner, data.token, 'store_owner');
@@ -71,23 +76,20 @@ export default function OwnerRegister() {
                 <input className="input-field !pl-11" placeholder={t('auth.namePlaceholder')} value={form.name} onChange={set('name')} required />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="input-label">{t('auth.email')}</label>
-                <div className="relative">
-                  <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="email" className="input-field !pl-11" placeholder="you@email.com" value={form.email} onChange={set('email')} />
-                </div>
-              </div>
-              <div>
-                <label className="input-label">{t('auth.phone')}</label>
-                <div className="relative">
-                  <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="tel" className="input-field !pl-11" placeholder={t('auth.phonePlaceholder')} value={form.phone} onChange={set('phone')} />
-                </div>
+            <div>
+              <label className="input-label">{t('auth.email')} *</label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="email" className="input-field !pl-11" placeholder="you@email.com" value={form.email} onChange={set('email')} required />
               </div>
             </div>
-            <p className="text-xs text-gray-400 -mt-2">{t('auth.emailOrPhoneRequired')}</p>
+            <div>
+              <label className="input-label">{t('auth.phone')} *</label>
+              <div className="relative">
+                <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="tel" className="input-field !pl-11" placeholder={t('auth.phonePlaceholder')} value={form.phone} onChange={set('phone')} required />
+              </div>
+            </div>
             <div>
               <label className="input-label">{t('auth.password')} *</label>
               <div className="relative">
