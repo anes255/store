@@ -93,7 +93,7 @@ export default function Checkout() {
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   return (
-    <div className="min-h-screen bg-gray-50" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 text-gray-600"><ArrowLeft size={18} /><span className="font-bold text-sm">Back</span></Link>
