@@ -167,7 +167,7 @@ export default function Storefront() {
   };
 
   return (
-    <div style={storeStyle} className="min-h-screen" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div style={storeStyle} className="min-h-screen">
       {/* Store Header */}
       <header className="bg-white shadow-sm sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
