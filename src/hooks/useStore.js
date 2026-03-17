@@ -93,8 +93,9 @@ export const useLangStore = create((set) => ({
   lang: localStorage.getItem('lang') || 'en',
   setLang: (lang) => {
     localStorage.setItem('lang', lang);
-    // Don't change document direction — just translate text
+    // Only translate text — never switch layout direction
     document.documentElement.lang = lang;
+    document.documentElement.dir = 'ltr'; // Always LTR
     set({ lang });
   },
 }));
