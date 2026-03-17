@@ -125,7 +125,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center"><ShoppingBag size={16} className="text-white" /></div><span className="font-bold text-gray-900">{platformInfo.site_name}</span></div>
           <p className="text-sm text-gray-400">© 2026 {platformInfo.site_name}. All rights reserved.</p>
-          <Link to="/admin/login" className="text-xs text-gray-400 hover:text-gray-600">Platform Admin</Link>
+          <Link to="/admin/login" className="text-xs text-gray-200 hover:text-gray-400 select-none" aria-hidden="true">·</Link>
         </div>
       </footer>
     </div>
