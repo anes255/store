@@ -36,7 +36,7 @@ export default function ProductDetail() {
   const getDesc = () => lang === 'ar' ? (product.description_ar || product.description_en) : lang === 'fr' ? (product.description_fr || product.description_en) : product.description_en;
 
   return (
-    <div className="min-h-screen bg-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
