@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://test-kak2.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://test-4ok3.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
