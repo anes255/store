@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import LanguageSwitcher from './LanguageSwitcher';
-import { LayoutDashboard, ShoppingCart, Package, Settings, Users, ChevronDown, ChevronLeft, Globe, Zap, UserPlus, Truck, LogOut, Search, Bell, Menu, X, Eye, Layers } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Settings, Users, ChevronDown, ChevronLeft, Globe, Zap, UserPlus, LogOut, Search, Bell, Menu, X, Eye } from 'lucide-react';
 
 const menuItems = [
   { key: 'dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -61,9 +61,6 @@ export default function DashboardLayout({ children }) {
             </div>
           );
         })}
-        <p className="px-3 pt-4 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{sidebarOpen ? 'Delivery' : '📦'}</p>
-        <Link to="/dashboard/settings" className="sidebar-link"><Truck size={18} />{sidebarOpen && <span>Shipping Partners</span>}</Link>
-        <Link to="/dashboard/settings" className="sidebar-link"><Layers size={18} />{sidebarOpen && <span>Shipping Wilayas</span>}</Link>
       </nav>
       <div className="p-4 border-t border-gray-100">
         <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center"><span className="text-sm font-bold text-brand-600">{user?.name?.[0] || 'U'}</span></div>{sidebarOpen && (<div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{user?.name}</p><p className="text-xs text-gray-400">Admin</p></div>)}</div>
