@@ -18,6 +18,9 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem('role');
     localStorage.removeItem('currentStoreId');
     localStorage.removeItem('currentStoreSlug');
+    localStorage.removeItem('currentStore');
+    localStorage.removeItem('cart');
+    localStorage.removeItem('cartStoreSlug');
     set({ user: null, token: null, role: null });
   },
 }));
