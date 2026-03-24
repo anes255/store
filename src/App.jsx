@@ -35,6 +35,7 @@ const ProductDetail=lazy(()=>import('./pages/buyer/ProductDetail'));
 const Checkout=lazy(()=>import('./pages/buyer/Checkout'));
 const CustomerAuth=lazy(()=>import('./pages/buyer/CustomerAuth'));
 const CustomerProfile=lazy(()=>import('./pages/buyer/CustomerProfile'));
+const Favorites=lazy(()=>import('./pages/buyer/Favorites'));
 
 const Loading=()=>(<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>);
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();if(!token)return<Navigate to="/login" replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to="/" replace/>;return children;};
@@ -82,4 +83,5 @@ export default function App(){return(<><Toaster position="top-center" toastOptio
 <Route path="/s/:storeSlug/checkout" element={<Checkout/>}/>
 <Route path="/s/:storeSlug/auth" element={<CustomerAuth/>}/>
 <Route path="/s/:storeSlug/profile" element={<CustomerProfile/>}/>
+<Route path="/s/:storeSlug/favorites" element={<Favorites/>}/>
 </Routes></Suspense></>);}
