@@ -115,6 +115,9 @@ export const aiApi = {
   cartRecoverySend: (data) => api.post('/ai/cart-recovery/send', data),
   notifyOrder: (data) => api.post('/ai/notify/order', data),
   messagingStatus: () => api.get('/ai/messaging/status'),
+  testChat: (data) => api.post('/ai/test-chat', data),
+  generateDescription: (data) => api.post('/ai/generate-description', data),
+  generateRecovery: (data) => api.post('/ai/generate-recovery', data),
 };
 
 // Payments
