@@ -168,12 +168,15 @@ export default function Storefront() {
       </header>
 
       {/* ============ HERO ============ */}
-      <section className="bg-[#f0f0f0] py-10 px-4 text-center">
-        <h1 className="text-5xl md:text-6xl font-black italic text-gray-900 tracking-tight" style={{fontFamily:'"Georgia", "Times New Roman", serif'}}>{store.name}</h1>
-        <p className="mt-3 text-gray-500 max-w-xl mx-auto text-sm leading-relaxed">
-          {store.hero_subtitle || store.description || 'See why this product stands out from the rest. Every detail is meticulously designed for your satisfaction.'}
-        </p>
-        <div className="w-12 h-1 mx-auto mt-4 rounded-full" style={{backgroundColor:pc}}/>
+      <section className="relative py-16 px-4 text-center overflow-hidden" style={{background:store.cover_image?'none':'#f0f0f0'}}>
+        {store.cover_image&&<div className="absolute inset-0"><img src={store.cover_image} className="w-full h-full object-cover" alt=""/><div className="absolute inset-0 bg-black/40"/></div>}
+        <div className="relative z-10">
+          <h1 className={`text-5xl md:text-6xl font-black italic tracking-tight ${store.cover_image?'text-white':'text-gray-900'}`} style={{fontFamily:'"Georgia","Times New Roman",serif'}}>{store.name}</h1>
+          <p className={`mt-3 max-w-xl mx-auto text-sm leading-relaxed ${store.cover_image?'text-white/80':'text-gray-500'}`}>
+            {store.hero_subtitle || store.description || 'See why this product stands out from the rest. Every detail is meticulously designed for your satisfaction.'}
+          </p>
+          <div className="w-12 h-1 mx-auto mt-4 rounded-full" style={{backgroundColor:store.cover_image?'#fff':pc}}/>
+        </div>
       </section>
 
       {/* ============ SEARCH BAR ============ */}
