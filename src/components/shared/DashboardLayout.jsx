@@ -17,10 +17,10 @@ return(<div className="flex min-h-screen bg-gray-50/50">
 <SLink to="/dashboard/apps" icon={Zap} label={t('sidebar.apps')}/>
 <MenuGroup id="orders" icon={ShoppingCart} label={t('sidebar.orders')}>
 <SubLink to="/dashboard/orders" label="Orders"/><SubLink to="/dashboard/abandoned" label="Abandoned Orders"/><SubLink to="/dashboard/preparing" label="Preparing"/></MenuGroup>
-<MenuGroup id="store" icon={Globe} label="Online Store">
-<SubLink to="/dashboard/logo" label="Logo"/><SubLink to="/dashboard/themes" label="Themes"/><SubLink to="/dashboard/homepage" label="Home page"/><SubLink to="/dashboard/contact" label="Contact information"/><SubLink to="/dashboard/faqs" label="FAQs"/><SubLink to="/dashboard/about" label="About us"/><SubLink to="/dashboard/form-settings" label="Form & Cart Settings"/><SubLink to="/dashboard/order-tracking" label="Order Tracking"/><SubLink to="/dashboard/store-settings" label="Store Settings"/></MenuGroup>
 <MenuGroup id="products" icon={Package} label={t('sidebar.products')}>
 <SubLink to="/dashboard/products" label="Products"/><SubLink to="/dashboard/stock" label="Stock Manager"/><SubLink to="/dashboard/landing-pages" label="Landing Pages"/><SubLink to="/dashboard/ai-intelligence" label="AI Intelligence"/></MenuGroup>
+<MenuGroup id="store" icon={Globe} label="Store & Settings">
+<SubLink to="/dashboard/settings" label="All Settings"/><SubLink to="/dashboard/homepage" label="Home Page"/><SubLink to="/dashboard/contact" label="Contact Info"/><SubLink to="/dashboard/faqs" label="FAQs"/><SubLink to="/dashboard/about" label="About Us"/><SubLink to="/dashboard/order-tracking" label="Order Tracking"/><SubLink to="/dashboard/domains" label="Domains"/></MenuGroup>
 <MenuGroup id="delivery" icon={Truck} label="Delivery Companies">
 <SubLink to="/dashboard/shipping-partners" label="Shipping Partners"/><SubLink to="/dashboard/shipping-wilayas" label="Shipping Wilayas"/><SubLink to="/dashboard/how-to-connect" label="How to Connect"/></MenuGroup>
 <MenuGroup id="customers" icon={Users} label={t('sidebar.customers')}>
@@ -31,9 +31,8 @@ return(<div className="flex min-h-screen bg-gray-50/50">
 </nav>
 <div className="border-t border-gray-100 p-3">
 <div className="flex items-center gap-2 bg-brand-50 rounded-xl p-2.5 mb-2"><div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className="text-xs font-bold text-gray-800">{user?.name||'User'}</p><p className="text-[10px] text-gray-400">Admin</p></div>}</div>
-<SLink to="/dashboard/settings" icon={Settings} label={t('sidebar.settings')}/>
+<SLink to="/dashboard/settings" icon={Settings} label="Settings"/>
 <button onClick={()=>setSidebarOpen(!sidebarOpen)} className="sidebar-link w-full"><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>Collapse</span>}</button>
-<button className="sidebar-link w-full text-gray-500"><Users size={18}/>{sidebarOpen&&<span>Change User (Staff)</span>}</button>
 <button onClick={()=>{logout();navigate('/login');}} className="sidebar-link w-full text-red-500"><LogOut size={18}/>{sidebarOpen&&<span>Disconnect</span>}</button>
 </div></aside>
 <main className={`flex-1 ${sidebarOpen?'ml-56':'ml-16'} transition-all duration-300`}>
