@@ -39,7 +39,13 @@ export const platformApi = {
   getDashboard: () => api.get('/platform/dashboard'),
   getStoreOwners: (params) => api.get('/platform/store-owners', { params }),
   toggleOwner: (id) => api.patch(`/platform/store-owners/${id}/toggle`),
+  deleteOwner: (id) => api.delete(`/platform/store-owners/${id}`),
   getStores: () => api.get('/platform/stores'),
+  toggleStore: (id) => api.patch(`/platform/stores/${id}/toggle`),
+  deleteStore: (id) => api.delete(`/platform/stores/${id}`),
+  getOrders: (params) => api.get('/platform/orders', { params }),
+  getProducts: () => api.get('/platform/products'),
+  getSystem: () => api.get('/platform/system'),
 };
 
 // Store Owner
@@ -106,6 +112,18 @@ export const aiApi = {
   chat: (slug, data) => api.post(`/ai/${slug}/chatbot`, data),
   detectFake: (data) => api.post('/ai/detect-fake', data),
   cartRecoverySuggest: (data) => api.post('/ai/cart-recovery/suggest', data),
+  cartRecoverySend: (data) => api.post('/ai/cart-recovery/send', data),
+  notifyOrder: (data) => api.post('/ai/notify/order', data),
+  messagingStatus: () => api.get('/ai/messaging/status'),
+};
+
+// Payments
+export const paymentApi = {
+  chargilyCheckout: (data) => api.post('/payments/chargily/checkout', data),
+  chargilyStatus: () => api.get('/payments/chargily/status'),
+  uploadReceipt: (data) => api.post('/payments/receipt/upload', data),
+  reviewReceipt: (receiptId, data) => api.patch(`/payments/receipt/${receiptId}/review`, data),
+  getReceipts: (storeId) => api.get(`/payments/receipts/${storeId}`),
 };
 
 // Platform public info
