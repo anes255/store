@@ -102,7 +102,7 @@ export default function Storefront() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlist, setWishlist] = useState(()=>{try{return JSON.parse(localStorage.getItem('wishlist_'+storeSlug)||'[]').map(x=>x.id||x);}catch{return[];}});
 
   useEffect(() => {
     const load = async () => {
@@ -128,7 +128,12 @@ export default function Storefront() {
   };
 
   const toggleWishlist = (id) => {
-    setWishlist(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+    const inList = wishlist.includes(id);
+    const newList = inList ? wishlist.filter(x=>x!==id) : [...wishlist, id];
+    setWishlist(newList);
+    // Save full product objects for the Favorites page
+    const saved = products.filter(p=>newList.includes(p.id));
+    localStorage.setItem('wishlist_'+storeSlug, JSON.stringify(saved));
   };
 
   const getThumb = (p) => {
@@ -155,10 +160,10 @@ export default function Storefront() {
           <div className="flex items-center gap-3">
             <StoreLangSwitcher />
             <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
-            <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
               <Heart size={20}/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
-            </button>
+            </Link>
             <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
