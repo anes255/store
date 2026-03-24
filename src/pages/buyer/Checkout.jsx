@@ -117,13 +117,13 @@ export default function Checkout() {
                 <div className="flex items-center justify-between"><span className="text-sm text-gray-500">RIP Number</span><div className="flex items-center gap-2"><span className="font-mono font-bold">{store.baridimob_rip || 'N/A'}</span><button onClick={() => copyToClipboard(store.baridimob_rip || '')} className="p-1 hover:bg-emerald-100 rounded"><Copy size={14}/></button></div></div>
                 <div className="flex items-center justify-between"><span className="text-sm text-gray-500">Amount</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} DZD</span></div>
               </div>
+              {store.baridimob_qr && <div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">Scan to Pay</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiMob QR"/></div>}
               <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs font-bold text-gray-500 mb-2">Steps:</p>
                 <ol className="text-xs text-gray-600 space-y-1">
                   <li>1. Open BaridiMob app on your phone</li>
-                  <li>2. Go to "Transfer" → "Transfer to RIP"</li>
-                  <li>3. Enter the RIP number above</li>
-                  <li>4. Enter the exact amount: {parseFloat(orderSuccess.total).toLocaleString()} DZD</li>
-                  <li>5. Confirm and screenshot your receipt</li>
+                  {store.baridimob_qr ? <li>2. Scan the QR code above OR transfer to RIP manually</li> : <li>2. Go to "Transfer" → "Transfer to RIP"</li>}
+                  <li>3. Enter the exact amount: {parseFloat(orderSuccess.total).toLocaleString()} DZD</li>
+                  <li>4. Confirm and screenshot your receipt</li>
                 </ol>
               </div>
               <div><label className="input-label text-xs">Transaction Reference</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="BaridiMob transaction ID"/></div>
