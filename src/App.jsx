@@ -77,11 +77,18 @@ export default function App(){return(<><Toaster position="top-center" toastOptio
 <Route path="/dashboard/themes" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/landing-pages" element={<P><StoreProducts/></P>}/>
 <Route path="/dashboard/ai-intelligence" element={<P><StoreApps/></P>}/>
-{/* Buyer */}
+{/* Buyer - classic /s/ paths */}
 <Route path="/s/:storeSlug" element={<Storefront/>}/>
 <Route path="/s/:storeSlug/product/:productSlug" element={<ProductDetail/>}/>
 <Route path="/s/:storeSlug/checkout" element={<Checkout/>}/>
 <Route path="/s/:storeSlug/auth" element={<CustomerAuth/>}/>
 <Route path="/s/:storeSlug/profile" element={<CustomerProfile/>}/>
 <Route path="/s/:storeSlug/favorites" element={<Favorites/>}/>
+{/* Buyer - clean subdomain-style /:slug paths */}
+<Route path="/:storeSlug" element={<Storefront/>}/>
+<Route path="/:storeSlug/product/:productSlug" element={<ProductDetail/>}/>
+<Route path="/:storeSlug/checkout" element={<Checkout/>}/>
+<Route path="/:storeSlug/auth" element={<CustomerAuth/>}/>
+<Route path="/:storeSlug/profile" element={<CustomerProfile/>}/>
+<Route path="/:storeSlug/favorites" element={<Favorites/>}/>
 </Routes></Suspense></>);}
