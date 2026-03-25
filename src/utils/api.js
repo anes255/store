@@ -91,6 +91,23 @@ export const orderApi = {
   getCustomers: (storeId, params) => api.get(`/manage/stores/${storeId}/customers`, { params }),
   getShippingWilayas: (storeId) => api.get(`/manage/stores/${storeId}/shipping-wilayas`),
   addShippingWilaya: (storeId, data) => api.post(`/manage/stores/${storeId}/shipping-wilayas`, data),
+  // Blacklist
+  getBlacklist: (storeId) => api.get(`/manage/stores/${storeId}/blacklist`),
+  addBlacklist: (storeId, data) => api.post(`/manage/stores/${storeId}/blacklist`, data),
+  removeBlacklist: (storeId, id) => api.delete(`/manage/stores/${storeId}/blacklist/${id}`),
+  // Expenses
+  getExpenses: (storeId) => api.get(`/manage/stores/${storeId}/expenses`),
+  addExpense: (storeId, data) => api.post(`/manage/stores/${storeId}/expenses`, data),
+  updateExpense: (storeId, id, data) => api.put(`/manage/stores/${storeId}/expenses/${id}`, data),
+  deleteExpense: (storeId, id) => api.delete(`/manage/stores/${storeId}/expenses/${id}`),
+  // Store Pages (FAQs, About)
+  getPages: (storeId) => api.get(`/manage/stores/${storeId}/pages`),
+  addPage: (storeId, data) => api.post(`/manage/stores/${storeId}/pages`, data),
+  updatePage: (storeId, id, data) => api.put(`/manage/stores/${storeId}/pages/${id}`, data),
+  deletePage: (storeId, id) => api.delete(`/manage/stores/${storeId}/pages/${id}`),
+  saveFaqs: (storeId, faqs) => api.put(`/manage/stores/${storeId}/faqs`, { faqs }),
+  // Stock
+  updateStock: (storeId, productId, data) => api.patch(`/manage/stores/${storeId}/products/${productId}/stock`, data),
 };
 
 // Public storefront
