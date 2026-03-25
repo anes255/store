@@ -59,11 +59,12 @@ export default function StoreApps() {
   const sendTestMessage = async () => {
     if (!botInput.trim()) return;
     const msg = botInput;
+    const prevHistory = [...botMessages]; // history BEFORE current message
     setBotMessages(prev => [...prev, { role: 'user', text: msg }]);
     setBotInput('');
     setBotLoading(true);
     try {
-      const { data } = await aiApi.testChat({ message: msg, store_name: currentStore?.name || 'Test Store' });
+      const { data } = await aiApi.testChat({ message: msg, store_name: currentStore?.name || 'Test Store', history: prevHistory });
       setBotMessages(prev => [...prev, { role: 'bot', text: data.response, model: data.model, debug: data.debug || null }]);
     } catch (e) {
       setBotMessages(prev => [...prev, { role: 'bot', text: 'Error: ' + (e.response?.data?.error || e.message), model: 'error' }]);
