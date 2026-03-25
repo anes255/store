@@ -64,7 +64,7 @@ export default function StoreApps() {
     setBotLoading(true);
     try {
       const { data } = await aiApi.testChat({ message: msg, store_name: currentStore?.name || 'Test Store' });
-      setBotMessages(prev => [...prev, { role: 'bot', text: data.response, model: data.model }]);
+      setBotMessages(prev => [...prev, { role: 'bot', text: data.response, model: data.model, debug: data.debug || null }]);
     } catch (e) {
       setBotMessages(prev => [...prev, { role: 'bot', text: 'Error: ' + (e.response?.data?.error || e.message), model: 'error' }]);
     }
@@ -131,6 +131,7 @@ export default function StoreApps() {
                   <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`}>
                     {msg.text}
                     {msg.model && <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-white/50' : 'text-gray-400'}`}>via {msg.model}</p>}
+                    {msg.debug && <p className="text-[9px] mt-1 text-red-400">⚠ {msg.debug}</p>}
                   </div>
                 </div>
               ))}
