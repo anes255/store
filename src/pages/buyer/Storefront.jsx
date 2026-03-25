@@ -104,6 +104,8 @@ export default function Storefront() {
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState(()=>{try{return JSON.parse(localStorage.getItem('wishlist_'+storeSlug)||'[]').map(x=>x.id||x);}catch{return[];}});
 
+  const [suspended, setSuspended] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -115,7 +117,7 @@ export default function Storefront() {
         setStore(storeRes.data);
         setProducts(productsRes.data.products);
         setCategories(catsRes.data);
-      } catch { setStore(null); }
+      } catch(e) { if(e.response?.status===403&&e.response?.data?.suspended)setSuspended(true);else setStore(null); }
       setLoading(false);
     };
     load();
@@ -143,6 +145,7 @@ export default function Storefront() {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
+  if (suspended) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center max-w-md"><div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Package size={32} className="text-red-500"/></div><h1 className="text-2xl font-bold text-gray-900 mb-2">Store Temporarily Unavailable</h1><p className="text-gray-500">This store is currently suspended. Please check back later or contact the store owner.</p></div></div>;
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
 
   const pc = store.primary_color || '#7C3AED';
