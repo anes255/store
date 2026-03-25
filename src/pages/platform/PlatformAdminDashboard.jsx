@@ -13,6 +13,8 @@ function Sidebar(){
     {path:'/admin/store-owners',icon:Users,label:'Store Owners',desc:'Manage users'},
     {path:'/admin/stores',icon:Store,label:'All Stores',desc:'Manage stores'},
     {path:'/admin/orders',icon:ShoppingCart,label:'All Orders',desc:'Platform orders'},
+    {path:'/admin/subscriptions',icon:CreditCard,label:'Subscriptions',desc:'Payments & plans'},
+    {path:'/admin/billing-config',icon:DollarSign,label:'Billing Config',desc:'Payment methods'},
     {path:'/admin/site-settings',icon:Globe,label:'Site & Branding',desc:'Customize'},
     {path:'/admin/system',icon:Server,label:'System',desc:'Health & services'},
   ];
@@ -91,15 +93,21 @@ function StoreOwners(){
     <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Store Owners</h1><span className="text-sm text-gray-400">{owners.length} total</span></div>
     <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-3 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20" placeholder="Search by name, email, phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
     <tbody>{owners.map(o=>(
       <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50">
         <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs">{o.full_name?.[0]||'U'}</div><div><p className="font-bold text-gray-800">{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
         <td className="px-5 py-4"><p className="text-gray-700">{o.email}</p><p className="text-xs text-gray-400">{o.phone}</p></td>
         <td className="px-5 py-4 font-bold text-center">{o.store_count||0}</td>
         <td className="px-5 py-4 font-bold text-gray-900">{parseFloat(o.total_revenue||0).toLocaleString()} DZD</td>
-        <td className="px-5 py-4">{o.is_active!==false?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Active</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Suspended</span>}</td>
-        <td className="px-5 py-4"><div className="flex gap-1"><button onClick={()=>toggle(o.id)} className={`p-2 rounded-lg text-xs font-bold ${o.is_active!==false?'hover:bg-red-50 text-red-500':'hover:bg-emerald-50 text-emerald-500'}`}>{o.is_active!==false?<Ban size={14}/>:<CheckCircle size={14}/>}</button><button onClick={()=>del(o.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14}/></button></div></td>
+        <td className="px-5 py-4"><span className="px-2 py-1 rounded-full text-[10px] font-bold bg-brand-100 text-brand-700 capitalize">{o.subscription_plan||'free'}</span></td>
+        <td className="px-5 py-4">{o.subscription_status==='suspended'||o.is_active===false?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Suspended</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Active</span>}</td>
+        <td className="px-5 py-4"><div className="flex gap-1">
+          {o.subscription_status==='suspended'||o.is_active===false?
+            <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}}} className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-500" title="Activate"><CheckCircle size={14}/></button>:
+            <button onClick={async()=>{if(!confirm('Suspend? Their stores go offline.'))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}}} className="p-2 hover:bg-red-50 rounded-lg text-red-500" title="Suspend"><Ban size={14}/></button>}
+          <button onClick={()=>del(o.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14}/></button>
+        </div></td>
       </tr>
     ))}</tbody></table>{owners.length===0&&<p className="text-center py-12 text-gray-400">No owners found</p>}</div>}
   </div>);
@@ -192,6 +200,96 @@ function SiteSettings(){
 }
 
 // ═══════ SYSTEM ═══════
+// ═══════ SUBSCRIPTIONS ═══════
+function Subscriptions(){
+  const[data,setData]=useState({payments:[],stats:{}});const[loading,setLoading]=useState(true);const[filter,setFilter]=useState('all');
+  const[rejectModal,setRejectModal]=useState(null);const[rejectNotes,setRejectNotes]=useState('');
+  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));};
+  useEffect(()=>{load();},[filter]);
+  const approve=async(pid)=>{try{await platformApi.approvePayment(pid);toast.success('Payment approved! Subscription activated.');load();}catch{toast.error('Failed');}};
+  const reject=async()=>{if(!rejectModal)return;try{await platformApi.rejectPayment(rejectModal,{notes:rejectNotes});toast.success('Rejected');setRejectModal(null);setRejectNotes('');load();}catch{toast.error('Failed');}};
+  const suspend=async(oid)=>{if(!confirm('Suspend this owner? Their stores will go offline.'))return;try{await platformApi.setOwnerSubscription(oid,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}};
+  const activate=async(oid)=>{try{await platformApi.setOwnerSubscription(oid,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}};
+  const stats=data.stats||{};
+  return(<div>
+    <h1 className="text-2xl font-black text-gray-900 mb-6">Subscription Payments</h1>
+    <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="bg-white rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400" onClick={()=>setFilter('all')}><p className="text-xs text-gray-400">Total</p><p className="text-2xl font-black">{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
+      <div className="bg-amber-50 rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400" onClick={()=>setFilter('pending')}><p className="text-xs text-amber-600">Pending</p><p className="text-2xl font-black text-amber-700">{stats.pending||0}</p></div>
+      <div className="bg-emerald-50 rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400" onClick={()=>setFilter('approved')}><p className="text-xs text-emerald-600">Approved</p><p className="text-2xl font-black text-emerald-700">{stats.approved||0}</p></div>
+      <div className="bg-red-50 rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400" onClick={()=>setFilter('rejected')}><p className="text-xs text-red-600">Rejected</p><p className="text-2xl font-black text-red-700">{stats.rejected||0}</p></div>
+    </div>
+    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      {data.payments.length===0?<p className="text-center py-12 text-gray-400">No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:
+      <table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+      <tbody>{data.payments.map(p=>(
+        <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50">
+          <td className="px-5 py-4"><div><p className="font-bold text-gray-800">{p.owner_name||'N/A'}</p><p className="text-[10px] text-gray-400">{p.owner_phone}</p></div></td>
+          <td className="px-5 py-4"><span className="font-bold capitalize">{p.plan}</span><br/><span className="text-[10px] text-gray-400 capitalize">{p.period}</span></td>
+          <td className="px-5 py-4 font-bold">{parseFloat(p.amount).toLocaleString()} DZD</td>
+          <td className="px-5 py-4 uppercase text-xs">{p.payment_method}</td>
+          <td className="px-5 py-4">{p.receipt_image?<a href={p.receipt_image} target="_blank" rel="noopener noreferrer" className="text-brand-600 text-xs font-bold hover:underline flex items-center gap-1"><Eye size={12}/>View</a>:'-'}</td>
+          <td className="px-5 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{p.status?.toUpperCase()}</span></td>
+          <td className="px-5 py-4">{p.status==='pending'?<div className="flex gap-1"><button onClick={()=>approve(p.id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600">Reject</button></div>:p.status==='approved'?<button onClick={()=>suspend(p.owner_id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Suspend</button>:'-'}</td>
+        </tr>
+      ))}</tbody></table>}
+    </div>}
+    {rejectModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setRejectModal(null)}><div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}><h3 className="font-bold text-lg mb-4">Reject Payment</h3><textarea className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm" rows={3} placeholder="Reason for rejection..." value={rejectNotes} onChange={e=>setRejectNotes(e.target.value)}/><div className="flex gap-3 mt-4"><button onClick={()=>setRejectModal(null)} className="flex-1 py-2 bg-gray-100 rounded-xl text-sm font-bold">Cancel</button><button onClick={reject} className="flex-1 py-2 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div></div></div>}
+  </div>);
+}
+
+// ═══════ BILLING CONFIG ═══════
+function BillingConfig(){
+  const[config,setConfig]=useState({billing_ccp_account:'',billing_ccp_name:'',billing_baridimob_rip:'',billing_baridimob_qr:'',subscription_monthly_price:'2900',subscription_yearly_price:'29000'});
+  const[saving,setSaving]=useState(false);const fileRef=useRef(null);
+  useEffect(()=>{platformApi.getSettings().then(r=>{const s=r.data||{};setConfig({billing_ccp_account:s.billing_ccp_account||'',billing_ccp_name:s.billing_ccp_name||'',billing_baridimob_rip:s.billing_baridimob_rip||'',billing_baridimob_qr:s.billing_baridimob_qr||'',subscription_monthly_price:s.subscription_monthly_price||'2900',subscription_yearly_price:s.subscription_yearly_price||'29000'});}).catch(()=>{});},[]);
+  const save=async()=>{setSaving(true);try{await platformApi.updateBillingConfig(config);toast.success('Billing config saved!');}catch{toast.error('Failed');}setSaving(false);};
+  const uploadQR=(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setConfig({...config,billing_baridimob_qr:r.result});r.readAsDataURL(f);};
+  return(<div>
+    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
+    <div className="grid lg:grid-cols-2 gap-6">
+      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+        <h3 className="font-bold text-gray-900 flex items-center gap-2"><CreditCard size={18}/>Subscription Pricing</h3>
+        <p className="text-xs text-gray-400">Set the prices store owners pay for their subscriptions</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className="text-xs font-bold text-gray-500 uppercase">Monthly Price (DZD)</label><input type="number" className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.subscription_monthly_price} onChange={e=>setConfig({...config,subscription_monthly_price:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase">Yearly Price (DZD)</label><input type="number" className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.subscription_yearly_price} onChange={e=>setConfig({...config,subscription_yearly_price:e.target.value})}/></div>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+        <h3 className="font-bold text-gray-900">CCP Account</h3>
+        <p className="text-xs text-gray-400">Store owners will transfer payments to this CCP account</p>
+        <div><label className="text-xs font-bold text-gray-500 uppercase">CCP Number</label><input className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 font-mono focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.billing_ccp_account} onChange={e=>setConfig({...config,billing_ccp_account:e.target.value})} placeholder="0012345678 CLE 99"/></div>
+        <div><label className="text-xs font-bold text-gray-500 uppercase">Account Holder Name</label><input className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.billing_ccp_name} onChange={e=>setConfig({...config,billing_ccp_name:e.target.value})}/></div>
+      </div>
+      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+        <h3 className="font-bold text-gray-900">BaridiMob</h3>
+        <p className="text-xs text-gray-400">Store owners can also pay via BaridiMob</p>
+        <div><label className="text-xs font-bold text-gray-500 uppercase">RIP Number</label><input className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 font-mono focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.billing_baridimob_rip} onChange={e=>setConfig({...config,billing_baridimob_rip:e.target.value})}/></div>
+        <div><label className="text-xs font-bold text-gray-500 uppercase">QR Code</label>
+          <div className="flex items-center gap-4 mt-1">
+            {config.billing_baridimob_qr&&<img src={config.billing_baridimob_qr} className="w-24 h-24 rounded-xl border object-cover"/>}
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-red-400 flex-1" onClick={()=>fileRef.current?.click()}><p className="text-sm text-gray-500">{config.billing_baridimob_qr?'Replace QR':'Upload QR image'}</p></div>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadQR}/>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h3 className="font-bold text-gray-900 mb-4">Preview — What store owners see</h3>
+        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+          {config.billing_ccp_account&&<div className="flex items-center justify-between"><span className="text-sm text-gray-500">CCP</span><span className="font-mono font-bold">{config.billing_ccp_account}</span></div>}
+          {config.billing_ccp_name&&<div className="flex items-center justify-between"><span className="text-sm text-gray-500">Name</span><span className="font-bold">{config.billing_ccp_name}</span></div>}
+          {config.billing_baridimob_rip&&<div className="flex items-center justify-between"><span className="text-sm text-gray-500">RIP</span><span className="font-mono font-bold">{config.billing_baridimob_rip}</span></div>}
+          {config.billing_baridimob_qr&&<img src={config.billing_baridimob_qr} className="w-32 mx-auto rounded-xl border mt-2"/>}
+          {!config.billing_ccp_account&&!config.billing_baridimob_rip&&<p className="text-center text-gray-400 text-sm">No payment methods configured yet</p>}
+        </div>
+        <div className="mt-4 p-3 bg-amber-50 rounded-xl text-xs text-amber-700">Store owners see these details when subscribing. Make sure they're correct before going live.</div>
+      </div>
+    </div>
+  </div>);
+}
+
 function SystemHealth(){
   const[sys,setSys]=useState(null);
   useEffect(()=>{api.get('/platform/system').then(r=>setSys(r.data)).catch(()=>{});},[]);
@@ -246,6 +344,8 @@ export default function PlatformAdminDashboard(){
             <Route path="stores" element={<AllStores/>}/>
             <Route path="orders" element={<AllOrders/>}/>
             <Route path="site-settings" element={<SiteSettings/>}/>
+            <Route path="subscriptions" element={<Subscriptions/>}/>
+            <Route path="billing-config" element={<BillingConfig/>}/>
             <Route path="system" element={<SystemHealth/>}/>
             <Route path="*" element={<Overview/>}/>
           </Routes>
