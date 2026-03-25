@@ -20,6 +20,17 @@ export default function OwnerLogin() {
     e.preventDefault(); setLoading(true);
     try {
       const { data } = await ownerApi.login({ identifier: form.identifier, password: form.password });
+      
+      // If platform admin logged in through owner login
+      if (data.redirect === '/admin/dashboard') {
+        localStorage.setItem('user', JSON.stringify(data.owner));
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', 'platform_admin');
+        toast.success('Welcome, Super Admin!');
+        window.location.href = '/admin/dashboard';
+        return;
+      }
+      
       setAuth(data.owner, data.token, 'store_owner');
       setStores(data.stores);
       if (data.stores.length > 0) setCurrentStore(data.stores[0]);
