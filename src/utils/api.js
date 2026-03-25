@@ -46,6 +46,12 @@ export const platformApi = {
   getOrders: (params) => api.get('/platform/orders', { params }),
   getProducts: () => api.get('/platform/products'),
   getSystem: () => api.get('/platform/system'),
+  // Subscriptions
+  getSubscriptions: (params) => api.get('/platform/subscriptions', { params }),
+  approvePayment: (pid) => api.patch(`/platform/subscriptions/${pid}/approve`),
+  rejectPayment: (pid, data) => api.patch(`/platform/subscriptions/${pid}/reject`, data),
+  setOwnerSubscription: (ownerId, data) => api.patch(`/platform/store-owners/${ownerId}/subscription`, data),
+  updateBillingConfig: (data) => api.put('/platform/billing-config', data),
 };
 
 // Store Owner
@@ -72,6 +78,9 @@ export const ownerApi = {
   markNotifRead: (storeId, nid) => api.patch(`/owner/stores/${storeId}/notifications/${nid}/read`),
   markAllRead: (storeId) => api.patch(`/owner/stores/${storeId}/notifications/read-all`),
   clearRead: (storeId) => api.delete(`/owner/stores/${storeId}/notifications`),
+  // Subscription
+  getSubscription: () => api.get('/owner/subscription'),
+  paySubscription: (data) => api.post('/owner/subscription/pay', data),
 };
 
 // Products & Categories
