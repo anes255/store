@@ -1,6 +1,46 @@
 import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical}from'lucide-react';
 
-function NotifBell(){const[open,setOpen]=React.useState(false);const[notifs]=React.useState([{id:1,text:"Welcome to KyoMarket!",time:"Just now",read:false},{id:2,text:"Your store is live.",time:"1h ago",read:true}]);return(<div className="relative"><button onClick={()=>setOpen(!open)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{notifs.filter(n=>!n.read).length>0&&<span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"/>}</button>{open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"><div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3><span className="text-xs text-brand-500 cursor-pointer">Mark all read</span></div><div className="max-h-64 overflow-y-auto">{notifs.map(n=>(<div key={n.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 ${!n.read?"bg-brand-50/30":""}`}><p className="text-sm text-gray-800">{n.text}</p><p className="text-xs text-gray-400 mt-1">{n.time}</p></div>))}</div></div>}</div>);}
+function NotifBell(){
+  const[open,setOpen]=React.useState(false);
+  const[notifs,setNotifs]=React.useState([]);
+  const[unread,setUnread]=React.useState(0);
+  const{currentStore}=useStoreManagement();
+  
+  const load=React.useCallback(()=>{
+    if(!currentStore?.id)return;
+    import('../../utils/api').then(({ownerApi})=>{
+      ownerApi.getNotifications(currentStore.id).then(r=>{
+        setNotifs(r.data.notifications||[]);
+        setUnread(r.data.unread||0);
+      }).catch(()=>{});
+    });
+  },[currentStore?.id]);
+  
+  React.useEffect(()=>{load();const i=setInterval(load,30000);return()=>clearInterval(i);},[load]);
+  
+  const markRead=async(nid)=>{
+    try{const{ownerApi}=await import('../../utils/api');await ownerApi.markNotifRead(currentStore.id,nid);load();}catch{}
+  };
+  const markAll=async()=>{
+    try{const{ownerApi}=await import('../../utils/api');await ownerApi.markAllRead(currentStore.id);load();}catch{}
+  };
+  
+  const timeAgo=(d)=>{const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';};
+  const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
+  
+  return(<div className="relative">
+    <button onClick={()=>{setOpen(!open);if(!open)load();}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
+    {open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+      <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
+      <div className="max-h-72 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,20).map(n=>(
+        <div key={n.id} onClick={()=>{if(!n.is_read)markRead(n.id);}} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${!n.is_read?'bg-brand-50/30':''}`}>
+          <div className="flex items-start gap-2"><span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span><div className="flex-1 min-w-0"><p className="text-sm text-gray-800 font-medium truncate">{n.title}</p>{n.message&&<p className="text-xs text-gray-400 truncate">{n.message}</p>}<p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(n.created_at)}</p></div>{!n.is_read&&<span className="w-2 h-2 bg-brand-500 rounded-full mt-1.5 shrink-0"/>}</div>
+        </div>
+      ))}</div>
+      <button onClick={()=>setOpen(false)} className="w-full p-3 text-center text-xs text-gray-400 hover:bg-gray-50 border-t">Close</button>
+    </div>}
+  </div>);
+}
 
 // Default sidebar order
 const DEFAULT_ITEMS = [
