@@ -1,16 +1,15 @@
-import React,{useState} from'react';import DashboardLayout from'../../components/shared/DashboardLayout';import toast from'react-hot-toast';import{Plus,Save,GripVertical,Trash2}from'lucide-react';
-export default function FAQs(){const[faqs,setFaqs]=useState([{q:'Do you offer delivery to all wilayas?',a:'Yes, we deliver to all 58 wilayas of Algeria.'},{q:'How long does delivery take?',a:'Most orders arrive within 2-5 business days depending on your location.'},{q:'Can I pay cash on delivery?',a:'Yes, cash on delivery (COD) is our primary payment method.'}]);
-const add=()=>setFaqs([...faqs,{q:'',a:''}]);
-const update=(i,field,val)=>{const n=[...faqs];n[i][field]=val;setFaqs(n);};
-const remove=(i)=>setFaqs(faqs.filter((_,idx)=>idx!==i));
-return(<DashboardLayout>
-<div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-bold">FAQs</h1><p className="text-sm text-gray-500">Manage common questions for your customers</p></div><button onClick={add} className="btn-primary flex items-center gap-2"><Plus size={16}/>Add Question</button></div>
-<div className="space-y-4">
-{faqs.map((f,i)=>(<div key={i} className="glass-card-solid p-6"><div className="flex items-center gap-3 mb-3"><GripVertical size={16} className="text-gray-300 cursor-grab"/><p className="text-xs text-brand-500 font-bold uppercase">Question {i+1}</p><button onClick={()=>remove(i)} className="ml-auto text-red-400 hover:text-red-600"><Trash2 size={14}/></button></div>
-<input className="input-field mb-3" value={f.q} onChange={e=>update(i,'q',e.target.value)} placeholder="Enter question..."/>
-<p className="text-xs text-gray-400 uppercase font-bold mb-1">Answer</p>
-<textarea className="input-field" rows={3} value={f.a} onChange={e=>update(i,'a',e.target.value)} placeholder="Enter answer..."/>
-</div>))}
-</div>
-<div className="flex justify-end mt-6"><button onClick={()=>toast.success('FAQs saved!')} className="btn-primary flex items-center gap-2"><Save size={16}/>Save</button></div>
-</DashboardLayout>);}
+import React,{useState,useEffect} from'react';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import{orderApi}from'../../utils/api';import toast from'react-hot-toast';import{Plus,Save,Trash2,HelpCircle,GripVertical}from'lucide-react';
+export default function FAQs(){
+  const{currentStore}=useStoreManagement();
+  const[faqs,setFaqs]=useState([]);const[loading,setLoading]=useState(true);const[saving,setSaving]=useState(false);
+  useEffect(()=>{if(!currentStore?.id)return;orderApi.getPages(currentStore.id).then(r=>{const faqPages=(r.data||[]).filter(p=>p.page_type==='faq');if(faqPages.length)setFaqs(faqPages.map(p=>({q:p.title,a:p.content,id:p.id})));else setFaqs([{q:'Do you deliver to all wilayas?',a:'Yes, we deliver to all 58 wilayas.'},{q:'How long does delivery take?',a:'Most orders arrive within 2-5 business days.'},{q:'Can I pay cash on delivery?',a:'Yes, COD is our primary payment method.'}]);}).catch(()=>{}).finally(()=>setLoading(false));},[currentStore?.id]);
+  const add=()=>setFaqs([...faqs,{q:'',a:''}]);
+  const update=(i,field,val)=>{const n=[...faqs];n[i][field]=val;setFaqs(n);};
+  const remove=(i)=>setFaqs(faqs.filter((_,idx)=>idx!==i));
+  const save=async()=>{setSaving(true);try{await orderApi.saveFaqs(currentStore.id,faqs);toast.success('FAQs saved!');}catch{toast.error('Failed');}setSaving(false);};
+  return(<DashboardLayout>
+    <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-bold">FAQs</h1><p className="text-sm text-gray-400 mt-1">Manage frequently asked questions for your storefront</p></div><div className="flex gap-2"><button onClick={add} className="btn-ghost text-sm flex items-center gap-1"><Plus size={14}/>Add</button><button onClick={save} disabled={saving} className="btn-primary text-sm flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div></div>
+    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>:faqs.length===0?<div className="glass-card-solid p-16 text-center"><HelpCircle size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">No FAQs yet</p><button onClick={add} className="btn-primary text-sm mt-4"><Plus size={14} className="mr-1 inline"/>Add First FAQ</button></div>:
+    <div className="space-y-3">{faqs.map((faq,i)=><div key={i} className="glass-card-solid p-5"><div className="flex items-start gap-3"><div className="mt-2 text-gray-300"><GripVertical size={16}/></div><div className="flex-1 space-y-3"><div><label className="text-[10px] font-bold text-gray-400 uppercase">Question {i+1}</label><input className="input-field" value={faq.q} onChange={e=>update(i,'q',e.target.value)} placeholder="Enter question..."/></div><div><label className="text-[10px] font-bold text-gray-400 uppercase">Answer</label><textarea className="input-field" rows={2} value={faq.a} onChange={e=>update(i,'a',e.target.value)} placeholder="Enter answer..."/></div></div><button onClick={()=>remove(i)} className="mt-2 p-2 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500"><Trash2 size={16}/></button></div></div>)}</div>}
+  </DashboardLayout>);
+}
