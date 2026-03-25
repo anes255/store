@@ -317,87 +317,109 @@ function BillingConfig(){
 // ═══════ PAGE BUILDER ═══════
 function PageBuilder(){
   const BLOCK_TYPES=[
-    {type:'hero',label:'Hero Banner',icon:Image,defaults:{title:'Welcome to Our Platform',subtitle:'Build your online store in minutes',btnText:'Get Started',btnLink:'/register',bgColor:'#7C3AED',image:''}},
-    {type:'text',label:'Text Block',icon:Type,defaults:{title:'About Us',content:'We provide the best e-commerce platform for Algerian businesses.',align:'center'}},
-    {type:'features',label:'Features Grid',icon:Layers,defaults:{title:'Why Choose Us',items:[{icon:'🚀',title:'Fast Setup',desc:'Launch in minutes'},{icon:'💳',title:'Local Payments',desc:'CCP, BaridiMob, COD'},{icon:'📦',title:'58 Wilayas',desc:'Nationwide delivery'},{icon:'🤖',title:'AI Powered',desc:'Smart chatbot included'}]}},
-    {type:'pricing',label:'Pricing Plans',icon:CreditCard,defaults:{title:'Simple Pricing',plans:[{name:'Basic',price:'2,900',period:'month',features:['50 Products','300 Orders','Basic Analytics']},{name:'Advanced',price:'7,250',period:'month',features:['Unlimited Products','Unlimited Orders','AI Features','Priority Support'],popular:true}]}},
-    {type:'cta',label:'Call to Action',icon:Zap,defaults:{title:'Ready to Start Selling?',subtitle:'Join hundreds of Algerian businesses already using our platform.',btnText:'Create Your Store',btnLink:'/register',bgColor:'#10B981'}},
-    {type:'testimonials',label:'Testimonials',icon:Users,defaults:{title:'What Our Users Say',items:[{name:'Ahmed B.',text:'Best platform for e-commerce in Algeria!',role:'Store Owner'},{name:'Sara M.',text:'Setup was incredibly easy. Love the AI features.',role:'Entrepreneur'}]}},
-    {type:'stats',label:'Stats Counter',icon:BarChart3,defaults:{title:'Platform in Numbers',items:[{value:'500+',label:'Active Stores'},{value:'10K+',label:'Orders Processed'},{value:'58',label:'Wilayas Covered'},{value:'24/7',label:'AI Support'}]}},
+    {type:'hero',label:'Hero Banner',icon:Image,defaults:{title:'Welcome to Our Platform',subtitle:'Build your online store in minutes',btnText:'Get Started',btnLink:'/register',bgColor:'#7C3AED',textColor:'#FFFFFF',padding:'80',fontSize:'48'}},
+    {type:'text',label:'Text Block',icon:Type,defaults:{title:'About Us',content:'We provide the best e-commerce platform.',align:'center',bgColor:'#FFFFFF',textColor:'#111827',padding:'64',fontSize:'30'}},
+    {type:'features',label:'Features Grid',icon:Layers,defaults:{title:'Why Choose Us',columns:'4',bgColor:'#F9FAFB',cardBg:'#FFFFFF',textColor:'#111827',items:[{icon:'🚀',title:'Fast Setup',desc:'Launch in minutes'},{icon:'💳',title:'Local Payments',desc:'CCP, BaridiMob, COD'},{icon:'📦',title:'58 Wilayas',desc:'Nationwide delivery'},{icon:'🤖',title:'AI Powered',desc:'Smart chatbot'}]}},
+    {type:'pricing',label:'Pricing Plans',icon:CreditCard,defaults:{title:'Simple Pricing',bgColor:'#FFFFFF',plans:[{name:'Basic',price:'2900',period:'month',features:['50 Products','300 Orders','Basic Analytics'],btnText:'Get Started',btnLink:'/register'},{name:'Advanced',price:'7250',period:'month',features:['Unlimited Products','Unlimited Orders','AI Features','Priority Support'],popular:true,btnText:'Get Started',btnLink:'/register'}]}},
+    {type:'cta',label:'Call to Action',icon:Zap,defaults:{title:'Ready to Start?',subtitle:'Join hundreds of Algerian businesses.',btnText:'Create Store',btnLink:'/register',bgColor:'#10B981',textColor:'#FFFFFF',padding:'64'}},
+    {type:'testimonials',label:'Testimonials',icon:Users,defaults:{title:'What Users Say',bgColor:'#F9FAFB',columns:'2',items:[{name:'Ahmed B.',text:'Best platform for e-commerce in Algeria!',role:'Store Owner'},{name:'Sara M.',text:'Setup was incredibly easy.',role:'Entrepreneur'}]}},
+    {type:'stats',label:'Stats Counter',icon:BarChart3,defaults:{title:'Platform in Numbers',bgColor:'#FFFFFF',accentColor:'#7C3AED',items:[{value:'500+',label:'Active Stores'},{value:'10K+',label:'Orders'},{value:'58',label:'Wilayas'},{value:'24/7',label:'Support'}]}},
+    {type:'image',label:'Image',icon:Image,defaults:{src:'',alt:'Image',width:'100',borderRadius:'16',link:'',padding:'32',bgColor:'#FFFFFF'}},
+    {type:'video',label:'Video Embed',icon:Activity,defaults:{url:'',title:'Watch Our Demo',bgColor:'#000000',padding:'48'}},
+    {type:'spacer',label:'Spacer',icon:ArrowDown,defaults:{height:'48',bgColor:'transparent'}},
   ];
 
-  const[blocks,setBlocks]=useState([]);const[saving,setSaving]=useState(false);const[editIdx,setEditIdx]=useState(null);const[dragIdx,setDragIdx]=useState(null);
+  const[blocks,setBlocks]=useState([]);const[saving,setSaving]=useState(false);const[editIdx,setEditIdx]=useState(null);
+  const imgRef=useRef(null);
 
-  useEffect(()=>{platformApi.getSettings().then(r=>{const s=r.data||{};try{setBlocks(JSON.parse(s.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
+  useEffect(()=>{platformApi.getSettings().then(r=>{try{setBlocks(JSON.parse(r.data?.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
 
-  const save=async(overrideBlocks)=>{setSaving(true);try{
-    const blocksToSave = overrideBlocks !== undefined ? overrideBlocks : blocks;
-    await platformApi.updateSettings({landing_blocks:JSON.stringify(blocksToSave)});
-    toast.success('Landing page saved!');
-  }catch(e){toast.error('Failed: '+(e.response?.data?.error||e.message));}setSaving(false);};
-
+  const save=async(overrideBlocks)=>{setSaving(true);try{await platformApi.updateSettings({landing_blocks:JSON.stringify(overrideBlocks!==undefined?overrideBlocks:blocks)});toast.success('Page saved!');}catch(e){toast.error('Failed');}setSaving(false);};
   const addBlock=(type)=>{const t=BLOCK_TYPES.find(b=>b.type===type);if(t)setBlocks([...blocks,{type:t.type,...JSON.parse(JSON.stringify(t.defaults)),id:Date.now()}]);};
   const removeBlock=(idx)=>setBlocks(blocks.filter((_,i)=>i!==idx));
   const moveBlock=(from,to)=>{if(to<0||to>=blocks.length)return;const n=[...blocks];const[m]=n.splice(from,1);n.splice(to,0,m);setBlocks(n);};
   const updateBlock=(idx,key,val)=>{const n=[...blocks];n[idx]={...n[idx],[key]:val};setBlocks(n);};
+  const updateItem=(blockIdx,itemIdx,key,val)=>{const n=[...blocks];const items=[...(n[blockIdx].items||[])];items[itemIdx]={...items[itemIdx],[key]:val};n[blockIdx]={...n[blockIdx],items};setBlocks(n);};
+  const addItem=(blockIdx,template)=>{const n=[...blocks];n[blockIdx]={...n[blockIdx],items:[...(n[blockIdx].items||[]),template]};setBlocks(n);};
+  const removeItem=(blockIdx,itemIdx)=>{const n=[...blocks];n[blockIdx]={...n[blockIdx],items:n[blockIdx].items.filter((_,i)=>i!==itemIdx)};setBlocks(n);};
+  const addPlan=(blockIdx)=>{const n=[...blocks];n[blockIdx]={...n[blockIdx],plans:[...(n[blockIdx].plans||[]),{name:'New Plan',price:'0',period:'month',features:['Feature 1'],btnText:'Get Started',btnLink:'/register'}]};setBlocks(n);};
+  const updatePlan=(blockIdx,planIdx,key,val)=>{const n=[...blocks];const plans=[...(n[blockIdx].plans||[])];plans[planIdx]={...plans[planIdx],[key]:val};n[blockIdx]={...n[blockIdx],plans};setBlocks(n);};
+  const removePlan=(blockIdx,planIdx)=>{const n=[...blocks];n[blockIdx]={...n[blockIdx],plans:n[blockIdx].plans.filter((_,i)=>i!==planIdx)};setBlocks(n);};
+
+  const uploadImage=(idx)=>(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>updateBlock(idx,'src',r.result);r.readAsDataURL(f);};
+
+  // Color+text input helper
+  const F=({label,value,onChange,type='text',placeholder=''})=><div><label className="text-[10px] font-bold text-gray-400 uppercase">{label}</label>{type==='color'?<div className="flex gap-1 mt-0.5"><input type="color" className="w-7 h-7 rounded" value={value||'#000000'} onChange={e=>onChange(e.target.value)}/><input className="flex-1 px-2 py-1 bg-white rounded-lg border border-gray-200 text-xs" value={value||''} onChange={e=>onChange(e.target.value)}/></div>:type==='textarea'?<textarea className="w-full mt-0.5 px-2 py-1.5 bg-white rounded-lg border border-gray-200 text-xs" rows={2} value={value||''} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/>:<input type={type} className="w-full mt-0.5 px-2 py-1.5 bg-white rounded-lg border border-gray-200 text-xs" value={value||''} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></div>;
+
+  // Full editor for a block
+  const renderEditor=(block,idx)=>{
+    const common=<div className="grid grid-cols-3 gap-2 mb-2"><F label="Background" value={block.bgColor} onChange={v=>updateBlock(idx,'bgColor',v)} type="color"/><F label="Text Color" value={block.textColor} onChange={v=>updateBlock(idx,'textColor',v)} type="color"/><F label="Padding (px)" value={block.padding} onChange={v=>updateBlock(idx,'padding',v)} type="number"/></div>;
+    switch(block.type){
+      case'hero':return<>{common}<div className="grid grid-cols-2 gap-2"><F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label="Font Size (px)" value={block.fontSize} onChange={v=>updateBlock(idx,'fontSize',v)} type="number"/></div><F label="Subtitle" value={block.subtitle} onChange={v=>updateBlock(idx,'subtitle',v)}/><div className="grid grid-cols-3 gap-2"><F label="Button Text" value={block.btnText} onChange={v=>updateBlock(idx,'btnText',v)}/><F label="Button Link" value={block.btnLink} onChange={v=>updateBlock(idx,'btnLink',v)}/><F label="Button Color" value={block.btnColor} onChange={v=>updateBlock(idx,'btnColor',v)} type="color"/></div></>;
+      case'text':return<>{common}<F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label="Content" value={block.content} onChange={v=>updateBlock(idx,'content',v)} type="textarea"/><div className="flex gap-2 mt-1">{['left','center','right'].map(a=><button key={a} onClick={()=>updateBlock(idx,'align',a)} className={`px-3 py-1 rounded text-xs font-bold ${block.align===a?'bg-brand-500 text-white':'bg-gray-200'}`}>{a}</button>)}</div></>;
+      case'features':return<>{common}<div className="grid grid-cols-2 gap-2"><F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label="Columns" value={block.columns} onChange={v=>updateBlock(idx,'columns',v)} type="number"/></div><F label="Card Background" value={block.cardBg} onChange={v=>updateBlock(idx,'cardBg',v)} type="color"/><p className="text-[10px] font-bold text-gray-400 uppercase mt-2">Items</p>{(block.items||[]).map((item,ii)=><div key={ii} className="flex gap-1 mt-1 items-start p-2 bg-white rounded-lg border"><div className="flex-1 grid grid-cols-3 gap-1"><input className="px-1 py-0.5 border rounded text-xs" value={item.icon} onChange={e=>updateItem(idx,ii,'icon',e.target.value)} placeholder="emoji"/><input className="px-1 py-0.5 border rounded text-xs" value={item.title} onChange={e=>updateItem(idx,ii,'title',e.target.value)} placeholder="title"/><input className="px-1 py-0.5 border rounded text-xs" value={item.desc} onChange={e=>updateItem(idx,ii,'desc',e.target.value)} placeholder="desc"/></div><button onClick={()=>removeItem(idx,ii)} className="text-red-400 p-0.5"><Trash2 size={10}/></button></div>)}<button onClick={()=>addItem(idx,{icon:'⭐',title:'New Feature',desc:'Description'})} className="text-xs text-brand-600 font-bold mt-1">+ Add Feature</button></>;
+      case'pricing':return<>{common}<F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><p className="text-[10px] font-bold text-gray-400 uppercase mt-2">Plans</p>{(block.plans||[]).map((plan,pi)=><div key={pi} className="p-2 bg-white rounded-lg border mt-1 space-y-1"><div className="flex items-center justify-between"><span className="text-xs font-bold">{plan.name}</span><div className="flex gap-1"><label className="flex items-center gap-1 text-[9px]"><input type="checkbox" checked={plan.popular||false} onChange={e=>updatePlan(idx,pi,'popular',e.target.checked)}/>Popular</label><button onClick={()=>removePlan(idx,pi)} className="text-red-400"><Trash2 size={10}/></button></div></div><div className="grid grid-cols-3 gap-1"><input className="px-1 py-0.5 border rounded text-xs" value={plan.name} onChange={e=>updatePlan(idx,pi,'name',e.target.value)} placeholder="Name"/><input className="px-1 py-0.5 border rounded text-xs" value={plan.price} onChange={e=>updatePlan(idx,pi,'price',e.target.value)} placeholder="Price"/><select className="px-1 py-0.5 border rounded text-xs" value={plan.period} onChange={e=>updatePlan(idx,pi,'period',e.target.value)}><option value="month">month</option><option value="year">year</option></select></div><div className="grid grid-cols-2 gap-1"><input className="px-1 py-0.5 border rounded text-xs" value={plan.btnText||''} onChange={e=>updatePlan(idx,pi,'btnText',e.target.value)} placeholder="Button text"/><input className="px-1 py-0.5 border rounded text-xs" value={plan.btnLink||''} onChange={e=>updatePlan(idx,pi,'btnLink',e.target.value)} placeholder="Button link"/></div><textarea className="w-full px-1 py-0.5 border rounded text-[10px]" rows={2} value={(plan.features||[]).join('\n')} onChange={e=>updatePlan(idx,pi,'features',e.target.value.split('\n'))} placeholder="One feature per line"/></div>)}<button onClick={()=>addPlan(idx)} className="text-xs text-brand-600 font-bold mt-1">+ Add Plan</button></>;
+      case'cta':return<>{common}<F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label="Subtitle" value={block.subtitle} onChange={v=>updateBlock(idx,'subtitle',v)}/><div className="grid grid-cols-3 gap-2"><F label="Button Text" value={block.btnText} onChange={v=>updateBlock(idx,'btnText',v)}/><F label="Button Link" value={block.btnLink} onChange={v=>updateBlock(idx,'btnLink',v)}/><F label="Button Color" value={block.btnColor} onChange={v=>updateBlock(idx,'btnColor',v)} type="color"/></div></>;
+      case'testimonials':return<>{common}<div className="grid grid-cols-2 gap-2"><F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label="Columns" value={block.columns} onChange={v=>updateBlock(idx,'columns',v)} type="number"/></div>{(block.items||[]).map((t,ti)=><div key={ti} className="flex gap-1 mt-1 items-start p-2 bg-white rounded-lg border"><div className="flex-1 grid grid-cols-3 gap-1"><input className="px-1 py-0.5 border rounded text-xs" value={t.name} onChange={e=>updateItem(idx,ti,'name',e.target.value)} placeholder="Name"/><input className="px-1 py-0.5 border rounded text-xs" value={t.role} onChange={e=>updateItem(idx,ti,'role',e.target.value)} placeholder="Role"/><input className="px-1 py-0.5 border rounded text-xs col-span-2" value={t.text} onChange={e=>updateItem(idx,ti,'text',e.target.value)} placeholder="Quote"/></div><button onClick={()=>removeItem(idx,ti)} className="text-red-400 p-0.5"><Trash2 size={10}/></button></div>)}<button onClick={()=>addItem(idx,{name:'New Person',text:'Great platform!',role:'User'})} className="text-xs text-brand-600 font-bold mt-1">+ Add Testimonial</button></>;
+      case'stats':return<>{common}<div className="grid grid-cols-2 gap-2"><F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label="Accent Color" value={block.accentColor} onChange={v=>updateBlock(idx,'accentColor',v)} type="color"/></div>{(block.items||[]).map((s,si)=><div key={si} className="flex gap-1 mt-1 items-center"><input className="px-1 py-0.5 border rounded text-xs w-20" value={s.value} onChange={e=>updateItem(idx,si,'value',e.target.value)} placeholder="500+"/><input className="px-1 py-0.5 border rounded text-xs flex-1" value={s.label} onChange={e=>updateItem(idx,si,'label',e.target.value)} placeholder="Label"/><button onClick={()=>removeItem(idx,si)} className="text-red-400"><Trash2 size={10}/></button></div>)}<button onClick={()=>addItem(idx,{value:'100+',label:'New Stat'})} className="text-xs text-brand-600 font-bold mt-1">+ Add Stat</button></>;
+      case'image':return<>{common}<div className="grid grid-cols-2 gap-2"><F label="Width (%)" value={block.width} onChange={v=>updateBlock(idx,'width',v)} type="number"/><F label="Border Radius (px)" value={block.borderRadius} onChange={v=>updateBlock(idx,'borderRadius',v)} type="number"/></div><F label="Link URL (optional)" value={block.link} onChange={v=>updateBlock(idx,'link',v)} placeholder="https://..."/>{block.src?<div className="mt-1 relative"><img src={block.src} className="w-full rounded-lg border max-h-32 object-cover"/><button onClick={()=>updateBlock(idx,'src','')} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full"><X size={10}/></button></div>:<div className="mt-1 border-2 border-dashed border-gray-300 rounded-lg p-3 text-center cursor-pointer hover:border-brand-400" onClick={()=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=uploadImage(idx);inp.click();}}><p className="text-xs text-gray-500">Click to upload image</p></div>}</>;
+      case'video':return<>{common}<F label="YouTube/Vimeo URL" value={block.url} onChange={v=>updateBlock(idx,'url',v)} placeholder="https://youtube.com/watch?v=..."/><F label="Title" value={block.title} onChange={v=>updateBlock(idx,'title',v)}/></>;
+      case'spacer':return<div className="grid grid-cols-2 gap-2"><F label="Height (px)" value={block.height} onChange={v=>updateBlock(idx,'height',v)} type="number"/><F label="Background" value={block.bgColor} onChange={v=>updateBlock(idx,'bgColor',v)} type="color"/></div>;
+      default:return null;
+    }
+  };
 
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Page Builder</h1><div className="flex gap-2"><button onClick={()=>{if(confirm('Reset all blocks? This clears everything.')){setBlocks([]);save([]);}}} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/>Reset</button><a href="/" target="_blank" className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save Page'}</button></div></div>
+    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Page Builder</h1><div className="flex gap-2"><button onClick={()=>{if(confirm('Reset to default landing page? All custom blocks will be removed.')){setBlocks([]);save([]);}}} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/>Reset to Default</button><a href="/" target="_blank" className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={()=>save()} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save Page'}</button></div></div>
 
-    <div className="grid lg:grid-cols-[1fr,300px] gap-6">
-      {/* Blocks list */}
-      <div className="space-y-4">
-        {blocks.length===0&&<div className="bg-white rounded-2xl p-12 text-center shadow-sm"><Layers size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">No blocks yet</p><p className="text-sm text-gray-400 mt-1">Add blocks from the panel on the right to build your landing page</p></div>}
-        {blocks.map((block,idx)=>{const BT=BLOCK_TYPES.find(b=>b.type===block.type);const Icon=BT?.icon||Layers;return(
-          <div key={block.id||idx} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-3 bg-gray-50 flex items-center gap-3 border-b">
-              <GripVertical size={14} className="text-gray-300 cursor-grab"/>
-              <Icon size={16} className="text-brand-500"/>
-              <span className="font-bold text-sm text-gray-700 flex-1">{BT?.label||block.type}</span>
-              <div className="flex gap-1">
-                <button onClick={()=>moveBlock(idx,idx-1)} disabled={idx===0} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ArrowUp size={12}/></button>
-                <button onClick={()=>moveBlock(idx,idx+1)} disabled={idx===blocks.length-1} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ArrowDown size={12}/></button>
-                <button onClick={()=>setEditIdx(editIdx===idx?null:idx)} className="p-1 hover:bg-blue-50 rounded text-blue-500"><Settings size={12}/></button>
-                <button onClick={()=>removeBlock(idx)} className="p-1 hover:bg-red-50 rounded text-red-400"><Trash2 size={12}/></button>
-              </div>
+    <div className="grid lg:grid-cols-[1fr,280px] gap-6">
+      <div className="space-y-3">
+        {blocks.length===0&&<div className="bg-white rounded-2xl p-12 text-center shadow-sm"><Layers size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">No custom blocks</p><p className="text-sm text-gray-400 mt-1">The default landing page is showing. Add blocks to customize it.</p></div>}
+        {blocks.map((block,idx)=>{const BT=BLOCK_TYPES.find(b=>b.type===block.type);const Icon=BT?.icon||Layers;const isEditing=editIdx===idx;return(
+          <div key={block.id||idx} className={`bg-white rounded-2xl shadow-sm overflow-hidden ${isEditing?'ring-2 ring-brand-400':''}`}>
+            <div className="px-4 py-2.5 bg-gray-50 flex items-center gap-2 border-b">
+              <GripVertical size={12} className="text-gray-300"/>
+              <Icon size={14} className="text-brand-500"/>
+              <span className="font-bold text-xs text-gray-700 flex-1">{BT?.label||block.type}</span>
+              <button onClick={()=>moveBlock(idx,idx-1)} disabled={idx===0} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ArrowUp size={10}/></button>
+              <button onClick={()=>moveBlock(idx,idx+1)} disabled={idx===blocks.length-1} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ArrowDown size={10}/></button>
+              <button onClick={()=>setEditIdx(isEditing?null:idx)} className={`p-1 rounded ${isEditing?'bg-brand-500 text-white':'hover:bg-blue-50 text-blue-500'}`}><Settings size={10}/></button>
+              <button onClick={()=>{removeBlock(idx);if(editIdx===idx)setEditIdx(null);}} className="p-1 hover:bg-red-50 rounded text-red-400"><Trash2 size={10}/></button>
             </div>
-            {/* Preview */}
-            <div className="p-4">
-              {block.type==='hero'&&<div className="rounded-xl p-6 text-center text-white" style={{backgroundColor:block.bgColor||'#7C3AED'}}><h2 className="text-xl font-black">{block.title}</h2><p className="text-sm opacity-80 mt-1">{block.subtitle}</p>{block.btnText&&<span className="inline-block mt-3 px-4 py-1.5 bg-white/20 rounded-lg text-xs font-bold">{block.btnText}</span>}</div>}
-              {block.type==='text'&&<div className={`text-${block.align||'center'}`}><h3 className="font-bold text-lg">{block.title}</h3><p className="text-sm text-gray-500 mt-1">{block.content}</p></div>}
-              {block.type==='features'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-4 gap-2">{(block.items||[]).map((f,i)=><div key={i} className="text-center p-2 bg-gray-50 rounded-xl"><span className="text-xl">{f.icon}</span><p className="text-xs font-bold mt-1">{f.title}</p><p className="text-[10px] text-gray-400">{f.desc}</p></div>)}</div></div>}
-              {block.type==='pricing'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-2 gap-2">{(block.plans||[]).map((p,i)=><div key={i} className={`p-3 rounded-xl border ${p.popular?'border-brand-400 bg-brand-50':'border-gray-200'}`}><p className="font-bold">{p.name}</p><p className="text-lg font-black text-brand-600">{p.price} DZD<span className="text-xs text-gray-400">/{p.period}</span></p></div>)}</div></div>}
-              {block.type==='cta'&&<div className="rounded-xl p-6 text-center text-white" style={{backgroundColor:block.bgColor||'#10B981'}}><h3 className="font-bold text-lg">{block.title}</h3><p className="text-sm opacity-80">{block.subtitle}</p>{block.btnText&&<span className="inline-block mt-2 px-4 py-1.5 bg-white/20 rounded-lg text-xs font-bold">{block.btnText}</span>}</div>}
-              {block.type==='testimonials'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-2 gap-2">{(block.items||[]).map((t,i)=><div key={i} className="p-3 bg-gray-50 rounded-xl"><p className="text-xs text-gray-600 italic">"{t.text}"</p><p className="text-[10px] font-bold mt-2">{t.name} · <span className="text-gray-400">{t.role}</span></p></div>)}</div></div>}
-              {block.type==='stats'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-4 gap-2">{(block.items||[]).map((s,i)=><div key={i} className="text-center p-2 bg-gray-50 rounded-xl"><p className="text-lg font-black text-brand-600">{s.value}</p><p className="text-[10px] text-gray-400">{s.label}</p></div>)}</div></div>}
+            {/* Mini preview */}
+            <div className="p-3 text-xs text-gray-500 max-h-16 overflow-hidden">
+              {block.type==='hero'&&<div className="rounded-lg p-2 text-white text-center" style={{backgroundColor:block.bgColor||'#7C3AED'}}><p className="font-bold text-sm truncate">{block.title}</p></div>}
+              {block.type==='text'&&<p className="truncate"><span className="font-bold">{block.title}</span> — {block.content}</p>}
+              {block.type==='features'&&<p>📋 {(block.items||[]).length} features: {(block.items||[]).map(i=>i.title).join(', ')}</p>}
+              {block.type==='pricing'&&<p>💳 {(block.plans||[]).length} plans: {(block.plans||[]).map(p=>`${p.name} (${p.price} DZD)`).join(', ')}</p>}
+              {block.type==='cta'&&<div className="rounded-lg p-2 text-white text-center" style={{backgroundColor:block.bgColor||'#10B981'}}><p className="font-bold text-sm truncate">{block.title}</p></div>}
+              {block.type==='testimonials'&&<p>💬 {(block.items||[]).length} testimonials</p>}
+              {block.type==='stats'&&<p>📊 {(block.items||[]).map(s=>s.value).join(' · ')}</p>}
+              {block.type==='image'&&(block.src?<img src={block.src} className="h-12 rounded object-cover"/>:<p>🖼️ No image uploaded</p>)}
+              {block.type==='video'&&<p>🎬 {block.url||'No URL set'}</p>}
+              {block.type==='spacer'&&<p>↕️ {block.height||48}px spacer</p>}
             </div>
-            {/* Edit panel */}
-            {editIdx===idx&&<div className="border-t p-4 bg-gray-50 space-y-3">
-              <div><label className="text-xs font-bold text-gray-400 uppercase">Title</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.title||''} onChange={e=>updateBlock(idx,'title',e.target.value)}/></div>
-              {block.subtitle!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Subtitle</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.subtitle||''} onChange={e=>updateBlock(idx,'subtitle',e.target.value)}/></div>}
-              {block.content!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Content</label><textarea className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" rows={3} value={block.content||''} onChange={e=>updateBlock(idx,'content',e.target.value)}/></div>}
-              {block.btnText!==undefined&&<div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-bold text-gray-400 uppercase">Button Text</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.btnText||''} onChange={e=>updateBlock(idx,'btnText',e.target.value)}/></div><div><label className="text-xs font-bold text-gray-400 uppercase">Button Link</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.btnLink||''} onChange={e=>updateBlock(idx,'btnLink',e.target.value)}/></div></div>}
-              {block.bgColor!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Background Color</label><div className="flex gap-2 mt-1"><input type="color" className="w-8 h-8 rounded" value={block.bgColor||'#7C3AED'} onChange={e=>updateBlock(idx,'bgColor',e.target.value)}/><input className="flex-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.bgColor||''} onChange={e=>updateBlock(idx,'bgColor',e.target.value)}/></div></div>}
-              {block.align!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Alignment</label><div className="flex gap-2 mt-1">{['left','center','right'].map(a=><button key={a} onClick={()=>updateBlock(idx,'align',a)} className={`px-3 py-1 rounded-lg text-xs font-bold ${block.align===a?'bg-brand-500 text-white':'bg-gray-200'}`}>{a}</button>)}</div></div>}
-            </div>}
+            {/* Full editor */}
+            {isEditing&&<div className="border-t p-3 bg-gray-50 space-y-2">{renderEditor(block,idx)}</div>}
           </div>
         );})}
       </div>
 
-      {/* Add blocks panel */}
-      <div className="space-y-3">
-        <p className="text-xs font-bold text-gray-400 uppercase">Add Blocks</p>
+      {/* Block palette */}
+      <div className="space-y-2">
+        <p className="text-[10px] font-bold text-gray-400 uppercase">Add Blocks</p>
         {BLOCK_TYPES.map(bt=>{const Icon=bt.icon;return(
-          <button key={bt.type} onClick={()=>addBlock(bt.type)} className="w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-brand-400 transition-all text-left">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><Icon size={18} className="text-brand-500"/></div>
-            <div><p className="font-bold text-sm text-gray-800">{bt.label}</p><p className="text-[10px] text-gray-400">Click to add</p></div>
-            <Plus size={14} className="ml-auto text-gray-300"/>
+          <button key={bt.type} onClick={()=>addBlock(bt.type)} className="w-full flex items-center gap-2 p-2.5 bg-white rounded-xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-brand-400 transition-all text-left">
+            <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0"><Icon size={14} className="text-brand-500"/></div>
+            <div className="flex-1 min-w-0"><p className="font-bold text-xs text-gray-800">{bt.label}</p></div>
+            <Plus size={12} className="text-gray-300 shrink-0"/>
           </button>
         );})}
       </div>
     </div>
   </div>);
 }
+
 
 function SystemHealth(){
   const[sys,setSys]=useState(null);
