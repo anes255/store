@@ -330,10 +330,9 @@ function PageBuilder(){
 
   useEffect(()=>{platformApi.getSettings().then(r=>{const s=r.data||{};try{setBlocks(JSON.parse(s.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
 
-  const save=async()=>{setSaving(true);try{
-    // Save to platform_settings
-    try{await api.get('/platform/system');}catch{}// ensure auth
-    await platformApi.updateSettings({landing_blocks:JSON.stringify(blocks)});
+  const save=async(overrideBlocks)=>{setSaving(true);try{
+    const blocksToSave = overrideBlocks !== undefined ? overrideBlocks : blocks;
+    await platformApi.updateSettings({landing_blocks:JSON.stringify(blocksToSave)});
     toast.success('Landing page saved!');
   }catch(e){toast.error('Failed: '+(e.response?.data?.error||e.message));}setSaving(false);};
 
@@ -343,7 +342,7 @@ function PageBuilder(){
   const updateBlock=(idx,key,val)=>{const n=[...blocks];n[idx]={...n[idx],[key]:val};setBlocks(n);};
 
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Page Builder</h1><div className="flex gap-2"><a href="/" target="_blank" className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save Page'}</button></div></div>
+    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Page Builder</h1><div className="flex gap-2"><button onClick={()=>{if(confirm('Reset all blocks? This clears everything.')){setBlocks([]);save([]);}}} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/>Reset</button><a href="/" target="_blank" className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save Page'}</button></div></div>
 
     <div className="grid lg:grid-cols-[1fr,300px] gap-6">
       {/* Blocks list */}
