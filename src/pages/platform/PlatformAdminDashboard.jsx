@@ -4,7 +4,7 @@ import { platformApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar} from 'lucide-react';
+import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type} from 'lucide-react';
 
 function Sidebar(){
   const loc=useLocation();const{logout}=useAuthStore();const nav=useNavigate();
@@ -16,6 +16,7 @@ function Sidebar(){
     {path:'/admin/subscriptions',icon:CreditCard,label:'Subscriptions',desc:'Payments & plans'},
     {path:'/admin/billing-config',icon:DollarSign,label:'Billing Config',desc:'Payment methods'},
     {path:'/admin/site-settings',icon:Globe,label:'Site & Branding',desc:'Customize'},
+    {path:'/admin/page-builder',icon:Layers,label:'Page Builder',desc:'Edit landing page'},
     {path:'/admin/system',icon:Server,label:'System',desc:'Health & services'},
   ];
   return(
@@ -115,29 +116,40 @@ function StoreOwners(){
 
 // ═══════ ALL STORES ═══════
 function AllStores(){
-  const[stores,setStores]=useState([]);const[loading,setLoading]=useState(true);
+  const[stores,setStores]=useState([]);const[loading,setLoading]=useState(true);const[detail,setDetail]=useState(null);
   const load=()=>{platformApi.getStores().then(r=>setStores(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[]);
   const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success('Toggled');load();}catch{toast.error('Failed');}};
-  const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');load();}catch{toast.error('Failed');}};
+  const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');setDetail(null);load();}catch{toast.error('Failed');}};
   return(<div>
     <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">All Stores</h1><span className="text-sm text-gray-400">{stores.length} total</span></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
     <div className="grid gap-4">{stores.map(s=>(
-      <div key={s.id} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-center gap-4">
+      <div key={s.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+        <div className="p-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold">{(s.name||s.store_name||'S')[0]}</div>
-          <div className="flex-1">
+          <div className="flex-1 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
             <div className="flex items-center gap-2"><p className="font-bold text-gray-900">{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">LIVE</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">OFFLINE</span>}</div>
             <p className="text-xs text-gray-400">Owner: {s.owner_name||'N/A'} · {s.owner_email||''}</p>
           </div>
           <div className="text-right"><p className="text-sm font-bold">{parseFloat(s.revenue||0).toLocaleString()} DZD</p><p className="text-[10px] text-gray-400">{s.product_count||0} products · {s.order_count||0} orders</p></div>
           <div className="flex gap-2 shrink-0">
-            <a href={`/s/${s.slug}`} target="_blank" className="p-2 hover:bg-gray-100 rounded-lg text-gray-400"><ExternalLink size={14}/></a>
-            <button onClick={()=>toggle(s.id)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400">{s.is_published?<EyeOff size={14}/>:<Eye size={14}/>}</button>
-            <button onClick={()=>del(s.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14}/></button>
+            <button onClick={()=>setDetail(detail?.id===s.id?null:s)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Details"><Eye size={14}/></button>
+            <a href={`/s/${s.slug}`} target="_blank" className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Visit"><ExternalLink size={14}/></a>
+            <button onClick={()=>toggle(s.id)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={s.is_published?'Take offline':'Put live'}>{s.is_published?<EyeOff size={14}/>:<Eye size={14}/>}</button>
+            <button onClick={()=>del(s.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400" title="Delete"><Trash2 size={14}/></button>
           </div>
         </div>
+        {detail?.id===s.id&&<div className="border-t border-gray-100 p-5 bg-gray-50 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Slug</p><p className="font-mono text-sm">{s.slug}</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Owner Phone</p><p className="text-sm">{s.owner_phone||'N/A'}</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Products</p><p className="text-sm font-bold">{s.product_count||0}</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Orders</p><p className="text-sm font-bold">{s.order_count||0}</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Revenue</p><p className="text-sm font-bold text-emerald-600">{parseFloat(s.revenue||0).toLocaleString()} DZD</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Created</p><p className="text-sm">{new Date(s.created_at).toLocaleDateString()}</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Status</p><p className="text-sm">{s.is_published?'🟢 Live':'🔴 Offline'}</p></div>
+          <div><p className="text-[10px] text-gray-400 uppercase font-bold">Visit</p><a href={`/s/${s.slug}`} target="_blank" className="text-sm text-brand-600 hover:underline">Open Store →</a></div>
+        </div>}
       </div>
     ))}{stores.length===0&&<p className="text-center py-12 text-gray-400">No stores yet</p>}</div>}
   </div>);
@@ -204,7 +216,7 @@ function SiteSettings(){
 function Subscriptions(){
   const[data,setData]=useState({payments:[],stats:{}});const[loading,setLoading]=useState(true);const[filter,setFilter]=useState('all');
   const[rejectModal,setRejectModal]=useState(null);const[rejectNotes,setRejectNotes]=useState('');
-  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));};
+  const[viewReceipt,setViewReceipt]=useState(null);  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[filter]);
   const approve=async(pid)=>{try{await platformApi.approvePayment(pid);toast.success('Payment approved! Subscription activated.');load();}catch{toast.error('Failed');}};
   const reject=async()=>{if(!rejectModal)return;try{await platformApi.rejectPayment(rejectModal,{notes:rejectNotes});toast.success('Rejected');setRejectModal(null);setRejectNotes('');load();}catch{toast.error('Failed');}};
@@ -229,13 +241,25 @@ function Subscriptions(){
           <td className="px-5 py-4"><span className="font-bold capitalize">{p.plan}</span><br/><span className="text-[10px] text-gray-400 capitalize">{p.period}</span></td>
           <td className="px-5 py-4 font-bold">{parseFloat(p.amount).toLocaleString()} DZD</td>
           <td className="px-5 py-4 uppercase text-xs">{p.payment_method}</td>
-          <td className="px-5 py-4">{p.receipt_image?<a href={p.receipt_image} target="_blank" rel="noopener noreferrer" className="text-brand-600 text-xs font-bold hover:underline flex items-center gap-1"><Eye size={12}/>View</a>:'-'}</td>
+          <td className="px-5 py-4">{p.receipt_image?<button onClick={()=>setViewReceipt(p)} className="text-brand-600 text-xs font-bold hover:underline flex items-center gap-1"><Eye size={12}/>View</button>:'-'}</td>
           <td className="px-5 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{p.status?.toUpperCase()}</span></td>
           <td className="px-5 py-4">{p.status==='pending'?<div className="flex gap-1"><button onClick={()=>approve(p.id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600">Reject</button></div>:p.status==='approved'?<button onClick={()=>suspend(p.owner_id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Suspend</button>:'-'}</td>
         </tr>
       ))}</tbody></table>}
     </div>}
     {rejectModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setRejectModal(null)}><div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}><h3 className="font-bold text-lg mb-4">Reject Payment</h3><textarea className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm" rows={3} placeholder="Reason for rejection..." value={rejectNotes} onChange={e=>setRejectNotes(e.target.value)}/><div className="flex gap-3 mt-4"><button onClick={()=>setRejectModal(null)} className="flex-1 py-2 bg-gray-100 rounded-xl text-sm font-bold">Cancel</button><button onClick={reject} className="flex-1 py-2 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div></div></div>}
+    {viewReceipt&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setViewReceipt(null)}><div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-lg">Payment Receipt</h3><button onClick={()=>setViewReceipt(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Owner</p><p className="font-bold text-sm">{viewReceipt.owner_name}</p><p className="text-xs text-gray-400">{viewReceipt.owner_phone}</p></div>
+        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Plan</p><p className="font-bold text-sm capitalize">{viewReceipt.plan} — {viewReceipt.period}</p></div>
+        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Amount</p><p className="font-bold text-sm">{parseFloat(viewReceipt.amount).toLocaleString()} DZD</p></div>
+        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Method</p><p className="font-bold text-sm uppercase">{viewReceipt.payment_method}</p></div>
+      </div>
+      {viewReceipt.receipt_image&&<img src={viewReceipt.receipt_image} className="w-full rounded-xl border" alt="Receipt"/>}
+      <p className="text-xs text-gray-400 mt-3 text-center">Submitted {new Date(viewReceipt.created_at).toLocaleString()}</p>
+      {viewReceipt.status==='pending'&&<div className="flex gap-3 mt-4"><button onClick={()=>{approve(viewReceipt.id);setViewReceipt(null);}} className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold">Approve</button><button onClick={()=>{setRejectModal(viewReceipt.id);setRejectNotes('');setViewReceipt(null);}} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div>}
+    </div></div>}
   </div>);
 }
 
@@ -285,6 +309,92 @@ function BillingConfig(){
           {!config.billing_ccp_account&&!config.billing_baridimob_rip&&<p className="text-center text-gray-400 text-sm">No payment methods configured yet</p>}
         </div>
         <div className="mt-4 p-3 bg-amber-50 rounded-xl text-xs text-amber-700">Store owners see these details when subscribing. Make sure they're correct before going live.</div>
+      </div>
+    </div>
+  </div>);
+}
+
+// ═══════ PAGE BUILDER ═══════
+function PageBuilder(){
+  const BLOCK_TYPES=[
+    {type:'hero',label:'Hero Banner',icon:Image,defaults:{title:'Welcome to Our Platform',subtitle:'Build your online store in minutes',btnText:'Get Started',btnLink:'/register',bgColor:'#7C3AED',image:''}},
+    {type:'text',label:'Text Block',icon:Type,defaults:{title:'About Us',content:'We provide the best e-commerce platform for Algerian businesses.',align:'center'}},
+    {type:'features',label:'Features Grid',icon:Layers,defaults:{title:'Why Choose Us',items:[{icon:'🚀',title:'Fast Setup',desc:'Launch in minutes'},{icon:'💳',title:'Local Payments',desc:'CCP, BaridiMob, COD'},{icon:'📦',title:'58 Wilayas',desc:'Nationwide delivery'},{icon:'🤖',title:'AI Powered',desc:'Smart chatbot included'}]}},
+    {type:'pricing',label:'Pricing Plans',icon:CreditCard,defaults:{title:'Simple Pricing',plans:[{name:'Basic',price:'2,900',period:'month',features:['50 Products','300 Orders','Basic Analytics']},{name:'Advanced',price:'7,250',period:'month',features:['Unlimited Products','Unlimited Orders','AI Features','Priority Support'],popular:true}]}},
+    {type:'cta',label:'Call to Action',icon:Zap,defaults:{title:'Ready to Start Selling?',subtitle:'Join hundreds of Algerian businesses already using our platform.',btnText:'Create Your Store',btnLink:'/register',bgColor:'#10B981'}},
+    {type:'testimonials',label:'Testimonials',icon:Users,defaults:{title:'What Our Users Say',items:[{name:'Ahmed B.',text:'Best platform for e-commerce in Algeria!',role:'Store Owner'},{name:'Sara M.',text:'Setup was incredibly easy. Love the AI features.',role:'Entrepreneur'}]}},
+    {type:'stats',label:'Stats Counter',icon:BarChart3,defaults:{title:'Platform in Numbers',items:[{value:'500+',label:'Active Stores'},{value:'10K+',label:'Orders Processed'},{value:'58',label:'Wilayas Covered'},{value:'24/7',label:'AI Support'}]}},
+  ];
+
+  const[blocks,setBlocks]=useState([]);const[saving,setSaving]=useState(false);const[editIdx,setEditIdx]=useState(null);const[dragIdx,setDragIdx]=useState(null);
+
+  useEffect(()=>{platformApi.getSettings().then(r=>{const s=r.data||{};try{setBlocks(JSON.parse(s.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
+
+  const save=async()=>{setSaving(true);try{
+    // Save to platform_settings
+    try{await api.get('/platform/system');}catch{}// ensure auth
+    await platformApi.updateSettings({landing_blocks:JSON.stringify(blocks)});
+    toast.success('Landing page saved!');
+  }catch(e){toast.error('Failed: '+(e.response?.data?.error||e.message));}setSaving(false);};
+
+  const addBlock=(type)=>{const t=BLOCK_TYPES.find(b=>b.type===type);if(t)setBlocks([...blocks,{type:t.type,...JSON.parse(JSON.stringify(t.defaults)),id:Date.now()}]);};
+  const removeBlock=(idx)=>setBlocks(blocks.filter((_,i)=>i!==idx));
+  const moveBlock=(from,to)=>{if(to<0||to>=blocks.length)return;const n=[...blocks];const[m]=n.splice(from,1);n.splice(to,0,m);setBlocks(n);};
+  const updateBlock=(idx,key,val)=>{const n=[...blocks];n[idx]={...n[idx],[key]:val};setBlocks(n);};
+
+  return(<div>
+    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Page Builder</h1><div className="flex gap-2"><a href="/" target="_blank" className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save Page'}</button></div></div>
+
+    <div className="grid lg:grid-cols-[1fr,300px] gap-6">
+      {/* Blocks list */}
+      <div className="space-y-4">
+        {blocks.length===0&&<div className="bg-white rounded-2xl p-12 text-center shadow-sm"><Layers size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">No blocks yet</p><p className="text-sm text-gray-400 mt-1">Add blocks from the panel on the right to build your landing page</p></div>}
+        {blocks.map((block,idx)=>{const BT=BLOCK_TYPES.find(b=>b.type===block.type);const Icon=BT?.icon||Layers;return(
+          <div key={block.id||idx} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-3 bg-gray-50 flex items-center gap-3 border-b">
+              <GripVertical size={14} className="text-gray-300 cursor-grab"/>
+              <Icon size={16} className="text-brand-500"/>
+              <span className="font-bold text-sm text-gray-700 flex-1">{BT?.label||block.type}</span>
+              <div className="flex gap-1">
+                <button onClick={()=>moveBlock(idx,idx-1)} disabled={idx===0} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ArrowUp size={12}/></button>
+                <button onClick={()=>moveBlock(idx,idx+1)} disabled={idx===blocks.length-1} className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"><ArrowDown size={12}/></button>
+                <button onClick={()=>setEditIdx(editIdx===idx?null:idx)} className="p-1 hover:bg-blue-50 rounded text-blue-500"><Settings size={12}/></button>
+                <button onClick={()=>removeBlock(idx)} className="p-1 hover:bg-red-50 rounded text-red-400"><Trash2 size={12}/></button>
+              </div>
+            </div>
+            {/* Preview */}
+            <div className="p-4">
+              {block.type==='hero'&&<div className="rounded-xl p-6 text-center text-white" style={{backgroundColor:block.bgColor||'#7C3AED'}}><h2 className="text-xl font-black">{block.title}</h2><p className="text-sm opacity-80 mt-1">{block.subtitle}</p>{block.btnText&&<span className="inline-block mt-3 px-4 py-1.5 bg-white/20 rounded-lg text-xs font-bold">{block.btnText}</span>}</div>}
+              {block.type==='text'&&<div className={`text-${block.align||'center'}`}><h3 className="font-bold text-lg">{block.title}</h3><p className="text-sm text-gray-500 mt-1">{block.content}</p></div>}
+              {block.type==='features'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-4 gap-2">{(block.items||[]).map((f,i)=><div key={i} className="text-center p-2 bg-gray-50 rounded-xl"><span className="text-xl">{f.icon}</span><p className="text-xs font-bold mt-1">{f.title}</p><p className="text-[10px] text-gray-400">{f.desc}</p></div>)}</div></div>}
+              {block.type==='pricing'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-2 gap-2">{(block.plans||[]).map((p,i)=><div key={i} className={`p-3 rounded-xl border ${p.popular?'border-brand-400 bg-brand-50':'border-gray-200'}`}><p className="font-bold">{p.name}</p><p className="text-lg font-black text-brand-600">{p.price} DZD<span className="text-xs text-gray-400">/{p.period}</span></p></div>)}</div></div>}
+              {block.type==='cta'&&<div className="rounded-xl p-6 text-center text-white" style={{backgroundColor:block.bgColor||'#10B981'}}><h3 className="font-bold text-lg">{block.title}</h3><p className="text-sm opacity-80">{block.subtitle}</p>{block.btnText&&<span className="inline-block mt-2 px-4 py-1.5 bg-white/20 rounded-lg text-xs font-bold">{block.btnText}</span>}</div>}
+              {block.type==='testimonials'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-2 gap-2">{(block.items||[]).map((t,i)=><div key={i} className="p-3 bg-gray-50 rounded-xl"><p className="text-xs text-gray-600 italic">"{t.text}"</p><p className="text-[10px] font-bold mt-2">{t.name} · <span className="text-gray-400">{t.role}</span></p></div>)}</div></div>}
+              {block.type==='stats'&&<div><h3 className="font-bold text-center mb-3">{block.title}</h3><div className="grid grid-cols-4 gap-2">{(block.items||[]).map((s,i)=><div key={i} className="text-center p-2 bg-gray-50 rounded-xl"><p className="text-lg font-black text-brand-600">{s.value}</p><p className="text-[10px] text-gray-400">{s.label}</p></div>)}</div></div>}
+            </div>
+            {/* Edit panel */}
+            {editIdx===idx&&<div className="border-t p-4 bg-gray-50 space-y-3">
+              <div><label className="text-xs font-bold text-gray-400 uppercase">Title</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.title||''} onChange={e=>updateBlock(idx,'title',e.target.value)}/></div>
+              {block.subtitle!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Subtitle</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.subtitle||''} onChange={e=>updateBlock(idx,'subtitle',e.target.value)}/></div>}
+              {block.content!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Content</label><textarea className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" rows={3} value={block.content||''} onChange={e=>updateBlock(idx,'content',e.target.value)}/></div>}
+              {block.btnText!==undefined&&<div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-bold text-gray-400 uppercase">Button Text</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.btnText||''} onChange={e=>updateBlock(idx,'btnText',e.target.value)}/></div><div><label className="text-xs font-bold text-gray-400 uppercase">Button Link</label><input className="w-full mt-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.btnLink||''} onChange={e=>updateBlock(idx,'btnLink',e.target.value)}/></div></div>}
+              {block.bgColor!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Background Color</label><div className="flex gap-2 mt-1"><input type="color" className="w-8 h-8 rounded" value={block.bgColor||'#7C3AED'} onChange={e=>updateBlock(idx,'bgColor',e.target.value)}/><input className="flex-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm" value={block.bgColor||''} onChange={e=>updateBlock(idx,'bgColor',e.target.value)}/></div></div>}
+              {block.align!==undefined&&<div><label className="text-xs font-bold text-gray-400 uppercase">Alignment</label><div className="flex gap-2 mt-1">{['left','center','right'].map(a=><button key={a} onClick={()=>updateBlock(idx,'align',a)} className={`px-3 py-1 rounded-lg text-xs font-bold ${block.align===a?'bg-brand-500 text-white':'bg-gray-200'}`}>{a}</button>)}</div></div>}
+            </div>}
+          </div>
+        );})}
+      </div>
+
+      {/* Add blocks panel */}
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-gray-400 uppercase">Add Blocks</p>
+        {BLOCK_TYPES.map(bt=>{const Icon=bt.icon;return(
+          <button key={bt.type} onClick={()=>addBlock(bt.type)} className="w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-brand-400 transition-all text-left">
+            <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><Icon size={18} className="text-brand-500"/></div>
+            <div><p className="font-bold text-sm text-gray-800">{bt.label}</p><p className="text-[10px] text-gray-400">Click to add</p></div>
+            <Plus size={14} className="ml-auto text-gray-300"/>
+          </button>
+        );})}
       </div>
     </div>
   </div>);
@@ -346,6 +456,7 @@ export default function PlatformAdminDashboard(){
             <Route path="site-settings" element={<SiteSettings/>}/>
             <Route path="subscriptions" element={<Subscriptions/>}/>
             <Route path="billing-config" element={<BillingConfig/>}/>
+            <Route path="page-builder" element={<PageBuilder/>}/>
             <Route path="system" element={<SystemHealth/>}/>
             <Route path="*" element={<Overview/>}/>
           </Routes>
