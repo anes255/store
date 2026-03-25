@@ -1,14 +1,15 @@
-import React,{useState} from'react';import DashboardLayout from'../../components/shared/DashboardLayout';import toast from'react-hot-toast';import{Save,FileText,Heart,Clock,Globe}from'lucide-react';
-export default function AboutUs(){const[story,setStory]=useState('');
-return(<DashboardLayout>
-<div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-bold">About us</h1><p className="text-sm text-gray-500">Tell your brand story and build trust with your customers</p></div><button onClick={()=>toast.success('Saved!')} className="btn-primary flex items-center gap-2"><Save size={16}/>Save</button></div>
-<div className="grid lg:grid-cols-3 gap-6">
-<div className="lg:col-span-2 glass-card-solid p-6"><div className="flex items-center gap-2 mb-4"><FileText size={18} className="text-gray-500"/><h3 className="font-bold text-gray-900">Your Brand Story</h3></div>
-<textarea className="input-field min-h-[300px]" rows={12} value={story} onChange={e=>setStory(e.target.value)} placeholder={"Write about your store history, mission, and what makes you special...\n\nExample:\nWe started in 2020 with a simple mission: to provide the highest quality products at fair prices.\nOur team is dedicated to sourcing the best materials and ensuring every customer has a great experience.\n\nSupport for Markdown is planned!"}/>
-<p className="text-xs text-gray-400 mt-2">{story.length} CHARACTERS</p>
-<div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4 text-sm text-amber-800"><p>ℹ Your 'About Us' page is one of the most visited pages on your store. A compelling story can increase your conversion rate by building emotional connection and trust.</p></div></div>
-<div className="space-y-4">
-<div className="bg-gradient-to-br from-brand-500 to-purple-600 rounded-2xl p-6 text-white"><h3 className="font-bold mb-3">Quick Tips</h3><ul className="space-y-2 text-sm text-white/90"><li>• Share your company's mission and values clearly.</li><li>• Explain the problem you solve for your customers.</li><li>• Keep it authentic and human — don't be afraid to show personality!</li></ul></div>
-{[{icon:Heart,label:'CORE VALUES',desc:'Build Connection',color:'bg-pink-50 text-pink-500'},{icon:Clock,label:'HERITAGE',desc:'Share your History',color:'bg-blue-50 text-blue-500'},{icon:Globe,label:'IMPACT',desc:'Your Reach',color:'bg-emerald-50 text-emerald-500'}].map((c,i)=>{const I=c.icon;return(<div key={i} className="glass-card-solid p-5 flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${c.color} flex items-center justify-center`}><I size={18}/></div><div><p className="text-[10px] text-gray-400 uppercase font-bold">{c.label}</p><p className="font-semibold text-gray-800 text-sm">{c.desc}</p></div></div>);})}
-</div></div>
-</DashboardLayout>);}
+import React,{useState,useEffect} from'react';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import{ownerApi}from'../../utils/api';import toast from'react-hot-toast';import{Save,FileText}from'lucide-react';
+export default function AboutUs(){
+  const{currentStore,setCurrentStore}=useStoreManagement();
+  const[story,setStory]=useState('');const[mission,setMission]=useState('');const[saving,setSaving]=useState(false);
+  useEffect(()=>{if(currentStore){setStory(currentStore.about_story||'');setMission(currentStore.about_mission||'');}},[currentStore?.id]);
+  const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{about_story:story,about_mission:mission});setCurrentStore(data);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
+  return(<DashboardLayout>
+    <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-bold">About Us</h1><p className="text-sm text-gray-400 mt-1">Tell your customers about your brand</p></div><button onClick={save} disabled={saving} className="btn-primary text-sm flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
+    <div className="grid lg:grid-cols-2 gap-6">
+      <div className="glass-card-solid p-6"><div className="flex items-center gap-2 mb-4"><FileText size={18} className="text-brand-500"/><h3 className="font-bold">Our Story</h3></div><textarea className="input-field" rows={8} value={story} onChange={e=>setStory(e.target.value)} placeholder="Tell your customers how your brand started, what drives you, and what makes you unique..."/><p className="text-xs text-gray-400 mt-2">This appears on your store's About page</p></div>
+      <div className="glass-card-solid p-6"><div className="flex items-center gap-2 mb-4"><FileText size={18} className="text-purple-500"/><h3 className="font-bold">Our Mission</h3></div><textarea className="input-field" rows={8} value={mission} onChange={e=>setMission(e.target.value)} placeholder="What is your brand's mission? What problem do you solve for customers?"/><p className="text-xs text-gray-400 mt-2">Short mission statement for your brand</p></div>
+    </div>
+    <div className="glass-card-solid p-6 mt-6"><h3 className="font-bold mb-4">Preview</h3><div className="bg-gray-50 rounded-xl p-8"><h2 className="text-2xl font-black text-gray-900 mb-4">About {currentStore?.name||'Our Store'}</h2>{story?<p className="text-gray-600 leading-relaxed mb-4">{story}</p>:<p className="text-gray-400 italic">Your story will appear here...</p>}{mission&&<div className="mt-4 p-4 bg-brand-50 rounded-xl"><p className="text-sm font-bold text-brand-600 mb-1">Our Mission</p><p className="text-gray-700">{mission}</p></div>}</div></div>
+  </DashboardLayout>);
+}
