@@ -67,6 +67,11 @@ export const ownerApi = {
   addStaff: (storeId, data) => api.post(`/owner/stores/${storeId}/staff`, data),
   getDomains: (storeId) => api.get(`/owner/stores/${storeId}/domains`),
   requestDomain: (storeId, data) => api.post(`/owner/stores/${storeId}/domains`, data),
+  // Notifications
+  getNotifications: (storeId) => api.get(`/owner/stores/${storeId}/notifications`),
+  markNotifRead: (storeId, nid) => api.patch(`/owner/stores/${storeId}/notifications/${nid}/read`),
+  markAllRead: (storeId) => api.patch(`/owner/stores/${storeId}/notifications/read-all`),
+  clearRead: (storeId) => api.delete(`/owner/stores/${storeId}/notifications`),
 };
 
 // Products & Categories
