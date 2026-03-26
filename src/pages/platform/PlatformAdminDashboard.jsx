@@ -4,9 +4,9 @@ import { platformApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type} from 'lucide-react';
+import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
-function Sidebar(){
+function Sidebar({open,onClose}){
   const loc=useLocation();const{logout}=useAuthStore();const nav=useNavigate();
   const links=[
     {path:'/admin/dashboard',icon:LayoutDashboard,label:'Overview',desc:'Platform stats'},
@@ -19,17 +19,19 @@ function Sidebar(){
     {path:'/admin/page-builder',icon:Layers,label:'Page Builder',desc:'Edit landing page'},
     {path:'/admin/system',icon:Server,label:'System',desc:'Health & services'},
   ];
-  return(
-    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 min-h-screen flex flex-col fixed">
-      <div className="p-5 border-b border-white/5">
+  return(<>
+    {open&&<div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose}/>}
+    <aside className={`fixed top-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 min-h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${open?'translate-x-0':'-translate-x-full'}`}>
+      <div className="p-5 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/20"><Shield size={20} className="text-white"/></div>
           <div><h3 className="text-white font-bold text-sm">Super Admin</h3><p className="text-white/30 text-[10px] uppercase tracking-wider">Control Panel</p></div>
         </div>
+        <button onClick={onClose} className="lg:hidden text-white/40 hover:text-white"><X size={18}/></button>
       </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {links.map(l=>{const I=l.icon;const active=loc.pathname===l.path;return(
-          <Link key={l.path} to={l.path} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${active?'bg-white/10 text-white shadow-lg':'text-white/40 hover:text-white/70 hover:bg-white/5'}`}>
+          <Link key={l.path} to={l.path} onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${active?'bg-white/10 text-white shadow-lg':'text-white/40 hover:text-white/70 hover:bg-white/5'}`}>
             <I size={18}/><div><p className="font-medium">{l.label}</p>{active&&<p className="text-[10px] text-white/40">{l.desc}</p>}</div>
           </Link>
         );})}
@@ -38,7 +40,7 @@ function Sidebar(){
         <div className="px-4 py-3 bg-white/5 rounded-xl mb-2"><p className="text-white/60 text-xs font-medium">Platform Admin</p><p className="text-white/30 text-[10px]">Full Access</p></div>
         <button onClick={()=>{logout();nav('/admin/login');}} className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 hover:bg-red-500/10 rounded-xl text-sm"><LogOut size={16}/>Logout</button>
       </div>
-    </aside>);
+    </aside></>);
 }
 
 // ═══════ OVERVIEW ═══════
@@ -473,15 +475,19 @@ function SystemHealth(){
 
 // ═══════ MAIN LAYOUT ═══════
 export default function PlatformAdminDashboard(){
+  const[sidebarOpen,setSidebarOpen]=useState(false);
   return(
     <div className="flex min-h-screen bg-gray-50/80">
-      <Sidebar/>
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2"><Shield size={16} className="text-red-500"/><span className="text-sm font-bold text-gray-700">Platform Administration</span></div>
+      <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)}/>
+      <main className="flex-1 lg:ml-64 min-w-0">
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={()=>setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl"><Menu size={20} className="text-gray-600"/></button>
+            <Shield size={16} className="text-red-500 hidden md:block"/><span className="text-sm font-bold text-gray-700">Platform Administration</span>
+          </div>
           <div className="flex items-center gap-3"><span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>SUPER ADMIN</span></div>
         </header>
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           <Routes>
             <Route path="dashboard" element={<Overview/>}/>
             <Route path="store-owners" element={<StoreOwners/>}/>
