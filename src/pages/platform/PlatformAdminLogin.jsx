@@ -21,10 +21,8 @@ export default function PlatformAdminLogin() {
       
       const { data } = await platformApi.login(form);
       
-      // Set auth with platform_admin role
-      localStorage.setItem('user', JSON.stringify(data.admin));
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('role', 'platform_admin');
+      // Use setAuth for proper zustand + localStorage persistence
+      setAuth(data.admin, data.token, 'platform_admin');
       
       toast.success('Welcome, Admin!');
       
