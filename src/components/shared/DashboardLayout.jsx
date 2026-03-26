@@ -5,18 +5,45 @@ function NotifBell(){
   const[notifs,setNotifs]=React.useState([]);
   const[unread,setUnread]=React.useState(0);
   const{currentStore}=useStoreManagement();
+  const prevUnreadRef=React.useRef(0);
   
+  // Request browser notification permission on mount
+  React.useEffect(()=>{
+    if('Notification' in window && Notification.permission==='default'){
+      Notification.requestPermission();
+    }
+  },[]);
+
   const load=React.useCallback(()=>{
     if(!currentStore?.id)return;
     import('../../utils/api').then(({ownerApi})=>{
       ownerApi.getNotifications(currentStore.id).then(r=>{
-        setNotifs(r.data.notifications||[]);
-        setUnread(r.data.unread||0);
+        const newNotifs=r.data.notifications||[];
+        const newUnread=r.data.unread||0;
+        
+        // Browser push notification when new notifications arrive
+        if(newUnread>prevUnreadRef.current && prevUnreadRef.current>=0 && 'Notification' in window && Notification.permission==='granted'){
+          const latest=newNotifs.find(n=>!n.is_read);
+          if(latest){
+            try{
+              const n=new Notification(latest.title||'New Notification',{
+                body:latest.message||'',
+                icon:currentStore?.logo||'/favicon.ico',
+                tag:'notif-'+latest.id,
+              });
+              n.onclick=()=>{window.focus();n.close();};
+              setTimeout(()=>n.close(),5000);
+            }catch(e){}
+          }
+        }
+        prevUnreadRef.current=newUnread;
+        setNotifs(newNotifs);
+        setUnread(newUnread);
       }).catch(()=>{});
     });
   },[currentStore?.id]);
   
-  React.useEffect(()=>{load();const i=setInterval(load,30000);return()=>clearInterval(i);},[load]);
+  React.useEffect(()=>{load();const i=setInterval(load,15000);return()=>clearInterval(i);},[load]);
   
   const markRead=async(nid)=>{
     try{const{ownerApi}=await import('../../utils/api');await ownerApi.markNotifRead(currentStore.id,nid);load();}catch{}
