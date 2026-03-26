@@ -130,7 +130,7 @@ function AllStores(){
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold">{(s.name||s.store_name||'S')[0]}</div>
           <div className="flex-1 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
             <div className="flex items-center gap-2"><p className="font-bold text-gray-900">{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">LIVE</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">OFFLINE</span>}</div>
-            <p className="text-xs text-gray-400">Owner: {s.owner_name||'N/A'} · {s.owner_email||''}</p>
+            <p className="text-xs text-gray-400">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>
           </div>
           <div className="text-right"><p className="text-sm font-bold">{parseFloat(s.revenue||0).toLocaleString()} DZD</p><p className="text-[10px] text-gray-400">{s.product_count||0} products · {s.order_count||0} orders</p></div>
           <div className="flex gap-2 shrink-0">
@@ -149,6 +149,7 @@ function AllStores(){
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Created</p><p className="text-sm">{new Date(s.created_at).toLocaleDateString()}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Status</p><p className="text-sm">{s.is_published?'🟢 Live':'🔴 Offline'}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Visit</p><a href={`/s/${s.slug}`} target="_blank" className="text-sm text-brand-600 hover:underline">Open Store →</a></div>
+          {(s.owner_active===false||s.subscription_status==='suspended')&&<div><p className="text-[10px] text-gray-400 uppercase font-bold">Action</p><button onClick={async()=>{try{await platformApi.setOwnerSubscription(s.owner_id,{action:'activate'});toast.success('Owner activated!');load();}catch{toast.error('Failed');}}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold mt-1">Activate Owner</button></div>}
         </div>}
       </div>
     ))}{stores.length===0&&<p className="text-center py-12 text-gray-400">No stores yet</p>}</div>}
