@@ -12,21 +12,38 @@ function AIChatbot({ store, slug }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState(null);
+  const scrollRef = React.useRef(null);
 
   useEffect(() => {
     if (open && messages.length === 0)
-      setMessages([{ role:'bot', text: store.ai_chatbot_greeting || `Greetings human. 🤖 System KYO-01 online. Awaiting commands for ${store.name}. How may I assist you?` }]);
+      setMessages([{ role:'bot', text: store.ai_chatbot_greeting || `Welcome to ${store.name}! How can I help you today?` }]);
   }, [open]);
+
+  // Auto-scroll on ANY change
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, loading]);
+
+  // Detect language from each message — bot follows the user's language
+  const detectLang = (text) => {
+    const hasArabic = /[\u0600-\u06FF]/.test(text);
+    const hasFrench = /[àâéèêëïîôùûüÿçœæ]|(?:^|\s)(je|tu|il|nous|vous|les|des|une|est|bonjour|merci|comment|combien)(?:\s|$)/i.test(text);
+    const detected = hasArabic ? 'ar' : hasFrench ? 'fr' : 'en';
+    setLang(detected);
+    return detected;
+  };
 
   const sendMessage = async (text) => {
     if (!text.trim()) return;
+    const msgLang = detectLang(text);
     setMessages(prev=>[...prev,{role:'user',text}]);
     setInput('');
     setLoading(true);
     try {
-      const{data}=await aiApi.chat(slug,{message:text,history:messages});
+      const{data}=await aiApi.chat(slug,{message:text,history:messages,language:msgLang});
       setMessages(prev=>[...prev,{role:'bot',text:data.response}]);
-    } catch { setMessages(prev=>[...prev,{role:'bot',text:"Sorry, I'm having trouble. Please try again!"}]); }
+    } catch(e) { setMessages(prev=>[...prev,{role:'bot',text:e.response?.data?.error || "Sorry, I'm having trouble. Please try again!"}]); }
     setLoading(false);
   };
 
@@ -44,7 +61,7 @@ function AIChatbot({ store, slug }) {
               <button onClick={()=>setOpen(false)} className="text-white/60 hover:text-white"><X size={18}/></button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[280px]">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[280px]">
             {messages.map((msg,i)=>(
               <div key={i} className={`flex ${msg.role==='user'?'justify-end':'justify-start'}`}>
                 {msg.role==='bot'&&<div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center mr-2 shrink-0 mt-1"><Bot size={14} className="text-gray-500"/></div>}
@@ -109,15 +126,26 @@ export default function Storefront() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [storeRes, productsRes, catsRes] = await Promise.all([
-          storeApi.getStore(storeSlug),
-          storeApi.getProducts(storeSlug, { search, category: selectedCategory }),
-          storeApi.getCategories(storeSlug),
-        ]);
-        setStore(storeRes.data);
-        setProducts(productsRes.data.products);
-        setCategories(catsRes.data);
-      } catch(e) { if(e.response?.status===403&&e.response?.data?.suspended)setSuspended(true);else setStore(null); }
+        // Load store FIRST to catch 403 properly
+        let storeData;
+        try {
+          const storeRes = await storeApi.getStore(storeSlug);
+          storeData = storeRes.data;
+        } catch(e) {
+          if(e.response?.status===403) { setSuspended(true); setLoading(false); return; }
+          setStore(null); setLoading(false); return;
+        }
+        setStore(storeData);
+        // Then load products and categories
+        try {
+          const [productsRes, catsRes] = await Promise.all([
+            storeApi.getProducts(storeSlug, { search, category: selectedCategory }),
+            storeApi.getCategories(storeSlug),
+          ]);
+          setProducts(productsRes.data.products);
+          setCategories(catsRes.data);
+        } catch(e) { setProducts([]); setCategories([]); }
+      } catch(e) { setStore(null); }
       setLoading(false);
     };
     load();
