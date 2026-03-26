@@ -23,9 +23,7 @@ export default function OwnerLogin() {
       
       // If platform admin logged in through owner login
       if (data.redirect === '/admin/dashboard') {
-        localStorage.setItem('user', JSON.stringify(data.owner));
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('role', 'platform_admin');
+        setAuth(data.owner, data.token, 'platform_admin');
         toast.success('Welcome, Super Admin!');
         window.location.href = '/admin/dashboard';
         return;
