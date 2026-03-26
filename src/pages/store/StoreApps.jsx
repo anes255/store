@@ -31,6 +31,10 @@ export default function StoreApps() {
   const [botMessages, setBotMessages] = useState([]);
   const [botInput, setBotInput] = useState('');
   const [botLoading, setBotLoading] = useState(false);
+  const botScrollRef = React.useRef(null);
+  
+  // Auto-scroll bot messages
+  React.useEffect(() => { if(botScrollRef.current) botScrollRef.current.scrollTop = botScrollRef.current.scrollHeight; }, [botMessages, botLoading]);
   
   // Fake detection test
   const [fakeForm, setFakeForm] = useState({customer_name:'Test Customer',customer_phone:'0555123456',total:'5000',payment_method:'cod'});
@@ -79,8 +83,12 @@ export default function StoreApps() {
     setBotMessages(p => [...p, { role: 'user', text: msg }]);
     setBotInput('');
     setBotLoading(true);
+    // Detect language
+    const hasArabic = /[\u0600-\u06FF]/.test(msg);
+    const hasFrench = /[àâéèêëïîôùûüÿçœæ]|(?:^|\s)(je|tu|il|nous|vous|bonjour|merci|comment)(?:\s|$)/i.test(msg);
+    const lang = hasArabic ? 'ar' : hasFrench ? 'fr' : 'en';
     try {
-      const { data } = await aiApi.testChat({ message: msg, store_name: currentStore?.name || 'Test Store', history: prev });
+      const { data } = await aiApi.testChat({ message: msg, store_name: currentStore?.name || 'Test Store', history: prev, language: lang });
       setBotMessages(p => [...p, { role: 'bot', text: data.response, model: data.model, debug: data.debug }]);
     } catch (e) {
       setBotMessages(p => [...p, { role: 'bot', text: 'Error: ' + (e.response?.data?.error || e.message), model: 'error' }]);
@@ -177,7 +185,7 @@ export default function StoreApps() {
                 <div className="flex items-center gap-3"><Bot size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">AI Chatbot Test</h3><p className="text-white/60 text-[10px]">Test your store's chatbot</p></div></div>
                 <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
+              <div ref={botScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
                 {botMessages.length === 0 && <p className="text-center text-gray-400 text-sm py-8">Try: "مرحبا" or "shipping" or "payment"</p>}
                 {botMessages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
