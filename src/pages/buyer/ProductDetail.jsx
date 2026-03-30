@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe } from 'lucide-react';
 
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
@@ -49,10 +49,21 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+      <header className="bg-white sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 text-gray-600"><ArrowLeft size={18}/><span className="font-semibold text-sm">Back</span></Link>
-          <span className="font-extrabold" style={{color:pc}}>{store.name}</span>
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
+            {store.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store.name?.[0]}</div>}
+            <span className="text-lg font-extrabold text-gray-900">{store.name}</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
+            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
+            <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
+              <ShoppingCart size={20}/>
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
+            </Link>
+          </div>
         </div>
       </header>
       <div className="max-w-6xl mx-auto px-4 py-8">
