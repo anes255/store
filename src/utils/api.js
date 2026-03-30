@@ -149,6 +149,7 @@ export const aiApi = {
   testChat: (data) => api.post('/ai/test-chat', data),
   generateDescription: (data) => api.post('/ai/generate-description', data),
   generateRecovery: (data) => api.post('/ai/generate-recovery', data),
+  testSend: (data) => api.post('/ai/test-send', data),
 };
 
 // Payments
