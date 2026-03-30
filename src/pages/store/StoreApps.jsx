@@ -5,7 +5,7 @@ import { ownerApi, aiApi } from '../../utils/api';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package } from 'lucide-react';
+import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone } from 'lucide-react';
 
 const allApps = [
   { slug:'abandoned-cart', icon:ShoppingCart, name:'Abandoned Cart Recovery', desc:'Track and recover abandoned carts with AI messages.', color:'bg-purple-50 text-purple-600', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
@@ -25,7 +25,7 @@ export default function StoreApps() {
   const [aiStatus, setAiStatus] = useState(null);
   
   // Test panels
-  const [testPanel, setTestPanel] = useState(null); // 'chatbot' | 'fake' | 'description' | 'recovery'
+  const [testPanel, setTestPanel] = useState(null); // 'chatbot' | 'fake' | 'description' | 'recovery' | 'whatsapp'
   
   // Chatbot test
   const [botMessages, setBotMessages] = useState([]);
@@ -50,6 +50,10 @@ export default function StoreApps() {
   const [recoveryItems, setRecoveryItems] = useState('Shoes, T-Shirt');
   const [recoveryResult, setRecoveryResult] = useState('');
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [waPhone, setWaPhone] = useState('');
+  const [waMessage, setWaMessage] = useState('Hello! This is a test message from your store.');
+  const [waSending, setWaSending] = useState(false);
+  const [waResult, setWaResult] = useState(null);
 
   useEffect(() => {
     if (!currentStore?.id) return;
@@ -124,6 +128,17 @@ export default function StoreApps() {
     setRecoveryLoading(false);
   };
 
+  const testWhatsApp = async () => {
+    if (!waPhone.trim()) return toast.error('Enter a phone number');
+    setWaSending(true); setWaResult(null);
+    try {
+      const { data } = await aiApi.testSend({ channel: 'WHATSAPP', phone: waPhone.trim(), message: waMessage });
+      setWaResult({ success: true, ...data });
+      toast.success('Message sent!');
+    } catch (e) { setWaResult({ success: false, error: e.response?.data?.error || e.message }); toast.error('Failed: ' + (e.response?.data?.error || e.message)); }
+    setWaSending(false);
+  };
+
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
@@ -147,6 +162,7 @@ export default function StoreApps() {
         <button onClick={() => setTestPanel('fake')} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-red-600"><Shield size={14}/>Test Fraud Detection</button>
         <button onClick={() => setTestPanel('description')} className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-purple-600"><Sparkles size={14}/>Test AI Descriptions</button>
         <button onClick={() => setTestPanel('recovery')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-600"><MessageCircle size={14}/>Test Cart Recovery</button>
+        <button onClick={() => setTestPanel('whatsapp')} className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700"><Smartphone size={14}/>Test WhatsApp</button>
       </div>
 
       {/* Apps Grid */}
@@ -260,6 +276,24 @@ export default function StoreApps() {
                   {recoveryLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <MessageCircle size={16}/>}Generate Recovery Message
                 </button>
                 {recoveryResult && <div className="p-4 bg-gray-50 rounded-xl"><p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{recoveryResult}</p><button onClick={() => {navigator.clipboard.writeText(recoveryResult);toast.success('Copied!');}} className="mt-3 text-xs text-brand-600 font-bold hover:underline">Copy to clipboard</button></div>}
+              </div>
+            </>}
+
+            {testPanel === 'whatsapp' && <>
+              <div className="p-4 bg-gradient-to-r from-green-600 to-green-700 flex items-center justify-between">
+                <div className="flex items-center gap-3"><Smartphone size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Test WhatsApp</h3><p className="text-white/60 text-[10px]">Send a test message to any number</p></div></div>
+                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
+              </div>
+              <div className="p-6 space-y-4 overflow-y-auto">
+                <div><label className="input-label text-xs">Phone Number (with country code)</label><input className="input-field" value={waPhone} onChange={e => setWaPhone(e.target.value)} placeholder="213555123456"/><p className="text-[10px] text-gray-400 mt-1">Format: country code + number, no spaces or +</p></div>
+                <div><label className="input-label text-xs">Message</label><textarea className="input-field" rows={3} value={waMessage} onChange={e => setWaMessage(e.target.value)}/></div>
+                <button onClick={testWhatsApp} disabled={waSending} className="btn-primary w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
+                  {waSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}Send WhatsApp Message
+                </button>
+                {waResult && <div className={`p-4 rounded-xl ${waResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                  {waResult.success ? <p className="text-sm text-emerald-700 font-medium">Message sent successfully!</p> : <p className="text-sm text-red-700 font-medium">Failed: {waResult.error}</p>}
+                </div>}
+                <div className="p-3 bg-amber-50 rounded-xl"><p className="text-[10px] text-amber-700">Make sure META_WHATSAPP_TOKEN and META_PHONE_NUMBER_ID are set in your Render environment variables. The recipient must have WhatsApp installed.</p></div>
               </div>
             </>}
 
