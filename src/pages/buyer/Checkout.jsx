@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
 
 export default function Checkout() {
   const { storeSlug } = useParams();
@@ -194,11 +194,18 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b sticky top-0 z-30">
+      <header className="bg-white shadow-sm sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 text-gray-600"><ArrowLeft size={18}/><span className="font-bold text-sm">Back</span></Link>
-          <div className="flex items-center gap-2"><ShoppingCart size={18} style={{color: pc}}/><span className="font-extrabold">{t('store.orderNow')}</span></div>
-          <div className="flex items-center gap-1 text-xs font-bold" style={{color: pc}}><Lock size={12}/>SECURE</div>
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
+            {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
+            <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
+            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
+            <div className="p-2 text-gray-500 relative"><ShoppingCart size={20} style={{color:pc}}/>{items.length>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{items.length}</span>}</div>
+          </div>
         </div>
       </header>
 
