@@ -7,7 +7,7 @@ import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Packa
 
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
-  const { addItem } = useCartStore();
+  const { addItem, getCount } = useCartStore();
   const { lang } = useLangStore();
   const [store, setStore] = useState(null);
   const [product, setProduct] = useState(null);
