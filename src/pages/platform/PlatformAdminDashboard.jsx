@@ -7,38 +7,42 @@ import toast from 'react-hot-toast';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
 function Sidebar({open,onClose}){
-  const loc=useLocation();const{logout}=useAuthStore();const nav=useNavigate();
+  const loc=useLocation();const{logout,user}=useAuthStore();const nav=useNavigate();
   const links=[
-    {path:'/admin/dashboard',icon:LayoutDashboard,label:'Overview',desc:'Platform stats'},
-    {path:'/admin/store-owners',icon:Users,label:'Store Owners',desc:'Manage users'},
-    {path:'/admin/stores',icon:Store,label:'All Stores',desc:'Manage stores'},
-    {path:'/admin/orders',icon:ShoppingCart,label:'All Orders',desc:'Platform orders'},
-    {path:'/admin/subscriptions',icon:CreditCard,label:'Subscriptions',desc:'Payments & plans'},
-    {path:'/admin/billing-config',icon:DollarSign,label:'Billing Config',desc:'Payment methods'},
-    {path:'/admin/site-settings',icon:Globe,label:'Site & Branding',desc:'Customize'},
-    {path:'/admin/page-builder',icon:Layers,label:'Page Builder',desc:'Edit landing page'},
-    {path:'/admin/system',icon:Server,label:'System',desc:'Health & services'},
+    {path:'/admin/dashboard',icon:LayoutDashboard,label:'Overview'},
+    {path:'/admin/store-owners',icon:Users,label:'Store Owners'},
+    {path:'/admin/stores',icon:Store,label:'All Stores'},
+    {path:'/admin/orders',icon:ShoppingCart,label:'All Orders'},
+    {path:'/admin/subscriptions',icon:CreditCard,label:'Subscriptions'},
+    {path:'/admin/billing-config',icon:DollarSign,label:'Billing Config'},
+    {path:'/admin/site-settings',icon:Globe,label:'Site & Branding'},
+    {path:'/admin/page-builder',icon:Layers,label:'Page Builder'},
+    {path:'/admin/system',icon:Server,label:'System Health'},
   ];
   return(<>
     {open&&<div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose}/>}
-    <aside className={`fixed top-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 min-h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${open?'translate-x-0':'-translate-x-full'}`}>
-      <div className="p-5 border-b border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/20"><Shield size={20} className="text-white"/></div>
-          <div><h3 className="text-white font-bold text-sm">Super Admin</h3><p className="text-white/30 text-[10px] uppercase tracking-wider">Control Panel</p></div>
+    <aside className={`fixed top-0 left-0 z-50 w-56 bg-white border-r border-gray-100 h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${open?'translate-x-0':'-translate-x-full'}`}>
+      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center"><Shield size={16} className="text-white"/></div>
+          <div><p className="font-bold text-sm text-gray-800">Super Admin</p><p className="text-[10px] text-gray-400">CONTROL PANEL</p></div>
         </div>
-        <button onClick={onClose} className="lg:hidden text-white/40 hover:text-white"><X size={18}/></button>
+        <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-600"><X size={18}/></button>
       </div>
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        <p className="px-3 pt-1 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main Menu</p>
         {links.map(l=>{const I=l.icon;const active=loc.pathname===l.path;return(
-          <Link key={l.path} to={l.path} onClick={onClose} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${active?'bg-white/10 text-white shadow-lg':'text-white/40 hover:text-white/70 hover:bg-white/5'}`}>
-            <I size={18}/><div><p className="font-medium">{l.label}</p>{active&&<p className="text-[10px] text-white/40">{l.desc}</p>}</div>
+          <Link key={l.path} to={l.path} onClick={onClose} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${active?'bg-red-50 text-red-600 font-bold':'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <I size={16} className={active?'text-red-500':'text-gray-400'}/><span>{l.label}</span>
           </Link>
         );})}
       </nav>
-      <div className="p-3 border-t border-white/5">
-        <div className="px-4 py-3 bg-white/5 rounded-xl mb-2"><p className="text-white/60 text-xs font-medium">Platform Admin</p><p className="text-white/30 text-[10px]">Full Access</p></div>
-        <button onClick={()=>{logout();nav('/admin/login');}} className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 hover:bg-red-500/10 rounded-xl text-sm"><LogOut size={16}/>Logout</button>
+      <div className="p-3 border-t border-gray-100">
+        <div className="flex items-center gap-2 bg-red-50 rounded-xl p-2.5 mb-2">
+          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div>
+          <div><p className="text-xs font-bold text-gray-800">{user?.name||'Admin'}</p><p className="text-[10px] text-gray-400">Super Admin</p></div>
+        </div>
+        <button onClick={()=>{logout();nav('/login');}} className="w-full flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-50 rounded-xl text-sm font-medium"><LogOut size={14}/>Logout</button>
       </div>
     </aside></>);
 }
@@ -479,13 +483,13 @@ export default function PlatformAdminDashboard(){
   return(
     <div className="flex min-h-screen bg-gray-50/80">
       <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)}/>
-      <main className="flex-1 lg:ml-64 min-w-0">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between">
+      <main className="flex-1 lg:ml-56 min-w-0">
+        <header className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={()=>setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl"><Menu size={20} className="text-gray-600"/></button>
-            <Shield size={16} className="text-red-500 hidden md:block"/><span className="text-sm font-bold text-gray-700">Platform Administration</span>
+            <span className="text-sm font-bold text-gray-700">Platform Administration</span>
           </div>
-          <div className="flex items-center gap-3"><span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>SUPER ADMIN</span></div>
+          <span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>SUPER ADMIN</span>
         </header>
         <div className="p-4 md:p-8">
           <Routes>
