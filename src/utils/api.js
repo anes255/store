@@ -19,12 +19,17 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only clear token if it's an auth endpoint that explicitly rejects the token
+    // Don't clear on random 401s from background API calls
     if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      const isAuthCheck = url.includes('/profile') || url.includes('/dashboard');
       const path = window.location.pathname;
-      if (!path.includes('/login') && !path.includes('/register')) {
+      if (isAuthCheck && !path.includes('/login') && !path.includes('/register')) {
         localStorage.removeItem('token');
-        if (path.startsWith('/admin')) window.location.href = '/admin/login';
-        else if (path.startsWith('/dashboard')) window.location.href = '/login';
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
