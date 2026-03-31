@@ -5,7 +5,7 @@ import { ownerApi, aiApi } from '../../utils/api';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone } from 'lucide-react';
+import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail } from 'lucide-react';
 
 const allApps = [
   { slug:'abandoned-cart', icon:ShoppingCart, name:'Abandoned Cart Recovery', desc:'Track and recover abandoned carts with AI messages.', color:'bg-purple-50 text-purple-600', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
@@ -54,6 +54,11 @@ export default function StoreApps() {
   const [waMessage, setWaMessage] = useState('Hello! This is a test message from your store.');
   const [waSending, setWaSending] = useState(false);
   const [waResult, setWaResult] = useState(null);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailSubject, setEmailSubject] = useState('Test from your store');
+  const [emailBody, setEmailBody] = useState('This is a test email from your store dashboard.');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState(null);
 
   useEffect(() => {
     if (!currentStore?.id) return;
@@ -143,6 +148,18 @@ export default function StoreApps() {
     setWaSending(false);
   };
 
+  const testEmail = async () => {
+    if (!emailTo.trim()) return toast.error('Enter an email address');
+    setEmailSending(true); setEmailResult(null);
+    try {
+      const { data } = await aiApi.testSend({ channel: 'EMAIL', email: emailTo.trim(), message: emailBody, subject: emailSubject });
+      const r = data.email || {};
+      if (r.success === false) { setEmailResult({ success: false, error: r.reason || 'Failed' }); }
+      else { setEmailResult({ success: true }); toast.success('Email sent!'); }
+    } catch (e) { setEmailResult({ success: false, error: e.response?.data?.error || e.message }); }
+    setEmailSending(false);
+  };
+
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
@@ -167,6 +184,7 @@ export default function StoreApps() {
         <button onClick={() => setTestPanel('description')} className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-purple-600"><Sparkles size={14}/>Test AI Descriptions</button>
         <button onClick={() => setTestPanel('recovery')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-600"><MessageCircle size={14}/>Test Cart Recovery</button>
         <button onClick={() => setTestPanel('whatsapp')} className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700"><Smartphone size={14}/>Test WhatsApp</button>
+        <button onClick={() => setTestPanel('email')} className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-600"><Mail size={14}/>Test Email</button>
       </div>
 
       {/* Apps Grid */}
@@ -299,6 +317,24 @@ export default function StoreApps() {
                     <p className="text-sm text-red-700 font-medium">{waResult.error}</p>
                     {waResult.sent_to && <p className="text-xs text-red-500 mt-1">Number sent to API: {waResult.sent_to}</p>}
                   </>}
+                </div>}
+              </div>
+            </>}
+
+            {testPanel === 'email' && <>
+              <div className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-between">
+                <div className="flex items-center gap-3"><Mail size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Test Email</h3><p className="text-white/60 text-[10px]">Send a test email</p></div></div>
+                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
+              </div>
+              <div className="p-6 space-y-4 overflow-y-auto">
+                <div><label className="input-label text-xs">Recipient Email</label><input type="email" className="input-field" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="recipient@example.com"/></div>
+                <div><label className="input-label text-xs">Subject</label><input className="input-field" value={emailSubject} onChange={e => setEmailSubject(e.target.value)}/></div>
+                <div><label className="input-label text-xs">Message</label><textarea className="input-field" rows={3} value={emailBody} onChange={e => setEmailBody(e.target.value)}/></div>
+                <button onClick={testEmail} disabled={emailSending} className="btn-primary w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600">
+                  {emailSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}Send Test Email
+                </button>
+                {emailResult && <div className={`p-4 rounded-xl ${emailResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                  {emailResult.success ? <p className="text-sm text-emerald-700 font-medium">Email sent!</p> : <p className="text-sm text-red-700 font-medium">{emailResult.error}</p>}
                 </div>}
               </div>
             </>}
