@@ -21,6 +21,7 @@ export default function Checkout() {
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '', shipping_zip: '',
     payment_method: 'cod', notes: '', coupon_code: '',
+    notification_preference: 'whatsapp',
   });
   const [couponDiscount, setCouponDiscount] = useState(0);
 
@@ -251,6 +252,22 @@ export default function Checkout() {
                       {selected && !pm.disabled && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
                     </label>
                   );
+                })}
+              </div>
+            </div>
+
+            {/* Notification Preference */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full text-xs font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>3</span>Order Updates</h3>
+              <p className="text-xs text-gray-400 mb-3">How would you like to receive order updates?</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[{key:'whatsapp',label:'WhatsApp',icon:'💬'},{key:'sms',label:'SMS',icon:'📱'},{key:'email',label:'Email',icon:'📧'}].map(ch=>{
+                  const selected=form.notification_preference===ch.key;
+                  return(<label key={ch.key} className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${selected?'border-current bg-opacity-10':'border-gray-200 hover:border-gray-300'}`} style={selected?{borderColor:pc,backgroundColor:pc+'10'}:{}}>
+                    <input type="radio" name="notif_pref" value={ch.key} checked={selected} onChange={()=>setForm({...form,notification_preference:ch.key})} className="sr-only"/>
+                    <span className="text-lg">{ch.icon}</span>
+                    <span className={`text-sm font-bold ${selected?'':'text-gray-600'}`} style={selected?{color:pc}:{}}>{ch.label}</span>
+                  </label>);
                 })}
               </div>
             </div>
