@@ -132,9 +132,13 @@ export default function StoreApps() {
     if (!waPhone.trim()) return toast.error('Enter a phone number');
     setWaSending(true); setWaResult(null);
     try {
-      const { data } = await aiApi.testSend({ channel: 'WHATSAPP', phone: waPhone.trim(), message: waMessage });
-      if(data.sent) { setWaResult({ success: true }); toast.success('Message sent!'); }
-      else { setWaResult({ success: false, error: data.error || 'Unknown error' }); }
+      const { data } = await aiApi.whatsappTest({ phone: waPhone.trim(), message: waMessage });
+      if(data.success) { setWaResult({ success: true, detail: `Sent to ${data.sent_to}` }); toast.success('Message sent!'); }
+      else { 
+        const err = data.raw_response?.error?.message || 'Unknown error';
+        const code = data.raw_response?.error?.code || '';
+        setWaResult({ success: false, error: `${err}${code ? ' (code '+code+')' : ''}`, sent_to: data.sent_to }); 
+      }
     } catch (e) { setWaResult({ success: false, error: e.response?.data?.error || e.message }); }
     setWaSending(false);
   };
@@ -291,7 +295,10 @@ export default function StoreApps() {
                   {waSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}Send WhatsApp Message
                 </button>
                 {waResult && <div className={`p-4 rounded-xl ${waResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                  {waResult.success ? <p className="text-sm text-emerald-700 font-medium">Message sent successfully!</p> : <p className="text-sm text-red-700 font-medium">{waResult.error}</p>}
+                  {waResult.success ? <p className="text-sm text-emerald-700 font-medium">Message sent! {waResult.detail}</p> : <>
+                    <p className="text-sm text-red-700 font-medium">{waResult.error}</p>
+                    {waResult.sent_to && <p className="text-xs text-red-500 mt-1">Number sent to API: {waResult.sent_to}</p>}
+                  </>}
                 </div>}
               </div>
             </>}
