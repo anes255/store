@@ -155,6 +155,8 @@ export const aiApi = {
   generateDescription: (data) => api.post('/ai/generate-description', data),
   generateRecovery: (data) => api.post('/ai/generate-recovery', data),
   testSend: (data) => api.post('/ai/test-send', data),
+  whatsappTest: (data) => api.post('/ai/whatsapp-test', data),
+  whatsappDebug: () => api.get('/ai/whatsapp-debug'),
 };
 
 // Payments
