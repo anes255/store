@@ -131,11 +131,15 @@ export default function StoreApps() {
   const testWhatsApp = async () => {
     if (!waPhone.trim()) return toast.error('Enter a phone number');
     setWaSending(true); setWaResult(null);
+    // Auto-add Algeria code
+    let phone = waPhone.replace(/\D/g, '');
+    if (phone.startsWith('0')) phone = phone.substring(1);
+    phone = '213' + phone;
     try {
-      const { data } = await aiApi.testSend({ channel: 'WHATSAPP', phone: waPhone.trim(), message: waMessage });
-      setWaResult({ success: true, ...data });
-      toast.success('Message sent!');
-    } catch (e) { setWaResult({ success: false, error: e.response?.data?.error || e.message }); toast.error('Failed: ' + (e.response?.data?.error || e.message)); }
+      const { data } = await aiApi.testSend({ channel: 'WHATSAPP', phone, message: waMessage });
+      if(data.sent) { setWaResult({ success: true }); toast.success('Message sent!'); }
+      else { setWaResult({ success: false, error: data.error || 'Unknown error' }); toast.error(data.error || 'Failed'); }
+    } catch (e) { setWaResult({ success: false, error: e.response?.data?.error || e.message }); toast.error(e.response?.data?.error || 'Failed'); }
     setWaSending(false);
   };
 
@@ -281,19 +285,18 @@ export default function StoreApps() {
 
             {testPanel === 'whatsapp' && <>
               <div className="p-4 bg-gradient-to-r from-green-600 to-green-700 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Smartphone size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Test WhatsApp</h3><p className="text-white/60 text-[10px]">Send a test message to any number</p></div></div>
+                <div className="flex items-center gap-3"><Smartphone size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Test WhatsApp</h3><p className="text-white/60 text-[10px]">Send a test message</p></div></div>
                 <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
               </div>
               <div className="p-6 space-y-4 overflow-y-auto">
-                <div><label className="input-label text-xs">Phone Number (with country code)</label><input className="input-field" value={waPhone} onChange={e => setWaPhone(e.target.value)} placeholder="213555123456"/><p className="text-[10px] text-gray-400 mt-1">Format: country code + number, no spaces or +</p></div>
+                <div><label className="input-label text-xs">Phone Number</label><div className="flex items-center gap-2"><span className="text-sm font-bold text-gray-400 shrink-0">+213</span><input className="input-field flex-1" value={waPhone} onChange={e => setWaPhone(e.target.value.replace(/\D/g,''))} placeholder="555123456"/></div></div>
                 <div><label className="input-label text-xs">Message</label><textarea className="input-field" rows={3} value={waMessage} onChange={e => setWaMessage(e.target.value)}/></div>
                 <button onClick={testWhatsApp} disabled={waSending} className="btn-primary w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
                   {waSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}Send WhatsApp Message
                 </button>
                 {waResult && <div className={`p-4 rounded-xl ${waResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                  {waResult.success ? <p className="text-sm text-emerald-700 font-medium">Message sent successfully!</p> : <p className="text-sm text-red-700 font-medium">Failed: {waResult.error}</p>}
+                  {waResult.success ? <p className="text-sm text-emerald-700 font-medium">Message sent successfully!</p> : <p className="text-sm text-red-700 font-medium">{waResult.error}</p>}
                 </div>}
-                <div className="p-3 bg-amber-50 rounded-xl"><p className="text-[10px] text-amber-700">Make sure META_WHATSAPP_TOKEN and META_PHONE_NUMBER_ID are set in your Render environment variables. The recipient must have WhatsApp installed.</p></div>
               </div>
             </>}
 
