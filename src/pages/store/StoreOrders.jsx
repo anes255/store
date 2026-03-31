@@ -225,12 +225,15 @@ export default function StoreOrders() {
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedOrder.status !== 'confirmed' && <button onClick={() => updateStatus(selectedOrder.id, 'confirmed')} className="flex-1 py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"><Check size={16}/>Confirm</button>}
-                    {selectedOrder.status !== 'preparing' && <button onClick={() => updateStatus(selectedOrder.id, 'preparing')} className="flex-1 py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600"><Package size={16}/>Preparing</button>}
-                    {selectedOrder.status !== 'shipped' && <button onClick={() => updateStatus(selectedOrder.id, 'shipped')} className="flex-1 py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600"><Truck size={16}/>Shipped</button>}
-                    {selectedOrder.status !== 'delivered' && <button onClick={() => updateStatus(selectedOrder.id, 'delivered')} className="flex-1 py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600"><Check size={16}/>Delivered</button>}
-                    <button onClick={() => updateStatus(selectedOrder.id, 'cancelled')} className="px-6 py-3 rounded-xl text-red-600 font-bold text-sm flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100"><Ban size={16}/>Cancel</button>
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-gray-400 uppercase">Update Status</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {selectedOrder.status !== 'confirmed' && <button onClick={() => updateStatus(selectedOrder.id, 'confirmed')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"><Check size={18}/>Confirm Order</button>}
+                      {selectedOrder.status !== 'preparing' && <button onClick={() => updateStatus(selectedOrder.id, 'preparing')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600"><Package size={18}/>Preparing</button>}
+                      {selectedOrder.status !== 'shipped' && <button onClick={() => updateStatus(selectedOrder.id, 'shipped')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600"><Truck size={18}/>Shipped</button>}
+                      {selectedOrder.status !== 'delivered' && <button onClick={() => updateStatus(selectedOrder.id, 'delivered')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600"><Check size={18}/>Delivered</button>}
+                    </div>
+                    <button onClick={() => updateStatus(selectedOrder.id, 'cancelled')} className="w-full py-3 rounded-xl text-red-600 font-bold text-sm flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200"><Ban size={16}/>Cancel Order</button>
                   </div>
                 )}
               </div>
