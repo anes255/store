@@ -6,13 +6,27 @@ function NotifBell(){
   const[unread,setUnread]=React.useState(0);
   const{currentStore}=useStoreManagement();
   const prevUnreadRef=React.useRef(0);
+  const swRef=React.useRef(null);
   
-  // Request browser notification permission on mount
+  // Register service worker + request permission on mount
   React.useEffect(()=>{
-    if('Notification' in window && Notification.permission==='default'){
-      Notification.requestPermission();
+    if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw-notif.js').then(reg=>{swRef.current=reg;}).catch(()=>{});
     }
   },[]);
+
+  const sendPush=(title,body)=>{
+    // Try service worker first (works in background)
+    if(swRef.current?.active){
+      swRef.current.active.postMessage({type:'SHOW_NOTIFICATION',title,body,icon:currentStore?.logo||'/favicon.ico',url:'/dashboard/orders'});
+      return;
+    }
+    // Fallback to basic Notification API
+    if('Notification' in window && Notification.permission==='granted'){
+      try{new Notification(title,{body,icon:'/favicon.ico'});}catch(e){}
+    }
+  };
 
   const load=React.useCallback(()=>{
     if(!currentStore?.id)return;
@@ -21,20 +35,10 @@ function NotifBell(){
         const newNotifs=r.data.notifications||[];
         const newUnread=r.data.unread||0;
         
-        // Browser push notification when new notifications arrive
-        if(newUnread>prevUnreadRef.current && prevUnreadRef.current>=0 && 'Notification' in window && Notification.permission==='granted'){
+        // Send push notification for NEW unread items
+        if(newUnread>prevUnreadRef.current && prevUnreadRef.current>=0){
           const latest=newNotifs.find(n=>!n.is_read);
-          if(latest){
-            try{
-              const n=new Notification(latest.title||'New Notification',{
-                body:latest.message||'',
-                icon:currentStore?.logo||'/favicon.ico',
-                tag:'notif-'+latest.id,
-              });
-              n.onclick=()=>{window.focus();n.close();};
-              setTimeout(()=>n.close(),5000);
-            }catch(e){}
-          }
+          if(latest) sendPush(latest.title||'New Notification', latest.message||'');
         }
         prevUnreadRef.current=newUnread;
         setNotifs(newNotifs);
