@@ -131,15 +131,11 @@ export default function StoreApps() {
   const testWhatsApp = async () => {
     if (!waPhone.trim()) return toast.error('Enter a phone number');
     setWaSending(true); setWaResult(null);
-    // Auto-add Algeria code
-    let phone = waPhone.replace(/\D/g, '');
-    if (phone.startsWith('0')) phone = phone.substring(1);
-    phone = '213' + phone;
     try {
-      const { data } = await aiApi.testSend({ channel: 'WHATSAPP', phone, message: waMessage });
+      const { data } = await aiApi.testSend({ channel: 'WHATSAPP', phone: waPhone.trim(), message: waMessage });
       if(data.sent) { setWaResult({ success: true }); toast.success('Message sent!'); }
-      else { setWaResult({ success: false, error: data.error || 'Unknown error' }); toast.error(data.error || 'Failed'); }
-    } catch (e) { setWaResult({ success: false, error: e.response?.data?.error || e.message }); toast.error(e.response?.data?.error || 'Failed'); }
+      else { setWaResult({ success: false, error: data.error || 'Unknown error' }); }
+    } catch (e) { setWaResult({ success: false, error: e.response?.data?.error || e.message }); }
     setWaSending(false);
   };
 
@@ -289,7 +285,7 @@ export default function StoreApps() {
                 <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
               </div>
               <div className="p-6 space-y-4 overflow-y-auto">
-                <div><label className="input-label text-xs">Phone Number</label><div className="flex items-center gap-2"><span className="text-sm font-bold text-gray-400 shrink-0">+213</span><input className="input-field flex-1" value={waPhone} onChange={e => setWaPhone(e.target.value.replace(/\D/g,''))} placeholder="555123456"/></div></div>
+                <div><label className="input-label text-xs">Phone Number</label><input className="input-field" value={waPhone} onChange={e => setWaPhone(e.target.value.replace(/[^\d]/g,''))} placeholder="0555123456 or 555123456"/></div>
                 <div><label className="input-label text-xs">Message</label><textarea className="input-field" rows={3} value={waMessage} onChange={e => setWaMessage(e.target.value)}/></div>
                 <button onClick={testWhatsApp} disabled={waSending} className="btn-primary w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
                   {waSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}Send WhatsApp Message
