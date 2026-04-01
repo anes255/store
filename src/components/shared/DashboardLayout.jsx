@@ -4,36 +4,41 @@ function NotifBell(){
   const[open,setOpen]=React.useState(false);
   const[notifs,setNotifs]=React.useState([]);
   const[unread,setUnread]=React.useState(0);
+  const[pushStatus,setPushStatus]=React.useState('unknown'); // 'unknown','denied','prompt','subscribed','unsupported'
   const{currentStore}=useStoreManagement();
   
-  // Subscribe to Web Push on mount
-  React.useEffect(()=>{
+  const setupPush=React.useCallback(async()=>{
     if(!currentStore?.id)return;
-    const setupPush=async()=>{
-      try{
-        if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
-        const perm=await Notification.requestPermission();
-        if(perm!=='granted')return;
-        const reg=await navigator.serviceWorker.register('/sw-notif.js');
-        await navigator.serviceWorker.ready;
-        // Get VAPID key from server
-        const{ownerApi}=await import('../../utils/api');
-        let vapidKey;
-        try{const r=await ownerApi.getVapidKey();vapidKey=r.data.publicKey;}catch{return;}
-        if(!vapidKey)return;
-        // Subscribe
-        let sub=await reg.pushManager.getSubscription();
-        if(!sub){
-          const key=Uint8Array.from(atob(vapidKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
-          sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
-        }
-        // Send subscription to server
-        await ownerApi.subscribePush({subscription:sub.toJSON(),storeId:currentStore.id});
-        console.log('[Push] Subscribed');
-      }catch(e){console.log('[Push] Setup error:',e.message);}
-    };
-    setupPush();
+    try{
+      if(!('serviceWorker' in navigator)||!('PushManager' in window)){setPushStatus('unsupported');return;}
+      const currentPerm=Notification.permission;
+      if(currentPerm==='denied'){setPushStatus('denied');return;}
+      if(currentPerm==='default'){setPushStatus('prompt');return;}
+      // Permission granted — register SW and subscribe
+      const reg=await navigator.serviceWorker.register('/sw-notif.js');
+      await navigator.serviceWorker.ready;
+      const{ownerApi}=await import('../../utils/api');
+      let vapidKey;
+      try{const r=await ownerApi.getVapidKey();vapidKey=r.data.publicKey;}catch(e){console.log('[Push] VAPID key error:',e.message);return;}
+      if(!vapidKey)return;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub){
+        const key=Uint8Array.from(atob(vapidKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+        sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      }
+      await ownerApi.subscribePush({subscription:sub.toJSON(),storeId:currentStore.id});
+      setPushStatus('subscribed');
+      console.log('[Push] Subscribed successfully');
+    }catch(e){console.log('[Push] Error:',e.message);setPushStatus('error');}
   },[currentStore?.id]);
+
+  const enablePush=async()=>{
+    const perm=await Notification.requestPermission();
+    if(perm==='granted')setupPush();
+    else setPushStatus('denied');
+  };
+
+  React.useEffect(()=>{setupPush();},[setupPush]);
 
   const load=React.useCallback(()=>{
     if(!currentStore?.id)return;
@@ -57,7 +62,9 @@ function NotifBell(){
   const timeAgo=(d)=>{const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';};
   const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
   
-  return(<div className="relative">
+  return(<div className="relative flex items-center gap-1">
+    {pushStatus==='prompt'&&<button onClick={enablePush} className="px-2 py-1 bg-brand-500 text-white text-[10px] font-bold rounded-lg animate-pulse hover:bg-brand-600">Enable Push</button>}
+    {pushStatus==='denied'&&<span className="text-[10px] text-red-400 font-bold hidden sm:block">Push blocked</span>}
     <button onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
     {open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
