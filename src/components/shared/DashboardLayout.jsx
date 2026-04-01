@@ -4,41 +4,37 @@ function NotifBell(){
   const[open,setOpen]=React.useState(false);
   const[notifs,setNotifs]=React.useState([]);
   const[unread,setUnread]=React.useState(0);
-  const[pushStatus,setPushStatus]=React.useState('unknown'); // 'unknown','denied','prompt','subscribed','unsupported'
+  const[pushOk,setPushOk]=React.useState(false);
   const{currentStore}=useStoreManagement();
-  
-  const setupPush=React.useCallback(async()=>{
-    if(!currentStore?.id)return;
+
+  const enablePush=async()=>{
     try{
-      if(!('serviceWorker' in navigator)||!('PushManager' in window)){setPushStatus('unsupported');return;}
-      const currentPerm=Notification.permission;
-      if(currentPerm==='denied'){setPushStatus('denied');return;}
-      if(currentPerm==='default'){setPushStatus('prompt');return;}
-      // Permission granted — register SW and subscribe
+      if(!('serviceWorker' in navigator)||!('PushManager' in window)){alert('Push notifications not supported on this browser');return;}
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted'){alert('Notifications blocked. Go to browser Settings → Site Settings → Notifications → Allow');return;}
       const reg=await navigator.serviceWorker.register('/sw-notif.js');
       await navigator.serviceWorker.ready;
       const{ownerApi}=await import('../../utils/api');
-      let vapidKey;
-      try{const r=await ownerApi.getVapidKey();vapidKey=r.data.publicKey;}catch(e){console.log('[Push] VAPID key error:',e.message);return;}
-      if(!vapidKey)return;
+      const{data}=await ownerApi.getVapidKey();
+      if(!data.publicKey){alert('Push not configured on server');return;}
       let sub=await reg.pushManager.getSubscription();
       if(!sub){
-        const key=Uint8Array.from(atob(vapidKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+        const raw=atob(data.publicKey.replace(/-/g,'+').replace(/_/g,'/'));
+        const key=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)key[i]=raw.charCodeAt(i);
         sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
       }
       await ownerApi.subscribePush({subscription:sub.toJSON(),storeId:currentStore.id});
-      setPushStatus('subscribed');
-      console.log('[Push] Subscribed successfully');
-    }catch(e){console.log('[Push] Error:',e.message);setPushStatus('error');}
-  },[currentStore?.id]);
-
-  const enablePush=async()=>{
-    const perm=await Notification.requestPermission();
-    if(perm==='granted')setupPush();
-    else setPushStatus('denied');
+      setPushOk(true);
+      alert('Push notifications enabled! You will receive alerts for new orders.');
+    }catch(e){alert('Push setup failed: '+e.message);}
   };
 
-  React.useEffect(()=>{setupPush();},[setupPush]);
+  // Check if already subscribed
+  React.useEffect(()=>{
+    if('serviceWorker' in navigator&&'PushManager' in window){
+      navigator.serviceWorker.ready.then(reg=>reg.pushManager.getSubscription()).then(sub=>{if(sub)setPushOk(true);}).catch(()=>{});
+    }
+  },[]);
 
   const load=React.useCallback(()=>{
     if(!currentStore?.id)return;
@@ -63,8 +59,7 @@ function NotifBell(){
   const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
   
   return(<div className="relative flex items-center gap-1">
-    {pushStatus==='prompt'&&<button onClick={enablePush} className="px-2 py-1 bg-brand-500 text-white text-[10px] font-bold rounded-lg animate-pulse hover:bg-brand-600">Enable Push</button>}
-    {pushStatus==='denied'&&<span className="text-[10px] text-red-400 font-bold hidden sm:block">Push blocked</span>}
+    {!pushOk&&<button onClick={enablePush} className="px-2 py-1 bg-brand-500 text-white text-[10px] font-bold rounded-lg animate-pulse hover:bg-brand-600">🔔 Enable</button>}
     <button onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
     {open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
