@@ -236,6 +236,25 @@ export default function StoreOrders() {
                     <button onClick={() => updateStatus(selectedOrder.id, 'cancelled')} className="w-full py-3 rounded-xl text-red-600 font-bold text-sm flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200"><Ban size={16}/>Cancel Order</button>
                   </div>
                 )}
+
+                {/* Send Email */}
+                <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                  <p className="text-xs font-bold text-blue-600 mb-2">Send Email Update</p>
+                  {selectedOrder.customer_email ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 flex-1 truncate">{selectedOrder.customer_email}</span>
+                      <button onClick={async()=>{try{const{data}=await orderApi.sendOrderEmail(currentStore.id,selectedOrder.id,{});if(data.success)toast.success('Email sent!');else toast.error(data.reason||'Failed');}catch(e){toast.error(e.response?.data?.error||'Failed');}}} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 flex items-center gap-1"><Mail size={12}/>Send</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2">No email on this order. Enter one manually:</p>
+                      <div className="flex gap-2">
+                        <input id="manual-email" type="email" className="input-field flex-1 !py-2 text-sm" placeholder="customer@email.com"/>
+                        <button onClick={async()=>{const email=document.getElementById('manual-email')?.value;if(!email)return toast.error('Enter email');try{const{data}=await orderApi.sendOrderEmail(currentStore.id,selectedOrder.id,{email});if(data.success)toast.success('Email sent!');else toast.error(data.reason||'Failed');}catch(e){toast.error(e.response?.data?.error||'Failed');}}} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 shrink-0 flex items-center gap-1"><Mail size={12}/>Send</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
