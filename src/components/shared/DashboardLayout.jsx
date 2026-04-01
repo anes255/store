@@ -5,44 +5,42 @@ function NotifBell(){
   const[notifs,setNotifs]=React.useState([]);
   const[unread,setUnread]=React.useState(0);
   const{currentStore}=useStoreManagement();
-  const prevUnreadRef=React.useRef(0);
-  const swRef=React.useRef(null);
   
-  // Register service worker + request permission on mount
+  // Subscribe to Web Push on mount
   React.useEffect(()=>{
-    if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw-notif.js').then(reg=>{swRef.current=reg;}).catch(()=>{});
-    }
-  },[]);
-
-  const sendPush=(title,body)=>{
-    // Try service worker first (works in background)
-    if(swRef.current?.active){
-      swRef.current.active.postMessage({type:'SHOW_NOTIFICATION',title,body,icon:currentStore?.logo||'/favicon.ico',url:'/dashboard/orders'});
-      return;
-    }
-    // Fallback to basic Notification API
-    if('Notification' in window && Notification.permission==='granted'){
-      try{new Notification(title,{body,icon:'/favicon.ico'});}catch(e){}
-    }
-  };
+    if(!currentStore?.id)return;
+    const setupPush=async()=>{
+      try{
+        if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+        const perm=await Notification.requestPermission();
+        if(perm!=='granted')return;
+        const reg=await navigator.serviceWorker.register('/sw-notif.js');
+        await navigator.serviceWorker.ready;
+        // Get VAPID key from server
+        const{ownerApi}=await import('../../utils/api');
+        let vapidKey;
+        try{const r=await ownerApi.getVapidKey();vapidKey=r.data.publicKey;}catch{return;}
+        if(!vapidKey)return;
+        // Subscribe
+        let sub=await reg.pushManager.getSubscription();
+        if(!sub){
+          const key=Uint8Array.from(atob(vapidKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+          sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+        }
+        // Send subscription to server
+        await ownerApi.subscribePush({subscription:sub.toJSON(),storeId:currentStore.id});
+        console.log('[Push] Subscribed');
+      }catch(e){console.log('[Push] Setup error:',e.message);}
+    };
+    setupPush();
+  },[currentStore?.id]);
 
   const load=React.useCallback(()=>{
     if(!currentStore?.id)return;
     import('../../utils/api').then(({ownerApi})=>{
       ownerApi.getNotifications(currentStore.id).then(r=>{
-        const newNotifs=r.data.notifications||[];
-        const newUnread=r.data.unread||0;
-        
-        // Send push notification for NEW unread items
-        if(newUnread>prevUnreadRef.current && prevUnreadRef.current>=0){
-          const latest=newNotifs.find(n=>!n.is_read);
-          if(latest) sendPush(latest.title||'New Notification', latest.message||'');
-        }
-        prevUnreadRef.current=newUnread;
-        setNotifs(newNotifs);
-        setUnread(newUnread);
+        setNotifs(r.data.notifications||[]);
+        setUnread(r.data.unread||0);
       }).catch(()=>{});
     });
   },[currentStore?.id]);
