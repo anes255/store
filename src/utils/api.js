@@ -130,6 +130,9 @@ export const orderApi = {
   saveFaqs: (storeId, faqs) => api.put(`/manage/stores/${storeId}/faqs`, { faqs }),
   // Stock
   updateStock: (storeId, productId, data) => api.patch(`/manage/stores/${storeId}/products/${productId}/stock`, data),
+  // Email
+  emailDebug: (storeId, orderId) => api.get(`/manage/stores/${storeId}/orders/${orderId}/email-debug`),
+  sendOrderEmail: (storeId, orderId, data) => api.post(`/manage/stores/${storeId}/orders/${orderId}/send-email`, data),
 };
 
 // Public storefront
