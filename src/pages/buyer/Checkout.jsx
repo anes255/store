@@ -56,7 +56,7 @@ export default function Checkout() {
   };
 
   const placeOrder = async () => {
-    if (!form.customer_name || !form.customer_phone || !form.shipping_address || !form.shipping_wilaya) return toast.error('Please fill all required fields');
+    if (!form.customer_name || !form.customer_phone || !form.customer_email || !form.shipping_address || !form.shipping_wilaya) return toast.error('Please fill all required fields including email');
     setLoading(true);
     try {
       const { data } = await storeApi.placeOrder(storeSlug, { ...form, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
@@ -221,7 +221,7 @@ export default function Checkout() {
                   <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
                   <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/></div>
                 </div>
-                <div><label className="input-label">{t('auth.email')}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')}/></div>
+                <div><label className="input-label">{t('auth.email')} *</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required/></div>
                 <div><label className="input-label">{t('auth.address')} *</label><input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
                 <div className="grid grid-cols-3 gap-4">
                   <div><label className="input-label">{t('auth.city')}</label><input className="input-field" value={form.shipping_city} onChange={set('shipping_city')}/></div>
