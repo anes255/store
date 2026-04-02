@@ -47,18 +47,19 @@ function WhatsAppQR({ storeId }) {
     setLoading(true); setConnectError(null);
     try { 
       await aiApi.waQrStart(storeId);
-      // Wait up to 20 seconds for QR, polling handles it
+      // Wait up to 30 seconds for QR — Baileys takes time to connect
       let found = false;
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 2000));
         try {
           const { data } = await aiApi.waQrStatus(storeId);
           setStatus(data);
           if (data.qr || data.connected) { found = true; break; }
-          if (data.status === 'disconnected') { setConnectError('Connection failed. WhatsApp servers may be unreachable from the server. Check Render logs.'); break; }
+          // Only show error if logged_out (not just disconnected — that's normal during startup)
+          if (data.status === 'logged_out') { setConnectError('Session was logged out. Try again.'); break; }
         } catch {}
       }
-      if (!found && !connectError) setConnectError('QR code took too long. The server might not be able to reach web.whatsapp.com. Try again or check Render logs.');
+      if (!found && !connectError) setConnectError('QR is taking a while. Click Generate QR Code again — it may need a second attempt.');
     } catch (e) { setConnectError(e.response?.data?.error || e.message); }
     setLoading(false);
   };
