@@ -46,20 +46,20 @@ function WhatsAppQR({ storeId }) {
   const startConnection = async () => {
     setLoading(true); setConnectError(null);
     try { 
-      await aiApi.waQrStart(storeId);
-      // Wait up to 30 seconds for QR — Baileys takes time to connect
-      let found = false;
-      for (let i = 0; i < 15; i++) {
+      const { data } = await aiApi.waQrStart(storeId);
+      // Start response may already contain QR
+      if (data.qr || data.connected) { setStatus(data); setLoading(false); return; }
+      // Otherwise poll for a bit more
+      for (let i = 0; i < 10; i++) {
         await new Promise(r => setTimeout(r, 2000));
         try {
-          const { data } = await aiApi.waQrStatus(storeId);
-          setStatus(data);
-          if (data.qr || data.connected) { found = true; break; }
-          // Only show error if logged_out (not just disconnected — that's normal during startup)
-          if (data.status === 'logged_out') { setConnectError('Session was logged out. Try again.'); break; }
+          const { data: s } = await aiApi.waQrStatus(storeId);
+          setStatus(s);
+          if (s.qr || s.connected) { setLoading(false); return; }
         } catch {}
       }
-      if (!found && !connectError) setConnectError('QR is taking a while. Click Generate QR Code again — it may need a second attempt.');
+      setConnectError('QR is taking a while. Click Generate QR Code again.');
+    } catch (e) { setConnectError(e.response?.data?.error || e.message); }
     } catch (e) { setConnectError(e.response?.data?.error || e.message); }
     setLoading(false);
   };
