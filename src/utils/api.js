@@ -164,6 +164,11 @@ export const aiApi = {
   testSend: (data) => api.post('/ai/test-send', data),
   whatsappTest: (data) => api.post('/ai/whatsapp-test', data),
   whatsappDebug: () => api.get('/ai/whatsapp-debug'),
+  // WhatsApp QR (Baileys)
+  waQrStart: (storeId) => api.post('/ai/whatsapp-qr/start', { storeId }),
+  waQrStatus: (storeId) => api.get(`/ai/whatsapp-qr/status/${storeId}`),
+  waQrDisconnect: (storeId) => api.post('/ai/whatsapp-qr/disconnect', { storeId }),
+  waQrSend: (data) => api.post('/ai/whatsapp-qr/send', data),
 };
 
 // Payments
