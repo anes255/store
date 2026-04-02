@@ -10,104 +10,164 @@ import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, 
 function WhatsAppQR({ storeId }) {
   const [status, setStatus] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
+  const [tab, setTab] = React.useState('connection'); // connection, templates, log
   const [testPhone, setTestPhone] = React.useState('');
   const [testMsg, setTestMsg] = React.useState('Hello! This is a test from your store.');
   const [sendResult, setSendResult] = React.useState(null);
   const [sending, setSending] = React.useState(false);
+  const [log, setLog] = React.useState({ messages: [], stats: { total: '0', sent: '0', failed: '0' } });
+  const [templates, setTemplates] = React.useState({
+    confirmed: 'Your order {order} from {store} has been confirmed! Total: {total} DZD',
+    preparing: 'Your order {order} from {store} is being prepared!',
+    shipped: 'Your order {order} from {store} has been shipped! You will receive it soon.',
+    delivered: 'Your order {order} from {store} has been delivered! Thank you for shopping with us.',
+    cancelled: 'Your order {order} from {store} has been cancelled.',
+  });
 
   const checkStatus = async () => {
     if (!storeId) return;
-    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); } catch (e) { setStatus({ status: 'not_started', connected: false }); }
+    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); } catch { setStatus({ status: 'not_started', connected: false }); }
   };
 
-  React.useEffect(() => { checkStatus(); const i = setInterval(checkStatus, 3000); return () => clearInterval(i); }, [storeId]);
+  const loadLog = async () => {
+    if (!storeId) return;
+    try { const { data } = await aiApi.waQrLog(storeId); setLog(data); } catch {}
+  };
+
+  React.useEffect(() => {
+    checkStatus();
+    const i = setInterval(checkStatus, 3000);
+    return () => clearInterval(i);
+  }, [storeId]);
+
+  React.useEffect(() => { if (tab === 'log') loadLog(); }, [tab]);
 
   const startConnection = async () => {
     setLoading(true);
-    try {
-      await aiApi.waQrStart(storeId);
-      // Poll for QR
-      for (let i = 0; i < 10; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        const { data } = await aiApi.waQrStatus(storeId);
-        setStatus(data);
-        if (data.qr || data.connected) break;
-      }
-    } catch (e) { console.log('Start error:', e); }
-    setLoading(false);
+    try { await aiApi.waQrStart(storeId); } catch {}
+    // Polling will pick up the QR automatically
+    setTimeout(() => setLoading(false), 8000);
   };
 
   const disconnect = async () => {
-    try { await aiApi.waQrDisconnect(storeId); setStatus({ status: 'disconnected', connected: false }); } catch (e) {}
+    try { await aiApi.waQrDisconnect(storeId); setStatus({ status: 'disconnected', connected: false }); } catch {}
   };
 
   const testSend = async () => {
     if (!testPhone) return;
     setSending(true); setSendResult(null);
     try {
-      const { data } = await aiApi.waQrSend({ storeId, phone: testPhone, message: testMsg });
+      await aiApi.waQrSend({ storeId, phone: testPhone, message: testMsg });
       setSendResult({ success: true });
     } catch (e) { setSendResult({ success: false, error: e.response?.data?.reason || e.response?.data?.error || e.message }); }
     setSending(false);
   };
 
-  if (!status) return <div className="text-center py-8"><div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"/><p className="text-xs text-gray-400 mt-2">Checking status...</p></div>;
+  const rate = log.stats.total > 0 ? Math.round((parseInt(log.stats.sent) / parseInt(log.stats.total)) * 100) : 0;
 
   return (
     <div className="space-y-4">
-      {/* Status */}
-      <div className={`flex items-center gap-3 p-4 rounded-xl ${status.connected ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
-        {status.connected ? <Wifi size={20} className="text-emerald-500"/> : <WifiOff size={20} className="text-gray-400"/>}
-        <div className="flex-1">
-          <p className={`font-bold text-sm ${status.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status.connected ? 'Connected' : 'Not Connected'}</p>
-          {status.connected && <p className="text-xs text-emerald-600">+{status.phone} {status.name ? `(${status.name})` : ''}</p>}
-        </div>
-        {status.connected && <button onClick={disconnect} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center gap-1"><LogOut size={12}/>Disconnect</button>}
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+        {[{k:'connection',l:'Connection'},{k:'templates',l:'Templates'},{k:'log',l:'Message Log'}].map(t=>(
+          <button key={t.k} onClick={()=>setTab(t.k)} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tab===t.k?'bg-white text-gray-900 shadow-sm':'text-gray-500 hover:text-gray-700'}`}>{t.l}</button>
+        ))}
       </div>
 
-      {/* QR Code */}
-      {!status.connected && (
-        <>
-          {status.qr ? (
-            <div className="text-center">
-              <p className="text-sm font-bold text-gray-700 mb-3">Scan this QR code with WhatsApp</p>
-              <div className="inline-block p-3 bg-white rounded-2xl shadow-lg border">
-                <img src={status.qr} alt="QR Code" className="w-64 h-64"/>
-              </div>
-              <p className="text-xs text-gray-400 mt-3">Open WhatsApp → Settings → Linked Devices → Link a Device</p>
-              <button onClick={startConnection} className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-3"><QrCode size={28} className="text-green-500"/></div>
-              <p className="text-sm text-gray-600 mb-1">Connect your WhatsApp</p>
-              <p className="text-xs text-gray-400 mb-4">Scan a QR code to send messages from your number</p>
-              <button onClick={startConnection} disabled={loading} className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto">
-                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <QrCode size={16}/>}
-                {loading ? 'Generating QR...' : 'Generate QR Code'}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Test Send (only when connected) */}
-      {status.connected && (
-        <div className="border-t pt-4 space-y-3">
-          <p className="text-xs font-bold text-gray-400 uppercase">Test Message</p>
-          <input className="input-field" value={testPhone} onChange={e => setTestPhone(e.target.value.replace(/[^\d]/g, ''))} placeholder="0555123456"/>
-          <textarea className="input-field" rows={2} value={testMsg} onChange={e => setTestMsg(e.target.value)}/>
-          <button onClick={testSend} disabled={sending} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2">
-            {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={14}/>}Send Test
-          </button>
-          {sendResult && <div className={`p-3 rounded-xl ${sendResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
-            <p className={`text-sm font-medium ${sendResult.success ? 'text-emerald-700' : 'text-red-700'}`}>{sendResult.success ? 'Message sent!' : sendResult.error}</p>
-          </div>}
+      {/* Connection Tab */}
+      {tab === 'connection' && <>
+        <div className={`flex items-center gap-3 p-4 rounded-xl ${status?.connected ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
+          {status?.connected ? <Wifi size={20} className="text-emerald-500"/> : <WifiOff size={20} className="text-gray-400"/>}
+          <div className="flex-1">
+            <p className={`font-bold text-sm ${status?.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status?.connected ? 'Connected' : status?.status === 'waiting_qr' ? 'Waiting for scan...' : 'Not Connected'}</p>
+            {status?.connected && <p className="text-xs text-emerald-600">+{status.phone} {status.name ? `(${status.name})` : ''}</p>}
+          </div>
+          {status?.connected && <button onClick={disconnect} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center gap-1"><LogOut size={12}/>Disconnect</button>}
         </div>
-      )}
+
+        {!status?.connected && (
+          <>
+            {status?.qr ? (
+              <div className="text-center">
+                <p className="text-sm font-bold text-gray-700 mb-3">Scan with WhatsApp</p>
+                <div className="inline-block p-3 bg-white rounded-2xl shadow-lg border"><img src={status.qr} alt="QR" className="w-56 h-56"/></div>
+                <p className="text-xs text-gray-400 mt-3">WhatsApp → Settings → Linked Devices → Link a Device</p>
+                <button onClick={startConnection} className="mt-3 text-xs text-green-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><QrCode size={32} className="text-green-500"/></div>
+                <p className="text-sm font-bold text-gray-700 mb-1">Connect your WhatsApp</p>
+                <p className="text-xs text-gray-400 mb-5">Scan a QR code to send order updates from your number</p>
+                <button onClick={startConnection} disabled={loading} className="px-8 py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto">
+                  {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting...</> : <><QrCode size={16}/>Generate QR Code</>}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {status?.connected && (
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-xs font-bold text-gray-400 uppercase">Send Test Message</p>
+            <input className="input-field" value={testPhone} onChange={e => setTestPhone(e.target.value.replace(/[^\d]/g, ''))} placeholder="0555123456"/>
+            <textarea className="input-field" rows={2} value={testMsg} onChange={e => setTestMsg(e.target.value)}/>
+            <button onClick={testSend} disabled={sending} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2">
+              {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={14}/>}Send Test
+            </button>
+            {sendResult && <div className={`p-3 rounded-xl ${sendResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
+              <p className={`text-sm font-medium ${sendResult.success ? 'text-emerald-700' : 'text-red-700'}`}>{sendResult.success ? 'Message sent!' : sendResult.error}</p>
+            </div>}
+          </div>
+        )}
+      </>}
+
+      {/* Templates Tab */}
+      {tab === 'templates' && <>
+        <p className="text-xs text-gray-500">Customize the messages sent to customers. Use <span className="font-mono bg-gray-100 px-1 rounded">{'{order}'}</span> <span className="font-mono bg-gray-100 px-1 rounded">{'{store}'}</span> <span className="font-mono bg-gray-100 px-1 rounded">{'{total}'}</span> as placeholders.</p>
+        {Object.entries(templates).map(([key, val]) => (
+          <div key={key}>
+            <label className="input-label text-xs capitalize flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${key==='confirmed'?'bg-blue-500':key==='preparing'?'bg-purple-500':key==='shipped'?'bg-cyan-500':key==='delivered'?'bg-emerald-500':'bg-red-500'}`}/>
+              {key}
+            </label>
+            <textarea className="input-field text-sm" rows={2} value={val} onChange={e => setTemplates({...templates, [key]: e.target.value})}/>
+          </div>
+        ))}
+        <button className="w-full py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700" onClick={() => { localStorage.setItem('wa_templates_'+storeId, JSON.stringify(templates)); toast.success('Templates saved!'); }}>Save Templates</button>
+      </>}
+
+      {/* Log Tab */}
+      {tab === 'log' && <>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-gray-50 rounded-xl p-3 text-center"><p className="text-2xl font-black text-gray-800">{log.stats.total}</p><p className="text-[10px] text-gray-400 font-bold">TOTAL</p></div>
+          <div className="bg-emerald-50 rounded-xl p-3 text-center"><p className="text-2xl font-black text-emerald-600">{log.stats.sent}</p><p className="text-[10px] text-emerald-500 font-bold">SENT</p></div>
+          <div className="bg-red-50 rounded-xl p-3 text-center"><p className="text-2xl font-black text-red-600">{log.stats.failed}</p><p className="text-[10px] text-red-500 font-bold">FAILED</p></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-gray-200 rounded-full h-2"><div className="bg-emerald-500 h-2 rounded-full" style={{width:`${rate}%`}}/></div>
+          <span className="text-xs font-bold text-gray-500">{rate}% success</span>
+        </div>
+        <button onClick={loadLog} className="text-xs text-green-600 font-bold hover:underline flex items-center gap-1"><RefreshCw size={12}/>Refresh</button>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {log.messages.length === 0 && <p className="text-xs text-gray-400 text-center py-4">No messages sent yet</p>}
+          {log.messages.map((m, i) => (
+            <div key={i} className={`p-3 rounded-xl text-xs ${m.status === 'sent' ? 'bg-emerald-50' : 'bg-red-50'}`}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-gray-700">{m.recipient}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${m.status === 'sent' ? 'bg-emerald-200 text-emerald-700' : 'bg-red-200 text-red-700'}`}>{m.status.toUpperCase()}</span>
+              </div>
+              <p className="text-gray-500 truncate">{m.message}</p>
+              {m.error && <p className="text-red-500 mt-1">{m.error}</p>}
+              <p className="text-gray-300 mt-1">{new Date(m.created_at).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+      </>}
     </div>
   );
 }
+
 
 const allApps = [
   { slug:'abandoned-cart', icon:ShoppingCart, name:'Abandoned Cart Recovery', desc:'Track and recover abandoned carts with AI messages.', color:'bg-purple-50 text-purple-600', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
