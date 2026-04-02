@@ -169,6 +169,7 @@ export const aiApi = {
   waQrStatus: (storeId) => api.get(`/ai/whatsapp-qr/status/${storeId}`),
   waQrDisconnect: (storeId) => api.post('/ai/whatsapp-qr/disconnect', { storeId }),
   waQrSend: (data) => api.post('/ai/whatsapp-qr/send', data),
+  waQrLog: (storeId) => api.get(`/ai/whatsapp-qr/log/${storeId}`),
 };
 
 // Payments
