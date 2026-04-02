@@ -10,6 +10,7 @@ import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, 
 function WhatsAppQR({ storeId }) {
   const [status, setStatus] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
+  const [connectError, setConnectError] = React.useState(null);
   const [tab, setTab] = React.useState('connection'); // connection, templates, log
   const [testPhone, setTestPhone] = React.useState('');
   const [testMsg, setTestMsg] = React.useState('Hello! This is a test from your store.');
@@ -26,7 +27,7 @@ function WhatsAppQR({ storeId }) {
 
   const checkStatus = async () => {
     if (!storeId) return;
-    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); } catch { setStatus({ status: 'not_started', connected: false }); }
+    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); if(data.qr || data.connected) setLoading(false); } catch { setStatus({ status: 'not_started', connected: false }); }
   };
 
   const loadLog = async () => {
@@ -36,17 +37,30 @@ function WhatsAppQR({ storeId }) {
 
   React.useEffect(() => {
     checkStatus();
-    const i = setInterval(checkStatus, 3000);
+    const i = setInterval(checkStatus, 2000);
     return () => clearInterval(i);
   }, [storeId]);
 
   React.useEffect(() => { if (tab === 'log') loadLog(); }, [tab]);
 
   const startConnection = async () => {
-    setLoading(true);
-    try { await aiApi.waQrStart(storeId); } catch {}
-    // Polling will pick up the QR automatically
-    setTimeout(() => setLoading(false), 8000);
+    setLoading(true); setConnectError(null);
+    try { 
+      await aiApi.waQrStart(storeId);
+      // Wait up to 20 seconds for QR, polling handles it
+      let found = false;
+      for (let i = 0; i < 10; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const { data } = await aiApi.waQrStatus(storeId);
+          setStatus(data);
+          if (data.qr || data.connected) { found = true; break; }
+          if (data.status === 'disconnected') { setConnectError('Connection failed. WhatsApp servers may be unreachable from the server. Check Render logs.'); break; }
+        } catch {}
+      }
+      if (!found && !connectError) setConnectError('QR code took too long. The server might not be able to reach web.whatsapp.com. Try again or check Render logs.');
+    } catch (e) { setConnectError(e.response?.data?.error || e.message); }
+    setLoading(false);
   };
 
   const disconnect = async () => {
@@ -101,6 +115,8 @@ function WhatsAppQR({ storeId }) {
                 <p className="text-xs text-gray-400 mb-5">Scan a QR code to send order updates from your number</p>
                 <button onClick={startConnection} disabled={loading} className="px-8 py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto">
                   {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting...</> : <><QrCode size={16}/>Generate QR Code</>}
+                </button>
+                {connectError && <div className="mt-4 p-3 bg-red-50 rounded-xl"><p className="text-xs text-red-600 font-medium">{connectError}</p></div>}
                 </button>
               </div>
             )}
