@@ -5,7 +5,109 @@ import { ownerApi, aiApi } from '../../utils/api';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail } from 'lucide-react';
+import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut } from 'lucide-react';
+
+function WhatsAppQR({ storeId }) {
+  const [status, setStatus] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [testPhone, setTestPhone] = React.useState('');
+  const [testMsg, setTestMsg] = React.useState('Hello! This is a test from your store.');
+  const [sendResult, setSendResult] = React.useState(null);
+  const [sending, setSending] = React.useState(false);
+
+  const checkStatus = async () => {
+    if (!storeId) return;
+    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); } catch (e) { setStatus({ status: 'not_started', connected: false }); }
+  };
+
+  React.useEffect(() => { checkStatus(); const i = setInterval(checkStatus, 3000); return () => clearInterval(i); }, [storeId]);
+
+  const startConnection = async () => {
+    setLoading(true);
+    try {
+      await aiApi.waQrStart(storeId);
+      // Poll for QR
+      for (let i = 0; i < 10; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const { data } = await aiApi.waQrStatus(storeId);
+        setStatus(data);
+        if (data.qr || data.connected) break;
+      }
+    } catch (e) { console.log('Start error:', e); }
+    setLoading(false);
+  };
+
+  const disconnect = async () => {
+    try { await aiApi.waQrDisconnect(storeId); setStatus({ status: 'disconnected', connected: false }); } catch (e) {}
+  };
+
+  const testSend = async () => {
+    if (!testPhone) return;
+    setSending(true); setSendResult(null);
+    try {
+      const { data } = await aiApi.waQrSend({ storeId, phone: testPhone, message: testMsg });
+      setSendResult({ success: true });
+    } catch (e) { setSendResult({ success: false, error: e.response?.data?.reason || e.response?.data?.error || e.message }); }
+    setSending(false);
+  };
+
+  if (!status) return <div className="text-center py-8"><div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"/><p className="text-xs text-gray-400 mt-2">Checking status...</p></div>;
+
+  return (
+    <div className="space-y-4">
+      {/* Status */}
+      <div className={`flex items-center gap-3 p-4 rounded-xl ${status.connected ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
+        {status.connected ? <Wifi size={20} className="text-emerald-500"/> : <WifiOff size={20} className="text-gray-400"/>}
+        <div className="flex-1">
+          <p className={`font-bold text-sm ${status.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status.connected ? 'Connected' : 'Not Connected'}</p>
+          {status.connected && <p className="text-xs text-emerald-600">+{status.phone} {status.name ? `(${status.name})` : ''}</p>}
+        </div>
+        {status.connected && <button onClick={disconnect} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center gap-1"><LogOut size={12}/>Disconnect</button>}
+      </div>
+
+      {/* QR Code */}
+      {!status.connected && (
+        <>
+          {status.qr ? (
+            <div className="text-center">
+              <p className="text-sm font-bold text-gray-700 mb-3">Scan this QR code with WhatsApp</p>
+              <div className="inline-block p-3 bg-white rounded-2xl shadow-lg border">
+                <img src={status.qr} alt="QR Code" className="w-64 h-64"/>
+              </div>
+              <p className="text-xs text-gray-400 mt-3">Open WhatsApp → Settings → Linked Devices → Link a Device</p>
+              <button onClick={startConnection} className="mt-3 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-3"><QrCode size={28} className="text-green-500"/></div>
+              <p className="text-sm text-gray-600 mb-1">Connect your WhatsApp</p>
+              <p className="text-xs text-gray-400 mb-4">Scan a QR code to send messages from your number</p>
+              <button onClick={startConnection} disabled={loading} className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto">
+                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <QrCode size={16}/>}
+                {loading ? 'Generating QR...' : 'Generate QR Code'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Test Send (only when connected) */}
+      {status.connected && (
+        <div className="border-t pt-4 space-y-3">
+          <p className="text-xs font-bold text-gray-400 uppercase">Test Message</p>
+          <input className="input-field" value={testPhone} onChange={e => setTestPhone(e.target.value.replace(/[^\d]/g, ''))} placeholder="0555123456"/>
+          <textarea className="input-field" rows={2} value={testMsg} onChange={e => setTestMsg(e.target.value)}/>
+          <button onClick={testSend} disabled={sending} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2">
+            {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={14}/>}Send Test
+          </button>
+          {sendResult && <div className={`p-3 rounded-xl ${sendResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
+            <p className={`text-sm font-medium ${sendResult.success ? 'text-emerald-700' : 'text-red-700'}`}>{sendResult.success ? 'Message sent!' : sendResult.error}</p>
+          </div>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const allApps = [
   { slug:'abandoned-cart', icon:ShoppingCart, name:'Abandoned Cart Recovery', desc:'Track and recover abandoned carts with AI messages.', color:'bg-purple-50 text-purple-600', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
@@ -303,21 +405,11 @@ export default function StoreApps() {
 
             {testPanel === 'whatsapp' && <>
               <div className="p-4 bg-gradient-to-r from-green-600 to-green-700 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Smartphone size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Test WhatsApp</h3><p className="text-white/60 text-[10px]">Send a test message</p></div></div>
+                <div className="flex items-center gap-3"><Smartphone size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">WhatsApp Connection</h3><p className="text-white/60 text-[10px]">Connect your WhatsApp to send order updates</p></div></div>
                 <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
               </div>
               <div className="p-6 space-y-4 overflow-y-auto">
-                <div><label className="input-label text-xs">Phone Number</label><input className="input-field" value={waPhone} onChange={e => setWaPhone(e.target.value.replace(/[^\d]/g,''))} placeholder="0555123456 or 555123456"/></div>
-                <div><label className="input-label text-xs">Message</label><textarea className="input-field" rows={3} value={waMessage} onChange={e => setWaMessage(e.target.value)}/></div>
-                <button onClick={testWhatsApp} disabled={waSending} className="btn-primary w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
-                  {waSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}Send WhatsApp Message
-                </button>
-                {waResult && <div className={`p-4 rounded-xl ${waResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                  {waResult.success ? <p className="text-sm text-emerald-700 font-medium">Message sent! {waResult.detail}</p> : <>
-                    <p className="text-sm text-red-700 font-medium">{waResult.error}</p>
-                    {waResult.sent_to && <p className="text-xs text-red-500 mt-1">Number sent to API: {waResult.sent_to}</p>}
-                  </>}
-                </div>}
+                <WhatsAppQR storeId={currentStore?.id}/>
               </div>
             </>}
 
