@@ -117,7 +117,6 @@ function WhatsAppQR({ storeId }) {
                   {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting...</> : <><QrCode size={16}/>Generate QR Code</>}
                 </button>
                 {connectError && <div className="mt-4 p-3 bg-red-50 rounded-xl"><p className="text-xs text-red-600 font-medium">{connectError}</p></div>}
-                </button>
               </div>
             )}
           </>
