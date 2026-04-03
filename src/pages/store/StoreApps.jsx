@@ -60,7 +60,6 @@ function WhatsAppQR({ storeId }) {
       }
       setConnectError('QR is taking a while. Click Generate QR Code again.');
     } catch (e) { setConnectError(e.response?.data?.error || e.message); }
-    } catch (e) { setConnectError(e.response?.data?.error || e.message); }
     setLoading(false);
   };
 
