@@ -11,7 +11,8 @@ function WhatsAppQR({ storeId }) {
   const [status, setStatus] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [connectError, setConnectError] = React.useState(null);
-  const [tab, setTab] = React.useState('connection'); // connection, templates, log
+  const [pollCount, setPollCount] = React.useState(0);
+  const [tab, setTab] = React.useState('connection');
   const [testPhone, setTestPhone] = React.useState('');
   const [testMsg, setTestMsg] = React.useState('Hello! This is a test from your store.');
   const [sendResult, setSendResult] = React.useState(null);
@@ -24,10 +25,23 @@ function WhatsAppQR({ storeId }) {
     delivered: 'Your order {order} from {store} has been delivered! Thank you for shopping with us.',
     cancelled: 'Your order {order} from {store} has been cancelled.',
   });
+  const pollingRef = React.useRef(null);
+  const mountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; if (pollingRef.current) clearInterval(pollingRef.current); };
+  }, []);
 
   const checkStatus = async () => {
-    if (!storeId) return;
-    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); if(data.qr || data.connected) setLoading(false); } catch { setStatus({ status: 'not_started', connected: false }); }
+    if (!storeId || !mountedRef.current) return null;
+    try {
+      const { data } = await aiApi.waQrStatus(storeId);
+      if (mountedRef.current) setStatus(data);
+      return data;
+    } catch {
+      return null;
+    }
   };
 
   const loadLog = async () => {
@@ -35,32 +49,74 @@ function WhatsAppQR({ storeId }) {
     try { const { data } = await aiApi.waQrLog(storeId); setLog(data); } catch {}
   };
 
+  // Background poll — only when NOT loading (loading has its own fast poll)
   React.useEffect(() => {
+    if (!storeId) return;
     checkStatus();
-    const i = setInterval(checkStatus, 2000);
+    const i = setInterval(() => { if (!loading) checkStatus(); }, 4000);
     return () => clearInterval(i);
-  }, [storeId]);
+  }, [storeId, loading]);
 
   React.useEffect(() => { if (tab === 'log') loadLog(); }, [tab]);
 
   const startConnection = async () => {
-    setLoading(true); setConnectError(null);
-    try { 
+    setLoading(true);
+    setConnectError(null);
+    setPollCount(0);
+
+    // Step 1: Fire /start (non-blocking — Railway starts session in background)
+    try {
       const { data } = await aiApi.waQrStart(storeId);
-      // Start response may already contain QR
-      if (data.qr || data.connected) { setStatus(data); setLoading(false); return; }
-      // Otherwise poll for a bit more
-      for (let i = 0; i < 10; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        try {
-          const { data: s } = await aiApi.waQrStatus(storeId);
-          setStatus(s);
-          if (s.qr || s.connected) { setLoading(false); return; }
-        } catch {}
+      if (data.qr || data.connected) {
+        setStatus(data);
+        setLoading(false);
+        return;
       }
-      setConnectError('QR is taking a while. Click Generate QR Code again.');
-    } catch (e) { setConnectError(e.response?.data?.error || e.message); }
-    setLoading(false);
+    } catch (e) {
+      // Even if /start times out, the Railway service may still be working
+      console.log('Start call result:', e.message);
+    }
+
+    // Step 2: Poll /status every 2s for up to 60s waiting for QR
+    let attempts = 0;
+    const maxAttempts = 30; // 30 × 2s = 60s
+
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    pollingRef.current = setInterval(async () => {
+      attempts++;
+      if (!mountedRef.current) { clearInterval(pollingRef.current); return; }
+      setPollCount(attempts);
+
+      try {
+        const { data: s } = await aiApi.waQrStatus(storeId);
+        if (!mountedRef.current) { clearInterval(pollingRef.current); return; }
+        setStatus(s);
+
+        if (s.qr || s.connected) {
+          // QR arrived or connected!
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setLoading(false);
+          return;
+        }
+
+        if (s.status === 'error' || s.status === 'logged_out') {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setConnectError(s.error || 'Connection failed. Try again.');
+          setLoading(false);
+          return;
+        }
+      } catch {}
+
+      if (attempts >= maxAttempts) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setConnectError('Could not generate QR after 60s. Check that your Railway WhatsApp service is running.');
+        setLoading(false);
+      }
+    }, 2000);
   };
 
   const disconnect = async () => {
@@ -93,7 +149,7 @@ function WhatsAppQR({ storeId }) {
         <div className={`flex items-center gap-3 p-4 rounded-xl ${status?.connected ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
           {status?.connected ? <Wifi size={20} className="text-emerald-500"/> : <WifiOff size={20} className="text-gray-400"/>}
           <div className="flex-1">
-            <p className={`font-bold text-sm ${status?.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status?.connected ? 'Connected' : status?.status === 'waiting_qr' ? 'Waiting for scan...' : 'Not Connected'}</p>
+            <p className={`font-bold text-sm ${status?.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status?.connected ? 'Connected' : status?.status === 'waiting_qr' ? 'Waiting for scan...' : status?.status === 'connecting' || status?.status === 'reconnecting' ? 'Connecting...' : 'Not Connected'}</p>
             {status?.connected && <p className="text-xs text-emerald-600">+{status.phone} {status.name ? `(${status.name})` : ''}</p>}
           </div>
           {status?.connected && <button onClick={disconnect} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center gap-1"><LogOut size={12}/>Disconnect</button>}
@@ -113,9 +169,10 @@ function WhatsAppQR({ storeId }) {
                 <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><QrCode size={32} className="text-green-500"/></div>
                 <p className="text-sm font-bold text-gray-700 mb-1">Connect your WhatsApp</p>
                 <p className="text-xs text-gray-400 mb-5">Scan a QR code to send order updates from your number</p>
-                <button onClick={startConnection} disabled={loading} className="px-8 py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto">
-                  {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting...</> : <><QrCode size={16}/>Generate QR Code</>}
+                <button onClick={startConnection} disabled={loading} className="px-8 py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto disabled:opacity-60">
+                  {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting... {pollCount > 0 ? `(${pollCount}s)` : ''}</> : <><QrCode size={16}/>Generate QR Code</>}
                 </button>
+                {loading && <p className="text-xs text-gray-400 mt-3">Waiting for WhatsApp servers... this can take up to 30s</p>}
                 {connectError && <div className="mt-4 p-3 bg-red-50 rounded-xl"><p className="text-xs text-red-600 font-medium">{connectError}</p></div>}
               </div>
             )}
