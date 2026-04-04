@@ -13,14 +13,33 @@ import {
 
 function CreateStoreModal({ open, onClose, onCreate }) {
   const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
   const [desc, setDesc] = useState('');
   const [loading, setLoading] = useState(false);
+  const [slugError, setSlugError] = useState('');
+
+  const autoSlug = (val) => val.toLowerCase().replace(/[^a-z0-9\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+  const handleNameChange = (val) => {
+    setName(val);
+    if (!slug || slug === autoSlug(name)) setSlug(autoSlug(val));
+  };
+
+  const handleSlugChange = (val) => {
+    const clean = autoSlug(val);
+    setSlug(clean);
+    if (clean.length < 3) setSlugError('At least 3 characters');
+    else if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(clean) && clean.length > 2) setSlugError('Letters, numbers, and dashes only');
+    else setSlugError('');
+  };
 
   const handleCreate = async () => {
-    if (!name) return;
+    if (!name) return toast.error('Store name is required');
+    if (!slug || slug.length < 3) return toast.error('Store URL is required (min 3 characters)');
+    if (slugError) return toast.error(slugError);
     setLoading(true);
     try {
-      const { data } = await ownerApi.createStore({ name, description: desc });
+      const { data } = await ownerApi.createStore({ name, slug, description: desc });
       toast.success('Store created!');
       onCreate(data);
       onClose();
@@ -34,12 +53,21 @@ function CreateStoreModal({ open, onClose, onCreate }) {
       <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-bold mb-4">Create New Store</h2>
         <div className="space-y-4">
-          <div><label className="input-label">Store Name</label><input className="input-field" value={name} onChange={e => setName(e.target.value)} placeholder="My Awesome Store" /></div>
+          <div><label className="input-label">Store Name *</label><input className="input-field" value={name} onChange={e => handleNameChange(e.target.value)} placeholder="My Awesome Store" /></div>
+          <div>
+            <label className="input-label">Store URL *</label>
+            <div className="flex items-center bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+              <span className="px-3 text-sm text-gray-400 shrink-0">kyomarket.com/</span>
+              <input className="flex-1 px-2 py-3 bg-transparent text-sm font-bold text-brand-600 focus:outline-none" value={slug} onChange={e => handleSlugChange(e.target.value)} placeholder="my-store" />
+            </div>
+            {slugError && <p className="text-xs text-red-500 mt-1">{slugError}</p>}
+            {slug && !slugError && <p className="text-xs text-emerald-500 mt-1">Your store will be at kyomarket.com/{slug}</p>}
+          </div>
           <div><label className="input-label">Description</label><textarea className="input-field" rows={3} value={desc} onChange={e => setDesc(e.target.value)} placeholder="What does your store sell?" /></div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
-          <button onClick={handleCreate} disabled={loading} className="btn-primary flex-1">
+          <button onClick={handleCreate} disabled={loading || !slug || slug.length < 3} className="btn-primary flex-1 disabled:opacity-50">
             {loading ? 'Creating...' : 'Create Store'}
           </button>
         </div>
