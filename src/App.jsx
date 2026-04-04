@@ -1,4 +1,4 @@
-import React,{Suspense,lazy,useEffect}from'react';import{Routes,Route,Navigate}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo}from'./utils/api';
+import React,{Suspense,lazy,useEffect,useState}from'react';import{Routes,Route,Navigate,useNavigate}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
 
 // Set platform favicon + title globally
 function PlatformMeta(){
@@ -9,6 +9,30 @@ function PlatformMeta(){
       if(d.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=d.favicon;}
     }).catch(()=>{});
   },[]);
+  return null;
+}
+
+// Detect custom domain → redirect to correct store
+const PLATFORM_HOSTS=['localhost','127.0.0.1','kyomarket.com','www.kyomarket.com'];
+function CustomDomainRedirect(){
+  const nav=useNavigate();
+  const[checked,setChecked]=useState(false);
+  useEffect(()=>{
+    const host=window.location.hostname;
+    // Skip if on platform domain or already on a store path
+    if(PLATFORM_HOSTS.some(h=>host===h||host.endsWith('.'+h))||host.endsWith('.vercel.app')||host.endsWith('.onrender.com')){setChecked(true);return;}
+    // Custom domain detected — lookup which store it belongs to
+    storeApi.lookupDomain(host).then(r=>{
+      if(r.data?.slug){
+        const path=window.location.pathname;
+        if(!path.startsWith('/'+r.data.slug)&&!path.startsWith('/s/'+r.data.slug)){
+          nav('/'+r.data.slug+path,{replace:true});
+        }
+      }
+      setChecked(true);
+    }).catch(()=>setChecked(true));
+  },[]);
+  if(!checked)return<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
   return null;
 }
 
@@ -55,7 +79,7 @@ const Loading=()=>(<div className="min-h-screen flex items-center justify-center
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();if(!token)return<Navigate to="/login" replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to="/" replace/>;return children;};
 const P=({children})=>(<ProtectedRoute allowedRoles={['store_owner']}>{children}</ProtectedRoute>);
 
-export default function App(){return(<><PlatformMeta/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>
+export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>
 <Route path="/" element={<LandingPage/>}/>
 <Route path="/login" element={<OwnerLogin/>}/>
 <Route path="/register" element={<OwnerRegister/>}/>
