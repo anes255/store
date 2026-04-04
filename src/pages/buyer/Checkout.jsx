@@ -27,6 +27,16 @@ export default function Checkout() {
 
   useEffect(() => { storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {}); }, [storeSlug]);
 
+  // Sync cart to backend for abandoned cart recovery
+  useEffect(() => {
+    if (!form.customer_phone || form.customer_phone.length < 8 || !items.length || !storeSlug) return;
+    const timer = setTimeout(() => {
+      const cartItems = items.map(i => ({ product_id: i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
+      storeApi.saveCart(storeSlug, { customer_phone: form.customer_phone, customer_name: form.customer_name, items: cartItems }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [form.customer_phone, form.customer_name, items, storeSlug]);
+
   const subtotal = getTotal();
   const shipping = store ? parseFloat(store.shipping_default_price || 0) : 0;
   const total = subtotal + shipping - couponDiscount;
