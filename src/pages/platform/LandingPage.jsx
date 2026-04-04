@@ -25,6 +25,13 @@ export default function LandingPage() {
   useEffect(() => {
     getPlatformInfo().then(r => {
       setInfo(r.data);
+      // Set page title and favicon
+      if(r.data.site_name)document.title=r.data.site_name;
+      if(r.data.favicon){
+        let link=document.querySelector("link[rel~='icon']");
+        if(!link){link=document.createElement('link');link.rel='icon';document.head.appendChild(link);}
+        link.href=r.data.favicon;
+      }
       try {
         const b = JSON.parse(r.data.landing_blocks || '[]');
         if (Array.isArray(b) && b.length > 0) { setBlocks(b); setHasCustom(true); }
