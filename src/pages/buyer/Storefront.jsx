@@ -136,6 +136,9 @@ export default function Storefront() {
           setStore(null); setLoading(false); return;
         }
         setStore(storeData);
+        // Set store title and favicon
+        if(storeData.name)document.title=storeData.name;
+        if(storeData.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=storeData.favicon;}
         // Then load products and categories
         try {
           const [productsRes, catsRes] = await Promise.all([
