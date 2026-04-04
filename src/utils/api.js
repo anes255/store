@@ -153,6 +153,8 @@ export const storeApi = {
   submitReview: (slug, productSlug, data) => api.post(`/store/${slug}/products/${productSlug}/reviews`, data),
   // Public tracking
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
+  // Cart sync
+  saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
 };
 
 // AI
