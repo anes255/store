@@ -29,6 +29,8 @@ const FAQs=lazy(()=>import('./pages/store/FAQs'));
 const ContactInfo=lazy(()=>import('./pages/store/ContactInfo'));
 const HomePageEditor=lazy(()=>import('./pages/store/HomePageEditor'));
 const OrderTracking=lazy(()=>import('./pages/store/OrderTracking'));
+const TrackingOrders=lazy(()=>import('./pages/store/TrackingOrders'));
+const SmartReviews=lazy(()=>import('./pages/store/SmartReviews'));
 // Buyer
 const Storefront=lazy(()=>import('./pages/buyer/Storefront'));
 const ProductDetail=lazy(()=>import('./pages/buyer/ProductDetail'));
@@ -72,6 +74,8 @@ export default function App(){return(<><Toaster position="top-center" toastOptio
 <Route path="/dashboard/contact" element={<P><ContactInfo/></P>}/>
 <Route path="/dashboard/homepage" element={<P><HomePageEditor/></P>}/>
 <Route path="/dashboard/order-tracking" element={<P><OrderTracking/></P>}/>
+<Route path="/dashboard/tracking-orders" element={<P><TrackingOrders/></P>}/>
+<Route path="/dashboard/smart-reviews" element={<P><SmartReviews/></P>}/>
 <Route path="/dashboard/form-settings" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/logo" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/themes" element={<P><StoreSettings/></P>}/>
