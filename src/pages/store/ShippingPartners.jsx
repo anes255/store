@@ -66,6 +66,7 @@ export default function ShippingPartners(){
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
+                {c.api_key&&c.provider_type!=='manual'&&<button onClick={async()=>{try{const{data}=await api.post(`/manage/stores/${currentStore.id}/delivery-companies/${c.id}/test`,{});if(data.ok)toast.success(data.message);else toast.error(data.error||'Test failed');}catch{toast.error('Connection test failed');}}} className="p-2.5 hover:bg-emerald-50 rounded-xl text-gray-400 hover:text-emerald-500" title="Test API"><RefreshCw size={16}/></button>}
                 <button onClick={()=>openEdit(c)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500"><Edit size={16}/></button>
                 <button onClick={()=>del(c.id)} className="p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500"><Trash2 size={16}/></button>
               </div>
