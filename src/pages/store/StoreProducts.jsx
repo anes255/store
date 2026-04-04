@@ -65,13 +65,27 @@ export default function StoreProducts() {
   const rmVar = (i) => setForm({...form, variants: form.variants.filter((_,j)=>j!==i)});
   const rmVarImg = (vi,ii) => { const vs=[...form.variants]; vs[vi]={...vs[vi],images:vs[vi].images.filter((_,j)=>j!==ii)}; setForm({...form,variants:vs}); };
 
+  const [descLang, setDescLang] = useState('en');
+
   const generateDesc = async () => {
-    if (!form.name_en) return toast.error('Enter product name first');
+    if (!form.name_en && !form.name_fr) return toast.error('Enter product name first');
     setAiLoading(true);
     try {
-      const{data}=await aiApi.generateDescription({product_name:form.name_en,category:'',language:'en'});
+      const{data}=await aiApi.generateDescription({product_name:form.name_en||form.name_fr,category:'',language:descLang});
       setForm({...form, description_en: data.description});
       toast.success('AI description generated!');
+    } catch { toast.error('AI generation failed'); }
+    setAiLoading(false);
+  };
+
+  const generateDescAll = async () => {
+    if (!form.name_en && !form.name_fr) return toast.error('Enter product name first');
+    setAiLoading(true);
+    try {
+      const{data}=await aiApi.generateDescriptionMulti({product_name:form.name_en||form.name_fr,category:''});
+      const combined = [data.en, data.fr ? `\n\n🇫🇷 ${data.fr}` : '', data.ar ? `\n\n🇩🇿 ${data.ar}` : ''].join('');
+      setForm({...form, description_en: combined.trim()});
+      toast.success('AI descriptions generated in 3 languages!');
     } catch { toast.error('AI generation failed'); }
     setAiLoading(false);
   };
@@ -148,7 +162,13 @@ export default function StoreProducts() {
 
               {/* Description with AI generate */}
               <div>
-                <div className="flex items-center justify-between"><label className="input-label text-xs">Description</label><button onClick={generateDesc} disabled={aiLoading} className="text-xs text-brand-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50">{aiLoading?<div className="w-3 h-3 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin"/>:<Sparkles size={12}/>}AI Generate</button></div>
+                <div className="flex items-center justify-between"><label className="input-label text-xs">Description</label>
+                  <div className="flex items-center gap-2">
+                    <select className="text-[10px] border rounded-lg px-2 py-1 text-gray-500" value={descLang} onChange={e=>setDescLang(e.target.value)}><option value="en">EN</option><option value="fr">FR</option><option value="ar">AR</option></select>
+                    <button onClick={generateDesc} disabled={aiLoading} className="text-xs text-brand-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50">{aiLoading?<div className="w-3 h-3 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin"/>:<Sparkles size={12}/>}AI Generate</button>
+                    <button onClick={generateDescAll} disabled={aiLoading} className="text-xs text-purple-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50"><Sparkles size={12}/>All 3 Languages</button>
+                  </div>
+                </div>
                 <textarea className="input-field" rows={3} value={form.description_en} onChange={set('description_en')} placeholder="Product description..."/>
               </div>
 
