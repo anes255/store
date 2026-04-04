@@ -4,7 +4,7 @@ export default function ShippingPartners(){
   const{currentStore}=useStoreManagement();
   const[companies,setCompanies]=useState([]);const[loading,setLoading]=useState(true);
   const[showModal,setShowModal]=useState(false);const[editing,setEditing]=useState(null);
-  const[form,setForm]=useState({name:'',api_key:'',base_rate:''});
+  const[form,setForm]=useState({name:'',api_key:'',base_rate:'',provider_type:'manual',tracking_url:'',phone:''});
   const[search,setSearch]=useState('');
 
   const load=()=>{if(!currentStore?.id)return;api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r=>setCompanies(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
@@ -20,13 +20,13 @@ export default function ShippingPartners(){
         await api.post(`/manage/stores/${currentStore.id}/delivery-companies`,form);
         toast.success('Added!');
       }
-      setShowModal(false);setEditing(null);setForm({name:'',api_key:'',base_rate:''});load();
+      setShowModal(false);setEditing(null);setForm({name:'',api_key:'',base_rate:'',provider_type:'manual',tracking_url:'',phone:''});load();
     }catch{toast.error('Failed');}
   };
 
   const del=async(id)=>{if(!confirm('Remove this company?'))return;try{await api.delete(`/manage/stores/${currentStore.id}/delivery-companies/${id}`);toast.success('Removed');load();}catch{toast.error('Failed');}};
 
-  const openEdit=(c)=>{setEditing(c);setForm({name:c.name,api_key:c.api_key||'',base_rate:c.base_rate||''});setShowModal(true);};
+  const openEdit=(c)=>{setEditing(c);setForm({name:c.name,api_key:c.api_key||'',base_rate:c.base_rate||'',provider_type:c.provider_type||'manual',tracking_url:c.tracking_url||'',phone:c.phone||''});setShowModal(true);};
 
   const filtered=companies.filter(c=>!search||(c.name||'').toLowerCase().includes(search.toLowerCase()));
   const totalActive=companies.length;
@@ -35,7 +35,7 @@ export default function ShippingPartners(){
   return(<DashboardLayout>
     <div className="flex items-center justify-between mb-6">
       <div><h1 className="text-2xl font-bold">Shipping Partners</h1><p className="text-sm text-gray-400 mt-1">Manage your delivery companies</p></div>
-      <button onClick={()=>{setEditing(null);setForm({name:'',api_key:'',base_rate:''});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>Add Company</button>
+      <button onClick={()=>{setEditing(null);setForm({name:'',api_key:'',base_rate:'',provider_type:'manual',tracking_url:'',phone:''});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>Add Company</button>
     </div>
 
     {/* Stats */}
@@ -58,7 +58,7 @@ export default function ShippingPartners(){
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="font-bold text-gray-900 text-lg">{c.name}</p>
-                  {c.api_key?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1"><Check size={8}/>API LINKED</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">MANUAL</span>}
+                  {c.api_key?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1"><Check size={8}/>{(c.provider_type||'manual').toUpperCase()}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">MANUAL</span>}
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                   {c.base_rate>0&&<span className="flex items-center gap-1"><Package size={12}/>{c.base_rate} DZD base rate</span>}
@@ -79,8 +79,13 @@ export default function ShippingPartners(){
       <div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">{editing?'Edit Company':'Add Delivery Company'}</h2><button onClick={()=>setShowModal(false)}><X size={20}/></button></div>
       <div className="space-y-4">
         <div><label className="input-label">Company Name *</label><input className="input-field" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Yalidine, NOEST, ZR Express"/></div>
-        <div><label className="input-label">API Key (optional)</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Enter API key if available"/><p className="text-[10px] text-gray-400 mt-1">Leave empty for manual management</p></div>
-        <div><label className="input-label">Base Rate (DZD)</label><input type="number" className="input-field" value={form.base_rate} onChange={e=>setForm({...form,base_rate:e.target.value})} placeholder="400"/></div>
+        <div><label className="input-label">Provider Type</label><select className="input-field" value={form.provider_type} onChange={e=>setForm({...form,provider_type:e.target.value})}><option value="manual">Manual (no API)</option><option value="yalidine">Yalidine</option><option value="zr_express">ZR Express</option><option value="noest">NOEST</option><option value="other_api">Other (custom API)</option></select><p className="text-[10px] text-gray-400 mt-1">Select the provider to enable live tracking</p></div>
+        <div><label className="input-label">API Key {form.provider_type==='yalidine'?'(API_ID:API_TOKEN)':''}</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder={form.provider_type==='yalidine'?'API_ID:API_TOKEN':'Enter API key if available'}/>{form.provider_type==='yalidine'&&<p className="text-[10px] text-gray-400 mt-1">Get your API credentials from Yalidine dashboard</p>}</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="input-label">Base Rate (DZD)</label><input type="number" className="input-field" value={form.base_rate} onChange={e=>setForm({...form,base_rate:e.target.value})} placeholder="400"/></div>
+          <div><label className="input-label">Phone</label><input className="input-field" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="0555123456"/></div>
+        </div>
+        {form.provider_type==='other_api'&&<div><label className="input-label">Tracking URL</label><input className="input-field text-sm" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://tracking.example.com/track/{number}"/></div>}
       </div>
       <div className="flex gap-3 mt-6"><button onClick={()=>setShowModal(false)} className="btn-ghost flex-1">Cancel</button><button onClick={save} className="btn-primary flex-1">{editing?'Update':'Add'} Company</button></div>
     </div></div>}
