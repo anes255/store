@@ -95,7 +95,96 @@ export default function ProductDetail() {
             <div className="mt-8 grid grid-cols-3 gap-3">{[{icon:Truck,label:'Fast Delivery',desc:'All 58 wilayas'},{icon:Shield,label:'Secure',desc:'Multiple options'},{icon:Package,label:'Returns',desc:'30-day policy'}].map((f,i)=>{const I=f.icon;return<div key={i} className="p-3 bg-gray-50 rounded-xl text-center"><I size={18} className="mx-auto text-gray-500 mb-1"/><p className="text-xs font-bold text-gray-700">{f.label}</p><p className="text-[10px] text-gray-400">{f.desc}</p></div>;})}</div>
           </div>
         </div>
+
+        {/* ═══ REVIEWS SECTION ═══ */}
+        <ReviewsSection storeSlug={storeSlug} productSlug={productSlug} pc={pc}/>
       </div>
+    </div>
+  );
+}
+
+function ReviewsSection({storeSlug,productSlug,pc}){
+  const[reviews,setReviews]=React.useState([]);const[stats,setStats]=React.useState({});
+  const[showForm,setShowForm]=React.useState(false);const[submitting,setSubmitting]=React.useState(false);
+  const[form,setForm]=React.useState({customer_name:'',customer_phone:'',rating:5,title:'',content:''});
+
+  React.useEffect(()=>{
+    storeApi.getProductReviews(storeSlug,productSlug).then(r=>{setReviews(r.data.reviews||[]);setStats(r.data.stats||{});}).catch(()=>{});
+  },[storeSlug,productSlug]);
+
+  const submit=async()=>{
+    if(!form.customer_name)return;
+    setSubmitting(true);
+    try{
+      await storeApi.submitReview(storeSlug,productSlug,form);
+      toast.success('Review submitted! It will appear after approval.');
+      setShowForm(false);setForm({customer_name:'',customer_phone:'',rating:5,title:'',content:''});
+      // Reload reviews
+      const r=await storeApi.getProductReviews(storeSlug,productSlug);setReviews(r.data.reviews||[]);setStats(r.data.stats||{});
+    }catch(e){toast.error(e.response?.data?.error||'Failed to submit review');}
+    setSubmitting(false);
+  };
+
+  const avgRating=parseFloat(stats.avg_rating)||0;
+  const total=parseInt(stats.total)||0;
+
+  return(
+    <div className="mt-12 border-t pt-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-extrabold text-gray-900">Customer Reviews</h2>
+          {total>0&&<div className="flex items-center gap-2 mt-1">
+            <div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} size={16} className={i<=Math.round(avgRating)?'text-amber-400 fill-amber-400':'text-gray-300'}/>)}</div>
+            <span className="text-sm font-bold text-gray-700">{avgRating}</span>
+            <span className="text-sm text-gray-400">({total} review{total!==1?'s':''})</span>
+          </div>}
+        </div>
+        <button onClick={()=>setShowForm(!showForm)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white" style={{backgroundColor:pc}}>Write a Review</button>
+      </div>
+
+      {showForm&&(
+        <div className="p-5 bg-gray-50 rounded-2xl mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-gray-600">Your Rating:</span>
+            <div className="flex gap-1">{[1,2,3,4,5].map(i=><button key={i} onClick={()=>setForm({...form,rating:i})}><Star size={24} className={i<=form.rating?'text-amber-400 fill-amber-400':'text-gray-300 hover:text-amber-300'}/></button>)}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Your name *" value={form.customer_name} onChange={e=>setForm({...form,customer_name:e.target.value})}/>
+            <input className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Phone (optional)" value={form.customer_phone} onChange={e=>setForm({...form,customer_phone:e.target.value})}/>
+          </div>
+          <input className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Review title (optional)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
+          <textarea className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" rows={3} placeholder="Write your review..." value={form.content} onChange={e=>setForm({...form,content:e.target.value})}/>
+          <div className="flex gap-2">
+            <button onClick={()=>setShowForm(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm bg-gray-200 text-gray-700">Cancel</button>
+            <button onClick={submit} disabled={submitting||!form.customer_name} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50" style={{backgroundColor:pc}}>
+              {submitting?'Submitting...':'Submit Review'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {reviews.length===0?(
+        <div className="text-center py-8"><p className="text-gray-400 text-sm">No reviews yet. Be the first to review this product!</p></div>
+      ):(
+        <div className="space-y-4">
+          {reviews.map(r=>(
+            <div key={r.id} className="p-4 bg-gray-50 rounded-2xl">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{backgroundColor:pc}}>{(r.customer_name||'?')[0].toUpperCase()}</div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm text-gray-800">{r.customer_name}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} size={12} className={i<=r.rating?'text-amber-400 fill-amber-400':'text-gray-300'}/>)}</div>
+                    <span className="text-[10px] text-gray-400">{new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              {r.title&&<p className="font-semibold text-sm text-gray-800 mb-1">{r.title}</p>}
+              {r.content&&<p className="text-sm text-gray-600">{r.content}</p>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
