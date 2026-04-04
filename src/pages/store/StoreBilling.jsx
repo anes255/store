@@ -58,15 +58,14 @@ export default function StoreBilling(){
       <button onClick={()=>setPeriod('yearly')} className={`px-6 py-2 rounded-xl text-sm font-bold ${period==='yearly'?'bg-brand-500 text-white':'bg-gray-100 text-gray-500'}`}>Yearly <span className="text-[10px] ml-1 opacity-70">Save 20%</span></button>
     </div>
 
-    {/* Plans */}
-    <div className="grid md:grid-cols-2 gap-6 mb-8">
+    {/* Plan */}
+    <div className="max-w-md mx-auto mb-8">
       {Object.entries(plans).map(([key,plan])=>{const price=period==='yearly'?plan.yearly:plan.monthly;const isCurrent=data?.plan===key&&isActive;return(
-        <div key={key} className={`glass-card-solid p-6 relative overflow-hidden ${key==='advanced'?'ring-2 ring-brand-400':''}`}>
-          {key==='advanced'&&<div className="absolute top-0 right-0 bg-brand-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>}
-          <h3 className="text-xl font-black text-gray-900">{plan.name}</h3>
-          <div className="mt-3 flex items-baseline gap-1"><span className="text-3xl font-black text-brand-600">{price.toLocaleString()}</span><span className="text-gray-400 text-sm">DZD / {period==='yearly'?'year':'month'}</span></div>
-          <div className="mt-4 space-y-2">{plan.features.map((f,i)=><div key={i} className="flex items-center gap-2 text-sm"><Check size={14} className="text-emerald-500 shrink-0"/><span className="text-gray-600">{f}</span></div>)}</div>
-          <button onClick={()=>{if(!isCurrent){setSelectedPlan(key);setShowPay(true);}}} disabled={isCurrent} className={`w-full mt-6 py-3 rounded-xl font-bold text-sm ${isCurrent?'bg-emerald-100 text-emerald-700':'bg-brand-500 text-white hover:bg-brand-600'}`}>{isCurrent?'Current Plan':'Subscribe'}</button>
+        <div key={key} className="glass-card-solid p-8 ring-2 ring-brand-400">
+          <div className="text-center mb-4"><h3 className="text-2xl font-black text-gray-900">{plan.name}</h3></div>
+          <div className="text-center mb-6"><span className="text-4xl font-black text-brand-600">{price.toLocaleString()}</span><span className="text-gray-400 text-sm ml-1">DZD / {period==='yearly'?'year':'month'}</span></div>
+          <div className="space-y-2 mb-6">{plan.features.map((f,i)=><div key={i} className="flex items-center gap-2 text-sm"><Check size={14} className="text-emerald-500 shrink-0"/><span className="text-gray-600">{f}</span></div>)}</div>
+          <button onClick={()=>{if(!isCurrent){setSelectedPlan(key);setShowPay(true);}}} disabled={isCurrent} className={`w-full py-3.5 rounded-xl font-bold text-sm ${isCurrent?'bg-emerald-100 text-emerald-700':'bg-brand-500 text-white hover:bg-brand-600'}`}>{isCurrent?'Current Plan':'Subscribe'}</button>
         </div>
       );})}
     </div>
