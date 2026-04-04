@@ -155,6 +155,8 @@ export const storeApi = {
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
+  // Domain lookup
+  lookupDomain: (domain) => api.get(`/store/by-domain/${domain}`),
 };
 
 // AI
