@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { orderApi } from '../../utils/api';
+import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -25,6 +26,9 @@ export default function StoreOrders() {
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [companies, setCompanies] = useState([]);
+  const [trackingForm, setTrackingForm] = useState({tracking_number:'',delivery_company_id:''});
+  const [savingTracking, setSavingTracking] = useState(false);
 
   const loadOrders = async () => {
     if (!currentStore?.id) return;
@@ -34,6 +38,7 @@ export default function StoreOrders() {
     } catch {} finally { setLoading(false); }
   };
   useEffect(() => { loadOrders(); }, [currentStore?.id, filter, search]);
+  useEffect(() => { if(currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r=>setCompanies(r.data||[])).catch(()=>{}); }, [currentStore?.id]);
 
   const updateStatus = async (orderId, status) => {
     try {
@@ -221,6 +226,43 @@ export default function StoreOrders() {
 
               {/* Notes */}
               {selectedOrder.notes && <div className="p-4 bg-blue-50 rounded-2xl"><p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Customer Notes</p><p className="text-sm text-blue-700">{selectedOrder.notes}</p></div>}
+
+              {/* Tracking Assignment */}
+              {(selectedOrder.status==='shipped'||selectedOrder.status==='confirmed'||selectedOrder.status==='preparing') && (
+                <div className="p-4 bg-cyan-50 rounded-2xl space-y-3">
+                  <p className="text-[10px] font-bold text-cyan-600 uppercase">Tracking Information</p>
+                  {selectedOrder.tracking_number ? (
+                    <div className="flex items-center gap-3">
+                      <Truck size={16} className="text-cyan-600"/>
+                      <div className="flex-1">
+                        <p className="font-mono font-bold text-sm text-gray-800">{selectedOrder.tracking_number}</p>
+                        {selectedOrder.tracking_status && <p className="text-xs text-cyan-600 capitalize">{selectedOrder.tracking_status.replace(/_/g,' ')}</p>}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <select className="input-field !py-2 text-sm" value={trackingForm.delivery_company_id} onChange={e=>setTrackingForm({...trackingForm,delivery_company_id:e.target.value})}>
+                        <option value="">Select delivery company</option>
+                        {companies.map(c=><option key={c.id} value={c.id}>{c.name}{c.provider_type!=='manual'?` (${c.provider_type})`:''}</option>)}
+                      </select>
+                      <div className="flex gap-2">
+                        <input className="input-field !py-2 text-sm flex-1" placeholder="Tracking number" value={trackingForm.tracking_number} onChange={e=>setTrackingForm({...trackingForm,tracking_number:e.target.value})}/>
+                        <button disabled={!trackingForm.tracking_number||savingTracking} onClick={async()=>{
+                          setSavingTracking(true);
+                          try{
+                            await api.patch(`/manage/stores/${currentStore.id}/orders/${selectedOrder.id}/tracking`,trackingForm);
+                            toast.success('Tracking saved!');setTrackingForm({tracking_number:'',delivery_company_id:''});
+                            const{data}=await orderApi.getOne(currentStore.id,selectedOrder.id);setSelectedOrder(data);loadOrders();
+                          }catch{toast.error('Failed');}
+                          setSavingTracking(false);
+                        }} className="px-4 py-2 bg-cyan-600 text-white rounded-xl text-xs font-bold hover:bg-cyan-700 disabled:opacity-50 flex items-center gap-1 shrink-0">
+                          {savingTracking?<div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Truck size={12}/>}Save
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
