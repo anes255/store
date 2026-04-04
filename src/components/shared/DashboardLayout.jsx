@@ -80,7 +80,7 @@ const DEFAULT_ITEMS = [
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'Orders'},{to:'/dashboard/abandoned',label:'Abandoned Orders'},{to:'/dashboard/preparing',label:'Preparing'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
-    {to:'/dashboard/products',label:'Products'},{to:'/dashboard/stock',label:'Stock Manager'},{to:'/dashboard/landing-pages',label:'Landing Pages'},{to:'/dashboard/smart-reviews',label:'Smart Reviews'},{to:'/dashboard/ai-intelligence',label:'AI Intelligence'}]},
+    {to:'/dashboard/products',label:'Products'},{to:'/dashboard/stock',label:'Stock Manager'},{to:'/dashboard/smart-reviews',label:'Smart Reviews'},{to:'/dashboard/ai-intelligence',label:'AI Intelligence'}]},
   {id:'store',type:'group',icon:'Globe',label:'Store & Settings',children:[
     {to:'/dashboard/settings',label:'All Settings'},{to:'/dashboard/homepage',label:'Home Page'},{to:'/dashboard/contact',label:'Contact Info'},{to:'/dashboard/faqs',label:'FAQs'},{to:'/dashboard/about',label:'About Us'},{to:'/dashboard/order-tracking',label:'Order Tracking'},{to:'/dashboard/domains',label:'Domains'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'Delivery',children:[
