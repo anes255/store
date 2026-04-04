@@ -148,6 +148,11 @@ export const storeApi = {
   cancelOrder: (slug, orderId) => api.post(`/store/${slug}/orders/${orderId}/cancel`),
   validateCoupon: (slug, data) => api.post(`/store/${slug}/validate-coupon`, data),
   getPages: (slug) => api.get(`/store/${slug}/pages`),
+  // Reviews
+  getProductReviews: (slug, productSlug) => api.get(`/store/${slug}/products/${productSlug}/reviews`),
+  submitReview: (slug, productSlug, data) => api.post(`/store/${slug}/products/${productSlug}/reviews`, data),
+  // Public tracking
+  trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
 };
 
 // AI
@@ -164,6 +169,10 @@ export const aiApi = {
   testSend: (data) => api.post('/ai/test-send', data),
   whatsappTest: (data) => api.post('/ai/whatsapp-test', data),
   whatsappDebug: () => api.get('/ai/whatsapp-debug'),
+  // Reviews
+  moderateReview: (data) => api.post('/ai/moderate-review', data),
+  // Multi-language description
+  generateDescriptionMulti: (data) => api.post('/ai/generate-description-multi', data),
   // WhatsApp QR (Baileys)
   waQrStart: (storeId) => api.post('/ai/whatsapp-qr/start', { storeId }),
   waQrStatus: (storeId) => api.get(`/ai/whatsapp-qr/status/${storeId}`),
