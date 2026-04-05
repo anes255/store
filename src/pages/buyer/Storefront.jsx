@@ -206,6 +206,10 @@ export default function Storefront() {
         </div>
       </header>
 
+      {store.page_builder&&Array.isArray(store.page_builder)&&store.page_builder.length>0?(
+        <BuilderSections sections={store.page_builder} products={products} categories={categories} store={store} storeSlug={storeSlug} pc={pc} getName={getName} getThumb={getThumb} addItem={addItem} wishlist={wishlist} toggleWishlist={toggleWishlist} search={search} setSearch={setSearch} t={t}/>
+      ):<>
+
       {/* ============ HERO ============ */}
       <section className="relative py-16 px-4 text-center overflow-hidden" style={{background:store.cover_image?'none':'#f0f0f0'}}>
         {store.cover_image&&<div className="absolute inset-0"><img src={store.cover_image} className="w-full h-full object-cover" alt=""/><div className="absolute inset-0 bg-black/40"/></div>}
@@ -283,6 +287,7 @@ export default function Storefront() {
           </div>
         )}
       </div>
+      </>}
 
       {/* ============ FOOTER ============ */}
       <footer className="bg-white border-t border-gray-100 py-8 px-4 mt-8">
@@ -307,4 +312,91 @@ export default function Storefront() {
       </div>
     </div>
   );
+}
+
+function BuilderSections({sections,products,categories,store,storeSlug,pc,getName,getThumb,addItem,wishlist,toggleWishlist,search,setSearch,t}){
+  return(<>{sections.filter(s=>s.visible!==false).map(sec=>{
+    const s=sec.style||{};const c=sec.content||{};
+    const wrap={backgroundColor:s.bg||'#ffffff',color:s.textColor||'#1f2937',padding:`${s.padding||60}px 16px`,fontFamily:s.fontFamily||'Inter',borderRadius:`${s.borderRadius||0}px`};
+    const inner={maxWidth:`${s.maxWidth||1200}px`,margin:'0 auto'};
+
+    if(sec.type==='hero')return(
+      <section key={sec.id} style={{...wrap,minHeight:`${c.height||500}px`,backgroundImage:c.bgImage?`url(${c.bgImage})`:'none',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:c.align==='left'?'flex-start':c.align==='right'?'flex-end':'center',justifyContent:'center',flexDirection:'column',position:'relative',textAlign:c.align||'center'}}>
+        {c.bgImage&&<div style={{position:'absolute',inset:0,backgroundColor:`rgba(0,0,0,${c.overlay||0.3})`}}/>}
+        <div style={{...inner,position:'relative',zIndex:1}}>
+          <h1 style={{fontSize:`${c.titleSize||48}px`,fontWeight:900,lineHeight:1.1}}>{c.title||store.name}</h1>
+          {c.subtitle&&<p style={{fontSize:`${c.subtitleSize||20}px`,opacity:0.8,marginTop:12}}>{c.subtitle}</p>}
+          {c.btnText&&<a href={c.btnLink||'#'} style={{display:'inline-block',marginTop:20,padding:'14px 32px',backgroundColor:c.btnColor||pc,color:'#fff',borderRadius:12,fontWeight:700,fontSize:16,textDecoration:'none'}}>{c.btnText}</a>}
+        </div>
+      </section>);
+
+    if(sec.type==='products'){
+      const cols=parseInt(c.columns)||4;const limit=parseInt(c.limit)||8;
+      const filtered=c.featured?products.filter(p=>p.is_featured):products;
+      const shown=filtered.slice(0,limit);
+      const cardClass=c.cardStyle==='border'?'border border-gray-200':c.cardStyle==='flat'?'':'shadow-sm hover:shadow-lg';
+      return(
+        <section key={sec.id} style={wrap}><div style={inner}>
+          {c.title&&<h2 style={{fontSize:`${c.titleSize||28}px`,fontWeight:800,textAlign:'center',marginBottom:24}}>{c.title}</h2>}
+          {shown.length===0?<p style={{textAlign:'center',color:'#9ca3af',padding:40}}>No products found</p>:
+          <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:20}}>
+            {shown.map(product=>{const thumb=getThumb(product);const inW=wishlist.includes(product.id);return(
+              <div key={product.id} className={`bg-white rounded-2xl overflow-hidden ${cardClass} group relative transition-all`}>
+                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><span style={{fontSize:32,color:'#d1d5db'}}>📦</span></div>}{product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
+                {c.showBtn!==false&&<div className="absolute top-3 right-3 flex flex-col gap-1.5"><button onClick={()=>{addItem(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg" style={{backgroundColor:pc}}>🛒</button></div>}
+                <div className="p-3.5">{c.showName!==false&&<Link to={`/s/${storeSlug}/product/${product.slug}`}><h3 className="font-semibold text-sm text-gray-800 truncate">{getName(product)}</h3></Link>}{c.showPrice!==false&&<div className="flex items-baseline gap-2 mt-2"><span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span><span className="text-xs text-gray-400">{store.currency||'DZD'}</span>{product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}</div>}</div>
+              </div>);})}
+          </div>}
+        </div></section>);
+    }
+
+    if(sec.type==='text')return(
+      <section key={sec.id} style={wrap}><div style={{...inner,maxWidth:`${c.maxWidth||800}px`,textAlign:c.align||'left'}}>
+        <p style={{fontSize:`${c.fontSize||16}px`,lineHeight:c.lineHeight||'1.7',whiteSpace:'pre-wrap'}}>{c.text}</p>
+      </div></section>);
+
+    if(sec.type==='image')return(
+      <section key={sec.id} style={{...wrap,textAlign:c.align||'center'}}><div style={inner}>
+        {c.src?<a href={c.link||undefined} target={c.link?'_blank':undefined}><img src={c.src} style={{width:`${c.width||100}%`,borderRadius:`${c.rounded||12}px`,maxWidth:'100%',display:'inline-block'}} alt={c.alt||''}/></a>:<div style={{height:200,backgroundColor:'#f3f4f6',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',color:'#9ca3af'}}>No image set</div>}
+      </div></section>);
+
+    if(sec.type==='banner')return(
+      <section key={sec.id} style={{...wrap,textAlign:c.align||'center'}}>
+        <p style={{fontSize:`${c.fontSize||24}px`,fontWeight:800}}>{c.text}</p>
+        {c.btnText&&<a href={c.btnLink||'#'} style={{display:'inline-block',marginTop:16,padding:'12px 28px',backgroundColor:'#ffffff33',border:'2px solid currentColor',borderRadius:10,fontWeight:700,fontSize:14,textDecoration:'none',color:'inherit'}}>{c.btnText}</a>}
+      </section>);
+
+    if(sec.type==='spacer')return<div key={sec.id} style={{height:`${c.height||60}px`}}/>;
+
+    if(sec.type==='features'){
+      const cols=parseInt(c.columns)||3;
+      return(<section key={sec.id} style={wrap}><div style={{...inner,display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:24,textAlign:'center'}}>
+        {(c.items||[]).map((f,i)=><div key={i}><span style={{fontSize:36}}>{f.icon}</span><p style={{fontWeight:700,fontSize:16,marginTop:8}}>{f.title}</p><p style={{fontSize:14,opacity:0.6,marginTop:4}}>{f.desc}</p></div>)}
+      </div></section>);
+    }
+
+    if(sec.type==='testimonials')return(
+      <section key={sec.id} style={wrap}><div style={inner}>
+        {c.title&&<h2 style={{fontSize:`${c.titleSize||28}px`,fontWeight:800,textAlign:'center',marginBottom:24}}>{c.title}</h2>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
+          {(c.items||[]).map((t,i)=><div key={i} style={{backgroundColor:'#f9fafb',padding:24,borderRadius:16}}>
+            <p style={{fontSize:14,lineHeight:1.6}}>"{t.text}"</p>
+            <p style={{fontWeight:700,fontSize:14,marginTop:12}}>— {t.name}</p>
+            <p style={{color:'#f59e0b',marginTop:4}}>{'★'.repeat(t.rating||5)}{'☆'.repeat(5-(t.rating||5))}</p>
+          </div>)}
+        </div>
+      </div></section>);
+
+    if(sec.type==='categories')return(
+      <section key={sec.id} style={wrap}><div style={inner}>
+        {c.title&&<h2 style={{fontSize:`${c.titleSize||28}px`,fontWeight:800,textAlign:'center',marginBottom:24}}>{c.title}</h2>}
+        <div style={{display:'grid',gridTemplateColumns:`repeat(${parseInt(c.columns)||3},1fr)`,gap:16}}>
+          {categories.map(cat=><Link key={cat.id} to={`/s/${storeSlug}?category=${cat.id}`} style={{padding:20,backgroundColor:'#f3f4f6',borderRadius:12,textAlign:'center',fontWeight:700,fontSize:14,color:'inherit',textDecoration:'none'}}>{getName(cat)}</Link>)}
+        </div>
+      </div></section>);
+
+    if(sec.type==='custom_html')return<section key={sec.id} style={wrap}><div style={inner} dangerouslySetInnerHTML={{__html:c.html||''}}/></section>;
+
+    return null;
+  })}</>);
 }
