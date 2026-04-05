@@ -6,10 +6,19 @@ import { useCartStore, useLangStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
 
-export default function Checkout() {
-  const { storeSlug } = useParams();
+export default function Checkout({ isModal = false, onClose, storeSlug: storeSlugProp }) {
+  const params = useParams();
+  const storeSlug = storeSlugProp || params.storeSlug;
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const closeOrGoHome = () => { if (isModal) onClose?.(); else navigate(`/s/${storeSlug}`); };
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (!isModal) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [isModal]);
   const { items, removeItem, updateQuantity, clearCart, getTotal } = useCartStore();
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -81,17 +90,26 @@ export default function Checkout() {
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Copied!'); };
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
-  if (!store) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
+  // Wrapper that renders as full page or modal depending on isModal
+  const Shell = ({ children }) => isModal
+    ? (<div className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
+         <div className="w-full max-w-3xl bg-gray-50 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
+           {children}
+         </div>
+       </div>)
+    : (<div className="min-h-screen bg-gray-50">{children}</div>);
+
+  if (!store) return <Shell><div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div></Shell>;
 
   // ═══════ PAYMENT INSTRUCTION PAGES ═══════
   if (orderSuccess && paymentStep) {
     const orderNum = orderSuccess.order_number;
     return (
-      <div className="min-h-screen bg-gray-50">
+      <Shell>
         <header className="bg-white border-b sticky top-0 z-30 px-4 py-3">
           <div className="max-w-lg mx-auto flex items-center justify-between">
             <span className="font-bold text-sm text-gray-700">Complete Payment</span>
-            <button onClick={() => { setPaymentStep(null); navigate(`/s/${storeSlug}`); }} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
+            <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
           </div>
         </header>
         <div className="max-w-lg mx-auto px-4 py-8">
@@ -156,7 +174,7 @@ export default function Checkout() {
                 <p className="text-sm text-amber-700">Bank transfer payment is currently being set up. Please use CCP, BaridiMob, or Cash on Delivery for now.</p>
                 <p className="text-xs text-amber-600 mt-3">We apologize for the inconvenience. This feature will be available soon.</p>
               </div>
-              <button onClick={() => { setPaymentStep(null); navigate(`/s/${storeSlug}`); }} className="w-full py-3 rounded-xl font-bold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Back to Store</button>
+              <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="w-full py-3 rounded-xl font-bold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Back to Store</button>
             </div>
           )}
 
@@ -172,25 +190,29 @@ export default function Checkout() {
             </div>
           )}
 
-          <button onClick={() => { setPaymentStep(null); navigate(`/s/${storeSlug}`); }} className="w-full mt-4 py-3 text-center text-sm text-gray-500 hover:text-gray-700">Skip — I'll pay later</button>
+          <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="w-full mt-4 py-3 text-center text-sm text-gray-500 hover:text-gray-700">Skip — I'll pay later</button>
         </div>
-      </div>
+      </Shell>
     );
   }
 
   // ═══════ SUCCESS PAGE (COD) ═══════
   if (orderSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-xl">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{t('store.orderSuccess')}</h2>
-          <p className="text-gray-500 mb-4">Order #{orderSuccess.order_number}</p>
-          <p className="text-3xl font-extrabold mb-2" style={{ color: pc }}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency || 'DZD'}</p>
-          <p className="text-sm text-gray-400 mb-6">Cash on Delivery — Pay when you receive your order</p>
-          <Link to={`/s/${storeSlug}`} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>Continue Shopping</Link>
+      <Shell>
+        <div className="min-h-[80vh] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-xl">
+            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{t('store.orderSuccess')}</h2>
+            <p className="text-gray-500 mb-4">Order #{orderSuccess.order_number}</p>
+            <p className="text-3xl font-extrabold mb-2" style={{ color: pc }}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency || 'DZD'}</p>
+            <p className="text-sm text-gray-400 mb-6">Cash on Delivery — Pay when you receive your order</p>
+            {isModal
+              ? <button onClick={onClose} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>Continue Shopping</button>
+              : <Link to={`/s/${storeSlug}`} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>Continue Shopping</Link>}
+          </div>
         </div>
-      </div>
+      </Shell>
     );
   }
 
@@ -204,18 +226,30 @@ export default function Checkout() {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <Shell>
       <header className="bg-white shadow-sm sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-            {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
-            <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
-          </Link>
+          {isModal ? (
+            <div className="flex items-center gap-2.5">
+              <ShoppingCart size={22} style={{color:pc}}/>
+              <span className="text-lg font-extrabold text-gray-900">Your Cart</span>
+              {items.length>0 && <span className="min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>{items.length}</span>}
+            </div>
+          ) : (
+            <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
+              {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
+              <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
+            </Link>
+          )}
           <div className="flex items-center gap-2">
-            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
-            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
-            <div className="p-2 text-gray-500 relative"><ShoppingCart size={20} style={{color:pc}}/>{items.length>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{items.length}</span>}</div>
+            {isModal ? (
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20}/></button>
+            ) : (<>
+              <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
+              <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
+              <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
+              <div className="p-2 text-gray-500 relative"><ShoppingCart size={20} style={{color:pc}}/>{items.length>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{items.length}</span>}</div>
+            </>)}
           </div>
         </div>
       </header>
@@ -317,6 +351,6 @@ export default function Checkout() {
           </div>
         </div>
       </div>
-    </div>
+    </Shell>
   );
 }

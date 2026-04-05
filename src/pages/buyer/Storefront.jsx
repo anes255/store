@@ -5,6 +5,7 @@ import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu } from 'lucide-react';
+import Checkout from './Checkout';
 
 // ============ AI CHATBOT WIDGET ============
 function AIChatbot({ store, slug }) {
@@ -120,6 +121,7 @@ export default function Storefront() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState(()=>{try{return JSON.parse(localStorage.getItem('wishlist_'+storeSlug)||'[]').map(x=>x.id||x);}catch{return[];}});
+  const [cartOpen, setCartOpen] = useState(false);
 
   const [suspended, setSuspended] = useState(false);
 
@@ -198,10 +200,10 @@ export default function Storefront() {
               <Heart size={20}/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
             </Link>
-            <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
+            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -304,12 +306,14 @@ export default function Storefront() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30 px-4 py-2 flex items-center justify-around safe-area-bottom">
         <Link to={`/s/${storeSlug}`} className="flex flex-col items-center gap-0.5 text-gray-400"><Package size={20}/><span className="text-[10px]">Shop</span></Link>
         <Link to={`/s/${storeSlug}/auth`} className="flex flex-col items-center gap-0.5 text-gray-400"><User size={20}/><span className="text-[10px]">Account</span></Link>
-        <Link to={`/s/${storeSlug}/checkout`} className="flex flex-col items-center gap-0.5 relative" style={{color:pc}}>
+        <button onClick={()=>setCartOpen(true)} className="flex flex-col items-center gap-0.5 relative" style={{color:pc}}>
           <ShoppingCart size={20}/>
           {getCount()>0&&<span className="absolute -top-1 right-0 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center">{getCount()}</span>}
           <span className="text-[10px]">Cart</span>
-        </Link>
+        </button>
       </div>
+
+      {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
     </div>
   );
 }
