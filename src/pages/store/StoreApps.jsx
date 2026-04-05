@@ -11,8 +11,7 @@ function WhatsAppQR({ storeId }) {
   const [status, setStatus] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [connectError, setConnectError] = React.useState(null);
-  const [pollCount, setPollCount] = React.useState(0);
-  const [tab, setTab] = React.useState('connection');
+  const [tab, setTab] = React.useState('connection'); // connection, templates, log
   const [testPhone, setTestPhone] = React.useState('');
   const [testMsg, setTestMsg] = React.useState('Hello! This is a test from your store.');
   const [sendResult, setSendResult] = React.useState(null);
@@ -25,23 +24,10 @@ function WhatsAppQR({ storeId }) {
     delivered: 'Your order {order} from {store} has been delivered! Thank you for shopping with us.',
     cancelled: 'Your order {order} from {store} has been cancelled.',
   });
-  const pollingRef = React.useRef(null);
-  const mountedRef = React.useRef(true);
-
-  React.useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; if (pollingRef.current) clearInterval(pollingRef.current); };
-  }, []);
 
   const checkStatus = async () => {
-    if (!storeId || !mountedRef.current) return null;
-    try {
-      const { data } = await aiApi.waQrStatus(storeId);
-      if (mountedRef.current) setStatus(data);
-      return data;
-    } catch {
-      return null;
-    }
+    if (!storeId) return;
+    try { const { data } = await aiApi.waQrStatus(storeId); setStatus(data); if(data.qr || data.connected) setLoading(false); } catch { setStatus({ status: 'not_started', connected: false }); }
   };
 
   const loadLog = async () => {
@@ -49,74 +35,32 @@ function WhatsAppQR({ storeId }) {
     try { const { data } = await aiApi.waQrLog(storeId); setLog(data); } catch {}
   };
 
-  // Background poll — only when NOT loading (loading has its own fast poll)
   React.useEffect(() => {
-    if (!storeId) return;
     checkStatus();
-    const i = setInterval(() => { if (!loading) checkStatus(); }, 4000);
+    const i = setInterval(checkStatus, 2000);
     return () => clearInterval(i);
-  }, [storeId, loading]);
+  }, [storeId]);
 
   React.useEffect(() => { if (tab === 'log') loadLog(); }, [tab]);
 
   const startConnection = async () => {
-    setLoading(true);
-    setConnectError(null);
-    setPollCount(0);
-
-    // Step 1: Fire /start (non-blocking — Railway starts session in background)
-    try {
+    setLoading(true); setConnectError(null);
+    try { 
       const { data } = await aiApi.waQrStart(storeId);
-      if (data.qr || data.connected) {
-        setStatus(data);
-        setLoading(false);
-        return;
+      // Start response may already contain QR
+      if (data.qr || data.connected) { setStatus(data); setLoading(false); return; }
+      // Otherwise poll for a bit more
+      for (let i = 0; i < 10; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const { data: s } = await aiApi.waQrStatus(storeId);
+          setStatus(s);
+          if (s.qr || s.connected) { setLoading(false); return; }
+        } catch {}
       }
-    } catch (e) {
-      // Even if /start times out, the Railway service may still be working
-      console.log('Start call result:', e.message);
-    }
-
-    // Step 2: Poll /status every 2s for up to 60s waiting for QR
-    let attempts = 0;
-    const maxAttempts = 30; // 30 × 2s = 60s
-
-    if (pollingRef.current) clearInterval(pollingRef.current);
-
-    pollingRef.current = setInterval(async () => {
-      attempts++;
-      if (!mountedRef.current) { clearInterval(pollingRef.current); return; }
-      setPollCount(attempts);
-
-      try {
-        const { data: s } = await aiApi.waQrStatus(storeId);
-        if (!mountedRef.current) { clearInterval(pollingRef.current); return; }
-        setStatus(s);
-
-        if (s.qr || s.connected) {
-          // QR arrived or connected!
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-          setLoading(false);
-          return;
-        }
-
-        if (s.status === 'error' || s.status === 'logged_out') {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-          setConnectError(s.error || 'Connection failed. Try again.');
-          setLoading(false);
-          return;
-        }
-      } catch {}
-
-      if (attempts >= maxAttempts) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-        setConnectError('Could not generate QR after 60s. Check that your Railway WhatsApp service is running.');
-        setLoading(false);
-      }
-    }, 2000);
+      setConnectError('QR is taking a while. Click Generate QR Code again.');
+    } catch (e) { setConnectError(e.response?.data?.error || e.message); }
+    setLoading(false);
   };
 
   const disconnect = async () => {
@@ -149,7 +93,7 @@ function WhatsAppQR({ storeId }) {
         <div className={`flex items-center gap-3 p-4 rounded-xl ${status?.connected ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`}>
           {status?.connected ? <Wifi size={20} className="text-emerald-500"/> : <WifiOff size={20} className="text-gray-400"/>}
           <div className="flex-1">
-            <p className={`font-bold text-sm ${status?.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status?.connected ? 'Connected' : status?.status === 'waiting_qr' ? 'Waiting for scan...' : status?.status === 'connecting' || status?.status === 'reconnecting' ? 'Connecting...' : 'Not Connected'}</p>
+            <p className={`font-bold text-sm ${status?.connected ? 'text-emerald-700' : 'text-gray-600'}`}>{status?.connected ? 'Connected' : status?.status === 'waiting_qr' ? 'Waiting for scan...' : 'Not Connected'}</p>
             {status?.connected && <p className="text-xs text-emerald-600">+{status.phone} {status.name ? `(${status.name})` : ''}</p>}
           </div>
           {status?.connected && <button onClick={disconnect} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 flex items-center gap-1"><LogOut size={12}/>Disconnect</button>}
@@ -169,10 +113,9 @@ function WhatsAppQR({ storeId }) {
                 <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><QrCode size={32} className="text-green-500"/></div>
                 <p className="text-sm font-bold text-gray-700 mb-1">Connect your WhatsApp</p>
                 <p className="text-xs text-gray-400 mb-5">Scan a QR code to send order updates from your number</p>
-                <button onClick={startConnection} disabled={loading} className="px-8 py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto disabled:opacity-60">
-                  {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting... {pollCount > 0 ? `(${pollCount}s)` : ''}</> : <><QrCode size={16}/>Generate QR Code</>}
+                <button onClick={startConnection} disabled={loading} className="px-8 py-3.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 flex items-center justify-center gap-2 mx-auto">
+                  {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Connecting...</> : <><QrCode size={16}/>Generate QR Code</>}
                 </button>
-                {loading && <p className="text-xs text-gray-400 mt-3">Waiting for WhatsApp servers... this can take up to 30s</p>}
                 {connectError && <div className="mt-4 p-3 bg-red-50 rounded-xl"><p className="text-xs text-red-600 font-medium">{connectError}</p></div>}
               </div>
             )}
@@ -248,7 +191,7 @@ const allApps = [
   { slug:'ai-sales-bot', icon:Bot, name:'AI Customer Chatbot', desc:'AI chatbot on storefront — Arabic, French, English.', color:'bg-brand-50 text-brand-600', configKey:'ai_chatbot_enabled' },
   { slug:'fake-detection', icon:Shield, name:'Fake Order Detection', desc:'AI-powered fraud scoring.', color:'bg-red-50 text-red-600', configKey:'ai_fake_detection' },
   { slug:'smart-reviews', icon:Star, name:'Smart Reviews', desc:'AI-moderated product reviews.', color:'bg-amber-50 text-amber-600', configKey:'smart_reviews' },
-  { slug:'google-sheets', icon:FileSpreadsheet, name:'Google Sheets Sync', desc:'Export orders to Google Sheets.', color:'bg-emerald-50 text-emerald-600', configKey:'google_sheets_sync', comingSoon:true },
+  { slug:'google-sheets', icon:FileSpreadsheet, name:'Google Sheets Sync', desc:'Export orders to Google Sheets.', color:'bg-emerald-50 text-emerald-600', configKey:'google_sheets_sync' },
 ];
 
 export default function StoreApps() {
@@ -293,6 +236,10 @@ export default function StoreApps() {
   const [emailBody, setEmailBody] = useState('This is a test email from your store dashboard.');
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState(null);
+  const [sheetsStatus, setSheetsStatus] = useState(null);
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [sheetsLoading, setSheetsLoading] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
 
   useEffect(() => {
     if (!currentStore?.id) return;
@@ -419,6 +366,7 @@ export default function StoreApps() {
         <button onClick={() => setTestPanel('recovery')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-600"><MessageCircle size={14}/>Test Cart Recovery</button>
         <button onClick={() => setTestPanel('whatsapp')} className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700"><Smartphone size={14}/>Test WhatsApp</button>
         <button onClick={() => setTestPanel('email')} className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-600"><Mail size={14}/>Test Email</button>
+        <button onClick={() => {setTestPanel('sheets');if(currentStore?.id)api.get(`/manage/stores/${currentStore.id}/google-sheets/status`).then(r=>setSheetsStatus(r.data)).catch(()=>{});}} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700"><FileSpreadsheet size={14}/>Google Sheets</button>
       </div>
 
       {/* Apps Grid */}
@@ -560,6 +508,57 @@ export default function StoreApps() {
                 {emailResult && <div className={`p-4 rounded-xl ${emailResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
                   {emailResult.success ? <p className="text-sm text-emerald-700 font-medium">Email sent!</p> : <p className="text-sm text-red-700 font-medium">{emailResult.error}</p>}
                 </div>}
+              </div>
+            </>}
+
+            {testPanel === 'sheets' && <>
+              <div className="p-4 bg-gradient-to-r from-emerald-600 to-green-700 flex items-center justify-between">
+                <div className="flex items-center gap-3"><FileSpreadsheet size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Google Sheets</h3><p className="text-white/60 text-[10px]">Sync orders to a spreadsheet</p></div></div>
+                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
+              </div>
+              <div className="p-6 space-y-4 overflow-y-auto">
+                {!sheetsStatus?.configured ? (
+                  <div className="p-4 bg-amber-50 rounded-xl text-center">
+                    <p className="text-sm text-amber-700 font-medium">Google Sheets not configured on server</p>
+                    <p className="text-xs text-amber-500 mt-1">Platform admin needs to add GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_KEY env vars</p>
+                  </div>
+                ) : sheetsStatus?.has_sheet ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-3">
+                      <Check size={18} className="text-emerald-500 shrink-0"/>
+                      <div className="flex-1">
+                        <p className="font-bold text-sm text-emerald-700">Connected</p>
+                        <p className="text-xs text-emerald-500 font-mono truncate">{sheetsStatus.sheet_id}</p>
+                      </div>
+                    </div>
+                    <button onClick={async()=>{setSheetsLoading(true);setSyncResult(null);try{const{data}=await api.post(`/manage/stores/${currentStore.id}/google-sheets/sync`,{});setSyncResult(data);toast.success(`${data.synced} orders synced!`);}catch(e){setSyncResult({error:e.response?.data?.error||e.message});toast.error('Sync failed');}setSheetsLoading(false);}} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                      {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}Sync All Orders Now
+                    </button>
+                    {syncResult&&!syncResult.error&&<p className="text-sm text-emerald-600 text-center">{syncResult.synced} orders synced to sheet</p>}
+                    {syncResult?.error&&<p className="text-sm text-red-600 text-center">{syncResult.error}</p>}
+                    <button onClick={async()=>{try{await api.post(`/manage/stores/${currentStore.id}/google-sheets/disconnect`,{});setSheetsStatus({...sheetsStatus,has_sheet:false,sheet_id:null});toast.success('Disconnected');}catch{toast.error('Failed');}}} className="w-full py-2 text-red-600 text-xs font-bold hover:underline">Disconnect Sheet</button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+                      <p className="text-sm font-bold text-gray-700">Setup Steps:</p>
+                      <div className="space-y-2 text-xs text-gray-600">
+                        <p>1. Create a Google Sheet (or open an existing one)</p>
+                        <p>2. Click <b>Share</b> and add this email:</p>
+                        <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+                          <code className="text-xs text-brand-600 flex-1 truncate">{sheetsStatus?.service_email||'loading...'}</code>
+                          <button onClick={()=>{navigator.clipboard.writeText(sheetsStatus?.service_email||'');toast.success('Copied!');}} className="text-xs text-brand-600 font-bold shrink-0">Copy</button>
+                        </div>
+                        <p>3. Give it <b>Editor</b> access</p>
+                        <p>4. Paste the sheet URL below</p>
+                      </div>
+                    </div>
+                    <div><label className="input-label text-xs">Google Sheet URL</label><input className="input-field text-sm" value={sheetUrl} onChange={e=>setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..."/></div>
+                    <button onClick={async()=>{if(!sheetUrl)return toast.error('Paste your sheet URL');setSheetsLoading(true);try{const{data}=await api.post(`/manage/stores/${currentStore.id}/google-sheets/connect`,{sheet_url:sheetUrl});setSheetsStatus({...sheetsStatus,has_sheet:true,sheet_id:data.sheet_id});setSheetUrl('');toast.success('Connected!');}catch(e){toast.error(e.response?.data?.error||'Failed');}setSheetsLoading(false);}} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                      {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<FileSpreadsheet size={14}/>}Connect Sheet
+                    </button>
+                  </div>
+                )}
               </div>
             </>}
 
