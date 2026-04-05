@@ -366,7 +366,7 @@ export default function StoreApps() {
         <button onClick={() => setTestPanel('recovery')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-600"><MessageCircle size={14}/>Test Cart Recovery</button>
         <button onClick={() => setTestPanel('whatsapp')} className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700"><Smartphone size={14}/>Test WhatsApp</button>
         <button onClick={() => setTestPanel('email')} className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-600"><Mail size={14}/>Test Email</button>
-        <button onClick={() => {setTestPanel('sheets');if(currentStore?.id)api.get(`/manage/stores/${currentStore.id}/google-sheets/status`).then(r=>setSheetsStatus(r.data)).catch(()=>{});}} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700"><FileSpreadsheet size={14}/>Google Sheets</button>
+        <button onClick={() => setTestPanel('sheets')} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700"><FileSpreadsheet size={14}/>Google Sheets</button>
       </div>
 
       {/* Apps Grid */}
@@ -513,50 +513,96 @@ export default function StoreApps() {
 
             {testPanel === 'sheets' && <>
               <div className="p-4 bg-gradient-to-r from-emerald-600 to-green-700 flex items-center justify-between">
-                <div className="flex items-center gap-3"><FileSpreadsheet size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Google Sheets</h3><p className="text-white/60 text-[10px]">Sync orders to a spreadsheet</p></div></div>
+                <div className="flex items-center gap-3"><FileSpreadsheet size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">Google Sheets</h3><p className="text-white/60 text-[10px]">Sync orders to your spreadsheet</p></div></div>
                 <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
               </div>
               <div className="p-6 space-y-4 overflow-y-auto">
-                {!sheetsStatus?.configured ? (
-                  <div className="p-4 bg-amber-50 rounded-xl text-center">
-                    <p className="text-sm text-amber-700 font-medium">Google Sheets not configured on server</p>
-                    <p className="text-xs text-amber-500 mt-1">Platform admin needs to add GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_KEY env vars</p>
-                  </div>
-                ) : sheetsStatus?.has_sheet ? (
+                {/* Step 1: Sign in with Google */}
+                {!sheetsStatus?.token ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-3">
-                      <Check size={18} className="text-emerald-500 shrink-0"/>
-                      <div className="flex-1">
-                        <p className="font-bold text-sm text-emerald-700">Connected</p>
-                        <p className="text-xs text-emerald-500 font-mono truncate">{sheetsStatus.sheet_id}</p>
-                      </div>
-                    </div>
-                    <button onClick={async()=>{setSheetsLoading(true);setSyncResult(null);try{const{data}=await api.post(`/manage/stores/${currentStore.id}/google-sheets/sync`,{});setSyncResult(data);toast.success(`${data.synced} orders synced!`);}catch(e){setSyncResult({error:e.response?.data?.error||e.message});toast.error('Sync failed');}setSheetsLoading(false);}} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
-                      {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}Sync All Orders Now
+                    <p className="text-sm text-gray-600">Connect your Google account to sync orders directly to a Google Sheet.</p>
+                    <button onClick={async()=>{
+                      setSheetsLoading(true);
+                      try{
+                        // Load Google Identity Services
+                        if(!window.google?.accounts){
+                          await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+                        }
+                        // Get client ID from platform
+                        let clientId='';
+                        try{const{data:pi}=await api.get('/platform/info');clientId=pi.google_client_id||'';}catch{}
+                        if(!clientId){toast.error('Google Client ID not set. Ask platform admin.');setSheetsLoading(false);return;}
+                        // Request token
+                        const tokenClient=window.google.accounts.oauth2.initTokenClient({
+                          client_id:clientId,
+                          scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+                          callback:(resp)=>{
+                            if(resp.error){toast.error('Google auth failed');setSheetsLoading(false);return;}
+                            setSheetsStatus({token:resp.access_token,expires:Date.now()+resp.expires_in*1000});
+                            toast.success('Google connected!');
+                            setSheetsLoading(false);
+                          },
+                        });
+                        tokenClient.requestAccessToken();
+                      }catch(e){toast.error('Failed to load Google: '+e.message);setSheetsLoading(false);}
+                    }} disabled={sheetsLoading} className="w-full py-3 bg-white border-2 border-gray-300 rounded-xl font-bold text-sm flex items-center justify-center gap-3 hover:bg-gray-50 disabled:opacity-50">
+                      {sheetsLoading?<div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"/>:<><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Sign in with Google</>}
                     </button>
-                    {syncResult&&!syncResult.error&&<p className="text-sm text-emerald-600 text-center">{syncResult.synced} orders synced to sheet</p>}
-                    {syncResult?.error&&<p className="text-sm text-red-600 text-center">{syncResult.error}</p>}
-                    <button onClick={async()=>{try{await api.post(`/manage/stores/${currentStore.id}/google-sheets/disconnect`,{});setSheetsStatus({...sheetsStatus,has_sheet:false,sheet_id:null});toast.success('Disconnected');}catch{toast.error('Failed');}}} className="w-full py-2 text-red-600 text-xs font-bold hover:underline">Disconnect Sheet</button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-                      <p className="text-sm font-bold text-gray-700">Setup Steps:</p>
-                      <div className="space-y-2 text-xs text-gray-600">
-                        <p>1. Create a Google Sheet (or open an existing one)</p>
-                        <p>2. Click <b>Share</b> and add this email:</p>
-                        <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
-                          <code className="text-xs text-brand-600 flex-1 truncate">{sheetsStatus?.service_email||'loading...'}</code>
-                          <button onClick={()=>{navigator.clipboard.writeText(sheetsStatus?.service_email||'');toast.success('Copied!');}} className="text-xs text-brand-600 font-bold shrink-0">Copy</button>
-                        </div>
-                        <p>3. Give it <b>Editor</b> access</p>
-                        <p>4. Paste the sheet URL below</p>
-                      </div>
+                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
+                      <Check size={16} className="text-emerald-500 shrink-0"/>
+                      <p className="text-sm text-emerald-700 font-medium">Google account connected</p>
                     </div>
-                    <div><label className="input-label text-xs">Google Sheet URL</label><input className="input-field text-sm" value={sheetUrl} onChange={e=>setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..."/></div>
-                    <button onClick={async()=>{if(!sheetUrl)return toast.error('Paste your sheet URL');setSheetsLoading(true);try{const{data}=await api.post(`/manage/stores/${currentStore.id}/google-sheets/connect`,{sheet_url:sheetUrl});setSheetsStatus({...sheetsStatus,has_sheet:true,sheet_id:data.sheet_id});setSheetUrl('');toast.success('Connected!');}catch(e){toast.error(e.response?.data?.error||'Failed');}setSheetsLoading(false);}} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
-                      {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<FileSpreadsheet size={14}/>}Connect Sheet
+
+                    {/* Step 2: Enter sheet URL */}
+                    <div>
+                      <label className="input-label text-xs">Google Sheet URL</label>
+                      <input className="input-field text-sm" value={sheetUrl} onChange={e=>setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..."/>
+                      <p className="text-[10px] text-gray-400 mt-1">Create a sheet in Google Sheets, copy its URL and paste it here</p>
+                    </div>
+
+                    {/* Sync button */}
+                    <button onClick={async()=>{
+                      if(!sheetUrl)return toast.error('Paste your Google Sheet URL');
+                      const match=sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                      const sheetId=match?match[1]:sheetUrl.trim();
+                      if(!sheetId)return toast.error('Invalid sheet URL');
+                      setSheetsLoading(true);setSyncResult(null);
+                      try{
+                        // Fetch orders from backend
+                        const{data:exp}=await api.get(`/manage/stores/${currentStore.id}/orders-export`);
+                        const values=[exp.header,...exp.rows];
+                        // Clear and write via Google Sheets API
+                        const token=sheetsStatus.token;
+                        const base=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+                        // Check access
+                        const check=await fetch(base,{headers:{Authorization:`Bearer ${token}`}});
+                        if(check.status===403||check.status===404){toast.error(check.status===403?'No access to this sheet. Make sure you own it.':'Sheet not found.');setSheetsLoading(false);return;}
+                        // Clear Sheet1
+                        await fetch(`${base}/values/Sheet1!A:Z:clear`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});
+                        // Write data
+                        await fetch(`${base}/values/Sheet1!A1?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({values})});
+                        // Bold header
+                        try{const meta=await(await fetch(base,{headers:{Authorization:`Bearer ${token}`}})).json();const sid=meta.sheets?.[0]?.properties?.sheetId||0;await fetch(`${base}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{repeatCell:{range:{sheetId:sid,startRowIndex:0,endRowIndex:1},cell:{userEnteredFormat:{textFormat:{bold:true},backgroundColor:{red:0.93,green:0.93,blue:0.93}}},fields:'userEnteredFormat(textFormat,backgroundColor)'}}]})});}catch{}
+                        // Save sheet ID to store config
+                        await ownerApi.updateStore(currentStore.id,{google_sheet_id:sheetId});
+                        setSyncResult({synced:exp.rows.length});
+                        toast.success(`${exp.rows.length} orders synced!`);
+                      }catch(e){
+                        if(e.message?.includes('401')||sheetsStatus.expires<Date.now()){setSheetsStatus(null);toast.error('Session expired. Sign in again.');}
+                        else{setSyncResult({error:e.message});toast.error('Sync failed: '+e.message);}
+                      }
+                      setSheetsLoading(false);
+                    }} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                      {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}Sync Orders to Sheet
                     </button>
+
+                    {syncResult&&!syncResult.error&&<p className="text-sm text-emerald-600 text-center font-medium">{syncResult.synced} orders synced</p>}
+                    {syncResult?.error&&<p className="text-sm text-red-600 text-center">{syncResult.error}</p>}
+
+                    <button onClick={()=>{setSheetsStatus(null);toast.success('Disconnected');}} className="w-full py-2 text-red-500 text-xs font-bold hover:underline">Disconnect Google</button>
                   </div>
                 )}
               </div>
