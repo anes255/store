@@ -10,12 +10,13 @@ export default function CustomerAuth() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [store, setStore] = useState(null);
+  const [storeLoading, setStoreLoading] = useState(true);
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {}); }, [storeSlug]);
+  useEffect(() => { storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {}).finally(() => setStoreLoading(false)); }, [storeSlug]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,6 +39,8 @@ export default function CustomerAuth() {
   };
 
   const pc = store?.primary_color || '#7C3AED';
+
+  if (storeLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

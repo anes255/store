@@ -82,7 +82,7 @@ const DEFAULT_ITEMS = [
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
     {to:'/dashboard/products',label:'Products'},{to:'/dashboard/stock',label:'Stock Manager'},{to:'/dashboard/smart-reviews',label:'Smart Reviews'},{to:'/dashboard/ai-intelligence',label:'AI Intelligence'}]},
   {id:'store',type:'group',icon:'Globe',label:'Store & Settings',children:[
-    {to:'/dashboard/settings',label:'All Settings'},{to:'/dashboard/page-builder',label:'Page Builder'},{to:'/dashboard/homepage',label:'Home Page'},{to:'/dashboard/contact',label:'Contact Info'},{to:'/dashboard/faqs',label:'FAQs'},{to:'/dashboard/about',label:'About Us'},{to:'/dashboard/order-tracking',label:'Order Tracking'},{to:'/dashboard/domains',label:'Domains'}]},
+    {to:'/dashboard/settings',label:'All Settings'},{to:'/dashboard/page-builder',label:'Page Builder'},{to:'/dashboard/homepage',label:'Home Page'},{to:'/dashboard/contact',label:'Contact Info'},{to:'/dashboard/faqs',label:'FAQs'},{to:'/dashboard/about',label:'About Us'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'Delivery',children:[
     {to:'/dashboard/shipping-partners',label:'Shipping Partners'},{to:'/dashboard/shipping-wilayas',label:'Shipping Wilayas'},{to:'/dashboard/tracking-orders',label:'Tracking Orders'},{to:'/dashboard/how-to-connect',label:'How to Connect'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
