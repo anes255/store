@@ -73,7 +73,7 @@ const AdvancedBuilder=lazy(()=>import('./pages/store/AdvancedBuilder'));
 const Storefront=lazy(()=>import('./pages/buyer/Storefront'));
 const ProductDetail=lazy(()=>import('./pages/buyer/ProductDetail'));
 const Checkout=lazy(()=>import('./pages/buyer/Checkout'));
-const CustomerAuth=lazy(()=>import('./pages/buyer/CustomerAuth'));
+import CustomerAuth from'./pages/buyer/CustomerAuth';
 const CustomerProfile=lazy(()=>import('./pages/buyer/CustomerProfile'));
 const Favorites=lazy(()=>import('./pages/buyer/Favorites'));
 

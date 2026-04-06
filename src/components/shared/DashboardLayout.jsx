@@ -84,7 +84,7 @@ const DEFAULT_ITEMS = [
   {id:'store',type:'group',icon:'Globe',label:'Store & Settings',children:[
     {to:'/dashboard/settings',label:'All Settings'},{to:'/dashboard/page-builder',label:'Page Builder'},{to:'/dashboard/homepage',label:'Home Page'},{to:'/dashboard/contact',label:'Contact Info'},{to:'/dashboard/faqs',label:'FAQs'},{to:'/dashboard/about',label:'About Us'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'Delivery',children:[
-    {to:'/dashboard/shipping-partners',label:'Shipping Partners'},{to:'/dashboard/shipping-wilayas',label:'Shipping Wilayas'},{to:'/dashboard/tracking-orders',label:'Tracking Orders'},{to:'/dashboard/how-to-connect',label:'How to Connect'}]},
+    {to:'/dashboard/shipping-partners',label:'Shipping Partners'},{to:'/dashboard/shipping-wilayas',label:'Shipping Wilayas'},{to:'/dashboard/how-to-connect',label:'How to Connect'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
     {to:'/dashboard/customers',label:'Customers'},{to:'/dashboard/blacklist',label:'Automatic Blacklist'}]},
   {id:'analytics',type:'link',to:'/dashboard/analytics',icon:'BarChart3',label:'Analytics'},

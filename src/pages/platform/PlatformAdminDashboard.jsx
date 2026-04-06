@@ -446,7 +446,6 @@ function SystemHealth(){
   if(!sys)return<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>;
   const svc=[
     {name:'WhatsApp',ok:sys.services?.whatsapp,icon:Smartphone,desc:'Meta Cloud API'},
-    {name:'SMS',ok:sys.services?.sms,icon:Mail,desc:'Twilio'},
     {name:'Email',ok:sys.services?.email,icon:Mail,desc:'Resend'},
     {name:'AI Chatbot',ok:sys.services?.ai,icon:Bot,desc:'Google Gemini'},
     {name:'Payments',ok:sys.services?.payments,icon:CreditCard,desc:'Chargily Pay'},

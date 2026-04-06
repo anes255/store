@@ -206,10 +206,10 @@ export default function Storefront() {
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* ============ HEADER ============ */}
       <header className="bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-3">
-            {store.logo ? <img src={store.logo} className="w-11 h-11 rounded-xl object-cover" alt=""/> : <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{backgroundColor:pc}}>{store.name?.[0]}</div>}
-            <span className="text-xl font-extrabold text-gray-900">{store.name}</span>
+        <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-4">
+            {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{backgroundColor:pc}}>{store.name?.[0]}</div>}
+            <span className="text-2xl font-extrabold text-gray-900">{store.name}</span>
           </Link>
           <div className="flex items-center gap-3">
             <StoreLangSwitcher />
