@@ -197,21 +197,31 @@ export default function StoreDashboard() {
             <h3 className="font-bold text-gray-900">{t('dashboard.salesOverview')}</h3>
             <span className="text-xs text-gray-400">Last 7 days performance</span>
           </div>
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={salesData.length > 0 ? salesData : [{ date: 'Mon', revenue: 0 }, { date: 'Tue', revenue: 0 }]}>
-              <defs>
-                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tickFormatter={v => v?.substring(5)} stroke="#9ca3af" fontSize={11} />
-              <YAxis stroke="#9ca3af" fontSize={11} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-              <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          {(()=>{
+            const fallback=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return{date:d.toISOString().split('T')[0],revenue:0,orders:0};});
+            const chartData=salesData.length>=2?salesData.map(d=>({...d,revenue:parseFloat(d.revenue||d.total||0),orders:parseInt(d.orders||d.count||0)})):fallback;
+            return(
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorOrd" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="date" tickFormatter={v => {try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}}} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?' DZD':''}`,name==='revenue'?'Revenue':'Orders']} />
+                <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" name="revenue" />
+                <Area type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} fill="url(#colorOrd)" name="orders" />
+              </AreaChart>
+            </ResponsiveContainer>);
+          })()}
         </div>
 
         <div className="glass-card-solid p-6">

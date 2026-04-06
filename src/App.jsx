@@ -54,6 +54,7 @@ const CartRecovery=lazy(()=>import('./pages/store/CartRecovery'));
 const StoreDomains=lazy(()=>import('./pages/store/StoreDomains'));
 const StoreAnalytics=lazy(()=>import('./pages/store/StoreAnalytics'));
 const StoreCosts=lazy(()=>import('./pages/store/StoreCosts'));
+const StoreTaxes=lazy(()=>import('./pages/store/StoreTaxes'));
 const StoreBilling=lazy(()=>import('./pages/store/StoreBilling'));
 const StockManager=lazy(()=>import('./pages/store/StockManager'));
 const ShippingWilayas=lazy(()=>import('./pages/store/ShippingWilayas'));
@@ -102,6 +103,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/dashboard/domains" element={<P><StoreDomains/></P>}/>
 <Route path="/dashboard/analytics" element={<P><StoreAnalytics/></P>}/>
 <Route path="/dashboard/costs" element={<P><StoreCosts/></P>}/>
+<Route path="/dashboard/taxes" element={<P><StoreTaxes/></P>}/>
 <Route path="/dashboard/billing" element={<P><StoreBilling/></P>}/>
 <Route path="/dashboard/shipping-wilayas" element={<P><ShippingWilayas/></P>}/>
 <Route path="/dashboard/shipping-partners" element={<P><ShippingPartners/></P>}/>

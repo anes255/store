@@ -5,7 +5,26 @@ import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu } from 'lucide-react';
+import { motion } from 'framer-motion';
 import Checkout from './Checkout';
+
+// ============ PER-TEMPLATE ANIMATION PRESETS ============
+// Each template picked in the AdvancedBuilder stamps an `animation` key onto
+// its sections. BuilderSections reads that key and plays the matching preset
+// via framer-motion whileInView.
+const ANIM_PRESETS = {
+  editorial: { initial:{opacity:0,y:50,filter:'blur(10px)'}, whileInView:{opacity:1,y:0,filter:'blur(0px)'}, transition:{duration:1.1,ease:[0.22,1,0.36,1]} },
+  luxe:      { initial:{opacity:0,scale:0.94,y:30},          whileInView:{opacity:1,scale:1,y:0},               transition:{duration:1.2,ease:[0.22,1,0.36,1]} },
+  warm:      { initial:{opacity:0,x:-50},                    whileInView:{opacity:1,x:0},                       transition:{duration:0.9,ease:'easeOut'} },
+  bouncy:    { initial:{opacity:0,scale:0.8,y:40},           whileInView:{opacity:1,scale:1,y:0},               transition:{type:'spring',stiffness:120,damping:12} },
+  calm:      { initial:{opacity:0,y:40},                     whileInView:{opacity:1,y:0},                       transition:{duration:1.3,ease:'easeOut'} },
+  slam:      { initial:{opacity:0,y:-80,skewY:-2},           whileInView:{opacity:1,y:0,skewY:0},               transition:{type:'spring',stiffness:260,damping:18} },
+  tech:      { initial:{opacity:0,x:60,rotateY:8},           whileInView:{opacity:1,x:0,rotateY:0},             transition:{duration:0.8,ease:[0.16,1,0.3,1]} },
+  glow:      { initial:{opacity:0,filter:'blur(16px)',scale:1.04}, whileInView:{opacity:1,filter:'blur(0px)',scale:1}, transition:{duration:1.4,ease:'easeOut'} },
+  rise:      { initial:{opacity:0,y:60,scale:0.96},          whileInView:{opacity:1,y:0,scale:1},               transition:{duration:1.0,ease:[0.25,0.46,0.45,0.94]} },
+  noble:     { initial:{opacity:0,scale:0.97},               whileInView:{opacity:1,scale:1},                   transition:{duration:1.1,ease:'easeOut'} },
+};
+const getPreset = (key) => ANIM_PRESETS[key] || ANIM_PRESETS.calm;
 
 // ============ AI CHATBOT WIDGET ============
 function AIChatbot({ store, slug }) {
@@ -319,7 +338,7 @@ export default function Storefront() {
 }
 
 function BuilderSections({sections,products,categories,store,storeSlug,pc,getName,getThumb,addItem,wishlist,toggleWishlist,search,setSearch,t}){
-  return(<>{sections.filter(s=>s.visible!==false).map(sec=>{
+  const renderSection=(sec)=>{
     const s=sec.style||{};const c=sec.content||{};
     const wrap={backgroundColor:s.bg||'#ffffff',color:s.textColor||'#1f2937',padding:`${s.padding||60}px 16px`,fontFamily:s.fontFamily||'Inter',borderRadius:`${s.borderRadius||0}px`};
     const inner={maxWidth:`${s.maxWidth||1200}px`,margin:'0 auto'};
@@ -402,5 +421,21 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
     if(sec.type==='custom_html')return<section key={sec.id} style={wrap}><div style={inner} dangerouslySetInnerHTML={{__html:c.html||''}}/></section>;
 
     return null;
+  };
+  return(<>{sections.filter(s=>s.visible!==false).map((sec,i)=>{
+    const node=renderSection(sec);
+    if(!node)return null;
+    const preset=getPreset(sec.animation);
+    const delay=((sec.animationIndex??i)%6)*0.08;
+    return(
+      <motion.div
+        key={sec.id}
+        initial={preset.initial}
+        whileInView={preset.whileInView}
+        viewport={{once:true,amount:0.15}}
+        transition={{...preset.transition,delay}}
+        style={{willChange:'transform,opacity,filter'}}
+      >{node}</motion.div>
+    );
   })}</>);
 }

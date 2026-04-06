@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent}from'lucide-react';
 
 function NotifBell(){
   const[open,setOpen]=React.useState(false);
@@ -89,10 +89,11 @@ const DEFAULT_ITEMS = [
     {to:'/dashboard/customers',label:'Customers'},{to:'/dashboard/blacklist',label:'Automatic Blacklist'}]},
   {id:'analytics',type:'link',to:'/dashboard/analytics',icon:'BarChart3',label:'Analytics'},
   {id:'costs',type:'link',to:'/dashboard/costs',icon:'DollarSign',label:'Costs'},
+  {id:'taxes',type:'link',to:'/dashboard/taxes',icon:'Percent',label:'Taxes'},
   {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'Billing & Plans'},
 ];
 
-const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings};
+const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent};
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();

@@ -18,6 +18,8 @@ function Sidebar({open,onClose}){
     {path:'/admin/site-settings',icon:Globe,label:'Site & Branding'},
     {path:'/admin/page-builder',icon:Layers,label:'Page Builder'},
     {path:'/admin/system',icon:Server,label:'System Health'},
+    {path:'/admin/profile',icon:Settings,label:'My Profile'},
+    {path:'/admin/admins',icon:Shield,label:'Super Admins'},
   ];
   return(<>
     {open&&<div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose}/>}
@@ -475,6 +477,154 @@ function SystemHealth(){
   </div>);
 }
 
+// ═══════ MY PROFILE ═══════
+function MyProfile(){
+  const{user,setUser}=useAuthStore();
+  const[form,setForm]=useState({name:'',email:'',phone:''});
+  const[pwForm,setPwForm]=useState({current_password:'',new_password:'',confirm_password:''});
+  const[saving,setSaving]=useState(false);
+  const[changingPw,setChangingPw]=useState(false);
+
+  useEffect(()=>{
+    platformApi.getAdminProfile().then(r=>{const p=r.data;setForm({name:p.name||'',email:p.email||'',phone:p.phone||''});}).catch(()=>{
+      if(user)setForm({name:user.name||'',email:user.email||'',phone:user.phone||''});
+    });
+  },[]);
+
+  const saveProfile=async()=>{
+    if(!form.name||!form.email)return toast.error('Name and email are required');
+    setSaving(true);
+    try{
+      const{data}=await platformApi.updateAdminProfile(form);
+      if(data&&setUser)setUser({...user,...data});
+      toast.success('Profile updated');
+    }catch(e){toast.error(e.response?.data?.error||'Failed to update profile');}
+    setSaving(false);
+  };
+
+  const changePassword=async()=>{
+    if(!pwForm.current_password||!pwForm.new_password)return toast.error('All password fields required');
+    if(pwForm.new_password!==pwForm.confirm_password)return toast.error('Passwords do not match');
+    if(pwForm.new_password.length<6)return toast.error('Password must be at least 6 characters');
+    setChangingPw(true);
+    try{
+      await platformApi.changeAdminPassword(pwForm);
+      toast.success('Password changed');
+      setPwForm({current_password:'',new_password:'',confirm_password:''});
+    }catch(e){toast.error(e.response?.data?.error||'Failed to change password');}
+    setChangingPw(false);
+  };
+
+  return(<div>
+    <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Settings size={22} className="text-red-500"/>My Profile</h1>
+    <p className="text-sm text-gray-400 mb-6">Update your login information</p>
+
+    <div className="grid lg:grid-cols-2 gap-6">
+      {/* Profile info */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 className="font-bold text-gray-900 mb-4">Account Information</h2>
+        <div className="space-y-4">
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Name</label><input className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Email</label><input type="email" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Phone</label><input className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="+213..."/></div>
+        </div>
+        <button onClick={saveProfile} disabled={saving} className="mt-4 w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"><Save size={14}/>{saving?'Saving...':'Save Profile'}</button>
+      </div>
+
+      {/* Change password */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 className="font-bold text-gray-900 mb-4">Change Password</h2>
+        <div className="space-y-4">
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Current Password</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.current_password} onChange={e=>setPwForm({...pwForm,current_password:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">New Password</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.new_password} onChange={e=>setPwForm({...pwForm,new_password:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Confirm New Password</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.confirm_password} onChange={e=>setPwForm({...pwForm,confirm_password:e.target.value})}/></div>
+        </div>
+        <button onClick={changePassword} disabled={changingPw} className="mt-4 w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"><Shield size={14}/>{changingPw?'Changing...':'Change Password'}</button>
+      </div>
+    </div>
+  </div>);
+}
+
+// ═══════ ADMIN MANAGEMENT ═══════
+function AdminManagement(){
+  const{user}=useAuthStore();
+  const[admins,setAdmins]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[showAdd,setShowAdd]=useState(false);
+  const[form,setForm]=useState({name:'',email:'',phone:'',password:''});
+  const[saving,setSaving]=useState(false);
+
+  const load=()=>{setLoading(true);platformApi.getAdmins().then(r=>setAdmins(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
+  useEffect(()=>{load();},[]);
+
+  const add=async()=>{
+    if(!form.name||!form.email||!form.password)return toast.error('Name, email and password are required');
+    setSaving(true);
+    try{await platformApi.addAdmin(form);toast.success('Super admin added!');setShowAdd(false);setForm({name:'',email:'',phone:'',password:''});load();}catch(e){toast.error(e.response?.data?.error||'Failed');}
+    setSaving(false);
+  };
+
+  const remove=async(id)=>{if(!confirm('Remove this admin? They will lose all super admin access.'))return;try{await platformApi.removeAdmin(id);toast.success('Removed');load();}catch{toast.error('Failed');}};
+  const toggle=async(id)=>{try{await platformApi.toggleAdmin(id);load();}catch{toast.error('Failed');}};
+
+  return(<div>
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Shield size={22} className="text-red-500"/>Super Admins</h1>
+        <p className="text-sm text-gray-400 mt-1">Grant or revoke super admin access to trusted accounts</p>
+      </div>
+      <button onClick={()=>setShowAdd(true)} className="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-700"><Plus size={14}/>Add Admin</button>
+    </div>
+
+    {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>:
+    admins.length===0?<div className="bg-white rounded-2xl p-16 shadow-sm text-center"><Shield size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">No other admins yet</p></div>:
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {admins.map(a=>(
+        <div key={a.id} className={`bg-white rounded-2xl p-6 shadow-sm relative ${!a.is_active?'opacity-50':''}`}>
+          {a.id===user?.id&&<span className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-0.5 bg-red-100 text-red-600 rounded-full">You</span>}
+          <div className="text-center mb-3">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-2">
+              <span className="text-xl font-bold text-red-500">{(a.name||'?')[0].toUpperCase()}</span>
+            </div>
+            <h3 className="font-bold text-gray-900">{a.name}</h3>
+            <p className="text-xs text-gray-400">{a.email}</p>
+            {a.phone&&<p className="text-xs text-gray-400">{a.phone}</p>}
+            <div className="flex items-center justify-center gap-1 mt-1.5">
+              <div className={`w-2 h-2 rounded-full ${a.is_active?'bg-emerald-500':'bg-gray-300'}`}/>
+              <span className={`text-[10px] font-bold ${a.is_active?'text-emerald-600':'text-gray-400'}`}>{a.is_active?'Active':'Inactive'}</span>
+            </div>
+          </div>
+          {a.id!==user?.id&&(
+            <div className="flex gap-2 mt-3 border-t border-gray-100 pt-3">
+              <button onClick={()=>toggle(a.id)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${a.is_active?'bg-amber-50 text-amber-600 hover:bg-amber-100':'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}>{a.is_active?'Deactivate':'Activate'}</button>
+              <button onClick={()=>remove(a.id)} className="flex-1 py-2 rounded-lg text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100">Remove</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>}
+
+    {showAdd&&(
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowAdd(false)}>
+        <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">Add Super Admin</h2><button onClick={()=>setShowAdd(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div>
+          <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-xl mb-4 flex items-center gap-2"><AlertTriangle size={14}/>Super admins have full access to the entire platform including all stores, owners, and settings.</p>
+          <div className="space-y-4">
+            <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Name *</label><input className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Email *</label><input type="email" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Phone</label><input className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="+213..."/></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Password *</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button onClick={()=>setShowAdd(false)} className="flex-1 py-3 rounded-xl border border-gray-200 font-bold text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={add} disabled={saving} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 disabled:opacity-50">{saving?'Adding...':'Add Super Admin'}</button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>);
+}
+
 // ═══════ MAIN LAYOUT ═══════
 export default function PlatformAdminDashboard(){
   const[sidebarOpen,setSidebarOpen]=useState(false);
@@ -500,6 +650,8 @@ export default function PlatformAdminDashboard(){
             <Route path="billing-config" element={<BillingConfig/>}/>
             <Route path="page-builder" element={<PageBuilder/>}/>
             <Route path="system" element={<SystemHealth/>}/>
+            <Route path="profile" element={<MyProfile/>}/>
+            <Route path="admins" element={<AdminManagement/>}/>
             <Route path="*" element={<Overview/>}/>
           </Routes>
         </div>

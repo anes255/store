@@ -22,8 +22,14 @@ const SECTION_TYPES=[
 
 // Templates inspired by Canva's ecommerce website library — distinct niches,
 // editorial hero layouts, refined palettes, single-purpose section rhythm.
+// Animation presets — each template gets its own signature motion that gets
+// stamped onto every section when the template is applied. The Storefront
+// BuilderSections reads `section.animation` and plays the matching preset
+// via framer-motion whileInView (see Storefront.jsx).
+const ANIMATIONS=['editorial','luxe','warm','bouncy','calm','slam','tech','glow','rise','noble'];
+
 const TEMPLATES=[
-  {name:'White Minimalist Fashion',desc:'Canva-style clean editorial. All-white canvas, oversized Playfair display type. Apparel & lookbooks.',colors:['#ffffff','#111111','#f2f2f2'],
+  {name:'White Minimalist Fashion',animation:'editorial',desc:'Canva-style clean editorial. All-white canvas, oversized Playfair display type. Apparel & lookbooks.',colors:['#ffffff','#111111','#f2f2f2'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#ffffff',textColor:'#111111',padding:'120',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'1400'},content:{title:'Wardrobe, elevated.',subtitle:'The spring edit — 42 new pieces, curated in Algiers.',btnText:'Shop the edit',btnLink:'#products',titleSize:'92',subtitleSize:'18',btnColor:'#111111',bgImage:'',overlay:'0',align:'center',height:'640'}},
       {id:uid(),type:'banner',visible:true,style:{bg:'#111111',textColor:'#ffffff',padding:'16',fontFamily:'DM Sans',borderRadius:'0',maxWidth:'1400'},content:{text:'FREE SHIPPING OVER 8 000 DZD   ·   14-DAY RETURNS   ·   NEW ARRIVALS EVERY WEEK',btnText:'',btnLink:'',fontSize:'11',align:'center'}},
@@ -32,7 +38,7 @@ const TEMPLATES=[
       {id:uid(),type:'products',visible:true,style:{bg:'#ffffff',textColor:'#111111',padding:'90',fontFamily:'DM Sans',borderRadius:'0',maxWidth:'1320'},content:{title:'BESTSELLERS',titleSize:'14',columns:'3',mobileColumns:'2',cardStyle:'flat',showPrice:true,showName:true,showBtn:false,limit:'3',featured:true}},
       {id:uid(),type:'features',visible:true,style:{bg:'#111111',textColor:'#ffffff',padding:'64',fontFamily:'DM Sans',borderRadius:'0',maxWidth:'1200'},content:{items:[{icon:'◼',title:'CURATED',desc:'Hand-selected every week'},{icon:'◼',title:'SUSTAINABLE',desc:'Small-batch production'},{icon:'◼',title:'WORLDWIDE',desc:'Ships to 50+ countries'}],columns:'3'}},
   ]},
-  {name:'Brown Beauty Launch',desc:'Canva beauty single-page launch. Warm taupe & mocha, serif display, product-focused.',colors:['#f3ece2','#6b3e26','#e9dcc9'],
+  {name:'Brown Beauty Launch',animation:'luxe',desc:'Canva beauty single-page launch. Warm taupe & mocha, serif display, product-focused.',colors:['#f3ece2','#6b3e26','#e9dcc9'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#f3ece2',textColor:'#3d2414',padding:'110',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'1280'},content:{title:'Glow, bottled.',subtitle:'The new serum everyone\'s reaching for — 97% natural, dermatologist-tested.',btnText:'Shop the launch',btnLink:'#products',titleSize:'74',subtitleSize:'18',btnColor:'#6b3e26',bgImage:'',overlay:'0',align:'center',height:'580'}},
       {id:uid(),type:'features',visible:true,style:{bg:'#e9dcc9',textColor:'#3d2414',padding:'64',fontFamily:'Lora',borderRadius:'0',maxWidth:'1100'},content:{items:[{icon:'✦',title:'97% Natural',desc:'Cold-pressed botanicals'},{icon:'◈',title:'Dermatologist-tested',desc:'Safe for sensitive skin'},{icon:'◉',title:'Refillable',desc:'Glass, not plastic'}],columns:'3'}},
@@ -41,7 +47,7 @@ const TEMPLATES=[
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#f3ece2',textColor:'#3d2414',padding:'90',fontFamily:'Lora',borderRadius:'0',maxWidth:'1100'},content:{title:'Reviews that matter',titleSize:'36',items:[{name:'Yasmine · Algiers',text:'Two weeks in and my skin has never looked better. Period.',rating:5},{name:'Meriem · Oran',text:'Scent is gorgeous, finish is silky. Worth every dinar.',rating:5},{name:'Rania · Setif',text:'I\'ve repurchased three times already. Cult favorite.',rating:5}]}},
       {id:uid(),type:'banner',visible:true,style:{bg:'#3d2414',textColor:'#f3ece2',padding:'64',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'1280'},content:{text:'Launch offer — free mini with every full size',btnText:'Shop now',btnLink:'#products',fontSize:'28',align:'center'}},
   ]},
-  {name:'Cream & Orange Organic Fashion',desc:'Canva retail template. Warm cream with burnt-orange accents. Natural fashion & lifestyle.',colors:['#fdf6ec','#d97706','#fff8f0'],
+  {name:'Cream & Orange Organic Fashion',animation:'warm',desc:'Canva retail template. Warm cream with burnt-orange accents. Natural fashion & lifestyle.',colors:['#fdf6ec','#d97706','#fff8f0'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#fdf6ec',textColor:'#431407',padding:'100',fontFamily:'Raleway',borderRadius:'0',maxWidth:'1280'},content:{title:'Softly woven. Sustainably made.',subtitle:'Linen, cotton, and slow style — for people who wear their values.',btnText:'Explore collection',btnLink:'#products',titleSize:'62',subtitleSize:'19',btnColor:'#d97706',bgImage:'',overlay:'0',align:'center',height:'580'}},
       {id:uid(),type:'banner',visible:true,style:{bg:'#d97706',textColor:'#fdf6ec',padding:'14',fontFamily:'Raleway',borderRadius:'0',maxWidth:'1400'},content:{text:'✿   NEW SPRING COLLECTION IS LIVE   ·   CARBON-NEUTRAL SHIPPING   ·   100% NATURAL FIBERS   ✿',btnText:'',btnLink:'',fontSize:'12',align:'center'}},
@@ -50,7 +56,7 @@ const TEMPLATES=[
       {id:uid(),type:'text',visible:true,style:{bg:'#d97706',textColor:'#fff8f0',padding:'80',fontFamily:'Raleway',borderRadius:'0',maxWidth:'900'},content:{text:'Every piece is made slowly, on purpose. Fewer collections, better fabrics, longer lifespans. That\'s the only luxury we believe in.',fontSize:'20',lineHeight:'1.9',align:'center',maxWidth:'760'}},
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#fff8f0',textColor:'#431407',padding:'80',fontFamily:'Raleway',borderRadius:'0',maxWidth:'1100'},content:{title:'What our community says',titleSize:'32',items:[{name:'Lina',text:'The linen dress is the most comfortable thing I own. Fits perfectly.',rating:5},{name:'Salim',text:'Finally a brand doing slow fashion properly in Algeria.',rating:5},{name:'Imène',text:'Bought one shirt, came back for five. Quality is unreal.',rating:5}]}},
   ]},
-  {name:'Pastel Blocks Fashion',desc:'Canva playful color-block style. Soft pinks, lilacs, mint. Gen-Z fashion & accessories.',colors:['#fde2e4','#b8a4e3','#d6f5e3'],
+  {name:'Pastel Blocks Fashion',animation:'bouncy',desc:'Canva playful color-block style. Soft pinks, lilacs, mint. Gen-Z fashion & accessories.',colors:['#fde2e4','#b8a4e3','#d6f5e3'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#fde2e4',textColor:'#4a1d3e',padding:'100',fontFamily:'Poppins',borderRadius:'0',maxWidth:'1280'},content:{title:'Soft era. Loud wardrobe.',subtitle:'Playful pieces for people who dress for themselves first.',btnText:'Shop the vibe',btnLink:'#products',titleSize:'70',subtitleSize:'19',btnColor:'#b8a4e3',bgImage:'',overlay:'0',align:'center',height:'580'}},
       {id:uid(),type:'features',visible:true,style:{bg:'#d6f5e3',textColor:'#1f3d2a',padding:'56',fontFamily:'Poppins',borderRadius:'0',maxWidth:'1100'},content:{items:[{icon:'🎀',title:'Cute & comfy',desc:'All-day soft fabrics'},{icon:'🚚',title:'48h delivery',desc:'DZ-wide express'},{icon:'💌',title:'Gift-wrapped',desc:'Ribbon & note included'},{icon:'🌟',title:'Size-inclusive',desc:'XS to 3XL, always'}],columns:'4'}},
@@ -58,7 +64,7 @@ const TEMPLATES=[
       {id:uid(),type:'banner',visible:true,style:{bg:'#fde2e4',textColor:'#4a1d3e',padding:'56',fontFamily:'Poppins',borderRadius:'32',maxWidth:'1100'},content:{text:'First order? Use SOFT10 for 10% off ✨',btnText:'Claim offer',btnLink:'#products',fontSize:'24',align:'center'}},
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#d6f5e3',textColor:'#1f3d2a',padding:'80',fontFamily:'Poppins',borderRadius:'0',maxWidth:'1100'},content:{title:'Real reviews from real besties',titleSize:'30',items:[{name:'Meriem',text:'Obsessed. Literally wear something from this store every day.',rating:5},{name:'Nour',text:'Packaging made me scream. Products made me scream louder.',rating:5},{name:'Lyna',text:'Finally a DZ brand that actually gets Gen-Z fashion.',rating:5}]}},
   ]},
-  {name:'Minimal Furniture',desc:'Canva home decor style. Warm stone, oak, cream. Interior, furniture, home goods.',colors:['#e8e0d4','#8c6b4a','#f6f1ea'],
+  {name:'Minimal Furniture',animation:'calm',desc:'Canva home decor style. Warm stone, oak, cream. Interior, furniture, home goods.',colors:['#e8e0d4','#8c6b4a','#f6f1ea'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#e8e0d4',textColor:'#2e2318',padding:'110',fontFamily:'Lora',borderRadius:'0',maxWidth:'1320'},content:{title:'Quiet homes, better days.',subtitle:'Handcrafted furniture and homeware for spaces that feel like yours.',btnText:'Browse the house',btnLink:'#products',titleSize:'64',subtitleSize:'19',btnColor:'#8c6b4a',bgImage:'',overlay:'0',align:'center',height:'620'}},
       {id:uid(),type:'products',visible:true,style:{bg:'#f6f1ea',textColor:'#2e2318',padding:'90',fontFamily:'Lora',borderRadius:'0',maxWidth:'1280'},content:{title:'Featured pieces',titleSize:'38',columns:'3',mobileColumns:'2',cardStyle:'flat',showPrice:true,showName:true,showBtn:false,limit:'6',featured:true}},
@@ -67,7 +73,7 @@ const TEMPLATES=[
       {id:uid(),type:'products',visible:true,style:{bg:'#f6f1ea',textColor:'#2e2318',padding:'90',fontFamily:'Lora',borderRadius:'0',maxWidth:'1280'},content:{title:'New this season',titleSize:'32',columns:'4',mobileColumns:'2',cardStyle:'flat',showPrice:true,showName:true,showBtn:false,limit:'8',featured:false}},
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#e8e0d4',textColor:'#2e2318',padding:'90',fontFamily:'Lora',borderRadius:'0',maxWidth:'1100'},content:{title:'Living room stories',titleSize:'32',items:[{name:'Hakim & Sarah',text:'The dining table is the centerpiece of our home. Everyone asks about it.',rating:5},{name:'Fatima Z.',text:'Worth every dinar. Delivery team was incredibly professional.',rating:5},{name:'Ilyes B.',text:'I\'ve had the oak desk for a year. It still looks brand new.',rating:5}]}},
   ]},
-  {name:'Bold Yellow Fitness',desc:'Canva sports/fitness template. Electric yellow on black, bold sans caps. Gym, supplements, activewear.',colors:['#0a0a0a','#facc15','#1c1c1c'],
+  {name:'Bold Yellow Fitness',animation:'slam',desc:'Canva sports/fitness template. Electric yellow on black, bold sans caps. Gym, supplements, activewear.',colors:['#0a0a0a','#facc15','#1c1c1c'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#0a0a0a',textColor:'#facc15',padding:'110',fontFamily:'Montserrat',borderRadius:'0',maxWidth:'1400'},content:{title:'TRAIN LIKE YOU MEAN IT.',subtitle:'Activewear, supplements, and gear built for athletes who don\'t skip leg day.',btnText:'SHOP THE GYM',btnLink:'#products',titleSize:'86',subtitleSize:'17',btnColor:'#facc15',bgImage:'',overlay:'0',align:'center',height:'620'}},
       {id:uid(),type:'banner',visible:true,style:{bg:'#facc15',textColor:'#0a0a0a',padding:'18',fontFamily:'Montserrat',borderRadius:'0',maxWidth:'1400'},content:{text:'▲  NEW CLIENTS GET 20% OFF FIRST ORDER  ·  CODE: PUMP20  ·  LIMITED TIME  ▲',btnText:'',btnLink:'',fontSize:'13',align:'center'}},
@@ -76,7 +82,7 @@ const TEMPLATES=[
       {id:uid(),type:'text',visible:true,style:{bg:'#facc15',textColor:'#0a0a0a',padding:'80',fontFamily:'Montserrat',borderRadius:'0',maxWidth:'900'},content:{text:'NO SHORTCUTS. NO EXCUSES. JUST THE GEAR YOU NEED TO SHOW UP EVERY DAY AND GO HARDER THAN YESTERDAY.',fontSize:'24',lineHeight:'1.6',align:'center',maxWidth:'780'}},
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#1c1c1c',textColor:'#fafafa',padding:'90',fontFamily:'Montserrat',borderRadius:'0',maxWidth:'1100'},content:{title:'FROM THE COMMUNITY',titleSize:'30',items:[{name:'KARIM · CROSSFIT COACH',text:'The whey is pure fire. My whole gym switched over.',rating:5},{name:'LEILA · MARATHON RUNNER',text:'Finally activewear that actually survives hard training.',rating:5},{name:'SAMIR · BODYBUILDER',text:'Pre-workout hits hard without the crash. New staple.',rating:5}]}},
   ]},
-  {name:'Modern Gadget Store',desc:'Canva tech template. Dark navy with cyan accents, clean Inter. Electronics, gadgets, accessories.',colors:['#0c1220','#22d3ee','#1e293b'],
+  {name:'Modern Gadget Store',animation:'tech',desc:'Canva tech template. Dark navy with cyan accents, clean Inter. Electronics, gadgets, accessories.',colors:['#0c1220','#22d3ee','#1e293b'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#0c1220',textColor:'#f1f5f9',padding:'120',fontFamily:'Inter',borderRadius:'0',maxWidth:'1400'},content:{title:'Tech that actually works.',subtitle:'Genuine electronics, real warranties, same-day delivery in Algiers.',btnText:'Browse the store',btnLink:'#products',titleSize:'70',subtitleSize:'20',btnColor:'#22d3ee',bgImage:'',overlay:'0',align:'center',height:'620'}},
       {id:uid(),type:'features',visible:true,style:{bg:'#1e293b',textColor:'#cbd5e1',padding:'56',fontFamily:'Inter',borderRadius:'0',maxWidth:'1280'},content:{items:[{icon:'✓',title:'100% Genuine',desc:'Direct manufacturer sourcing'},{icon:'🛡',title:'1-Year Warranty',desc:'Official, not just store credit'},{icon:'⚡',title:'Same-day Algiers',desc:'Before 3 PM = today'},{icon:'💬',title:'Real tech support',desc:'Engineers on WhatsApp'}],columns:'4'}},
@@ -85,7 +91,7 @@ const TEMPLATES=[
       {id:uid(),type:'products',visible:true,style:{bg:'#1e293b',textColor:'#f1f5f9',padding:'90',fontFamily:'Inter',borderRadius:'0',maxWidth:'1320'},content:{title:'Staff picks this month',titleSize:'30',columns:'3',mobileColumns:'2',cardStyle:'shadow',showPrice:true,showName:true,showBtn:true,limit:'6',featured:true}},
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#0c1220',textColor:'#cbd5e1',padding:'90',fontFamily:'Inter',borderRadius:'0',maxWidth:'1100'},content:{title:'Verified customer reviews',titleSize:'30',items:[{name:'Omar · Algiers',text:'Ordered AirPods at 11 AM, delivered same day. Sealed, legit, warranty card included.',rating:5},{name:'Lyes · Oran',text:'Best tech store in DZ — fair prices, no fakes, real after-sales.',rating:5},{name:'Amina · Blida',text:'Support helped me pick the right laptop over WhatsApp. 10/10.',rating:5}]}},
   ]},
-  {name:'Jewelry Elegance',desc:'Canva luxury template. Ivory & champagne gold, Playfair display. Fine jewelry, watches, accessories.',colors:['#faf6ef','#b88a3b','#1a1a1a'],
+  {name:'Jewelry Elegance',animation:'glow',desc:'Canva luxury template. Ivory & champagne gold, Playfair display. Fine jewelry, watches, accessories.',colors:['#faf6ef','#b88a3b','#1a1a1a'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#faf6ef',textColor:'#1a1a1a',padding:'130',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'1320'},content:{title:'Heirlooms in the making.',subtitle:'18k gold, ethically sourced stones, handcrafted in Algiers.',btnText:'View the collection',btnLink:'#products',titleSize:'72',subtitleSize:'18',btnColor:'#b88a3b',bgImage:'',overlay:'0',align:'center',height:'640'}},
       {id:uid(),type:'spacer',visible:true,style:{bg:'#faf6ef',textColor:'#000',padding:'0',fontFamily:'Inter',borderRadius:'0',maxWidth:'1200'},content:{height:'8'}},
@@ -95,7 +101,7 @@ const TEMPLATES=[
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#faf6ef',textColor:'#1a1a1a',padding:'90',fontFamily:'Lora',borderRadius:'0',maxWidth:'1100'},content:{title:'Client stories',titleSize:'36',items:[{name:'Amira B.',text:'The ring took my breath away. Even more beautiful in person.',rating:5},{name:'Karim D.',text:'Bought a necklace for our anniversary — she cried happy tears.',rating:5},{name:'Lina S.',text:'The packaging alone felt like a luxury experience.',rating:5}]}},
       {id:uid(),type:'banner',visible:true,style:{bg:'#b88a3b',textColor:'#faf6ef',padding:'64',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'1320'},content:{text:'Complimentary engraving on every order',btnText:'Discover',btnLink:'#products',fontSize:'28',align:'center'}},
   ]},
-  {name:'Cozy Bakery',desc:'Canva bakery/food template. Warm cream & cinnamon, handwritten-feel serif. Bakeries, cafés, artisan food.',colors:['#fff4e6','#b45309','#fef3c7'],
+  {name:'Cozy Bakery',animation:'rise',desc:'Canva bakery/food template. Warm cream & cinnamon, handwritten-feel serif. Bakeries, cafés, artisan food.',colors:['#fff4e6','#b45309','#fef3c7'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#fff4e6',textColor:'#5a2e0c',padding:'100',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'1280'},content:{title:'Baked fresh. Every morning.',subtitle:'Sourdough, croissants, and little joys — made by hand in Algiers since 2019.',btnText:'Order today\'s batch',btnLink:'#products',titleSize:'68',subtitleSize:'19',btnColor:'#b45309',bgImage:'',overlay:'0',align:'center',height:'580'}},
       {id:uid(),type:'banner',visible:true,style:{bg:'#b45309',textColor:'#fff4e6',padding:'16',fontFamily:'Lora',borderRadius:'0',maxWidth:'1400'},content:{text:'🥐  FRESH DAILY FROM 6 AM  ·  ORDERS CLOSE AT 8 PM  ·  DELIVERY BEFORE 11 AM  🥐',btnText:'',btnLink:'',fontSize:'13',align:'center'}},
@@ -104,7 +110,7 @@ const TEMPLATES=[
       {id:uid(),type:'text',visible:true,style:{bg:'#b45309',textColor:'#fff4e6',padding:'80',fontFamily:'Playfair Display',borderRadius:'0',maxWidth:'860'},content:{text:'"A little bakery with very big standards — and the best croissants in the city."',fontSize:'26',lineHeight:'1.7',align:'center',maxWidth:'740'}},
       {id:uid(),type:'testimonials',visible:true,style:{bg:'#fef3c7',textColor:'#5a2e0c',padding:'80',fontFamily:'Lora',borderRadius:'0',maxWidth:'1100'},content:{title:'Love from our regulars',titleSize:'32',items:[{name:'Meriem',text:'I\'ve tried every bakery in Algiers. Nothing comes close to this sourdough.',rating:5},{name:'Ahmed',text:'The pistachio croissant changed my life. I\'m not exaggerating.',rating:5},{name:'Nadia',text:'Fresh, warm, on time. My Sunday ritual now.',rating:5}]}},
   ]},
-  {name:'متجر عربي راقي',desc:'قالب كانفا بالعربية — كحلي وذهبي، خط Cairo، تجربة فاخرة للعلامات الجزائرية.',colors:['#0f1e2e','#d4a34a','#fcf8ef'],
+  {name:'متجر عربي راقي',animation:'noble',desc:'قالب كانفا بالعربية — كحلي وذهبي، خط Cairo، تجربة فاخرة للعلامات الجزائرية.',colors:['#0f1e2e','#d4a34a','#fcf8ef'],
     sections:[
       {id:uid(),type:'hero',visible:true,style:{bg:'#0f1e2e',textColor:'#fcf8ef',padding:'120',fontFamily:'Cairo',borderRadius:'0',maxWidth:'1320'},content:{title:'تسوّق بثقة، استلم بفخامة',subtitle:'منتجات أصلية · توصيل سريع لكل الولايات · دفع عند الاستلام',btnText:'اكتشف المجموعة',btnLink:'#products',titleSize:'62',subtitleSize:'20',btnColor:'#d4a34a',bgImage:'',overlay:'0',align:'center',height:'620'}},
       {id:uid(),type:'features',visible:true,style:{bg:'#fcf8ef',textColor:'#0f1e2e',padding:'64',fontFamily:'Cairo',borderRadius:'0',maxWidth:'1200'},content:{items:[{icon:'🚚',title:'توصيل لكل الولايات',desc:'خلال 48 ساعة'},{icon:'💳',title:'الدفع عند الاستلام',desc:'أو CCP / BaridiMob'},{icon:'↩',title:'إرجاع مجاني',desc:'خلال 14 يوم'},{icon:'✓',title:'منتجات أصلية',desc:'ضمان جودة 100%'}],columns:'4'}},
@@ -178,7 +184,7 @@ export default function AdvancedBuilder(){
   const dup=(i)=>{const s={...JSON.parse(JSON.stringify(sections[i])),id:uid()};const n=[...sections];n.splice(i+1,0,s);setSections(n);setDirty(true);};
   const add=(type)=>{setSections([...sections,defaultSection(type)]);setSelected(sections.length);setShowAdd(false);setDirty(true);};
   const toggle=(i)=>{const n=[...sections];n[i]={...n[i],visible:!n[i].visible};setSections(n);setDirty(true);};
-  const applyTemplate=(t)=>{const fresh=JSON.parse(JSON.stringify(t.sections)).map(s=>({...s,id:uid()}));setSections(fresh);setSelected(null);setShowTemplates(false);setDirty(true);toast.success(`"${t.name}" applied!`);};
+  const applyTemplate=(t)=>{const anim=t.animation||'calm';const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>({...s,id:uid(),animation:anim,animationIndex:i}));setSections(fresh);setSelected(null);setShowTemplates(false);setDirty(true);toast.success(`"${t.name}" applied!`);};
   const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections});setCurrentStore(data);setDirty(false);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
 
   return(<DashboardLayout>
@@ -234,6 +240,7 @@ export default function AdvancedBuilder(){
                 <p className="font-bold text-gray-900 text-base leading-tight">{t.name}</p>
                 <div className="flex gap-1 shrink-0 mt-0.5">{t.colors.map((c,ci)=><div key={ci} style={{backgroundColor:c}} className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"/>)}</div>
               </div>
+              {t.animation&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-gradient-to-r from-violet-50 to-pink-50 text-violet-600 rounded-full w-fit mb-1.5"><Sparkles size={9}/>{t.animation} motion</span>}
               <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2 flex-1">{t.desc}</p>
               <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 flex-wrap">

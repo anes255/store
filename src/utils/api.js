@@ -57,6 +57,14 @@ export const platformApi = {
   rejectPayment: (pid, data) => api.patch(`/platform/subscriptions/${pid}/reject`, data),
   setOwnerSubscription: (ownerId, data) => api.patch(`/platform/store-owners/${ownerId}/subscription`, data),
   updateBillingConfig: (data) => api.put('/platform/billing-config', data),
+  // Admin profile & co-admins
+  getAdminProfile: () => api.get('/platform/profile'),
+  updateAdminProfile: (data) => api.put('/platform/profile', data),
+  changeAdminPassword: (data) => api.put('/platform/profile/password', data),
+  getAdmins: () => api.get('/platform/admins'),
+  addAdmin: (data) => api.post('/platform/admins', data),
+  removeAdmin: (id) => api.delete(`/platform/admins/${id}`),
+  toggleAdmin: (id) => api.patch(`/platform/admins/${id}/toggle`),
 };
 
 // Store Owner
