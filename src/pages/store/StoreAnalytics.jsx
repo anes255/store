@@ -1,9 +1,11 @@
 import React,{useState,useEffect,useMemo} from'react';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import{BarChart3,TrendingUp,ShoppingCart,DollarSign,Users,RefreshCw,ArrowUpRight,ArrowDownRight}from'lucide-react';
 import{AreaChart,Area,BarChart,Bar,PieChart,Pie,Cell,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Legend}from'recharts';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_COLORS={pending:'#f59e0b',confirmed:'#3b82f6',preparing:'#8b5cf6',shipped:'#06b6d4',delivered:'#10b981',cancelled:'#ef4444',refunded:'#6b7280'};
 
 export default function StoreAnalytics(){
+  const { t } = useTranslation();
   const{currentStore}=useStoreManagement();
   const[data,setData]=useState(null);
   const[loading,setLoading]=useState(true);
@@ -42,8 +44,8 @@ export default function StoreAnalytics(){
 
   return(<DashboardLayout>
     <div className="flex items-center justify-between mb-6">
-      <div><h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 size={22} className="text-brand-500"/>Analytics</h1><p className="text-sm text-gray-400 mt-1">{currentStore?.name||'Store'} performance</p></div>
-      <button onClick={load} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={14}/>Refresh</button>
+      <div><h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 size={22} className="text-brand-500"/>{t('storePage.analytics','Analytics')}</h1><p className="text-sm text-gray-400 mt-1">{currentStore?.name||t('storePage.store','Store')} {t('storePage.performance','performance')}</p></div>
+      <button onClick={load} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>
     </div>
 
     {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>:<>
@@ -51,10 +53,10 @@ export default function StoreAnalytics(){
     {/* Stat cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {[
-        {label:'Total Revenue',value:`${parseFloat(s.totalRevenue||0).toLocaleString()} ${currency}`,icon:DollarSign,gradient:'from-emerald-500 to-teal-500'},
-        {label:'Total Orders',value:s.totalOrders||0,icon:ShoppingCart,gradient:'from-purple-500 to-pink-500'},
-        {label:'Customers',value:s.totalCustomers||0,icon:Users,gradient:'from-blue-500 to-cyan-500'},
-        {label:'Avg Order',value:`${avgOV.toLocaleString()} ${currency}`,icon:TrendingUp,gradient:'from-amber-500 to-orange-500'},
+        {label:t('storePage.totalRevenue','Total Revenue'),value:`${parseFloat(s.totalRevenue||0).toLocaleString()} ${currency}`,icon:DollarSign,gradient:'from-emerald-500 to-teal-500'},
+        {label:t('storePage.totalOrders','Total Orders'),value:s.totalOrders||0,icon:ShoppingCart,gradient:'from-purple-500 to-pink-500'},
+        {label:t('storePage.customers','Customers'),value:s.totalCustomers||0,icon:Users,gradient:'from-blue-500 to-cyan-500'},
+        {label:t('storePage.avgOrder','Avg Order'),value:`${avgOV.toLocaleString()} ${currency}`,icon:TrendingUp,gradient:'from-amber-500 to-orange-500'},
       ].map((c,i)=>{const Icon=c.icon;return(
         <div key={i} className="glass-card-solid p-5">
           <div className="flex items-center justify-between mb-2">
@@ -68,18 +70,18 @@ export default function StoreAnalytics(){
 
     {/* Secondary stats */}
     <div className="grid grid-cols-3 gap-4 mb-6">
-      <div className="glass-card-solid p-4 text-center"><p className="text-xs text-gray-400">Store Visits</p><p className="text-xl font-black">{(s.storeVisits||0).toLocaleString()}</p></div>
-      <div className="glass-card-solid p-4 text-center"><p className="text-xs text-gray-400">Conversion Rate</p><p className="text-xl font-black">{convRate}%</p></div>
-      <div className="glass-card-solid p-4 text-center"><p className="text-xs text-gray-400">Products</p><p className="text-xl font-black">{s.totalProducts||0}</p></div>
+      <div className="glass-card-solid p-4 text-center"><p className="text-xs text-gray-400">{t('storePage.storeVisits','Store Visits')}</p><p className="text-xl font-black">{(s.storeVisits||0).toLocaleString()}</p></div>
+      <div className="glass-card-solid p-4 text-center"><p className="text-xs text-gray-400">{t('storePage.conversionRate','Conversion Rate')}</p><p className="text-xl font-black">{convRate}%</p></div>
+      <div className="glass-card-solid p-4 text-center"><p className="text-xs text-gray-400">{t('storePage.products','Products')}</p><p className="text-xl font-black">{s.totalProducts||0}</p></div>
     </div>
 
     {/* Revenue + Orders chart */}
     <div className="glass-card-solid p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-gray-900">Revenue & Orders (Last 30 Days)</h3>
+        <h3 className="font-bold text-gray-900">{t('storePage.revenueOrdersChart','Revenue & Orders (Last 30 Days)')}</h3>
         <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-full bg-emerald-500"/>Revenue</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-full bg-violet-500"/>Orders</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-full bg-emerald-500"/>{t('storePage.revenue','Revenue')}</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-full bg-violet-500"/>{t('storePage.orders','Orders')}</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={280}>
@@ -97,7 +99,7 @@ export default function StoreAnalytics(){
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
           <XAxis dataKey="date" tickFormatter={fmtDate} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false}/>
           <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false}/>
-          <Tooltip contentStyle={{borderRadius:12,border:'none',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',fontSize:12}} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${currency}`:''}`,name==='revenue'?'Revenue':'Orders']}/>
+          <Tooltip contentStyle={{borderRadius:12,border:'none',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',fontSize:12}} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${currency}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]}/>
           <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2.5} fill="url(#aRevenue)"/>
           <Area type="monotone" dataKey="orders" stroke="#8B5CF6" strokeWidth={2} fill="url(#aOrders)"/>
         </AreaChart>
@@ -107,7 +109,7 @@ export default function StoreAnalytics(){
     {/* Order status + Top products */}
     <div className="grid lg:grid-cols-2 gap-6 mb-6">
       <div className="glass-card-solid p-6">
-        <h3 className="font-bold text-gray-900 mb-4">Order Status Breakdown</h3>
+        <h3 className="font-bold text-gray-900 mb-4">{t('storePage.orderStatusBreakdown','Order Status Breakdown')}</h3>
         {statusBreakdown.length>0?(
           <div className="flex items-center gap-6">
             <div className="w-44 h-44 shrink-0">
@@ -126,11 +128,11 @@ export default function StoreAnalytics(){
               ))}
             </div>
           </div>
-        ):<p className="text-center py-12 text-gray-400 text-sm">No order data yet</p>}
+        ):<p className="text-center py-12 text-gray-400 text-sm">{t('storePage.noOrderData','No order data yet')}</p>}
       </div>
 
       <div className="glass-card-solid p-6">
-        <h3 className="font-bold text-gray-900 mb-4">Top Products</h3>
+        <h3 className="font-bold text-gray-900 mb-4">{t('storePage.topProducts','Top Products')}</h3>
         {topProducts.length>0?(
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={topProducts} layout="vertical" margin={{left:0,right:10}}>
@@ -138,16 +140,16 @@ export default function StoreAnalytics(){
               <XAxis type="number" fontSize={11} stroke="#9ca3af" tickLine={false} axisLine={false}/>
               <YAxis type="category" dataKey="name" fontSize={11} stroke="#9ca3af" width={110} tickLine={false} axisLine={false}/>
               <Tooltip contentStyle={{borderRadius:8,border:'none',fontSize:12}}/>
-              <Bar dataKey="qty" fill="#7C3AED" radius={[0,6,6,0]} barSize={20} name="Quantity sold"/>
+              <Bar dataKey="qty" fill="#7C3AED" radius={[0,6,6,0]} barSize={20} name={t('storePage.quantitySold','Quantity sold')}/>
             </BarChart>
           </ResponsiveContainer>
-        ):<p className="text-center py-12 text-gray-400 text-sm">No product data yet</p>}
+        ):<p className="text-center py-12 text-gray-400 text-sm">{t('storePage.noProductData','No product data yet')}</p>}
       </div>
     </div>
 
     {/* Recent orders */}
     <div className="glass-card-solid p-6">
-      <h3 className="font-bold text-gray-900 mb-4">Recent Orders</h3>
+      <h3 className="font-bold text-gray-900 mb-4">{t('storePage.recentOrders','Recent Orders')}</h3>
       {data?.recentOrders?.length>0?(
         <div className="space-y-2">
           {data.recentOrders.slice(0,10).map(o=>(
@@ -163,7 +165,7 @@ export default function StoreAnalytics(){
             </div>
           ))}
         </div>
-      ):<p className="text-center py-12 text-gray-400 text-sm">No orders yet</p>}
+      ):<p className="text-center py-12 text-gray-400 text-sm">{t('storePage.noOrdersYet','No orders yet')}</p>}
     </div>
     </>}
   </DashboardLayout>);

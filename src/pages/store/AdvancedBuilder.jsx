@@ -1,4 +1,5 @@
 import React,{useState,useEffect} from'react';
+import{useTranslation}from'react-i18next';
 import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import{ownerApi}from'../../utils/api';
@@ -8,16 +9,27 @@ import{Plus,X,Save,Trash2,ChevronUp,ChevronDown,Eye,EyeOff,Type,Image,Layout,Pac
 const FONTS=['Inter','Arial','Georgia','Playfair Display','Poppins','Roboto','Montserrat','Lora','Raleway','Cairo','Tajawal','DM Sans','Space Grotesk'];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 
+const getSectionTypes=(t)=>[
+  {type:'hero',label:t('storePage.sectionHeroLabel','Hero Banner'),icon:Layout,desc:t('storePage.sectionHeroDesc','Large banner with title and subtitle')},
+  {type:'products',label:t('storePage.sectionProductsLabel','Products Grid'),icon:Package,desc:t('storePage.sectionProductsDesc','Display products in a grid')},
+  {type:'text',label:t('storePage.sectionTextLabel','Text Block'),icon:Type,desc:t('storePage.sectionTextDesc','Custom text content')},
+  {type:'image',label:t('storePage.sectionImageLabel','Image'),icon:Image,desc:t('storePage.sectionImageDesc','Full-width or contained image')},
+  {type:'banner',label:t('storePage.sectionBannerLabel','Promo Banner'),icon:Sparkles,desc:t('storePage.sectionBannerDesc','Promotional banner with CTA')},
+  {type:'spacer',label:t('storePage.sectionSpacerLabel','Spacer'),icon:ChevronDown,desc:t('storePage.sectionSpacerDesc','Empty space between sections')},
+  {type:'features',label:t('storePage.sectionFeaturesLabel','Features/Trust'),icon:Star,desc:t('storePage.sectionFeaturesDesc','Feature icons with text')},
+  {type:'testimonials',label:t('storePage.sectionTestimonialsLabel','Testimonials'),icon:Star,desc:t('storePage.sectionTestimonialsDesc','Customer reviews showcase')},
+  {type:'custom_html',label:t('storePage.sectionCustomHtmlLabel','Custom HTML'),icon:Zap,desc:t('storePage.sectionCustomHtmlDesc','Raw HTML content')},
+];
 const SECTION_TYPES=[
-  {type:'hero',label:'Hero Banner',icon:Layout,desc:'Large banner with title and subtitle'},
-  {type:'products',label:'Products Grid',icon:Package,desc:'Display products in a grid'},
-  {type:'text',label:'Text Block',icon:Type,desc:'Custom text content'},
-  {type:'image',label:'Image',icon:Image,desc:'Full-width or contained image'},
-  {type:'banner',label:'Promo Banner',icon:Sparkles,desc:'Promotional banner with CTA'},
-  {type:'spacer',label:'Spacer',icon:ChevronDown,desc:'Empty space between sections'},
-  {type:'features',label:'Features/Trust',icon:Star,desc:'Feature icons with text'},
-  {type:'testimonials',label:'Testimonials',icon:Star,desc:'Customer reviews showcase'},
-  {type:'custom_html',label:'Custom HTML',icon:Zap,desc:'Raw HTML content'},
+  {type:'hero',label:'Hero Banner',icon:Layout},
+  {type:'products',label:'Products Grid',icon:Package},
+  {type:'text',label:'Text Block',icon:Type},
+  {type:'image',label:'Image',icon:Image},
+  {type:'banner',label:'Promo Banner',icon:Sparkles},
+  {type:'spacer',label:'Spacer',icon:ChevronDown},
+  {type:'features',label:'Features/Trust',icon:Star},
+  {type:'testimonials',label:'Testimonials',icon:Star},
+  {type:'custom_html',label:'Custom HTML',icon:Zap},
 ];
 
 // Templates inspired by Canva's ecommerce website library — distinct niches,

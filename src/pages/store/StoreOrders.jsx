@@ -8,13 +8,13 @@ import toast from 'react-hot-toast';
 import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, User, Mail, FileText, RefreshCw, Download } from 'lucide-react';
 
 const statusConfig = {
-  pending: { color: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock, label: 'Pending' },
-  confirmed: { color: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', icon: Check, label: 'Confirmed' },
-  preparing: { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', icon: Package, label: 'Preparing' },
-  shipped: { color: 'bg-cyan-500', bg: 'bg-cyan-50', text: 'text-cyan-700', icon: Truck, label: 'Shipped' },
-  delivered: { color: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', icon: Check, label: 'Delivered' },
-  cancelled: { color: 'bg-red-500', bg: 'bg-red-50', text: 'text-red-700', icon: Ban, label: 'Cancelled' },
-  returned: { color: 'bg-gray-500', bg: 'bg-gray-50', text: 'text-gray-700', icon: RefreshCw, label: 'Returned' },
+  pending: { color: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock, labelKey: 'storePage.statusPending', labelDefault: 'Pending' },
+  confirmed: { color: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', icon: Check, labelKey: 'storePage.statusConfirmed', labelDefault: 'Confirmed' },
+  preparing: { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', icon: Package, labelKey: 'storePage.statusPreparing', labelDefault: 'Preparing' },
+  shipped: { color: 'bg-cyan-500', bg: 'bg-cyan-50', text: 'text-cyan-700', icon: Truck, labelKey: 'storePage.statusShipped', labelDefault: 'Shipped' },
+  delivered: { color: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', icon: Check, labelKey: 'storePage.statusDelivered', labelDefault: 'Delivered' },
+  cancelled: { color: 'bg-red-500', bg: 'bg-red-50', text: 'text-red-700', icon: Ban, labelKey: 'storePage.statusCancelled', labelDefault: 'Cancelled' },
+  returned: { color: 'bg-gray-500', bg: 'bg-gray-50', text: 'text-gray-700', icon: RefreshCw, labelKey: 'storePage.statusReturned', labelDefault: 'Returned' },
 };
 
 export default function StoreOrders() {
@@ -43,23 +43,23 @@ export default function StoreOrders() {
   const updateStatus = async (orderId, status) => {
     try {
       await orderApi.updateStatus(currentStore.id, orderId, { status });
-      toast.success(`Order ${status}`); loadOrders(); setSelectedOrder(null);
-    } catch { toast.error('Failed'); }
+      toast.success(`${t('storePage.order', 'Order')} ${t(`storePage.status_${status}`, status)}`); loadOrders(); setSelectedOrder(null);
+    } catch { toast.error(t('storePage.failed', 'Failed')); }
   };
 
   const viewOrder = async (orderId) => {
     try { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
-    catch { toast.error('Failed'); }
+    catch { toast.error(t('storePage.failed', 'Failed')); }
   };
 
   const filters = [
-    { key: 'all', label: 'All Orders', count: total },
-    { key: 'pending', label: 'Pending' },
-    { key: 'confirmed', label: 'Confirmed' },
-    { key: 'preparing', label: 'Preparing' },
-    { key: 'shipped', label: 'Shipped' },
-    { key: 'delivered', label: 'Delivered' },
-    { key: 'cancelled', label: 'Cancelled' },
+    { key: 'all', label: t('storePage.allOrders', 'All Orders'), count: total },
+    { key: 'pending', label: t('storePage.statusPending', 'Pending') },
+    { key: 'confirmed', label: t('storePage.statusConfirmed', 'Confirmed') },
+    { key: 'preparing', label: t('storePage.statusPreparing', 'Preparing') },
+    { key: 'shipped', label: t('storePage.statusShipped', 'Shipped') },
+    { key: 'delivered', label: t('storePage.statusDelivered', 'Delivered') },
+    { key: 'cancelled', label: t('storePage.statusCancelled', 'Cancelled') },
   ];
 
   // Quick stats
@@ -70,16 +70,16 @@ export default function StoreOrders() {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">{t('orders.title')}</h1><p className="text-sm text-gray-400 mt-1">{total} orders total</p></div>
-        <button onClick={loadOrders} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>Refresh</button>
+        <div><h1 className="text-2xl font-bold text-gray-900">{t('orders.title')}</h1><p className="text-sm text-gray-400 mt-1">{total} {t('storePage.ordersTotal', 'orders total')}</p></div>
+        <button onClick={loadOrders} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('storePage.refresh', 'Refresh')}</button>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">Today's Orders</p><p className="text-2xl font-black text-gray-900 mt-1">{todayOrders}</p></div>
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">Today's Revenue</p><p className="text-2xl font-black text-emerald-600 mt-1">{todayRevenue.toLocaleString()} <span className="text-sm font-normal text-gray-400">DZD</span></p></div>
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">Awaiting Action</p><p className="text-2xl font-black text-amber-500 mt-1">{pending}</p></div>
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">Total Orders</p><p className="text-2xl font-black text-brand-600 mt-1">{total}</p></div>
+        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.todaysOrders', "Today's Orders")}</p><p className="text-2xl font-black text-gray-900 mt-1">{todayOrders}</p></div>
+        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.todaysRevenue', "Today's Revenue")}</p><p className="text-2xl font-black text-emerald-600 mt-1">{todayRevenue.toLocaleString()} <span className="text-sm font-normal text-gray-400">DZD</span></p></div>
+        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.awaitingAction', 'Awaiting Action')}</p><p className="text-2xl font-black text-amber-500 mt-1">{pending}</p></div>
+        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalOrders', 'Total Orders')}</p><p className="text-2xl font-black text-brand-600 mt-1">{total}</p></div>
       </div>
 
       {/* Filters + Search */}
@@ -93,7 +93,7 @@ export default function StoreOrders() {
         </div>
         <div className="relative flex-1 max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input className="input-field !pl-9 !py-2 text-sm" placeholder="Search by name, phone, or order #..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchOrdersPlaceholder', 'Search by name, phone, or order #...')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -101,7 +101,7 @@ export default function StoreOrders() {
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>
       ) : orders.length === 0 ? (
-        <div className="glass-card-solid p-16 text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-semibold">No orders found</p><p className="text-sm text-gray-400 mt-1">{filter !== 'all' ? 'Try a different filter' : 'Orders will appear here once customers place them'}</p></div>
+        <div className="glass-card-solid p-16 text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-semibold">{t('storePage.noOrdersFound', 'No orders found')}</p><p className="text-sm text-gray-400 mt-1">{filter !== 'all' ? t('storePage.tryDifferentFilter', 'Try a different filter') : t('storePage.ordersWillAppear', 'Orders will appear here once customers place them')}</p></div>
       ) : (
         <div className="space-y-3">
           {orders.map(o => {
@@ -118,8 +118,8 @@ export default function StoreOrders() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <span className="font-mono font-bold text-sm text-brand-600">{o.order_number}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${sc.bg} ${sc.text} uppercase`}>{sc.label}</span>
-                      {o.payment_status === 'paid' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600">PAID</span>}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${sc.bg} ${sc.text} uppercase`}>{t(sc.labelKey, sc.labelDefault)}</span>
+                      {o.payment_status === 'paid' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600">{t('storePage.paid', 'PAID')}</span>}
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="flex items-center gap-1.5 text-gray-700 font-medium"><User size={13} className="text-gray-400"/>{o.customer_name}</span>
@@ -150,7 +150,7 @@ export default function StoreOrders() {
                 <div>
                   <div className="flex items-center gap-3">
                     <span className="text-xl font-black text-gray-900">{selectedOrder.order_number}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusConfig[selectedOrder.status]?.bg} ${statusConfig[selectedOrder.status]?.text} uppercase`}>{selectedOrder.status}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusConfig[selectedOrder.status]?.bg} ${statusConfig[selectedOrder.status]?.text} uppercase`}>{t(`storePage.status_${selectedOrder.status}`, selectedOrder.status)}</span>
                   </div>
                   <p className="text-sm text-gray-500 mt-1 flex items-center gap-1"><Calendar size={12}/>{new Date(selectedOrder.created_at).toLocaleString()}</p>
                 </div>
@@ -162,13 +162,13 @@ export default function StoreOrders() {
               {/* Customer + Shipping */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Customer</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('storePage.customer', 'Customer')}</p>
                   <p className="font-bold text-gray-900 flex items-center gap-2"><User size={14} className="text-gray-400"/>{selectedOrder.customer_name}</p>
                   <p className="text-sm text-gray-500 flex items-center gap-2 mt-1"><Phone size={14} className="text-gray-400"/>{selectedOrder.customer_phone}</p>
                   {selectedOrder.customer_email && <p className="text-sm text-gray-500 flex items-center gap-2 mt-1"><Mail size={14} className="text-gray-400"/>{selectedOrder.customer_email}</p>}
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Delivery</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('storePage.delivery', 'Delivery')}</p>
                   <p className="text-sm text-gray-700 flex items-center gap-2"><MapPin size={14} className="text-gray-400"/>{selectedOrder.shipping_address}</p>
                   <p className="text-sm text-gray-500 mt-1">{[selectedOrder.shipping_city, selectedOrder.shipping_wilaya].filter(Boolean).join(', ')}</p>
                   <p className="text-sm font-medium mt-2 flex items-center gap-2"><CreditCard size={14} className="text-gray-400"/><span className="uppercase">{selectedOrder.payment_method?.replace('_', ' ')}</span>
@@ -191,7 +191,7 @@ export default function StoreOrders() {
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${done ? sc2.color : 'bg-gray-200'}`}>
                           {done ? <Check size={14}/> : i + 1}
                         </div>
-                        <span className={`text-[10px] font-bold ${done ? 'text-gray-700' : 'text-gray-400'}`}>{sc2.label}</span>
+                        <span className={`text-[10px] font-bold ${done ? 'text-gray-700' : 'text-gray-400'}`}>{t(sc2.labelKey, sc2.labelDefault)}</span>
                       </div>
                       {i < 4 && <div className={`flex-1 h-0.5 ${thisIdx < currentIdx ? 'bg-emerald-400' : 'bg-gray-200'} mx-1`}/>}
                     </React.Fragment>
@@ -201,7 +201,7 @@ export default function StoreOrders() {
 
               {/* Items */}
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">Items ({selectedOrder.items?.length || 0})</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">{t('storePage.items', 'Items')} ({selectedOrder.items?.length || 0})</p>
                 <div className="space-y-2">
                   {selectedOrder.items?.map((item, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
@@ -218,10 +218,10 @@ export default function StoreOrders() {
 
               {/* Totals */}
               <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span className="font-medium">{parseFloat(selectedOrder.subtotal).toLocaleString()} DZD</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Shipping</span><span className="font-medium">{parseFloat(selectedOrder.shipping_cost).toLocaleString()} DZD</span></div>
-                {parseFloat(selectedOrder.discount_amount || 0) > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">Discount</span><span className="text-emerald-600 font-medium">-{parseFloat(selectedOrder.discount_amount).toLocaleString()} DZD</span></div>}
-                <div className="flex justify-between font-black text-xl pt-2 border-t border-gray-200"><span>Total</span><span className="text-brand-600">{parseFloat(selectedOrder.total).toLocaleString()} DZD</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('storePage.subtotal', 'Subtotal')}</span><span className="font-medium">{parseFloat(selectedOrder.subtotal).toLocaleString()} DZD</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('storePage.shipping', 'Shipping')}</span><span className="font-medium">{parseFloat(selectedOrder.shipping_cost).toLocaleString()} DZD</span></div>
+                {parseFloat(selectedOrder.discount_amount || 0) > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">{t('storePage.discount', 'Discount')}</span><span className="text-emerald-600 font-medium">-{parseFloat(selectedOrder.discount_amount).toLocaleString()} DZD</span></div>}
+                <div className="flex justify-between font-black text-xl pt-2 border-t border-gray-200"><span>{t('storePage.total', 'Total')}</span><span className="text-brand-600">{parseFloat(selectedOrder.total).toLocaleString()} DZD</span></div>
               </div>
 
               {/* Notes */}

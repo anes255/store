@@ -30,11 +30,11 @@ export default function CartRecovery() {
         store_id: currentStore.id,
         customer_phone: cart.customer_phone,
         customer_email: cart.customer_email,
-        message: message || customMsg || `You left items in your cart at ${currentStore.name}! Complete your order now.`,
+        message: message || customMsg || t('storePage.defaultRecoveryMessage', `You left items in your cart at ${currentStore.name}! Complete your order now.`),
       });
-      toast.success('Recovery message sent!');
+      toast.success(t('storePage.recoveryMessageSent','Recovery message sent!'));
       setShowCompose(null);
-    } catch { toast.error('Failed to send'); }
+    } catch { toast.error(t('storePage.failedToSend','Failed to send')); }
     setSending(null);
   };
 
