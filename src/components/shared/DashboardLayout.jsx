@@ -78,19 +78,19 @@ const DEFAULT_ITEMS = [
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
-    {to:'/dashboard/orders',label:'Orders'},{to:'/dashboard/abandoned',label:'Abandoned Orders'},{to:'/dashboard/preparing',label:'Preparing'}]},
+    {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
-    {to:'/dashboard/products',label:'Products'},{to:'/dashboard/stock',label:'Stock Manager'},{to:'/dashboard/smart-reviews',label:'Smart Reviews'},{to:'/dashboard/ai-intelligence',label:'AI Intelligence'}]},
-  {id:'store',type:'group',icon:'Globe',label:'Store & Settings',children:[
-    {to:'/dashboard/settings',label:'All Settings'},{to:'/dashboard/page-builder',label:'Page Builder'},{to:'/dashboard/homepage',label:'Home Page'},{to:'/dashboard/contact',label:'Contact Info'},{to:'/dashboard/faqs',label:'FAQs'},{to:'/dashboard/about',label:'About Us'}]},
-  {id:'delivery',type:'group',icon:'Truck',label:'Delivery',children:[
-    {to:'/dashboard/shipping-partners',label:'Shipping Partners'},{to:'/dashboard/shipping-wilayas',label:'Shipping Wilayas'},{to:'/dashboard/how-to-connect',label:'How to Connect'}]},
+    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'},{to:'/dashboard/ai-intelligence',label:'sidebar.aiIntelligence'}]},
+  {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
+    {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/page-builder',label:'sidebar.pageBuilder'},{to:'/dashboard/homepage',label:'sidebar.homePage'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
+  {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
+    {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
-    {to:'/dashboard/customers',label:'Customers'},{to:'/dashboard/blacklist',label:'Automatic Blacklist'}]},
-  {id:'analytics',type:'link',to:'/dashboard/analytics',icon:'BarChart3',label:'Analytics'},
-  {id:'costs',type:'link',to:'/dashboard/costs',icon:'DollarSign',label:'Costs'},
-  {id:'taxes',type:'link',to:'/dashboard/taxes',icon:'Percent',label:'Taxes'},
-  {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'Billing & Plans'},
+    {to:'/dashboard/customers',label:'sidebar.customersList'},{to:'/dashboard/blacklist',label:'sidebar.blacklist'}]},
+  {id:'analytics',type:'link',to:'/dashboard/analytics',icon:'BarChart3',label:'sidebar.analytics'},
+  {id:'costs',type:'link',to:'/dashboard/costs',icon:'DollarSign',label:'sidebar.costs'},
+  {id:'taxes',type:'link',to:'/dashboard/taxes',icon:'Percent',label:'sidebar.taxes'},
+  {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'sidebar.billing'},
 ];
 
 const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent};
@@ -120,11 +120,11 @@ export default function DashboardLayout({children}){
   const isActive=(p)=>location.pathname===p;
 
   const SLink=({to,icon:Icon,label})=>(<Link to={to} className={isActive(to)?'sidebar-link-active':'sidebar-link'}><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
-  const SubLink=({to,label})=>(<Link to={to} className={`pl-12 py-1.5 block text-sm ${isActive(to)?'text-brand-600 font-semibold':'text-gray-400 hover:text-gray-600'}`}>{label}</Link>);
+  const SubLink=({to,label})=>{const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;return(<Link to={to} className={`pl-12 py-1.5 block text-sm ${isActive(to)?'text-brand-600 font-semibold':'text-gray-400 hover:text-gray-600'}`}>{lbl}</Link>);};
 
   const renderItem=(item,idx)=>{
     const Icon=ICONS[item.icon]||Settings;
-    const lbl=item.label.startsWith('sidebar.')?t(item.label):item.label;
+    const lbl=typeof item.label==='string'&&item.label.startsWith('sidebar.')?t(item.label):item.label;
     const isDragging=dragIdx===idx;
     const isOver=overIdx===idx&&dragIdx!==idx;
 
@@ -167,34 +167,34 @@ export default function DashboardLayout({children}){
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`bg-white border-r border-gray-100 flex flex-col fixed h-screen z-40 transition-all duration-300 ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-xs">{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className="font-bold text-sm text-gray-800 truncate">{currentStore?.name||'MyMarket'}</p><p className="text-[10px] text-gray-400">STORE DASHBOARD</p></div>}</div>
+        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-xs">{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className="font-bold text-sm text-gray-800 truncate">{currentStore?.name||'MyMarket'}</p><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
-      {sidebarOpen&&<div className="px-3 pt-3"><input className="w-full px-3 py-2 bg-gray-50 rounded-lg text-xs border border-gray-100 focus:outline-none" placeholder="Search..."/></div>}
+      {sidebarOpen&&<div className="px-3 pt-3"><input className="w-full px-3 py-2 bg-gray-50 rounded-lg text-xs border border-gray-100 focus:outline-none" placeholder={t('common.search','Search...')}/></div>}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm">
-        {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main Menu</p>}
+        {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('sidebar.mainMenu','Main Menu')}</p>}
         {items.map((item,idx)=>renderItem(item,idx))}
       </nav>
       <div className="border-t border-gray-100 p-3">
-        <div className="flex items-center gap-2 bg-brand-50 rounded-xl p-2.5 mb-2"><div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className="text-xs font-bold text-gray-800">{user?.name||'User'}</p><p className="text-[10px] text-gray-400">Admin</p></div>}</div>
-        {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className="sidebar-link w-full"><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>Collapse</span>}</button>}
-        <button onClick={()=>{logout();navigate('/login');}} className="sidebar-link w-full text-red-500"><LogOut size={18}/>{sidebarOpen&&<span>Disconnect</span>}</button>
+        <div className="flex items-center gap-2 bg-brand-50 rounded-xl p-2.5 mb-2"><div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className="text-xs font-bold text-gray-800">{user?.name||'User'}</p><p className="text-[10px] text-gray-400">{t('sidebar.adminRole','Admin')}</p></div>}</div>
+        {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className="sidebar-link w-full"><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
+        <button onClick={()=>{logout();navigate('/login');}} className="sidebar-link w-full text-red-500"><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>
     </aside>
     <main className={`flex-1 transition-all duration-300 ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl lg:hidden"><Menu size={20} className="text-gray-600"/></button>}
-          <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">STORE DASHBOARD</p><p className="font-bold text-sm">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||'Dashboard'}</p></div></div>
-          <p className="md:hidden font-bold text-sm text-gray-800">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||'Dashboard'}</p>
+          <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p><p className="font-bold text-sm">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p></div></div>
+          <p className="md:hidden font-bold text-sm text-gray-800">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="relative hidden md:block"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="pl-9 pr-4 py-2 bg-gray-50 rounded-xl text-sm w-64 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20" placeholder="Search everything..."/></div>
-          {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● Live</span>}
+          <div className="relative hidden md:block"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="pl-9 pr-4 py-2 bg-gray-50 rounded-xl text-sm w-64 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20" placeholder={t('sidebar.searchEverything','Search everything...')}/></div>
+          {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● {t('sidebar.live','Live')}</span>}
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"><Eye size={18}/></Link>
           <NotifBell/>
           <div className="hidden md:block"><LanguageSwitcher compact/></div>
-          <div className="hidden md:flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5"><span className="text-sm font-bold text-gray-700">Admin</span><div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div></div>
+          <div className="hidden md:flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5"><span className="text-sm font-bold text-gray-700">{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
       <div className="p-4 md:p-6">{children}</div>
