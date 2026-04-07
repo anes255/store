@@ -205,20 +205,20 @@ export default function Storefront() {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* ============ HEADER ============ */}
-      <header className="bg-white sticky top-0 z-30 shadow-sm">
+      <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:pc}}>
         <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-4">
-            {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{backgroundColor:pc}}>{store.name?.[0]}</div>}
-            <span className="text-2xl font-extrabold text-gray-900">{store.name}</span>
+            {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover bg-white/20" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/20 text-white font-bold text-xl">{store.name?.[0]}</div>}
+            <span className="text-2xl font-extrabold text-white">{store.name}</span>
           </Link>
           <div className="flex items-center gap-3">
             <StoreLangSwitcher />
-            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
+            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-white/20 rounded-full text-white"><User size={20}/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full text-white relative">
               <Heart size={20}/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
+            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full text-white relative">
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
             </button>

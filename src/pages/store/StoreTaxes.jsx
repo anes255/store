@@ -1,18 +1,19 @@
 import React,{useState,useEffect,useMemo} from 'react';
+import {useTranslation} from 'react-i18next';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import {useStoreManagement} from '../../hooks/useStore';
 import {ownerApi,orderApi} from '../../utils/api';
 import toast from 'react-hot-toast';
 import {Percent,TrendingUp,Calculator,Save,RefreshCw,FileText,Calendar,DollarSign} from 'lucide-react';
 
-const PRESETS=[
-  {label:'TVA Standard (19%)',value:19},
-  {label:'TVA Reduced (9%)',value:9},
-  {label:'TAP (2%)',value:2},
-  {label:'Zero Rated (0%)',value:0},
-];
-
 export default function StoreTaxes(){
+  const {t}=useTranslation();
+  const PRESETS=[
+    {label:t('taxes.presetStandard','TVA Standard (19%)'),value:19},
+    {label:t('taxes.presetReduced','TVA Reduced (9%)'),value:9},
+    {label:t('taxes.presetTap','TAP (2%)'),value:2},
+    {label:t('taxes.presetZero','Zero Rated (0%)'),value:0},
+  ];
   const {currentStore,setCurrentStore}=useStoreManagement();
   const [rate,setRate]=useState(0);
   const [inclusive,setInclusive]=useState(false);
@@ -89,10 +90,10 @@ export default function StoreTaxes(){
   return(<DashboardLayout>
     <div className="flex items-center justify-between mb-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Percent size={22} className="text-brand-500"/>Taxes</h1>
-        <p className="text-sm text-gray-400 mt-1">Set your tax rate and see how much tax you owe on your revenue</p>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Percent size={22} className="text-brand-500"/>{t('taxes.title','Taxes')}</h1>
+        <p className="text-sm text-gray-400 mt-1">{t('taxes.subtitle','Set your tax rate and see how much tax you owe on your revenue')}</p>
       </div>
-      <button onClick={save} disabled={saving} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50"><Save size={14}/>{saving?'Saving...':'Save Settings'}</button>
+      <button onClick={save} disabled={saving} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50"><Save size={14}/>{saving?t('common.saving','Saving...'):t('taxes.saveSettings','Save Settings')}</button>
     </div>
 
     {/* Settings card */}

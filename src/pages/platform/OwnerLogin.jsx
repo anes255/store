@@ -39,24 +39,13 @@ export default function OwnerLogin() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-500 via-purple-600 to-brand-800 relative overflow-hidden items-center justify-center p-12">
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="absolute rounded-full bg-white" style={{
-              width: Math.random() * 200 + 50, height: Math.random() * 200 + 50,
-              left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
-              opacity: Math.random() * 0.3,
-            }} />
-          ))}
-        </div>
-        <div className="relative z-10 text-white max-w-md">
-          <h2 className="text-4xl font-extrabold font-display mb-4">Manage your store effortlessly</h2>
-          <p className="text-white/70 text-lg">Access your dashboard, track orders, manage products, and grow your business — all in one place.</p>
-        </div>
-      </div>
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-brand-50">
+      {/* Landing-style animated blobs */}
+      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-gradient-to-br from-brand-400/30 to-purple-500/30 rounded-full blur-3xl animate-pulse"/>
+      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-purple-400/30 to-brand-500/30 rounded-full blur-3xl animate-pulse"/>
+      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-br from-pink-400/20 to-brand-400/20 rounded-full blur-3xl"/>
+      <div className="relative min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
           <div className="flex items-center justify-between mb-8">
             <Link to="/" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
