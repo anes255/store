@@ -29,7 +29,8 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('role');
-        window.location.href = '/login';
+        // Redirect super admins to the admin login, not the owner login
+        window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
       }
     }
     return Promise.reject(error);

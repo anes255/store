@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { platformApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import api from '../../utils/api';
@@ -7,19 +8,20 @@ import toast from 'react-hot-toast';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
 function Sidebar({open,onClose}){
+  const {t}=useTranslation();
   const loc=useLocation();const{logout,user}=useAuthStore();const nav=useNavigate();
   const links=[
-    {path:'/admin/dashboard',icon:LayoutDashboard,label:'Overview'},
-    {path:'/admin/store-owners',icon:Users,label:'Store Owners'},
-    {path:'/admin/stores',icon:Store,label:'All Stores'},
-    {path:'/admin/orders',icon:ShoppingCart,label:'All Orders'},
-    {path:'/admin/subscriptions',icon:CreditCard,label:'Subscriptions'},
-    {path:'/admin/billing-config',icon:DollarSign,label:'Billing Config'},
-    {path:'/admin/site-settings',icon:Globe,label:'Site & Branding'},
-    {path:'/admin/page-builder',icon:Layers,label:'Page Builder'},
-    {path:'/admin/system',icon:Server,label:'System Health'},
-    {path:'/admin/profile',icon:Settings,label:'My Profile'},
-    {path:'/admin/admins',icon:Shield,label:'Super Admins'},
+    {path:'/admin/dashboard',icon:LayoutDashboard,label:t('admin.overview','Overview')},
+    {path:'/admin/store-owners',icon:Users,label:t('admin.storeOwners','Store Owners')},
+    {path:'/admin/stores',icon:Store,label:t('admin.allStores','All Stores')},
+    {path:'/admin/orders',icon:ShoppingCart,label:t('admin.allOrders','All Orders')},
+    {path:'/admin/subscriptions',icon:CreditCard,label:t('admin.subscriptions','Subscriptions')},
+    {path:'/admin/billing-config',icon:DollarSign,label:t('admin.billingConfig','Billing Config')},
+    {path:'/admin/site-settings',icon:Globe,label:t('admin.siteBranding','Site & Branding')},
+    {path:'/admin/page-builder',icon:Layers,label:t('admin.pageBuilder','Page Builder')},
+    {path:'/admin/system',icon:Server,label:t('admin.systemHealth','System Health')},
+    {path:'/admin/profile',icon:Settings,label:t('admin.myProfile','My Profile')},
+    {path:'/admin/admins',icon:Shield,label:t('admin.superAdmins','Super Admins')},
   ];
   return(<>
     {open&&<div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose}/>}
@@ -27,7 +29,7 @@ function Sidebar({open,onClose}){
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center"><Shield size={16} className="text-white"/></div>
-          <div><p className="font-bold text-sm text-gray-800">Super Admin</p><p className="text-[10px] text-gray-400">CONTROL PANEL</p></div>
+          <div><p className="font-bold text-sm text-gray-800">{t('admin.superAdmin','Super Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.controlPanel','CONTROL PANEL')}</p></div>
         </div>
         <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-600"><X size={18}/></button>
       </div>
@@ -44,34 +46,35 @@ function Sidebar({open,onClose}){
           <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div>
           <div><p className="text-xs font-bold text-gray-800">{user?.name||'Admin'}</p><p className="text-[10px] text-gray-400">Super Admin</p></div>
         </div>
-        <button onClick={()=>{logout();nav('/login');}} className="w-full flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-50 rounded-xl text-sm font-medium"><LogOut size={14}/>Logout</button>
+        <button onClick={()=>{logout();nav('/admin/login');}} className="w-full flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-50 rounded-xl text-sm font-medium"><LogOut size={14}/>{t('admin.logout','Logout')}</button>
       </div>
     </aside></>);
 }
 
 // ═══════ OVERVIEW ═══════
 function Overview(){
+  const {t}=useTranslation();
   const[data,setData]=useState(null);const[loading,setLoading]=useState(true);
   useEffect(()=>{platformApi.getDashboard().then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));},[]);
   if(loading)return<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>;
   const s=data?.stats||{};
   const cards=[
-    {label:'Store Owners',value:s.totalOwners,icon:Users,color:'from-blue-500 to-blue-600',sub:`+${s.weekOwners||0} this week`},
-    {label:'Active Stores',value:s.totalStores,icon:Store,color:'from-purple-500 to-purple-600',sub:'Total stores'},
-    {label:'Total Orders',value:s.totalOrders,icon:ShoppingCart,color:'from-emerald-500 to-emerald-600',sub:`${s.todayOrders||0} today`},
-    {label:'Revenue',value:`${(s.totalRevenue||0).toLocaleString()} DZD`,icon:DollarSign,color:'from-amber-500 to-orange-500',sub:`${(s.todayRevenue||0).toLocaleString()} DZD today`},
-    {label:'Products',value:s.totalProducts,icon:Package,color:'from-cyan-500 to-cyan-600',sub:'Across all stores'},
-    {label:'Customers',value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:'Registered buyers'},
+    {label:t('admin.storeOwners','Store Owners'),value:s.totalOwners,icon:Users,color:'from-blue-500 to-blue-600',sub:`+${s.weekOwners||0} ${t('admin.thisWeek','this week')}`},
+    {label:t('admin.activeStores','Active Stores'),value:s.totalStores,icon:Store,color:'from-purple-500 to-purple-600',sub:t('admin.totalStores','Total stores')},
+    {label:t('admin.totalOrders','Total Orders'),value:s.totalOrders,icon:ShoppingCart,color:'from-emerald-500 to-emerald-600',sub:`${s.todayOrders||0} ${t('admin.today','today')}`},
+    {label:t('admin.revenue','Revenue'),value:`${(s.totalRevenue||0).toLocaleString()} DZD`,icon:DollarSign,color:'from-amber-500 to-orange-500',sub:`${(s.todayRevenue||0).toLocaleString()} DZD ${t('admin.today','today')}`},
+    {label:t('admin.products','Products'),value:s.totalProducts,icon:Package,color:'from-cyan-500 to-cyan-600',sub:t('admin.acrossStores','Across all stores')},
+    {label:t('admin.customers','Customers'),value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:t('admin.registeredBuyers','Registered buyers')},
   ];
   return(<div>
-    <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-black text-gray-900">Platform Overview</h1><p className="text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-gray-200"><RefreshCw size={14}/>Refresh</button></div>
+    <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-black text-gray-900">{t('admin.platformOverview','Platform Overview')}</h1><p className="text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-gray-200"><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">{cards.map((c,i)=>{const I=c.icon;return(
       <div key={i} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-3"><div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-md`}><I size={18} className="text-white"/></div></div>
         <p className="text-2xl font-black text-gray-900">{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p><p className="text-[10px] text-emerald-500 font-bold mt-1">{c.sub}</p>
       </div>);})}</div>
     <div className="grid lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl p-6 shadow-sm"><h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><ShoppingCart size={16}/>Recent Orders</h3>
+      <div className="bg-white rounded-2xl p-6 shadow-sm"><h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><ShoppingCart size={16}/>{t('admin.recentOrders','Recent Orders')}</h3>
         <div className="space-y-2">{(data?.recentOrders||[]).slice(0,8).map(o=>(
           <div key={o.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
             <div className="flex items-center gap-3"><span className="font-mono text-xs font-bold text-brand-600">{o.order_number}</span><span className="text-sm text-gray-700">{o.customer_name}</span></div>
@@ -79,7 +82,7 @@ function Overview(){
           </div>
         ))}</div>
       </div>
-      <div className="bg-white rounded-2xl p-6 shadow-sm"><h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Store size={16}/>Recent Stores</h3>
+      <div className="bg-white rounded-2xl p-6 shadow-sm"><h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Store size={16}/>{t('admin.recentStores','Recent Stores')}</h3>
         <div className="space-y-2">{(data?.recentStores||[]).slice(0,8).map(s=>(
           <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
             <div><p className="text-sm font-bold text-gray-800">{s.name||s.store_name}</p><p className="text-[10px] text-gray-400">{s.owner_name} · {s.product_count||0} products</p></div>
@@ -124,20 +127,21 @@ function StoreOwners(){
 
 // ═══════ ALL STORES ═══════
 function AllStores(){
+  const {t}=useTranslation();
   const[stores,setStores]=useState([]);const[loading,setLoading]=useState(true);const[detail,setDetail]=useState(null);
   const load=()=>{platformApi.getStores().then(r=>setStores(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[]);
   const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success('Toggled');load();}catch{toast.error('Failed');}};
   const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');setDetail(null);load();}catch{toast.error('Failed');}};
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">All Stores</h1><span className="text-sm text-gray-400">{stores.length} total</span></div>
+    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">{t('admin.allStores','All Stores')}</h1><span className="text-sm text-gray-400">{stores.length} {t('admin.total','total')}</span></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
     <div className="grid gap-4">{stores.map(s=>(
       <div key={s.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
         <div className="p-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold">{(s.name||s.store_name||'S')[0]}</div>
           <div className="flex-1 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
-            <div className="flex items-center gap-2"><p className="font-bold text-gray-900">{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">LIVE</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">OFFLINE</span>}</div>
+            <div className="flex items-center gap-2"><p className="font-bold text-gray-900">{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">{t('admin.offline','OFFLINE')}</span>}</div>
             <p className="text-xs text-gray-400">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>
           </div>
           <div className="text-right"><p className="text-sm font-bold">{parseFloat(s.revenue||0).toLocaleString()} DZD</p><p className="text-[10px] text-gray-400">{s.product_count||0} products · {s.order_count||0} orders</p></div>
@@ -478,6 +482,7 @@ function SystemHealth(){
 
 // ═══════ MY PROFILE ═══════
 function MyProfile(){
+  const {t}=useTranslation();
   const{user,setUser}=useAuthStore();
   const[form,setForm]=useState({name:'',email:'',phone:''});
   const[pwForm,setPwForm]=useState({current_password:'',new_password:'',confirm_password:''});
@@ -515,8 +520,8 @@ function MyProfile(){
   };
 
   return(<div>
-    <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Settings size={22} className="text-red-500"/>My Profile</h1>
-    <p className="text-sm text-gray-400 mb-6">Update your login information</p>
+    <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Settings size={22} className="text-red-500"/>{t('admin.myProfile','My Profile')}</h1>
+    <p className="text-sm text-gray-400 mb-6">{t('admin.updateLoginInfo','Update your login information')}</p>
 
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Profile info */}
@@ -626,6 +631,7 @@ function AdminManagement(){
 
 // ═══════ MAIN LAYOUT ═══════
 export default function PlatformAdminDashboard(){
+  const {t}=useTranslation();
   const[sidebarOpen,setSidebarOpen]=useState(false);
   return(
     <div className="flex min-h-screen bg-gray-50/80">
@@ -634,9 +640,9 @@ export default function PlatformAdminDashboard(){
         <header className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={()=>setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl"><Menu size={20} className="text-gray-600"/></button>
-            <span className="text-sm font-bold text-gray-700">Platform Administration</span>
+            <span className="text-sm font-bold text-gray-700">{t('admin.platformAdministration','Platform Administration')}</span>
           </div>
-          <span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>SUPER ADMIN</span>
+          <span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
         </header>
         <div className="p-4 md:p-8">
           <Routes>
