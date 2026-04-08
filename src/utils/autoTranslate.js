@@ -116,7 +116,9 @@ function schedule() {
     const lang = (i18n.language || 'en').slice(0, 2);
     walk(document.body, lang);
     document.documentElement.setAttribute('lang', lang);
-    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    // Keep LTR layout even for Arabic — user wants text translated without
+    // flipping the page direction.
+    document.documentElement.setAttribute('dir', 'ltr');
   });
 }
 
