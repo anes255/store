@@ -34,42 +34,47 @@ function lookup(text, lang) {
 }
 
 function translateTextNode(node, lang) {
-  let original = ORIGINAL.get(node);
-  if (!original) {
-    original = { type: 'text', value: node.nodeValue };
-    ORIGINAL.set(node, original);
+  let rec = ORIGINAL.get(node);
+  if (!rec) {
+    // First time we see this node — remember whatever React rendered as the
+    // canonical source.
+    rec = { value: node.nodeValue, lastWritten: node.nodeValue };
+    ORIGINAL.set(node, rec);
+  } else if (rec.lastWritten !== node.nodeValue) {
+    // Something external (React re-render from a language change, a t()
+    // call, etc.) updated the node's text after we last wrote it. Treat the
+    // new content as the new source of truth so we never revert to a stale
+    // translation after i18next changes languages.
+    rec.value = node.nodeValue;
   }
-  if (lang === 'en') {
-    if (node.nodeValue !== original.value) node.nodeValue = original.value;
-    return;
+  let target = rec.value;
+  if (lang !== 'en') {
+    const tr = lookup(rec.value, lang);
+    if (tr != null) target = tr;
   }
-  const translated = lookup(original.value, lang);
-  if (translated != null && node.nodeValue !== translated) {
-    node.nodeValue = translated;
-  } else if (translated == null && node.nodeValue !== original.value) {
-    // No translation -> revert to source so EN strings stay readable.
-    node.nodeValue = original.value;
-  }
+  if (node.nodeValue !== target) node.nodeValue = target;
+  rec.lastWritten = target;
 }
 
 function translateAttr(el, attr, lang) {
-  const cacheKey = '__orig_' + attr;
-  let original = el[cacheKey];
-  if (original == null) {
-    original = el.getAttribute(attr);
-    if (original == null) return;
-    el[cacheKey] = original;
+  const origKey = '__orig_' + attr;
+  const lastKey = '__last_' + attr;
+  const current = el.getAttribute(attr);
+  if (current == null) return;
+  if (el[origKey] == null) {
+    el[origKey] = current;
+    el[lastKey] = current;
+  } else if (el[lastKey] !== current) {
+    // External update (e.g. React re-render) -> take as new source.
+    el[origKey] = current;
   }
-  if (lang === 'en') {
-    if (el.getAttribute(attr) !== original) el.setAttribute(attr, original);
-    return;
+  let target = el[origKey];
+  if (lang !== 'en') {
+    const tr = lookup(el[origKey], lang);
+    if (tr != null) target = tr.trim();
   }
-  const translated = lookup(original, lang);
-  if (translated != null) {
-    el.setAttribute(attr, translated.trim());
-  } else {
-    el.setAttribute(attr, original);
-  }
+  if (el.getAttribute(attr) !== target) el.setAttribute(attr, target);
+  el[lastKey] = target;
 }
 
 function walk(root, lang) {
@@ -142,7 +147,19 @@ export function startAutoTranslate() {
       subtree: true,
       characterData: true,
     });
-    i18n.on('languageChanged', schedule);
+    i18n.on('languageChanged', () => {
+      // Run immediately AND on next frame so both synchronously-updated
+      // React nodes and those that re-render after the event are covered.
+      const lang = (i18n.language || 'en').slice(0, 2);
+      walk(document.body, lang);
+      document.documentElement.setAttribute('lang', lang);
+      document.documentElement.setAttribute('dir', 'ltr');
+      // Re-walk twice more to catch components that re-render on the next
+      // microtask / paint after i18next notifies subscribers.
+      schedule();
+      setTimeout(schedule, 50);
+      setTimeout(schedule, 200);
+    });
   };
   if (document.body) run();
   else document.addEventListener('DOMContentLoaded', run, { once: true });

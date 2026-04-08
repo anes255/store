@@ -138,6 +138,10 @@ export default function ShippingPartners(){
             <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-500 font-bold shrink-0"><Plus size={20}/></div>
             <div className="flex-1"><p className="font-bold text-gray-900">{t('storePage.anyOtherCompany','Any Other Company')}</p><p className="text-xs text-gray-400">{t('storePage.anyOtherCompanyDesc','Add any company — with or without API')}</p></div>
           </button>
+          <button onClick={()=>{setForm({...EMPTY,use_api:true,api_auth_type:'bearer'});setStep('form');}} className="w-full mt-2 p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/50 hover:border-emerald-400 text-left flex items-center gap-4 transition-all">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold shrink-0"><Zap size={20}/></div>
+            <div className="flex-1"><p className="font-bold text-gray-900">{t('storePage.customApiOnly','Custom company (API key only)')}</p><p className="text-xs text-gray-500">{t('storePage.customApiOnlyDesc','Just paste a bearer token to enable live tracking')}</p></div>
+          </button>
         </div>
       </>}
 

@@ -82,7 +82,7 @@ const DEFAULT_ITEMS = [
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
     {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'},{to:'/dashboard/ai-intelligence',label:'sidebar.aiIntelligence'}]},
   {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
-    {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/page-builder',label:'sidebar.pageBuilder'},{to:'/dashboard/homepage',label:'sidebar.homePage'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
+    {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/page-builder',label:'sidebar.pageBuilder'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
     {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
