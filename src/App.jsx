@@ -1,4 +1,4 @@
-import React,{Suspense,lazy,useEffect,useState}from'react';import{Routes,Route,Navigate,useNavigate}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
+import React,{Suspense,lazy,useEffect,useState}from'react';import{Routes,Route,Navigate,useNavigate,useParams}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
 
 // Set platform favicon + title globally
 function PlatformMeta(){
@@ -79,6 +79,8 @@ const Favorites=lazy(()=>import('./pages/buyer/Favorites'));
 
 const Loading=()=>(<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>);
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();const isAdminArea=(allowedRoles&&allowedRoles.includes('platform_admin'))||(typeof window!=='undefined'&&window.location.pathname.startsWith('/admin'));const loginPath=isAdminArea?'/admin/login':'/login';if(!token)return<Navigate to={loginPath} replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to={loginPath} replace/>;return children;};
+const RESERVED_SLUGS=new Set(['admin','dashboard','login','register','s','api','platform','owner','profile','favorites','checkout','auth','product']);
+const SlugGuard=({children})=>{const{storeSlug}=useParams();if(RESERVED_SLUGS.has((storeSlug||'').toLowerCase()))return null;return children;};
 const P=({children})=>(<ProtectedRoute allowedRoles={['store_owner']}>{children}</ProtectedRoute>);
 
 export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>
@@ -128,11 +130,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/s/:storeSlug/auth" element={<CustomerAuth/>}/>
 <Route path="/s/:storeSlug/profile" element={<CustomerProfile/>}/>
 <Route path="/s/:storeSlug/favorites" element={<Favorites/>}/>
-{/* Buyer - clean subdomain-style /:slug paths */}
-<Route path="/:storeSlug" element={<Storefront/>}/>
-<Route path="/:storeSlug/product/:productSlug" element={<ProductDetail/>}/>
-<Route path="/:storeSlug/checkout" element={<Checkout/>}/>
-<Route path="/:storeSlug/auth" element={<CustomerAuth/>}/>
-<Route path="/:storeSlug/profile" element={<CustomerProfile/>}/>
-<Route path="/:storeSlug/favorites" element={<Favorites/>}/>
+{/* Buyer - clean slug homepage only. Subpages use /s/:storeSlug/... to
+    avoid conflicting with reserved top-level paths like /admin/profile. */}
+<Route path="/:storeSlug" element={<SlugGuard><Storefront/></SlugGuard>}/>
 </Routes></Suspense></>);}
