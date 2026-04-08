@@ -17,13 +17,21 @@ export default function CustomerProfile() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [profile, setProfile] = useState(null);
+  const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) { navigate(`/s/${storeSlug}/auth`); return; }
     storeApi.getCustomerProfile(storeSlug).then(r => setProfile(r.data)).catch(() => navigate(`/s/${storeSlug}/auth`));
+    storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {});
     setLoading(false);
   }, [storeSlug, user]);
+
+  const tplSec = Array.isArray(store?.page_builder) ? store.page_builder.find(s => s.visible !== false) : null;
+  const tplStyle = tplSec?.style || {};
+  const headerBg = tplStyle.bg || store?.primary_color || '#7C3AED';
+  const headerText = tplStyle.textColor || '#ffffff';
+  const headerFont = tplStyle.fontFamily || 'Inter';
 
   const handleLogout = () => { logout(); navigate(`/s/${storeSlug}`); };
 
@@ -31,10 +39,10 @@ export default function CustomerProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 text-gray-600"><ArrowLeft size={18} /><span className="font-semibold text-sm">Back to Store</span></Link>
-          <button onClick={handleLogout} className="flex items-center gap-1.5 text-red-500 text-sm font-medium"><LogOut size={16} />Logout</button>
+      <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2" style={{color:headerText}}><ArrowLeft size={18} /><span className="font-semibold text-sm" style={{color:headerText,fontFamily:headerFont}}>{t('store.backToStore','Back to Store')}</span></Link>
+          <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm font-medium opacity-90 hover:opacity-100" style={{color:headerText}}><LogOut size={16} />{t('store.logout','Logout')}</button>
         </div>
       </header>
 

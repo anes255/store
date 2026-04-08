@@ -1,5 +1,12 @@
-import React,{useState} from'react';import{useParams,Link} from'react-router-dom';import{useTranslation}from'react-i18next';import{useCartStore}from'../../hooks/useStore';import toast from'react-hot-toast';import{Heart,ArrowLeft,ShoppingCart,Eye,Trash2,CheckSquare,Square,X,Package}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useParams,Link} from'react-router-dom';import{useTranslation}from'react-i18next';import{useCartStore}from'../../hooks/useStore';import{storeApi}from'../../utils/api';import toast from'react-hot-toast';import{Heart,ArrowLeft,ShoppingCart,Eye,Trash2,CheckSquare,Square,X,Package}from'lucide-react';
 export default function Favorites(){const{storeSlug}=useParams();const{t}=useTranslation();const{addItem}=useCartStore();
+const[store,setStore]=useState(null);
+useEffect(()=>{storeApi.getStore(storeSlug).then(r=>setStore(r.data)).catch(()=>{});},[storeSlug]);
+const tplSec=Array.isArray(store?.page_builder)?store.page_builder.find(s=>s.visible!==false):null;
+const tplStyle=tplSec?.style||{};
+const headerBg=tplStyle.bg||store?.primary_color||'#7C3AED';
+const headerText=tplStyle.textColor||'#ffffff';
+const headerFont=tplStyle.fontFamily||'Inter';
 const[items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem('wishlist_'+storeSlug)||'[]');}catch{return[];}});
 const[selected,setSelected]=useState([]);
 const save=(newItems)=>{setItems(newItems);localStorage.setItem('wishlist_'+storeSlug,JSON.stringify(newItems));};
@@ -9,7 +16,7 @@ const clearAll=()=>{save([]);setSelected([]);};
 const removeSelected=()=>{save(items.filter(i=>!selected.includes(i.id)));setSelected([]);toast.success('Removed!');};
 const addSelectedToCart=()=>{items.filter(i=>selected.includes(i.id)).forEach(i=>addItem(i));toast.success(`${selected.length} items added to cart!`);setSelected([]);};
 const getThumb=(p)=>{if(p.thumbnail)return p.thumbnail;if(Array.isArray(p.images)&&p.images.length)return typeof p.images[0]==='string'?p.images[0]:null;return null;};
-return(<div className="min-h-screen bg-[#f5f5f5]"><header className="bg-white sticky top-0 z-30 shadow-sm"><div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between"><Link to={`/s/${storeSlug}`} className="flex items-center gap-2 text-gray-600"><ArrowLeft size={20}/></Link><h1 className="text-lg font-bold">Favorites</h1><div/></div></header>
+return(<div className="min-h-screen bg-[#f5f5f5]"><header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}><div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between"><Link to={`/s/${storeSlug}`} className="flex items-center gap-2" style={{color:headerText}}><ArrowLeft size={20}/></Link><h1 className="text-lg font-extrabold" style={{color:headerText,fontFamily:headerFont}}>{t('store.favorites','Favorites')}</h1><div/></div></header>
 <div className="max-w-5xl mx-auto px-4 py-8"><div className="flex items-center justify-between mb-6"><div className="flex items-center gap-3"><Heart size={28} className="text-red-500" fill="currentColor"/><div><h2 className="text-2xl font-bold">Favorites</h2><p className="text-sm text-gray-400">{items.length} saved products</p></div></div><div className="flex gap-2"><button onClick={selectAll} className="btn-ghost text-sm flex items-center gap-1"><CheckSquare size={14}/>SELECT ALL</button><button onClick={clearAll} className="btn-ghost text-sm flex items-center gap-1 text-red-500"><Trash2 size={14}/>CLEAR ALL</button></div></div>
 {selected.length>0&&<div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-2 mb-4 flex items-center justify-between"><span className="text-sm font-bold text-brand-600">{selected.length} selected</span><button onClick={()=>setSelected([])} className="text-gray-400"><X size={16}/></button></div>}
 {items.length===0?<div className="text-center py-20"><Heart size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">No favorites yet</p><Link to={`/s/${storeSlug}`} className="text-brand-500 text-sm font-semibold mt-2 inline-block">Continue Shopping</Link></div>:
