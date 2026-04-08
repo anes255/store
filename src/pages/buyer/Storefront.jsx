@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
-import { useCartStore, useLangStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -133,6 +133,8 @@ export default function Storefront() {
   const { t } = useTranslation();
   const { lang } = useLangStore();
   const { addItem, getCount } = useCartStore();
+  const { token: authToken, role: authRole } = useAuthStore();
+  const isLoggedInCustomer = !!authToken && authRole === 'customer';
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -230,7 +232,7 @@ export default function Storefront() {
           </div>
           <div className="flex items-center gap-3">
             <StoreLangSwitcher />
-            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-white/20 rounded-full"><User size={20}/></Link>
+            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full"><User size={20}/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={20}/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
@@ -340,7 +342,7 @@ export default function Storefront() {
       {/* ============ MOBILE BOTTOM NAV ============ */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30 px-4 py-2 flex items-center justify-around safe-area-bottom">
         <Link to={`/s/${storeSlug}`} className="flex flex-col items-center gap-0.5 text-gray-400"><Package size={20}/><span className="text-[10px]">Shop</span></Link>
-        <Link to={`/s/${storeSlug}/auth`} className="flex flex-col items-center gap-0.5 text-gray-400"><User size={20}/><span className="text-[10px]">Account</span></Link>
+        <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="flex flex-col items-center gap-0.5 text-gray-400"><User size={20}/><span className="text-[10px]">Account</span></Link>
         <button onClick={()=>setCartOpen(true)} className="flex flex-col items-center gap-0.5 relative" style={{color:pc}}>
           <ShoppingCart size={20}/>
           {getCount()>0&&<span className="absolute -top-1 right-0 w-4 h-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center">{getCount()}</span>}
