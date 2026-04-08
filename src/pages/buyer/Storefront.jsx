@@ -135,7 +135,7 @@ export default function Storefront() {
   const { addItem, getCount } = useCartStore();
   const { token: authToken, role: authRole } = useAuthStore();
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
-  const [store, setStore] = useState(null);
+  const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
@@ -159,6 +159,7 @@ export default function Storefront() {
           setStore(null); setLoading(false); return;
         }
         setStore(storeData);
+        try { localStorage.setItem('storeCache_' + storeSlug, JSON.stringify(storeData)); } catch {}
         // Set store title and favicon
         if(storeData.name)document.title=storeData.name;
         if(storeData.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=storeData.favicon;}
@@ -219,11 +220,11 @@ export default function Storefront() {
             {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover bg-white/20" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-xl" style={{color:headerText}}>{store.name?.[0]}</div>}
             <span className="text-2xl font-extrabold" style={{color:headerText,fontFamily:headerFont}}>{store.name}</span>
           </Link>
-          <div className="hidden md:flex flex-1 max-w-md mx-6">
-            <div className="flex items-center bg-white/95 rounded-full shadow-sm w-full">
-              <Search size={16} className="ml-4 text-gray-400"/>
+          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+            <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+              <Search size={20} className="ml-5 text-gray-400"/>
               <input
-                className="flex-1 bg-transparent px-3 py-2 text-sm focus:outline-none"
+                className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none"
                 placeholder={t('store.search','Search products...')}
                 value={search}
                 onChange={e=>setSearch(e.target.value)}

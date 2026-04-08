@@ -81,7 +81,9 @@ export default function CustomerProfile() {
   const navigate = useNavigate();
   const { user, token, logout, setAuth } = useAuthStore();
   const [profile, setProfile] = useState(null);
-  const [store, setStore] = useState(null);
+  const [store, setStore] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; }
+  });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', wilaya: '' });
@@ -102,16 +104,12 @@ export default function CustomerProfile() {
           address: r.data.address || '', city: r.data.city || '', wilaya: r.data.wilaya || '',
         });
       })
-      .catch(err => {
-        // Don't bounce — show whatever we have locally
-        if (err.response?.status === 401) {
-          toast.error(t('store.sessionExpired','Session expired, please log in again'));
-          logout();
-          navigate(`/s/${storeSlug}/auth`);
-        }
-      })
+      .catch(() => {/* keep in-memory profile; don't bounce */})
       .finally(() => setLoading(false));
-    storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {});
+    storeApi.getStore(storeSlug).then(r => {
+      setStore(r.data);
+      try { localStorage.setItem('storeCache_' + storeSlug, JSON.stringify(r.data)); } catch {}
+    }).catch(() => {});
   }, [storeSlug]);
 
   const tplSec = Array.isArray(store?.page_builder) ? store.page_builder.find(s => s.visible !== false) : null;

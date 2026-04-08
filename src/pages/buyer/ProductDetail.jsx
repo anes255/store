@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
-import { useCartStore, useLangStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe } from 'lucide-react';
 import Checkout from './Checkout';
@@ -10,6 +10,8 @@ export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
   const { addItem, getCount } = useCartStore();
   const { lang } = useLangStore();
+  const { token:authToken, role:authRole } = useAuthStore();
+  const isLoggedInCustomer = !!authToken && authRole === 'customer';
   const [store, setStore] = useState(null);
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -59,7 +61,7 @@ export default function ProductDetail() {
           </Link>
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
-            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
+            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
             <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
               <ShoppingCart size={20}/>

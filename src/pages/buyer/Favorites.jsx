@@ -1,7 +1,7 @@
 import React,{useState,useEffect} from'react';import{useParams,Link} from'react-router-dom';import{useTranslation}from'react-i18next';import{useCartStore}from'../../hooks/useStore';import{storeApi}from'../../utils/api';import toast from'react-hot-toast';import{Heart,ArrowLeft,ShoppingCart,Eye,Trash2,CheckSquare,Square,X,Package}from'lucide-react';
 export default function Favorites(){const{storeSlug}=useParams();const{t}=useTranslation();const{addItem}=useCartStore();
-const[store,setStore]=useState(null);
-useEffect(()=>{storeApi.getStore(storeSlug).then(r=>setStore(r.data)).catch(()=>{});},[storeSlug]);
+const[store,setStore]=useState(()=>{try{return JSON.parse(localStorage.getItem('storeCache_'+storeSlug)||'null');}catch{return null;}});
+useEffect(()=>{storeApi.getStore(storeSlug).then(r=>{setStore(r.data);try{localStorage.setItem('storeCache_'+storeSlug,JSON.stringify(r.data));}catch{}}).catch(()=>{});},[storeSlug]);
 const tplSec=Array.isArray(store?.page_builder)?store.page_builder.find(s=>s.visible!==false):null;
 const tplStyle=tplSec?.style||{};
 const headerBg=tplStyle.bg||store?.primary_color||'#7C3AED';
