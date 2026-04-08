@@ -136,20 +136,34 @@ export default function CustomerProfile() {
     setSaving(false);
   };
 
-  if (loading && !profile) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-gray-200 border-t-brand-500 rounded-full animate-spin" /></div>;
+  // Block render until we actually have the store theme (from cache or API).
+  // This prevents the "default theme flash" on first load.
+  if (!store || (loading && !profile)) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: store?.primary_color ? '#f5f5f5' : '#ffffff' }}>
+      <div className="w-10 h-10 border-4 border-gray-200 border-t-brand-500 rounded-full animate-spin" />
+    </div>
+  );
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f5f5f5]" style={{ fontFamily: headerFont }}>
+      {/* Match Storefront header exactly */}
       <header className="sticky top-0 z-30 shadow-md" style={{ backgroundColor: headerBg, color: headerText, fontFamily: headerFont }}>
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2" style={{ color: headerText }}>
-            <ArrowLeft size={18} />
-            <span className="font-semibold text-sm" style={{ color: headerText, fontFamily: headerFont }}>{t('store.backToStore','Back to Store')}</span>
+        <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-4" style={{ color: headerText }}>
+            {store.logo
+              ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover bg-white/20" alt="" />
+              : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-xl" style={{ color: headerText }}>{store.name?.[0]}</div>}
+            <span className="text-2xl font-extrabold" style={{ color: headerText, fontFamily: headerFont }}>{store.name}</span>
           </Link>
-          <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm font-medium opacity-90 hover:opacity-100" style={{ color: headerText }}>
-            <LogOut size={16} />{t('store.logout','Logout')}
-          </button>
+          <div className="flex items-center gap-3">
+            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-white/20 text-sm font-semibold" style={{ color: headerText }}>
+              <ArrowLeft size={16} />{t('store.backToStore','Back to Store')}
+            </Link>
+            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-white/20 text-sm font-semibold" style={{ color: headerText }}>
+              <LogOut size={16} />{t('store.logout','Logout')}
+            </button>
+          </div>
         </div>
       </header>
 

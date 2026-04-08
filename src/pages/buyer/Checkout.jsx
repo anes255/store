@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
-import { useCartStore, useLangStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
 
@@ -78,7 +78,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.customer_name || !form.customer_phone || !form.customer_email || !form.shipping_address || !form.shipping_wilaya) return toast.error('Please fill all required fields including email');
     setLoading(true);
     try {
-      const { data } = await storeApi.placeOrder(storeSlug, { ...form, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
+      const authUser = useAuthStore.getState().user;
+      const authRole = useAuthStore.getState().role;
+      const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
+      const { data } = await storeApi.placeOrder(storeSlug, { ...form, customer_id, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
       setOrderSuccess(data);
       clearCart();
       // If non-COD method, show payment step
