@@ -5,6 +5,7 @@ import { platformApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import PlansEditor from './PlansEditor';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
 function Sidebar({open,onClose}){
@@ -16,6 +17,7 @@ function Sidebar({open,onClose}){
     {path:'/admin/stores',icon:Store,label:t('admin.allStores','All Stores')},
     {path:'/admin/orders',icon:ShoppingCart,label:t('admin.allOrders','All Orders')},
     {path:'/admin/subscriptions',icon:CreditCard,label:t('admin.subscriptions','Subscriptions')},
+    {path:'/admin/plans',icon:Layers,label:t('admin.plansEditor','Plans Editor')},
     {path:'/admin/billing-config',icon:DollarSign,label:t('admin.billingConfig','Billing Config')},
     {path:'/admin/site-settings',icon:Globe,label:t('admin.siteBranding','Site & Branding')},
     {path:'/admin/page-builder',icon:Layers,label:t('admin.pageBuilder','Page Builder')},
@@ -652,6 +654,7 @@ export default function PlatformAdminDashboard(){
             <Route path="orders" element={<AllOrders/>}/>
             <Route path="site-settings" element={<SiteSettings/>}/>
             <Route path="subscriptions" element={<Subscriptions/>}/>
+            <Route path="plans" element={<PlansEditor/>}/>
             <Route path="billing-config" element={<BillingConfig/>}/>
             <Route path="page-builder" element={<PageBuilder/>}/>
             <Route path="system" element={<SystemHealth/>}/>

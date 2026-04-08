@@ -2,7 +2,10 @@ import React,{useState,useEffect,useRef} from'react';import DashboardLayout from
 import { useTranslation } from 'react-i18next';
 
 export default function StoreBilling(){
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || 'en').slice(0, 2);
+  const localizedName = (plan) => (plan?.name_i18n && (plan.name_i18n[lang] || plan.name_i18n.en)) || plan?.name || '';
+  const localizedFeatures = (plan) => (plan?.features_i18n && (plan.features_i18n[lang]?.length ? plan.features_i18n[lang] : plan.features_i18n.en)) || plan?.features || [];
   const[data,setData]=useState(null);const[loading,setLoading]=useState(true);
   const[selectedPlan,setSelectedPlan]=useState(null);const[period,setPeriod]=useState('monthly');
   const[showPay,setShowPay]=useState(false);const[receipt,setReceipt]=useState('');const[submitting,setSubmitting]=useState(false);
@@ -64,9 +67,9 @@ export default function StoreBilling(){
     <div className="max-w-md mx-auto mb-8">
       {Object.entries(plans).map(([key,plan])=>{const price=period==='yearly'?plan.yearly:plan.monthly;const isCurrent=data?.plan===key&&isActive;return(
         <div key={key} className="glass-card-solid p-8 ring-2 ring-brand-400">
-          <div className="text-center mb-4"><h3 className="text-2xl font-black text-gray-900">{plan.name}</h3></div>
-          <div className="text-center mb-6"><span className="text-4xl font-black text-brand-600">{price.toLocaleString()}</span><span className="text-gray-400 text-sm ml-1">{t('storePage.dzd','DZD')} / {period==='yearly'?t('storePage.year','year'):t('storePage.month','month')}</span></div>
-          <div className="space-y-2 mb-6">{plan.features.map((f,i)=><div key={i} className="flex items-center gap-2 text-sm"><Check size={14} className="text-emerald-500 shrink-0"/><span className="text-gray-600">{f}</span></div>)}</div>
+          <div className="text-center mb-4"><h3 className="text-2xl font-black text-gray-900">{localizedName(plan)}</h3></div>
+          <div className="text-center mb-6"><span className="text-4xl font-black text-brand-600">{price.toLocaleString()}</span><span className="text-gray-400 text-sm ml-1">{plan.currency||t('storePage.dzd','DZD')} / {period==='yearly'?t('storePage.year','year'):t('storePage.month','month')}</span></div>
+          <div className="space-y-2 mb-6">{localizedFeatures(plan).map((f,i)=><div key={i} className="flex items-center gap-2 text-sm"><Check size={14} className="text-emerald-500 shrink-0"/><span className="text-gray-600">{f}</span></div>)}</div>
           <button onClick={()=>{if(!isCurrent){setSelectedPlan(key);setShowPay(true);}}} disabled={isCurrent} className={`w-full py-3.5 rounded-xl font-bold text-sm ${isCurrent?'bg-emerald-100 text-emerald-700':'bg-brand-500 text-white hover:bg-brand-600'}`}>{isCurrent?t('storePage.currentPlanBtn','Current Plan'):t('storePage.subscribe','Subscribe')}</button>
         </div>
       );})}
@@ -88,7 +91,7 @@ export default function StoreBilling(){
     {/* Payment Modal */}
     {showPay&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowPay(false)}>
       <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4"><h2 className="text-xl font-bold">{t('storePage.subscribeTo','Subscribe to')} {plans[selectedPlan]?.name}</h2><button onClick={()=>setShowPay(false)}><X size={20}/></button></div>
+        <div className="flex items-center justify-between mb-4"><h2 className="text-xl font-bold">{t('storePage.subscribeTo','Subscribe to')} {localizedName(plans[selectedPlan])}</h2><button onClick={()=>setShowPay(false)}><X size={20}/></button></div>
 
         <div className="p-4 bg-brand-50 rounded-xl mb-4 text-center">
           <p className="text-xs text-gray-400">{t('storePage.amountToPay','Amount to pay')}</p>

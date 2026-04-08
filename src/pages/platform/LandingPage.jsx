@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { getPlatformInfo } from '../../utils/api';
+import { getPlatformInfo, publicPlansApi } from '../../utils/api';
 import { ShoppingBag, Zap, Globe, Shield, BarChart3, Truck, Bot, Smartphone, CreditCard, ArrowRight, Check, Star, Play, Sparkles } from 'lucide-react';
 
 export default function LandingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || 'en').slice(0, 2);
+  const pick = (obj, fallback = '') => (obj && (obj[lang] || obj.en)) || fallback;
   const defaultFeatures = [
     { icon: ShoppingBag, title: t('landing.f1Title','One-Click Store Setup'), desc: t('landing.f1Desc','Launch your store in under 5 minutes with beautiful templates and zero coding.') },
     { icon: Globe, title: t('landing.f2Title','58 Wilayas Coverage'), desc: t('landing.f2Desc','Sell everywhere in Algeria with integrated shipping to all wilayas.') },
@@ -20,6 +22,13 @@ export default function LandingPage() {
   const [info, setInfo] = useState({ site_name: 'KyoMarket' });
   const [blocks, setBlocks] = useState([]);
   const [hasCustom, setHasCustom] = useState(false);
+  const [apiPlans, setApiPlans] = useState(null); // null = still loading / unavailable
+
+  useEffect(() => {
+    publicPlansApi.list().then(r => {
+      if (Array.isArray(r.data?.plans) && r.data.plans.length) setApiPlans(r.data.plans);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     getPlatformInfo().then(r => {
@@ -215,8 +224,17 @@ export default function LandingPage() {
       <section id="pricing" className="py-24 px-6 bg-white">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900">{t('pricing.title')}</h2>
-          <div className="mt-12 grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {[{ name: t('landing.starter','Starter'), price: t('landing.free','Free'), period: t('landing.days14','14 days'), features: [t('landing.p1a','1 Store'), t('landing.p1b','50 Products'), t('landing.p1c','Basic Analytics'), t('landing.p1d','COD Payment')] }, { name: t('landing.pro','Pro'), price: '2,900 DZD', period: t('landing.perMonth','/month'), popular: true, features: [t('landing.p2a','3 Stores'), t('landing.p2b','Unlimited Products'), t('landing.p2c','AI Chatbot'), t('landing.p2d','All Payments'), t('landing.p2e','Cart Recovery'), t('landing.p2f','Custom Domain')] }].map((plan, i) => (
+          <div className={`mt-12 grid gap-8 mx-auto ${(apiPlans && apiPlans.length >= 3) ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'}`}>
+            {(apiPlans && apiPlans.length
+              ? apiPlans.map(p => ({
+                  name: pick(p.name, 'Plan'),
+                  price: p.price_monthly > 0 ? `${Number(p.price_monthly).toLocaleString()} ${p.currency || 'DZD'}` : t('landing.free','Free'),
+                  period: p.price_monthly > 0 ? t('landing.perMonth','/month') : t('landing.days14','14 days'),
+                  popular: !!p.is_popular,
+                  features: (p.features && (p.features[lang] && p.features[lang].length ? p.features[lang] : p.features.en)) || [],
+                }))
+              : [{ name: t('landing.starter','Starter'), price: t('landing.free','Free'), period: t('landing.days14','14 days'), features: [t('landing.p1a','1 Store'), t('landing.p1b','50 Products'), t('landing.p1c','Basic Analytics'), t('landing.p1d','COD Payment')] }, { name: t('landing.pro','Pro'), price: '2,900 DZD', period: t('landing.perMonth','/month'), popular: true, features: [t('landing.p2a','3 Stores'), t('landing.p2b','Unlimited Products'), t('landing.p2c','AI Chatbot'), t('landing.p2d','All Payments'), t('landing.p2e','Cart Recovery'), t('landing.p2f','Custom Domain')] }]
+            ).map((plan, i) => (
               <div key={i} className={`relative rounded-3xl p-8 ${plan.popular ? 'bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-2xl shadow-brand-500/30 scale-105' : 'bg-gray-50 border border-gray-200'}`}>
                 {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
                 <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>

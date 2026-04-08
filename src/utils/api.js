@@ -66,6 +66,16 @@ export const platformApi = {
   addAdmin: (data) => api.post('/platform/admins', data),
   removeAdmin: (id) => api.delete(`/platform/admins/${id}`),
   toggleAdmin: (id) => api.patch(`/platform/admins/${id}/toggle`),
+  // Subscription plans (super-admin CRUD)
+  getPlans: () => api.get('/platform/plans'),
+  createPlan: (data) => api.post('/platform/plans', data),
+  updatePlan: (id, data) => api.put(`/platform/plans/${id}`, data),
+  deletePlan: (id) => api.delete(`/platform/plans/${id}`),
+};
+
+// Public plans (no auth) — used by landing + billing pages
+export const publicPlansApi = {
+  list: () => api.get('/platform/plans/public'),
 };
 
 // Store Owner
