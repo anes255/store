@@ -128,7 +128,7 @@ export default function RoleTemplatesEditor() {
   };
   useEffect(() => { load(); }, []);
 
-  const addNew = () => setTpls([...tpls, { ...EMPTY, _new: true }]);
+  const addNew = () => setTpls([...tpls, JSON.parse(JSON.stringify({ ...EMPTY, _new: true, _tmpId: Date.now() }))]);
   const updateAt = (i, next) => setTpls(tpls.map((t, idx) => idx === i ? next : t));
   const save = async (i) => {
     const t = tpls[i];

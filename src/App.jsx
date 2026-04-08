@@ -78,7 +78,7 @@ const CustomerProfile=lazy(()=>import('./pages/buyer/CustomerProfile'));
 const Favorites=lazy(()=>import('./pages/buyer/Favorites'));
 
 const Loading=()=>(<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>);
-const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();if(!token)return<Navigate to="/login" replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to="/" replace/>;return children;};
+const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();const isAdminArea=(allowedRoles&&allowedRoles.includes('platform_admin'))||(typeof window!=='undefined'&&window.location.pathname.startsWith('/admin'));const loginPath=isAdminArea?'/admin/login':'/login';if(!token)return<Navigate to={loginPath} replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to={loginPath} replace/>;return children;};
 const P=({children})=>(<ProtectedRoute allowedRoles={['store_owner']}>{children}</ProtectedRoute>);
 
 export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>

@@ -201,15 +201,21 @@ export default function Storefront() {
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
 
   const pc = store.primary_color || '#7C3AED';
+  // Match header style to page builder template (first hero/section)
+  const tplSec = Array.isArray(store.page_builder)?store.page_builder.find(s=>s.visible!==false):null;
+  const tplStyle = tplSec?.style||{};
+  const headerBg = tplStyle.bg || pc;
+  const headerText = tplStyle.textColor || '#ffffff';
+  const headerFont = tplStyle.fontFamily || 'Inter';
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* ============ HEADER ============ */}
-      <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:pc}}>
+      <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-4">
-            {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover bg-white/20" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/20 text-white font-bold text-xl">{store.name?.[0]}</div>}
-            <span className="text-2xl font-extrabold text-white">{store.name}</span>
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-4" style={{color:headerText}}>
+            {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover bg-white/20" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-xl" style={{color:headerText}}>{store.name?.[0]}</div>}
+            <span className="text-2xl font-extrabold" style={{color:headerText,fontFamily:headerFont}}>{store.name}</span>
           </Link>
           <div className="hidden md:flex flex-1 max-w-md mx-6">
             <div className="flex items-center bg-white/95 rounded-full shadow-sm w-full">
@@ -224,12 +230,12 @@ export default function Storefront() {
           </div>
           <div className="flex items-center gap-3">
             <StoreLangSwitcher />
-            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-white/20 rounded-full text-white"><User size={20}/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full text-white relative">
+            <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-white/20 rounded-full"><User size={20}/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={20}/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full text-white relative">
+            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
             </button>

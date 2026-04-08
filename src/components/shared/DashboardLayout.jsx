@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate}from'lucide-react';
 
 function NotifBell(){
   const[open,setOpen]=React.useState(false);
@@ -77,12 +77,13 @@ function NotifBell(){
 const DEFAULT_ITEMS = [
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
+  {id:'page-builder',type:'link',to:'/dashboard/page-builder',icon:'LayoutTemplate',label:'sidebar.pageBuilder'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
     {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'},{to:'/dashboard/ai-intelligence',label:'sidebar.aiIntelligence'}]},
   {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
-    {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/page-builder',label:'sidebar.pageBuilder'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
+    {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
     {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
@@ -93,7 +94,7 @@ const DEFAULT_ITEMS = [
   {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'sidebar.billing'},
 ];
 
-const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent};
+const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate};
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
