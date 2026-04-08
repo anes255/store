@@ -7,6 +7,7 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import PlansEditor from './PlansEditor';
 import RoleTemplatesEditor from './RoleTemplatesEditor';
+import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
 function Sidebar({open,onClose}){
@@ -646,7 +647,10 @@ export default function PlatformAdminDashboard(){
             <button onClick={()=>setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl"><Menu size={20} className="text-gray-600"/></button>
             <span className="text-sm font-bold text-gray-700">{t('admin.platformAdministration','Platform Administration')}</span>
           </div>
-          <span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher compact/>
+            <span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
+          </div>
         </header>
         <div className="p-4 md:p-8">
           <Routes>
