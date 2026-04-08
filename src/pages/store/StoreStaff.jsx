@@ -111,54 +111,54 @@ export default function StoreStaff() {
   };
 
   const handleSave = async () => {
-    if (!form.name) return toast.error('Name is required');
-    if (!editing && !form.password) return toast.error('Password is required for new staff');
+    if (!form.name) return toast.error(t('storePage.nameRequired','Name is required'));
+    if (!editing && !form.password) return toast.error(t('storePage.passwordRequiredNewStaff','Password is required for new staff'));
     try {
       const payload = { ...form, permissions: JSON.stringify(form.permissions) };
       if (!payload.password) delete payload.password;
       if (editing) {
         await ownerApi.updateStaff(currentStore.id, editing.id, payload);
-        toast.success('Staff updated!');
+        toast.success(t('storePage.staffUpdated','Staff updated!'));
       } else {
         await ownerApi.addStaff(currentStore.id, payload);
-        toast.success('Staff member added!');
+        toast.success(t('storePage.staffAdded','Staff member added!'));
       }
       setShowModal(false);
       loadStaff();
-    } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.error || t('storePage.failed','Failed')); }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Remove this staff member?')) return;
+    if (!confirm(t('storePage.removeStaffConfirm','Remove this staff member?'))) return;
     try {
       await ownerApi.deleteStaff(currentStore.id, id);
-      toast.success('Staff removed');
+      toast.success(t('storePage.staffRemoved','Staff removed'));
       loadStaff();
-    } catch { toast.error('Failed'); }
+    } catch { toast.error(t('storePage.failed','Failed')); }
   };
 
   const handleToggleActive = async (s) => {
     try {
       await ownerApi.updateStaff(currentStore.id, s.id, { is_active: !s.is_active });
-      toast.success(s.is_active ? 'Staff deactivated' : 'Staff activated');
+      toast.success(s.is_active ? t('storePage.staffDeactivated','Staff deactivated') : t('storePage.staffActivated','Staff activated'));
       loadStaff();
-    } catch { toast.error('Failed'); }
+    } catch { toast.error(t('storePage.failed','Failed')); }
   };
 
   const addCustomRole = () => {
-    if (!roleForm.name) return toast.error('Role name required');
-    if (roleForm.permissions.length === 0) return toast.error('Select at least one permission');
+    if (!roleForm.name) return toast.error(t('storePage.roleNameRequired','Role name required'));
+    if (roleForm.permissions.length === 0) return toast.error(t('storePage.selectAtLeastOnePerm','Select at least one permission'));
     const key = roleForm.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    if (allRoles[key]) return toast.error('Role name already exists');
+    if (allRoles[key]) return toast.error(t('storePage.roleNameExists','Role name already exists'));
     saveCustomRoles([...customRoles, { key, name: roleForm.name, permissions: roleForm.permissions }]);
     setShowRoleCreator(false);
     setRoleForm({ name: '', permissions: [] });
-    toast.success('Custom role created!');
+    toast.success(t('storePage.customRoleCreated','Custom role created!'));
   };
 
   const deleteCustomRole = (key) => {
     saveCustomRoles(customRoles.filter(r => r.key !== key));
-    toast.success('Role deleted');
+    toast.success(t('storePage.roleDeleted','Role deleted'));
   };
 
   const toggleRolePerm = (key) => {
@@ -170,10 +170,10 @@ export default function StoreStaff() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Shield size={22} className="text-brand-500" />{t('staff.title')}</h1>
-          <p className="text-sm text-gray-400 mt-1">Manage who has access to your store dashboard and what they can do</p>
+          <p className="text-sm text-gray-400 mt-1">{t('storePage.staffSubtitle','Manage who has access to your store dashboard and what they can do')}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowRoleCreator(true)} className="btn-ghost text-sm flex items-center gap-2"><Plus size={14} />New Role</button>
+          <button onClick={() => setShowRoleCreator(true)} className="btn-ghost text-sm flex items-center gap-2"><Plus size={14} />{t('storePage.newRole','New Role')}</button>
           <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm"><UserPlus size={16} />{t('staff.addStaff')}</button>
         </div>
       </div>
@@ -181,13 +181,13 @@ export default function StoreStaff() {
       {/* Custom roles bar */}
       {customRoles.length > 0 && (
         <div className="glass-card-solid p-4 mb-6">
-          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Custom Roles</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('storePage.customRoles','Custom Roles')}</p>
           <div className="flex flex-wrap gap-2">
             {customRoles.map(r => (
               <div key={r.key} className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-xl">
                 <Settings size={12} className="text-indigo-500" />
                 <span className="text-xs font-bold text-indigo-700">{r.name}</span>
-                <span className="text-[9px] text-indigo-400">{r.permissions.length} perms</span>
+                <span className="text-[9px] text-indigo-400">{r.permissions.length} {t('storePage.perms','perms')}</span>
                 <button onClick={() => deleteCustomRole(r.key)} className="text-red-400 hover:text-red-600 ml-1"><X size={10} /></button>
               </div>
             ))}
@@ -201,9 +201,9 @@ export default function StoreStaff() {
       ) : staff.length === 0 ? (
         <div className="glass-card-solid p-16 text-center">
           <Shield size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 mb-2">No staff members yet</p>
-          <p className="text-xs text-gray-400 mb-4">Add team members and control exactly what they can access</p>
-          <button onClick={openAdd} className="btn-primary text-sm mx-auto"><UserPlus size={14} className="inline mr-1" />Add First Member</button>
+          <p className="text-gray-500 mb-2">{t('storePage.noStaffYet','No staff members yet')}</p>
+          <p className="text-xs text-gray-400 mb-4">{t('storePage.addTeamHint','Add team members and control exactly what they can access')}</p>
+          <button onClick={openAdd} className="btn-primary text-sm mx-auto"><UserPlus size={14} className="inline mr-1" />{t('storePage.addFirstMember','Add First Member')}</button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -215,7 +215,7 @@ export default function StoreStaff() {
               <div key={s.id} className={`glass-card-solid p-6 relative ${!s.is_active ? 'opacity-50' : ''}`}>
                 {/* Actions */}
                 <div className="absolute top-3 right-3 flex gap-1">
-                  <button onClick={() => handleToggleActive(s)} className="p-1.5 hover:bg-gray-100 rounded-lg" title={s.is_active ? 'Deactivate' : 'Activate'}>
+                  <button onClick={() => handleToggleActive(s)} className="p-1.5 hover:bg-gray-100 rounded-lg" title={s.is_active ? t('storePage.deactivate','Deactivate') : t('storePage.activate','Activate')}>
                     {s.is_active ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} className="text-gray-400" />}
                   </button>
                   <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-gray-100 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
@@ -236,12 +236,12 @@ export default function StoreStaff() {
 
                 {/* Permission summary */}
                 <div className="border-t border-gray-100 pt-3">
-                  <p className="text-[9px] font-bold text-gray-400 uppercase mb-1.5">Permissions ({perms.length})</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase mb-1.5">{t('storePage.permissions','Permissions')} ({perms.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {perms.slice(0, 6).map(p => (
                       <span key={p} className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">{p.replace(/_/g, ' ')}</span>
                     ))}
-                    {perms.length > 6 && <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium">+{perms.length - 6} more</span>}
+                    {perms.length > 6 && <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium">+{perms.length - 6} {t('storePage.more','more')}</span>}
                   </div>
                 </div>
               </div>
@@ -255,23 +255,23 @@ export default function StoreStaff() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">{editing ? 'Edit Staff Member' : t('staff.addStaff')}</h2>
+              <h2 className="text-xl font-bold">{editing ? t('storePage.editStaffMember','Edit Staff Member') : t('staff.addStaff')}</h2>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="input-label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-                <div><label className="input-label">Email</label><input type="email" className="input-field" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                <div><label className="input-label">{t('storePage.name','Name')} *</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+                <div><label className="input-label">{t('storePage.email','Email')}</label><input type="email" className="input-field" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="input-label">Phone</label><input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-                <div><label className="input-label">{editing ? 'New Password (leave empty to keep)' : 'Password *'}</label><input type="password" className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+                <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+                <div><label className="input-label">{editing ? t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)') : t('storePage.passwordRequired','Password *')}</label><input type="password" className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
               </div>
 
               {/* Role selection */}
               <div>
-                <label className="input-label">Role</label>
+                <label className="input-label">{t('storePage.role','Role')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(allRoles).map(([key, cfg]) => {
                     const Icon = cfg.icon;
@@ -288,8 +288,8 @@ export default function StoreStaff() {
               {/* Granular permissions */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="input-label !mb-0">Permissions</label>
-                  <span className="text-[10px] text-gray-400 font-bold">{form.permissions.length}/{ALL_PERMISSIONS.length} enabled</span>
+                  <label className="input-label !mb-0">{t('storePage.permissions','Permissions')}</label>
+                  <span className="text-[10px] text-gray-400 font-bold">{form.permissions.length}/{ALL_PERMISSIONS.length} {t('storePage.enabled','enabled')}</span>
                 </div>
                 <div className="border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100">
                   {PERM_GROUPS.map(group => {
@@ -306,7 +306,7 @@ export default function StoreStaff() {
                             <span className="text-[10px] text-gray-400">{checkedCount}/{groupPerms.length}</span>
                           </div>
                           <button onClick={e => { e.stopPropagation(); toggleGroup(group); }} className={`text-[10px] font-bold px-2 py-0.5 rounded ${allChecked ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-500'}`}>
-                            {allChecked ? 'Uncheck all' : 'Check all'}
+                            {allChecked ? t('storePage.uncheckAll','Uncheck all') : t('storePage.checkAll','Check all')}
                           </button>
                         </button>
                         {expanded && (
@@ -327,8 +327,8 @@ export default function StoreStaff() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(false)} className="btn-ghost flex-1">Cancel</button>
-              <button onClick={handleSave} className="btn-primary flex-1">{editing ? 'Update Staff' : 'Add Staff'}</button>
+              <button onClick={() => setShowModal(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
+              <button onClick={handleSave} className="btn-primary flex-1">{editing ? t('storePage.updateStaff','Update Staff') : t('storePage.addStaffBtn','Add Staff')}</button>
             </div>
           </div>
         </div>
@@ -339,13 +339,13 @@ export default function StoreStaff() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowRoleCreator(false)}>
           <div className="bg-white rounded-3xl p-8 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Create Custom Role</h2>
+              <h2 className="text-xl font-bold">{t('storePage.createCustomRole','Create Custom Role')}</h2>
               <button onClick={() => setShowRoleCreator(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
             <div className="space-y-4">
-              <div><label className="input-label">Role Name *</label><input className="input-field" value={roleForm.name} onChange={e => setRoleForm({ ...roleForm, name: e.target.value })} placeholder="e.g. Warehouse Manager" /></div>
+              <div><label className="input-label">{t('storePage.roleName','Role Name')} *</label><input className="input-field" value={roleForm.name} onChange={e => setRoleForm({ ...roleForm, name: e.target.value })} placeholder={t('storePage.roleNamePlaceholder','e.g. Warehouse Manager')} /></div>
               <div>
-                <label className="input-label">Permissions *</label>
+                <label className="input-label">{t('storePage.permissions','Permissions')} *</label>
                 <div className="border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
                   {PERM_GROUPS.map(group => {
                     const groupPerms = ALL_PERMISSIONS.filter(p => p.group === group);
@@ -364,12 +364,12 @@ export default function StoreStaff() {
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">{roleForm.permissions.length} permissions selected</p>
+                <p className="text-[10px] text-gray-400 mt-1">{roleForm.permissions.length} {t('storePage.permissionsSelected','permissions selected')}</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowRoleCreator(false)} className="btn-ghost flex-1">Cancel</button>
-              <button onClick={addCustomRole} className="btn-primary flex-1">Create Role</button>
+              <button onClick={() => setShowRoleCreator(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
+              <button onClick={addCustomRole} className="btn-primary flex-1">{t('storePage.createRole','Create Role')}</button>
             </div>
           </div>
         </div>
