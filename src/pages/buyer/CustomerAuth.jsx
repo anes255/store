@@ -43,9 +43,12 @@ export default function CustomerAuth() {
   if (storeLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-brand-50 relative overflow-hidden">
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl pointer-events-none"/>
+      <div className="absolute top-1/3 -right-24 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl pointer-events-none"/>
+      <div className="absolute -bottom-24 left-1/3 w-96 h-96 bg-pink-200/30 rounded-full blur-3xl pointer-events-none"/>
       {/* Store Header */}
-      <header className="bg-white sticky top-0 z-30 shadow-sm">
+      <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-30 shadow-sm border-b border-white/50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
             {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
@@ -60,17 +63,11 @@ export default function CustomerAuth() {
       </header>
 
       {/* Auth Form */}
-      <div className="flex-1 flex">
-        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12" style={{background:`linear-gradient(135deg, ${pc}, #9333EA)`}}>
-          <div className="absolute inset-0 opacity-10">{[...Array(8)].map((_, i) => <div key={i} className="absolute rounded-full bg-white" style={{ width: Math.random() * 200 + 50, height: Math.random() * 200 + 50, left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, opacity: Math.random() * 0.3 }} />)}</div>
-          <div className="relative z-10 text-white max-w-md">
-            <h2 className="text-4xl font-extrabold mb-4">{mode === 'login' ? 'Welcome Back!' : 'Join Us Today'}</h2>
-            <p className="text-white/70 text-lg">{mode === 'login' ? 'Log in to track your orders and manage your account.' : 'Create an account to enjoy a faster checkout experience.'}</p>
+      <div className="flex-1 flex items-center justify-center p-6 relative z-10">
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
+          <div className="flex justify-center mb-6">
+            {store?.logo ? <img src={store.logo} className="w-14 h-14 rounded-2xl object-cover shadow-lg" alt=""/> : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
           </div>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="w-full max-w-md">
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{mode === 'login' ? 'Log In' : 'Create Account'}</h1>
             <p className="text-gray-500 mb-8">{mode === 'login' ? 'Enter your phone number and password' : 'Fill in your details to get started'}</p>
 
@@ -125,7 +122,6 @@ export default function CustomerAuth() {
                 {mode === 'login' ? 'Create Account' : 'Log In'}
               </button>
             </p>
-          </div>
         </div>
       </div>
     </div>
