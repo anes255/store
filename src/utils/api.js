@@ -71,6 +71,16 @@ export const platformApi = {
   createPlan: (data) => api.post('/platform/plans', data),
   updatePlan: (id, data) => api.put(`/platform/plans/${id}`, data),
   deletePlan: (id) => api.delete(`/platform/plans/${id}`),
+  // Staff role templates (super-admin CRUD)
+  getRoleTemplates: () => api.get('/platform/role-templates'),
+  createRoleTemplate: (data) => api.post('/platform/role-templates', data),
+  updateRoleTemplate: (id, data) => api.put(`/platform/role-templates/${id}`, data),
+  deleteRoleTemplate: (id) => api.delete(`/platform/role-templates/${id}`),
+};
+
+// Store-owner access to the public role templates list
+export const publicRoleTemplatesApi = {
+  list: () => api.get('/platform/role-templates/public'),
 };
 
 // Public plans (no auth) — used by landing + billing pages

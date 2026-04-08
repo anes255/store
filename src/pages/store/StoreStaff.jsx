@@ -58,6 +58,25 @@ export default function StoreStaff() {
   });
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'viewer', permissions: [...ROLE_PRESETS.viewer.permissions] });
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] });
+  const [platformTemplates, setPlatformTemplates] = useState([]);
+
+  // Pull in super-admin-defined role templates so store owners can clone
+  // one as the starting point for a new custom role and then tweak its
+  // permissions locally without affecting the template.
+  useEffect(() => {
+    import('../../utils/api').then(({ publicRoleTemplatesApi }) => {
+      publicRoleTemplatesApi.list()
+        .then(r => setPlatformTemplates(r.data?.templates || []))
+        .catch(() => {});
+    });
+  }, []);
+
+  const cloneTemplate = (tpl) => {
+    const lang = (document.documentElement.lang || 'en').slice(0, 2);
+    const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || 'Custom Role';
+    setRoleForm({ name, permissions: [...(tpl.permissions || [])] });
+    setShowRoleCreator(true);
+  };
   const [expandedGroups, setExpandedGroups] = useState({});
 
   const loadStaff = () => {
@@ -177,6 +196,28 @@ export default function StoreStaff() {
           <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm"><UserPlus size={16} />{t('staff.addStaff')}</button>
         </div>
       </div>
+
+      {/* Platform role templates — clone and tweak per store */}
+      {platformTemplates.length > 0 && (
+        <div className="glass-card-solid p-4 mb-4">
+          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('storePage.platformTemplates','Platform Role Templates')}</p>
+          <p className="text-[11px] text-gray-500 mb-3">{t('storePage.platformTemplatesHelp','Clone a template to create a custom role for this store. Changes only affect your store.')}</p>
+          <div className="flex flex-wrap gap-2">
+            {platformTemplates.map(tpl => {
+              const lang = (document.documentElement.lang || 'en').slice(0, 2);
+              const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || 'Template';
+              const desc = (tpl.description && (tpl.description[lang] || tpl.description.en)) || '';
+              return (
+                <button key={tpl.id} onClick={() => cloneTemplate(tpl)} className="flex items-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-100 transition-colors" title={desc}>
+                  <Shield size={12} className="text-purple-500" />
+                  <span className="text-xs font-bold text-purple-700">{name}</span>
+                  <span className="text-[9px] text-purple-400">{(tpl.permissions || []).length}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Custom roles bar */}
       {customRoles.length > 0 && (
