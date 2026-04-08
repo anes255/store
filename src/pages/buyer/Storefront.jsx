@@ -140,7 +140,8 @@ export default function Storefront() {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Start not-loading if we already have a cached store — render instantly
+  const [loading, setLoading] = useState(() => { try { return !JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return true; } });
   const [wishlist, setWishlist] = useState(()=>{try{return JSON.parse(localStorage.getItem('wishlist_'+storeSlug)||'[]').map(x=>x.id||x);}catch{return[];}});
   const [cartOpen, setCartOpen] = useState(false);
 

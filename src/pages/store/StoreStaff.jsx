@@ -98,6 +98,21 @@ export default function StoreStaff() {
   };
 
   const allRoles = { ...ROLE_PRESETS };
+  // Merge super-admin-defined platform role templates into the main role list
+  // so store owners can directly assign them (and still clone+tweak if they want)
+  platformTemplates.forEach(tpl => {
+    const lang = (document.documentElement.lang || 'en').slice(0, 2);
+    const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || 'Role';
+    const desc = (tpl.description && (tpl.description[lang] || tpl.description.en)) || `Platform template · ${(tpl.permissions || []).length} permissions`;
+    allRoles['tpl_' + tpl.id] = {
+      label: name,
+      icon: Shield,
+      color: 'bg-purple-100 text-purple-600',
+      desc,
+      permissions: tpl.permissions || [],
+      _platform: true,
+    };
+  });
   customRoles.forEach(r => { allRoles[r.key] = { label: r.name, icon: Settings, color: 'bg-indigo-100 text-indigo-600', desc: `Custom role · ${r.permissions.length} permissions`, permissions: r.permissions }; });
 
   const openAdd = () => {

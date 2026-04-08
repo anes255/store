@@ -16,7 +16,10 @@ export default function CustomerAuth() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {}).finally(() => setStoreLoading(false)); }, [storeSlug]);
+  useEffect(() => {
+    try { const cached = JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); if (cached) { setStore(cached); setStoreLoading(false); } } catch {}
+    storeApi.getStore(storeSlug).then(r => { setStore(r.data); try { localStorage.setItem('storeCache_' + storeSlug, JSON.stringify(r.data)); } catch {} }).catch(() => {}).finally(() => setStoreLoading(false));
+  }, [storeSlug]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
