@@ -19,20 +19,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only clear token if it's an auth endpoint that explicitly rejects the token
-    // Don't clear on random 401s from background API calls
-    if (error.response?.status === 401) {
-      const url = error.config?.url || '';
-      const isAuthCheck = url.includes('/profile') || url.includes('/dashboard');
-      const path = window.location.pathname;
-      if (isAuthCheck && !path.includes('/login') && !path.includes('/register')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('role');
-        // Redirect super admins to the admin login, not the owner login
-        window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
-      }
-    }
+    // Never auto-redirect on 401. ProtectedRoute handles missing tokens, and
+    // individual pages decide what to do on auth errors. Auto-redirecting on
+    // every 401 caused profile pages to bounce to login even when the user was
+    // fully authenticated.
     return Promise.reject(error);
   }
 );
@@ -173,6 +163,7 @@ export const storeApi = {
   registerCustomer: (slug, data) => api.post(`/store/${slug}/customers/register`, data),
   loginCustomer: (slug, data) => api.post(`/store/${slug}/customers/login`, data),
   getCustomerProfile: (slug) => api.get(`/store/${slug}/customers/profile`),
+  updateCustomerProfile: (slug, data) => api.put(`/store/${slug}/customers/profile`, data),
   placeOrder: (slug, data) => api.post(`/store/${slug}/orders`, data),
   cancelOrder: (slug, orderId) => api.post(`/store/${slug}/orders/${orderId}/cancel`),
   validateCoupon: (slug, data) => api.post(`/store/${slug}/validate-coupon`, data),
