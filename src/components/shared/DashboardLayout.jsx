@@ -99,8 +99,46 @@ const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarCha
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
   const{user,logout}=useAuthStore();const{currentStore}=useStoreManagement();
+  const[isMobile,setIsMobile]=useState(()=>typeof window!=='undefined'&&window.innerWidth<1024);
   const[sidebarOpen,setSidebarOpen]=useState(()=>typeof window!=='undefined'?window.innerWidth>=1024:true);
   const[openMenus,setOpenMenus]=useState({});
+  const[sideQuery,setSideQuery]=useState('');
+  const[headerHidden,setHeaderHidden]=useState(false);
+  const lastScrollY=useRef(0);
+
+  // Resize listener — keep isMobile in sync so the sidebar is correctly
+  // shown/hidden when the window is resized or on orientation change.
+  useEffect(()=>{
+    const onResize=()=>{
+      const m=window.innerWidth<1024;
+      setIsMobile(m);
+      // On desktop, the sidebar should always be visible.
+      if(!m)setSidebarOpen(true);
+    };
+    window.addEventListener('resize',onResize);
+    return()=>window.removeEventListener('resize',onResize);
+  },[]);
+
+  // Auto-close sidebar when the user navigates on mobile, otherwise the
+  // overlay covers the page after every link click.
+  useEffect(()=>{
+    if(isMobile)setSidebarOpen(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[location.pathname]);
+
+  // Hide header when scrolling down on mobile, show when scrolling up.
+  useEffect(()=>{
+    if(!isMobile){setHeaderHidden(false);return;}
+    const onScroll=()=>{
+      const y=window.scrollY;
+      if(y<50){setHeaderHidden(false);}
+      else if(y>lastScrollY.current+5){setHeaderHidden(true);}
+      else if(y<lastScrollY.current-5){setHeaderHidden(false);}
+      lastScrollY.current=y;
+    };
+    window.addEventListener('scroll',onScroll,{passive:true});
+    return()=>window.removeEventListener('scroll',onScroll);
+  },[isMobile]);
 
   // Draggable sidebar order
   const[items,setItems]=useState(()=>{
@@ -160,9 +198,6 @@ export default function DashboardLayout({children}){
     );
   };
 
-  // Mobile detection
-  const[isMobile]=useState(()=>typeof window!=='undefined'&&window.innerWidth<1024);
-
   return(<div className="flex min-h-screen bg-gray-50/50">
     {/* Mobile overlay */}
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
@@ -171,19 +206,59 @@ export default function DashboardLayout({children}){
         <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-xs">{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className="font-bold text-sm text-gray-800 truncate">{currentStore?.name||'MyMarket'}</p><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
-      {sidebarOpen&&<div className="px-3 pt-3"><input className="w-full px-3 py-2 bg-gray-50 rounded-lg text-xs border border-gray-100 focus:outline-none" placeholder={t('common.search','Search...')}/></div>}
+      {sidebarOpen&&<div className="px-3 pt-3 relative">
+        <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+        <input
+          className="w-full pl-7 pr-7 py-2 bg-gray-50 rounded-lg text-xs border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          placeholder={t('common.search','Search...')}
+          value={sideQuery}
+          onChange={e=>setSideQuery(e.target.value)}
+        />
+        {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
+      </div>}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm">
         {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('sidebar.mainMenu','Main Menu')}</p>}
-        {items.map((item,idx)=>renderItem(item,idx))}
+        {(()=>{
+          const q=sideQuery.trim().toLowerCase();
+          if(!q)return items.map((item,idx)=>renderItem(item,idx));
+          // Flatten matching links from groups + top-level links
+          const matches=[];
+          items.forEach(item=>{
+            const lbl=typeof item.label==='string'&&item.label.startsWith('sidebar.')?t(item.label):item.label;
+            if(item.type==='link'){
+              if((lbl||'').toLowerCase().includes(q))matches.push(item);
+            }else if(item.children){
+              const kids=item.children.filter(c=>{
+                const cl=typeof c.label==='string'&&c.label.startsWith('sidebar.')?t(c.label):c.label;
+                return(cl||'').toLowerCase().includes(q)||(lbl||'').toLowerCase().includes(q);
+              });
+              if(kids.length)matches.push({...item,children:kids});
+            }
+          });
+          if(!matches.length)return<p className="px-3 py-4 text-xs text-gray-400 text-center">{t('common.noResults','No matches')}</p>;
+          return matches.map((item,idx)=>{
+            const Icon=ICONS[item.icon]||Settings;
+            const lbl=typeof item.label==='string'&&item.label.startsWith('sidebar.')?t(item.label):item.label;
+            if(item.type==='link')return(<SLink key={item.id} to={item.to} icon={Icon} label={lbl}/>);
+            return(<div key={item.id}>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lbl}</div>
+              {item.children.map(c=><SubLink key={c.to} to={c.to} label={c.label}/>)}
+            </div>);
+          });
+        })()}
       </nav>
       <div className="border-t border-gray-100 p-3">
         <div className="flex items-center gap-2 bg-brand-50 rounded-xl p-2.5 mb-2"><div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className="text-xs font-bold text-gray-800">{user?.name||'User'}</p><p className="text-[10px] text-gray-400">{t('sidebar.adminRole','Admin')}</p></div>}</div>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className="sidebar-link w-full"><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
-        <button onClick={()=>{logout();navigate('/login');}} className="sidebar-link w-full text-red-500"><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
+        <button
+          type="button"
+          onClick={(e)=>{e.preventDefault();e.stopPropagation();try{logout();}catch{}try{localStorage.removeItem('token');}catch{}window.location.href='/login';}}
+          className="sidebar-link w-full text-red-500 cursor-pointer"
+        ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>
     </aside>
     <main className={`flex-1 transition-all duration-300 ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between">
+      <header className={`sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between transition-transform duration-300 ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
         <div className="flex items-center gap-3">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl lg:hidden"><Menu size={20} className="text-gray-600"/></button>}
           <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p><p className="font-bold text-sm">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p></div></div>
@@ -198,7 +273,7 @@ export default function DashboardLayout({children}){
           <div className="hidden md:flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5"><span className="text-sm font-bold text-gray-700">{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
-      <div className="p-4 md:p-6">{children}</div>
+      <div className="p-3 sm:p-4 md:p-6 max-w-full overflow-x-auto">{children}</div>
     </main>
   </div>);
 }

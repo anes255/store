@@ -19,7 +19,12 @@ export default function OwnerLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault(); setLoading(true);
     try {
-      const { data } = await ownerApi.login({ identifier: form.identifier, password: form.password });
+      // Mobile keyboards often add trailing whitespace + autocapitalize.
+      // Trim identifier; password is trimmed too because the input had no
+      // visual indicator of the leading space and most users assume none.
+      const identifier = (form.identifier || '').trim();
+      const password = (form.password || '').trim();
+      const { data } = await ownerApi.login({ identifier, password });
       
       // If platform admin logged in through owner login
       if (data.redirect === '/admin/dashboard') {
@@ -63,6 +68,7 @@ export default function OwnerLogin() {
               <div className="relative">
                 <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="text" className="input-field !pl-11" placeholder={t('auth.emailOrPhonePlaceholder')}
+                  autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="username"
                   value={form.identifier} onChange={e => setForm({...form, identifier: e.target.value})} required />
               </div>
             </div>

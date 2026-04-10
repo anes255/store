@@ -69,31 +69,33 @@ export default function StoreOrders() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">{t('orders.title')}</h1><p className="text-sm text-gray-400 mt-1">{total} {t('storePage.ordersTotal', 'orders total')}</p></div>
-        <button onClick={loadOrders} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('storePage.refresh', 'Refresh')}</button>
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
+        <div className="min-w-0"><h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{t('orders.title')}</h1><p className="text-xs sm:text-sm text-gray-400 mt-1">{total} {t('storePage.ordersTotal', 'orders total')}</p></div>
+        <button onClick={loadOrders} className="btn-ghost text-xs sm:text-sm flex items-center gap-2 shrink-0"><RefreshCw size={14}/><span className="hidden sm:inline">{t('storePage.refresh', 'Refresh')}</span></button>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.todaysOrders', "Today's Orders")}</p><p className="text-2xl font-black text-gray-900 mt-1">{todayOrders}</p></div>
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.todaysRevenue', "Today's Revenue")}</p><p className="text-2xl font-black text-emerald-600 mt-1">{todayRevenue.toLocaleString()} <span className="text-sm font-normal text-gray-400">DZD</span></p></div>
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.awaitingAction', 'Awaiting Action')}</p><p className="text-2xl font-black text-amber-500 mt-1">{pending}</p></div>
-        <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalOrders', 'Total Orders')}</p><p className="text-2xl font-black text-brand-600 mt-1">{total}</p></div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.todaysOrders', "Today's Orders")}</p><p className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{todayOrders}</p></div>
+        <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.todaysRevenue', "Today's Revenue")}</p><p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{todayRevenue.toLocaleString()} <span className="text-xs sm:text-sm font-normal text-gray-400">DZD</span></p></div>
+        <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.awaitingAction', 'Awaiting Action')}</p><p className="text-xl sm:text-2xl font-black text-amber-500 mt-1">{pending}</p></div>
+        <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalOrders', 'Total Orders')}</p><p className="text-xl sm:text-2xl font-black text-brand-600 mt-1">{total}</p></div>
       </div>
 
       {/* Filters + Search */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-          {filters.map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === f.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-              {f.label}
-            </button>
-          ))}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+        <div className="overflow-x-auto -mx-1 px-1 sm:overflow-visible">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-max sm:w-auto">
+            {filters.map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filter === f.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative flex-1 sm:max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchOrdersPlaceholder', 'Search by name, phone, or order #...')} value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder={t('storePage.searchOrdersPlaceholder', 'Search by name, phone, or order #...')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -143,24 +145,24 @@ export default function StoreOrders() {
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             {/* Header with status color */}
-            <div className={`p-6 ${statusConfig[selectedOrder.status]?.bg || 'bg-gray-50'} rounded-t-3xl`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl font-black text-gray-900">{selectedOrder.order_number}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusConfig[selectedOrder.status]?.bg} ${statusConfig[selectedOrder.status]?.text} uppercase`}>{t(`storePage.status_${selectedOrder.status}`, selectedOrder.status)}</span>
+            <div className={`p-4 sm:p-6 ${statusConfig[selectedOrder.status]?.bg || 'bg-gray-50'} rounded-t-3xl sticky top-0 z-10`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <span className="text-lg sm:text-xl font-black text-gray-900 break-all">{selectedOrder.order_number}</span>
+                    <span className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold ${statusConfig[selectedOrder.status]?.bg} ${statusConfig[selectedOrder.status]?.text} uppercase`}>{t(`storePage.status_${selectedOrder.status}`, selectedOrder.status)}</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1"><Calendar size={12}/>{new Date(selectedOrder.created_at).toLocaleString()}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1 flex items-center gap-1"><Calendar size={12}/>{new Date(selectedOrder.created_at).toLocaleString()}</p>
                 </div>
-                <button onClick={() => setSelectedOrder(null)} className="w-10 h-10 rounded-xl bg-white/80 hover:bg-white flex items-center justify-center shadow-sm"><X size={18}/></button>
+                <button onClick={() => setSelectedOrder(null)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 hover:bg-white flex items-center justify-center shadow-sm shrink-0"><X size={18}/></button>
               </div>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Customer + Shipping */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="p-4 bg-gray-50 rounded-2xl">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('storePage.customer', 'Customer')}</p>
                   <p className="font-bold text-gray-900 flex items-center gap-2"><User size={14} className="text-gray-400"/>{selectedOrder.customer_name}</p>
@@ -178,7 +180,7 @@ export default function StoreOrders() {
               </div>
 
               {/* Status Pipeline */}
-              <div className="flex items-center justify-between px-2">
+              <div className="flex items-center justify-between px-2 overflow-x-auto -mx-2 pb-1">
                 {['pending', 'confirmed', 'preparing', 'shipped', 'delivered'].map((st, i) => {
                   const steps = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered'];
                   const currentIdx = steps.indexOf(selectedOrder.status);
@@ -267,9 +269,9 @@ export default function StoreOrders() {
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 w-full">
                     <p className="text-xs font-bold text-gray-400 uppercase">Update Status</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {selectedOrder.status !== 'confirmed' && <button onClick={() => updateStatus(selectedOrder.id, 'confirmed')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600"><Check size={18}/>Confirm Order</button>}
                       {selectedOrder.status !== 'preparing' && <button onClick={() => updateStatus(selectedOrder.id, 'preparing')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600"><Package size={18}/>Preparing</button>}
                       {selectedOrder.status !== 'shipped' && <button onClick={() => updateStatus(selectedOrder.id, 'shipped')} className="py-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600"><Truck size={18}/>Shipped</button>}

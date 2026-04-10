@@ -14,6 +14,29 @@ export default function StoreDomains() {
   const [domainName, setDomainName] = useState('');
   const [activeUrl, setActiveUrl] = useState('platform');
   const [adding, setAdding] = useState(false);
+  const [verifyingId, setVerifyingId] = useState(null);
+
+  const reload = () => currentStore?.id && ownerApi.getDomains(currentStore.id).then(r => setDomains(r.data)).catch(() => {});
+
+  const verifyDomain = async (id) => {
+    setVerifyingId(id);
+    try {
+      const { data } = await ownerApi.verifyDomain(currentStore.id, id);
+      if (data.status === 'active') toast.success(t('storePage.domainVerified','Domain verified! It is now active.'));
+      else toast.error(t('storePage.domainNotVerified','DNS not verified yet. Please check your records and wait a few minutes.'));
+      reload();
+    } catch (e) { toast.error(e.response?.data?.error || t('storePage.failed','Failed')); }
+    setVerifyingId(null);
+  };
+
+  const removeDomain = async (id, name) => {
+    if (!confirm(t('storePage.removeDomainConfirm','Remove ')+name+'?')) return;
+    try {
+      await ownerApi.deleteDomain(currentStore.id, id);
+      toast.success(t('storePage.domainRemoved','Domain removed'));
+      reload();
+    } catch (e) { toast.error(e.response?.data?.error || t('storePage.failed','Failed')); }
+  };
 
   useEffect(() => {
     if (!currentStore?.id) return;
@@ -103,15 +126,22 @@ export default function StoreDomains() {
             {domains.map(d => {
               const StatusIcon = statusIcons[d.status] || Clock;
               return (
-                <div key={d.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><Globe size={18} className="text-brand-500" /></div>
-                    <div>
-                      <p className="font-bold text-gray-900">{d.domain_name}</p>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${d.status === 'active' ? 'bg-emerald-100 text-emerald-700' : d.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                <div key={d.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><Globe size={18} className="text-brand-500" /></div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-900 truncate">{d.domain_name}</p>
+                      <span className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${d.status === 'active' ? 'bg-emerald-100 text-emerald-700' : d.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                         <StatusIcon size={10} />{d.status === 'pending' ? t('storePage.dnsNotVerified','DNS not verified') : d.status}
                       </span>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {d.status === 'active' && <a href={`https://${d.domain_name}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 font-bold px-3 py-1.5 rounded-lg border border-brand-200 hover:bg-brand-50">Visit</a>}
+                    <button onClick={() => verifyDomain(d.id)} disabled={verifyingId === d.id} className="text-xs text-blue-600 font-bold px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 disabled:opacity-50 flex items-center gap-1">
+                      <RefreshCw size={12} className={verifyingId === d.id ? 'animate-spin' : ''} />{t('storePage.verifyDns','Verify DNS')}
+                    </button>
+                    <button onClick={() => removeDomain(d.id, d.domain_name)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
                   </div>
                 </div>
               );

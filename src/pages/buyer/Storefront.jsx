@@ -210,16 +210,18 @@ export default function Storefront() {
   const tplStyle = tplSec?.style||{};
   const headerBg = tplStyle.bg || pc;
   const headerText = tplStyle.textColor || '#ffffff';
+  // Owner-controlled font for the store name. Falls back to template font, then Inter.
+  const nameFont = store.header_font || tplStyle.fontFamily || 'Inter';
   const headerFont = tplStyle.fontFamily || 'Inter';
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* ============ HEADER ============ */}
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
-        <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-4" style={{color:headerText}}>
-            {store.logo ? <img src={store.logo} className="w-14 h-14 rounded-xl object-cover bg-white/20" alt=""/> : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-xl" style={{color:headerText}}>{store.name?.[0]}</div>}
-            <span className="text-2xl font-extrabold" style={{color:headerText,fontFamily:headerFont}}>{store.name}</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
+            {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
+            <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
           </Link>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
             <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
@@ -232,17 +234,29 @@ export default function Storefront() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <StoreLangSwitcher />
-            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full"><User size={20}/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative">
-              <Heart size={20}/>
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+            <div className="hidden sm:block"><StoreLangSwitcher /></div>
+            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
+              <Heart size={18} className="sm:w-5 sm:h-5"/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative">
-              <ShoppingCart size={20}/>
+            <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
+              <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
             </button>
+          </div>
+        </div>
+        {/* Mobile-only search row */}
+        <div className="md:hidden px-3 pb-3">
+          <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+            <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
+            <input
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800"
+              placeholder={t('store.search','Search products...')}
+              value={search}
+              onChange={e=>setSearch(e.target.value)}
+            />
           </div>
         </div>
       </header>
@@ -363,15 +377,20 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
     const wrap={backgroundColor:s.bg||'#ffffff',color:s.textColor||'#1f2937',padding:`${s.padding||60}px 16px`,fontFamily:s.fontFamily||'Inter',borderRadius:`${s.borderRadius||0}px`};
     const inner={maxWidth:`${s.maxWidth||1200}px`,margin:'0 auto'};
 
-    if(sec.type==='hero')return(
-      <section key={sec.id} style={{...wrap,minHeight:`${c.height||500}px`,backgroundImage:c.bgImage?`url(${c.bgImage})`:'none',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:c.align==='left'?'flex-start':c.align==='right'?'flex-end':'center',justifyContent:'center',flexDirection:'column',position:'relative',textAlign:c.align||'center'}}>
-        {c.bgImage&&<div style={{position:'absolute',inset:0,backgroundColor:`rgba(0,0,0,${c.overlay||0.3})`}}/>}
+    if(sec.type==='hero'){
+      // Fall back to the store-wide cover image so templates without their
+      // own bgImage still display the merchant's hero photo.
+      const heroBg=c.bgImage||store.cover_image||store.config?.cover_image||'';
+      return(
+      <section key={sec.id} style={{...wrap,minHeight:`${c.height||500}px`,backgroundImage:heroBg?`url(${heroBg})`:'none',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:c.align==='left'?'flex-start':c.align==='right'?'flex-end':'center',justifyContent:'center',flexDirection:'column',position:'relative',textAlign:c.align||'center'}}>
+        {heroBg&&<div style={{position:'absolute',inset:0,backgroundColor:`rgba(0,0,0,${c.overlay||0.3})`}}/>}
         <div style={{...inner,position:'relative',zIndex:1}}>
           <h1 style={{fontSize:`${c.titleSize||48}px`,fontWeight:900,lineHeight:1.1}}>{c.title||store.name}</h1>
           {c.subtitle&&<p style={{fontSize:`${c.subtitleSize||20}px`,opacity:0.8,marginTop:12}}>{c.subtitle}</p>}
           {c.btnText&&<a href={c.btnLink||'#'} style={{display:'inline-block',marginTop:20,padding:'14px 32px',backgroundColor:c.btnColor||pc,color:'#fff',borderRadius:12,fontWeight:700,fontSize:16,textDecoration:'none'}}>{c.btnText}</a>}
         </div>
       </section>);
+    }
 
     if(sec.type==='products'){
       const cols=parseInt(c.columns)||4;const limit=parseInt(c.limit)||8;

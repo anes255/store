@@ -4,7 +4,7 @@ import { useStoreManagement } from '../../hooks/useStore';
 import { ownerApi, aiApi } from '../../utils/api';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import api from '../../utils/api';
+import api, { getPlatformInfo } from '../../utils/api';
 import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut } from 'lucide-react';
 
 function WhatsAppQR({ storeId }) {
@@ -532,7 +532,7 @@ export default function StoreApps() {
                         }
                         // Get client ID from platform
                         let clientId='';
-                        try{const{data:pi}=await api.get('/platform/info');clientId=pi.google_client_id||'';}catch{}
+                        try{const{data:pi}=await getPlatformInfo();clientId=pi.google_client_id||'';}catch{}
                         if(!clientId){toast.error(t('storePage.googleClientIdMissing','Google Client ID not set. Ask platform admin.'));setSheetsLoading(false);return;}
                         // Request token
                         const tokenClient=window.google.accounts.oauth2.initTokenClient({

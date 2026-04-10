@@ -198,7 +198,9 @@ export default function AdvancedBuilder(){
   const dup=(i)=>{const s={...JSON.parse(JSON.stringify(sections[i])),id:uid()};const n=[...sections];n.splice(i+1,0,s);setSections(n);setDirty(true);};
   const add=(type)=>{setSections([...sections,defaultSection(type)]);setSelected(sections.length);setShowAdd(false);setDirty(true);};
   const toggle=(i)=>{const n=[...sections];n[i]={...n[i],visible:!n[i].visible};setSections(n);setDirty(true);};
-  const applyTemplate=(t)=>{const anim=t.animation||'calm';const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>({...s,id:uid(),animation:anim,animationIndex:i}));setSections(fresh);setSelected(null);setShowTemplates(false);setDirty(true);toast.success(`"${t.name}" applied!`);};
+  const applyTemplate=(t)=>{const anim=t.animation||'calm';const cover=currentStore?.cover_image||currentStore?.config?.cover_image||'';const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>{const sec={...s,id:uid(),animation:anim,animationIndex:i};// Inject the store's cover image into any hero/banner section that supports a background image
+if(cover&&(sec.type==='hero'||sec.type==='banner'||sec.type==='hero-banner'||sec.type==='cover')){if(!sec.bgImage)sec.bgImage=cover;if(!sec.image)sec.image=cover;if(!sec.backgroundImage)sec.backgroundImage=cover;}
+return sec;});setSections(fresh);setSelected(null);setShowTemplates(false);setDirty(true);toast.success(`"${t.name}" applied!`);};
   const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections});setCurrentStore(data);setDirty(false);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
 
   return(<DashboardLayout>
