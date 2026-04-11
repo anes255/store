@@ -8,23 +8,37 @@ import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package,
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 
-// ============ PER-TEMPLATE ANIMATION PRESETS ============
-// Each template picked in the AdvancedBuilder stamps an `animation` key onto
-// its sections. BuilderSections reads that key and plays the matching preset
-// via framer-motion whileInView.
+// ============ ANIMATION PRESETS ============
+// Two groups:
+// 1. Per-template motion keys stamped by the AdvancedBuilder templates
+//    (editorial, luxe, warm, bouncy, calm, slam, tech, glow, rise, noble).
+// 2. Store-wide presets the merchant can pick from StoreSettings →
+//    Customization → Section Animations. These override the template key.
+//
+// All durations were cut roughly in half vs. the original templates — the
+// merchant feedback was "fade-in takes too long". Everything now lands in
+// 0.35s–0.6s, which still feels premium but no longer makes the page crawl.
 const ANIM_PRESETS = {
-  editorial: { initial:{opacity:0,y:50,filter:'blur(10px)'}, whileInView:{opacity:1,y:0,filter:'blur(0px)'}, transition:{duration:1.1,ease:[0.22,1,0.36,1]} },
-  luxe:      { initial:{opacity:0,scale:0.94,y:30},          whileInView:{opacity:1,scale:1,y:0},               transition:{duration:1.2,ease:[0.22,1,0.36,1]} },
-  warm:      { initial:{opacity:0,x:-50},                    whileInView:{opacity:1,x:0},                       transition:{duration:0.9,ease:'easeOut'} },
-  bouncy:    { initial:{opacity:0,scale:0.8,y:40},           whileInView:{opacity:1,scale:1,y:0},               transition:{type:'spring',stiffness:120,damping:12} },
-  calm:      { initial:{opacity:0,y:40},                     whileInView:{opacity:1,y:0},                       transition:{duration:1.3,ease:'easeOut'} },
-  slam:      { initial:{opacity:0,y:-80,skewY:-2},           whileInView:{opacity:1,y:0,skewY:0},               transition:{type:'spring',stiffness:260,damping:18} },
-  tech:      { initial:{opacity:0,x:60,rotateY:8},           whileInView:{opacity:1,x:0,rotateY:0},             transition:{duration:0.8,ease:[0.16,1,0.3,1]} },
-  glow:      { initial:{opacity:0,filter:'blur(16px)',scale:1.04}, whileInView:{opacity:1,filter:'blur(0px)',scale:1}, transition:{duration:1.4,ease:'easeOut'} },
-  rise:      { initial:{opacity:0,y:60,scale:0.96},          whileInView:{opacity:1,y:0,scale:1},               transition:{duration:1.0,ease:[0.25,0.46,0.45,0.94]} },
-  noble:     { initial:{opacity:0,scale:0.97},               whileInView:{opacity:1,scale:1},                   transition:{duration:1.1,ease:'easeOut'} },
+  // ——— Popular/aesthetic store-wide options (shown in settings) ———
+  none:      { initial:{opacity:1},                          whileInView:{opacity:1},                           transition:{duration:0} },
+  fade:      { initial:{opacity:0},                          whileInView:{opacity:1},                           transition:{duration:0.45,ease:'easeOut'} },
+  'slide-up':{ initial:{opacity:0,y:28},                     whileInView:{opacity:1,y:0},                       transition:{duration:0.5,ease:[0.22,1,0.36,1]} },
+  zoom:      { initial:{opacity:0,scale:0.92},               whileInView:{opacity:1,scale:1},                   transition:{duration:0.5,ease:[0.22,1,0.36,1]} },
+  blur:      { initial:{opacity:0,filter:'blur(10px)'},      whileInView:{opacity:1,filter:'blur(0px)'},        transition:{duration:0.55,ease:'easeOut'} },
+  dynamic:   { initial:{opacity:0,y:30,scale:0.96},          whileInView:{opacity:1,y:0,scale:1},               transition:{type:'spring',stiffness:260,damping:22,mass:0.6} },
+  // ——— Template-specific motion (kept but sped up) ———
+  editorial: { initial:{opacity:0,y:28,filter:'blur(6px)'},  whileInView:{opacity:1,y:0,filter:'blur(0px)'},    transition:{duration:0.55,ease:[0.22,1,0.36,1]} },
+  luxe:      { initial:{opacity:0,scale:0.95,y:20},          whileInView:{opacity:1,scale:1,y:0},               transition:{duration:0.55,ease:[0.22,1,0.36,1]} },
+  warm:      { initial:{opacity:0,x:-30},                    whileInView:{opacity:1,x:0},                       transition:{duration:0.45,ease:'easeOut'} },
+  bouncy:    { initial:{opacity:0,scale:0.88,y:24},          whileInView:{opacity:1,scale:1,y:0},               transition:{type:'spring',stiffness:220,damping:16} },
+  calm:      { initial:{opacity:0,y:24},                     whileInView:{opacity:1,y:0},                       transition:{duration:0.5,ease:'easeOut'} },
+  slam:      { initial:{opacity:0,y:-40,skewY:-1},           whileInView:{opacity:1,y:0,skewY:0},               transition:{type:'spring',stiffness:340,damping:22} },
+  tech:      { initial:{opacity:0,x:30,rotateY:4},           whileInView:{opacity:1,x:0,rotateY:0},             transition:{duration:0.5,ease:[0.16,1,0.3,1]} },
+  glow:      { initial:{opacity:0,filter:'blur(10px)',scale:1.02}, whileInView:{opacity:1,filter:'blur(0px)',scale:1}, transition:{duration:0.6,ease:'easeOut'} },
+  rise:      { initial:{opacity:0,y:32,scale:0.97},          whileInView:{opacity:1,y:0,scale:1},               transition:{duration:0.5,ease:[0.25,0.46,0.45,0.94]} },
+  noble:     { initial:{opacity:0,scale:0.97},               whileInView:{opacity:1,scale:1},                   transition:{duration:0.5,ease:'easeOut'} },
 };
-const getPreset = (key) => ANIM_PRESETS[key] || ANIM_PRESETS.calm;
+const getPreset = (key) => ANIM_PRESETS[key] || ANIM_PRESETS.fade;
 
 // ============ AI CHATBOT WIDGET ============
 function AIChatbot({ store, slug }) {
@@ -461,11 +475,20 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
 
     return null;
   };
+  // Store-wide override — merchants pick this in
+  // StoreSettings → Customization → Section Animations. When set to 'none'
+  // the motion wrapper is bypassed entirely so nothing delays rendering.
+  const storeAnim=store.animation_style;
+  const animationsDisabled=store.animations_enabled===false||storeAnim==='none';
   return(<>{sections.filter(s=>s.visible!==false).map((sec,i)=>{
     const node=renderSection(sec);
     if(!node)return null;
-    const preset=getPreset(sec.animation);
-    const delay=((sec.animationIndex??i)%6)*0.08;
+    if(animationsDisabled)return <div key={sec.id}>{node}</div>;
+    // Store setting wins over the template's baked-in motion key.
+    const preset=getPreset(storeAnim||sec.animation);
+    // Cascading delay is kept tight (0.04s × index, max 0.2s) so later
+    // sections don't sit around waiting.
+    const delay=Math.min(((sec.animationIndex??i)%6)*0.04,0.2);
     return(
       <motion.div
         key={sec.id}

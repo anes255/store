@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { getPlatformInfo, publicPlansApi } from '../../utils/api';
 import { ShoppingBag, Zap, Globe, Shield, BarChart3, Truck, Bot, Smartphone, CreditCard, ArrowRight, Check, Star, Play, Sparkles } from 'lucide-react';
@@ -213,16 +214,38 @@ export default function LandingPage() {
       </section>
       <section id="features" className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16"><h2 className="text-4xl md:text-5xl font-extrabold text-gray-900">{t('features.title')}</h2><p className="mt-4 text-lg text-gray-500">{t('features.subtitle')}</p></div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{opacity:0,y:20}}
+            whileInView={{opacity:1,y:0}}
+            viewport={{once:true,amount:0.3}}
+            transition={{duration:0.5,ease:'easeOut'}}
+          >
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900">{t('features.title')}</h2>
+            <p className="mt-4 text-lg text-gray-500">{t('features.subtitle')}</p>
+          </motion.div>
+          <motion.div
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial="hidden"
+            whileInView="show"
+            viewport={{once:true,amount:0.15}}
+            variants={{hidden:{},show:{transition:{staggerChildren:0.08,delayChildren:0.05}}}}
+          >
             {defaultFeatures.map((feature, i) => { const Icon = feature.icon; return (
-              <div key={i} className="glass-card-solid p-6 hover:shadow-glass-lg hover:-translate-y-1 transition-all duration-300 group">
+              <motion.div
+                key={i}
+                className="glass-card-solid p-6 hover:shadow-glass-lg hover:-translate-y-1 transition-all duration-300 group"
+                variants={{
+                  hidden:{opacity:0,y:30,scale:0.96},
+                  show:{opacity:1,y:0,scale:1,transition:{type:'spring',stiffness:260,damping:22,mass:0.6}}
+                }}
+              >
                 <div className="w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center mb-4 group-hover:bg-brand-500 group-hover:shadow-lg group-hover:shadow-brand-500/30 transition-all duration-300"><Icon size={22} className="text-brand-500 group-hover:text-white transition-colors" /></div>
                 <h3 className="text-base font-bold text-gray-900 mb-2">{feature.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{feature.desc}</p>
-              </div>
+              </motion.div>
             ); })}
-          </div>
+          </motion.div>
         </div>
       </section>
       <section id="pricing" className="py-24 px-6 bg-white">
