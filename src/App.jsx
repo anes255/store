@@ -1,18 +1,15 @@
 import React,{Suspense,lazy,useEffect,useState}from'react';import{Routes,Route,Navigate,useNavigate,useParams}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
 
-// Set platform favicon + title globally. Force "KyoMarket" first so the
-// browser tab never flashes the default React document title or whatever
-// stale value is returned by the backend before the user-configured one
-// loads. Only override if the platform admin has explicitly set a non-empty
-// site_name AND it isn't the legacy "MultiStorePlatform" placeholder.
+// The platform brand name is permanently "KyoMarket". The document title is
+// hard-locked and never overridden by the API, even if platform_settings
+// still contains the legacy "MultiStorePlatform" value. Only the favicon is
+// allowed to be customised through the admin settings.
 function PlatformMeta(){
   useEffect(()=>{
     document.title='KyoMarket';
     getPlatformInfo().then(r=>{
       const d=r.data||{};
-      const name=(d.site_name||'').trim();
-      if(name&&name.toLowerCase()!=='multistoreplatform')document.title=name;
-      else document.title='KyoMarket';
+      document.title='KyoMarket';
       if(d.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=d.favicon;}
     }).catch(()=>{document.title='KyoMarket';});
   },[]);

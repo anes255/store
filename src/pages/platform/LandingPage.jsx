@@ -19,7 +19,10 @@ export default function LandingPage() {
     { icon: Smartphone, title: t('landing.f7Title','Mobile Optimized'), desc: t('landing.f7Desc','Every store is perfectly responsive on all devices.') },
     { icon: Shield, title: t('landing.f8Title','Secure & Reliable'), desc: t('landing.f8Desc','SSL encryption, DDoS protection, and 99.9% uptime.') },
   ];
-  const [info, setInfo] = useState({ site_name: 'KyoMarket' });
+  // Brand name is hard-locked to "KyoMarket" — never overridden by the API
+  // even if the platform_settings table still says "MultiStorePlatform".
+  const BRAND='KyoMarket';
+  const [info, setInfo] = useState({ site_name: BRAND });
   const [blocks, setBlocks] = useState([]);
   const [hasCustom, setHasCustom] = useState(false);
   const [apiPlans, setApiPlans] = useState(null); // null = still loading / unavailable
@@ -31,10 +34,11 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
+    document.title=BRAND;
     getPlatformInfo().then(r => {
-      setInfo(r.data);
-      // Set page title and favicon
-      if(r.data.site_name)document.title=r.data.site_name;
+      // Force the brand name regardless of what the API returns.
+      setInfo({ ...r.data, site_name: BRAND });
+      document.title=BRAND;
       if(r.data.favicon){
         let link=document.querySelector("link[rel~='icon']");
         if(!link){link=document.createElement('link');link.rel='icon';document.head.appendChild(link);}
