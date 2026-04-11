@@ -103,6 +103,8 @@ export default function DashboardLayout({children}){
   const[sidebarOpen,setSidebarOpen]=useState(()=>typeof window!=='undefined'?window.innerWidth>=1024:true);
   const[openMenus,setOpenMenus]=useState({});
   const[sideQuery,setSideQuery]=useState('');
+  const[topQuery,setTopQuery]=useState('');
+  const[topFocus,setTopFocus]=useState(false);
   const[headerHidden,setHeaderHidden]=useState(false);
   const lastScrollY=useRef(0);
 
@@ -265,7 +267,47 @@ export default function DashboardLayout({children}){
           <p className="md:hidden font-bold text-sm text-gray-800">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="relative hidden md:block"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="pl-9 pr-4 py-2 bg-gray-50 rounded-xl text-sm w-64 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20" placeholder={t('sidebar.searchEverything','Search everything...')}/></div>
+          <div className="relative hidden md:block">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+            <input
+              className="pl-9 pr-8 py-2 bg-gray-50 rounded-xl text-sm w-64 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              placeholder={t('sidebar.searchEverything','Search everything...')}
+              value={topQuery}
+              onChange={e=>setTopQuery(e.target.value)}
+              onFocus={()=>setTopFocus(true)}
+              onBlur={()=>setTimeout(()=>setTopFocus(false),180)}
+              onKeyDown={e=>{
+                if(e.key==='Escape'){setTopQuery('');e.currentTarget.blur();}
+                if(e.key==='Enter'){
+                  const q=topQuery.trim().toLowerCase();if(!q)return;
+                  const flat=[];items.forEach(it=>{const lbl=typeof it.label==='string'&&it.label.startsWith('sidebar.')?t(it.label):it.label;if(it.type==='link')flat.push({to:it.to,label:lbl});else if(it.children)it.children.forEach(c=>{const cl=typeof c.label==='string'&&c.label.startsWith('sidebar.')?t(c.label):c.label;flat.push({to:c.to,label:cl});});});
+                  const hit=flat.find(x=>(x.label||'').toLowerCase().includes(q));
+                  if(hit){navigate(hit.to);setTopQuery('');setTopFocus(false);}
+                }
+              }}
+            />
+            {topQuery&&<button onMouseDown={e=>{e.preventDefault();setTopQuery('');}} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13}/></button>}
+            {topFocus&&topQuery.trim()&&(()=>{
+              const q=topQuery.trim().toLowerCase();
+              const flat=[];
+              items.forEach(it=>{
+                const lbl=typeof it.label==='string'&&it.label.startsWith('sidebar.')?t(it.label):it.label;
+                if(it.type==='link'){flat.push({to:it.to,label:lbl,parent:null});}
+                else if(it.children){it.children.forEach(c=>{const cl=typeof c.label==='string'&&c.label.startsWith('sidebar.')?t(c.label):c.label;flat.push({to:c.to,label:cl,parent:lbl});});}
+              });
+              const matches=flat.filter(x=>(x.label||'').toLowerCase().includes(q)||(x.parent||'').toLowerCase().includes(q)).slice(0,12);
+              return(<div className="absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
+                {matches.length===0?<p className="p-4 text-center text-xs text-gray-400">{t('common.noResults','No matches')}</p>:
+                matches.map((m,i)=>(
+                  <button key={i} onMouseDown={e=>{e.preventDefault();navigate(m.to);setTopQuery('');setTopFocus(false);}} className="w-full px-4 py-2.5 text-left hover:bg-brand-50 flex items-center gap-2 border-b border-gray-50 last:border-0">
+                    <Search size={12} className="text-gray-300 shrink-0"/>
+                    <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{m.label}</p>{m.parent&&<p className="text-[10px] text-gray-400 truncate">{m.parent}</p>}</div>
+                    <span className="text-[10px] text-gray-300 font-mono shrink-0">{m.to}</span>
+                  </button>
+                ))}
+              </div>);
+            })()}
+          </div>
           {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● {t('sidebar.live','Live')}</span>}
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"><Eye size={18}/></Link>
           <NotifBell/>

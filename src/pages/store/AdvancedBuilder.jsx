@@ -4,7 +4,7 @@ import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import{ownerApi}from'../../utils/api';
 import toast from'react-hot-toast';
-import{Plus,X,Save,Trash2,ChevronUp,ChevronDown,Eye,EyeOff,Type,Image,Layout,Package,Copy,Monitor,Smartphone,Star,Sparkles,Zap,Layers}from'lucide-react';
+import{Plus,X,Save,Trash2,ChevronUp,ChevronDown,Eye,EyeOff,Type,Image,Layout,Package,Copy,Monitor,Smartphone,Star,Sparkles,Zap,Layers,Check,Wand2,ArrowLeft}from'lucide-react';
 
 const FONTS=['Inter','Arial','Georgia','Playfair Display','Poppins','Roboto','Montserrat','Lora','Raleway','Cairo','Tajawal','DM Sans','Space Grotesk'];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -180,17 +180,33 @@ function Preview({section}){
   return null;
 }
 
+const ANIMATION_PRESETS=[
+  {v:'',l:'Template Default',d:'Use the template built-in motion',emoji:'✨'},
+  {v:'fade',l:'Fade',d:'Simple elegant fade in',emoji:'🌫️'},
+  {v:'slide-up',l:'Slide Up',d:'Rise gently from below',emoji:'⬆️'},
+  {v:'zoom',l:'Zoom',d:'Scale up into place',emoji:'🔍'},
+  {v:'blur',l:'Blur Reveal',d:'Sharpen into focus',emoji:'💫'},
+  {v:'dynamic',l:'Dynamic',d:'Bouncy spring motion',emoji:'⚡'},
+  {v:'none',l:'None',d:'No animation at all',emoji:'⛔'},
+];
+
 export default function AdvancedBuilder(){
   const{currentStore,setCurrentStore}=useStoreManagement();
   const[sections,setSections]=useState([]);
   const[selected,setSelected]=useState(null);
   const[showAdd,setShowAdd]=useState(false);
   const[showTemplates,setShowTemplates]=useState(false);
+  const[showAnim,setShowAnim]=useState(false);
   const[saving,setSaving]=useState(false);
   const[preview,setPreview]=useState('desktop');
   const[dirty,setDirty]=useState(false);
+  const[animStyle,setAnimStyle]=useState('');
+  const[animEnabled,setAnimEnabled]=useState(true);
+  const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
+  const[mobileTab,setMobileTab]=useState('sections'); // sections | preview | style
+  useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
 
-  useEffect(()=>{if(!currentStore)return;const cfg=currentStore.config||{};if(cfg.page_builder&&Array.isArray(cfg.page_builder)&&cfg.page_builder.length>0)setSections(cfg.page_builder);else{setSections([]);setShowTemplates(true);}},[currentStore?.id]);
+  useEffect(()=>{if(!currentStore)return;const cfg=currentStore.config||{};if(cfg.page_builder&&Array.isArray(cfg.page_builder)&&cfg.page_builder.length>0)setSections(cfg.page_builder);else{setSections([]);setShowTemplates(true);}setAnimStyle(cfg.animation_style||currentStore.animation_style||'');setAnimEnabled(cfg.animations_enabled!==false&&currentStore.animations_enabled!==false);},[currentStore?.id]);
 
   const upd=(i,s)=>{const n=[...sections];n[i]=s;setSections(n);setDirty(true);};
   const move=(i,d)=>{const n=[...sections];[n[i],n[i+d]]=[n[i+d],n[i]];setSections(n);setSelected(i+d);setDirty(true);};
@@ -201,36 +217,63 @@ export default function AdvancedBuilder(){
   const applyTemplate=(t)=>{const anim=t.animation||'calm';const cover=currentStore?.cover_image||currentStore?.config?.cover_image||'';const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>{const sec={...s,id:uid(),animation:anim,animationIndex:i};// Inject the store's cover image into any hero/banner section that supports a background image
 if(cover&&(sec.type==='hero'||sec.type==='banner'||sec.type==='hero-banner'||sec.type==='cover')){if(!sec.bgImage)sec.bgImage=cover;if(!sec.image)sec.image=cover;if(!sec.backgroundImage)sec.backgroundImage=cover;}
 return sec;});setSections(fresh);setSelected(null);setShowTemplates(false);setDirty(true);toast.success(`"${t.name}" applied!`);};
-  const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections});setCurrentStore(data);setDirty(false);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
+  const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections,animation_style:animStyle,animations_enabled:animEnabled});setCurrentStore(data);setDirty(false);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
+  const selectSection=(i)=>{setSelected(i);if(isMobile)setMobileTab('style');};
+  const setAnim=(v)=>{setAnimStyle(v);setDirty(true);};
+  const setAnimEn=(v)=>{setAnimEnabled(v);setDirty(true);};
+
+  const sectionListPanel=(<div className="space-y-1.5">
+    {sections.map((sec,i)=>{const T=SECTION_TYPES.find(t=>t.type===sec.type);const Icon=T?.icon||Layout;return(
+      <div key={sec.id} onClick={()=>selectSection(i)} className={`p-2.5 rounded-xl cursor-pointer transition-all ${selected===i?'bg-brand-50 ring-2 ring-brand-400':'bg-white border border-gray-200 hover:border-gray-300'} ${!sec.visible?'opacity-40':''}`}>
+        <div className="flex items-center gap-2"><Icon size={13} className={selected===i?'text-brand-500':'text-gray-400'}/><span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{T?.label||sec.type}</span>
+          <div className="flex gap-px">{i>0&&<button onClick={e=>{e.stopPropagation();move(i,-1);}} className="p-0.5 hover:bg-gray-200 rounded"><ChevronUp size={10}/></button>}{i<sections.length-1&&<button onClick={e=>{e.stopPropagation();move(i,1);}} className="p-0.5 hover:bg-gray-200 rounded"><ChevronDown size={10}/></button>}<button onClick={e=>{e.stopPropagation();toggle(i);}} className="p-0.5 hover:bg-gray-200 rounded">{sec.visible?<Eye size={10}/>:<EyeOff size={10}/>}</button><button onClick={e=>{e.stopPropagation();dup(i);}} className="p-0.5 hover:bg-gray-200 rounded"><Copy size={10}/></button><button onClick={e=>{e.stopPropagation();rm(i);}} className="p-0.5 hover:bg-red-100 rounded text-red-400"><Trash2 size={10}/></button></div>
+        </div></div>);})}
+    <button onClick={()=>setShowAdd(true)} className="w-full p-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-400 hover:border-brand-400 hover:text-brand-500 flex items-center justify-center gap-1.5 text-xs font-bold"><Plus size={13}/>Add Section</button>
+  </div>);
+
+  const previewPanel=(<div className={`mx-auto bg-white rounded-xl shadow-sm overflow-hidden ${preview==='mobile'?'max-w-[375px]':'max-w-[900px]'}`}>
+    {sections.filter(s=>s.visible).length===0?<div className="py-16 text-center"><Layers size={36} className="mx-auto text-gray-300 mb-3"/><p className="text-sm text-gray-400 mb-3">No sections yet</p><button onClick={()=>setShowTemplates(true)} className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-bold">Choose a Template</button></div>:
+    sections.filter(s=>s.visible).map(sec=>(<div key={sec.id} onClick={()=>selectSection(sections.indexOf(sec))} className={`cursor-pointer transition-all ${selected===sections.indexOf(sec)?'ring-2 ring-brand-400 ring-inset':''}`}><Preview section={sec}/></div>))}
+  </div>);
+
+  const styleEditorPanel=(selected!==null&&sections[selected]?
+    <div>
+      <div className="flex items-center justify-between mb-3"><h3 className="font-bold text-xs text-gray-900">{SECTION_TYPES.find(t=>t.type===sections[selected].type)?.label||'Section'}</h3><button onClick={()=>{setSelected(null);if(isMobile)setMobileTab('sections');}} className="p-1 hover:bg-gray-100 rounded"><X size={12}/></button></div>
+      <StylePanel section={sections[selected]} onChange={s=>upd(selected,s)}/>
+    </div>
+    :<div className="text-center py-10"><Layout size={28} className="mx-auto text-gray-300 mb-2"/><p className="text-xs text-gray-400">{isMobile?'Go to Sections tab and tap one to edit':'Click a section to edit'}</p></div>
+  );
 
   return(<DashboardLayout>
-    <div className="flex items-center justify-between mb-4">
-      <div><h1 className="text-2xl font-bold">Page Builder</h1><p className="text-sm text-gray-400 mt-1">Build your storefront exactly how you want</p></div>
-      <div className="flex items-center gap-2">
-        <button onClick={()=>setShowTemplates(true)} className="px-3 py-2 bg-purple-50 text-purple-600 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-purple-100"><Layers size={14}/>Templates</button>
-        <div className="flex bg-gray-100 rounded-lg p-0.5"><button onClick={()=>setPreview('desktop')} className={`p-1.5 rounded-md ${preview==='desktop'?'bg-white shadow-sm':'text-gray-400'}`}><Monitor size={14}/></button><button onClick={()=>setPreview('mobile')} className={`p-1.5 rounded-md ${preview==='mobile'?'bg-white shadow-sm':'text-gray-400'}`}><Smartphone size={14}/></button></div>
-        <button onClick={save} disabled={saving||!dirty} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50"><Save size={14}/>{saving?'Saving...':'Save'}</button>
+    <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2 flex-wrap">
+      <div className="min-w-0"><h1 className="text-lg sm:text-2xl font-bold truncate">Page Builder</h1><p className="hidden sm:block text-sm text-gray-400 mt-1">Build your storefront exactly how you want</p></div>
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <button onClick={()=>setShowAnim(true)} className="px-2.5 sm:px-3 py-2 bg-violet-50 text-violet-600 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 hover:bg-violet-100"><Wand2 size={14}/><span className="hidden sm:inline">Motion</span></button>
+        <button onClick={()=>setShowTemplates(true)} className="px-2.5 sm:px-3 py-2 bg-purple-50 text-purple-600 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 hover:bg-purple-100"><Layers size={14}/><span className="hidden sm:inline">Templates</span></button>
+        <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5"><button onClick={()=>setPreview('desktop')} className={`p-1.5 rounded-md ${preview==='desktop'?'bg-white shadow-sm':'text-gray-400'}`}><Monitor size={14}/></button><button onClick={()=>setPreview('mobile')} className={`p-1.5 rounded-md ${preview==='mobile'?'bg-white shadow-sm':'text-gray-400'}`}><Smartphone size={14}/></button></div>
+        <button onClick={save} disabled={saving||!dirty} className="btn-primary text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 disabled:opacity-50 !px-3 !py-2"><Save size={14}/>{saving?'...':'Save'}</button>
       </div>
     </div>
-    <div className="flex gap-4" style={{height:'calc(100vh - 160px)'}}>
-      <div className="w-56 shrink-0 space-y-1.5 overflow-y-auto pr-1">
-        {sections.map((sec,i)=>{const T=SECTION_TYPES.find(t=>t.type===sec.type);const Icon=T?.icon||Layout;return(
-          <div key={sec.id} onClick={()=>setSelected(i)} className={`p-2.5 rounded-xl cursor-pointer transition-all ${selected===i?'bg-brand-50 ring-2 ring-brand-400':'bg-white border border-gray-200 hover:border-gray-300'} ${!sec.visible?'opacity-40':''}`}>
-            <div className="flex items-center gap-2"><Icon size={13} className={selected===i?'text-brand-500':'text-gray-400'}/><span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{T?.label||sec.type}</span>
-              <div className="flex gap-px">{i>0&&<button onClick={e=>{e.stopPropagation();move(i,-1);}} className="p-0.5 hover:bg-gray-200 rounded"><ChevronUp size={10}/></button>}{i<sections.length-1&&<button onClick={e=>{e.stopPropagation();move(i,1);}} className="p-0.5 hover:bg-gray-200 rounded"><ChevronDown size={10}/></button>}<button onClick={e=>{e.stopPropagation();toggle(i);}} className="p-0.5 hover:bg-gray-200 rounded">{sec.visible?<Eye size={10}/>:<EyeOff size={10}/>}</button><button onClick={e=>{e.stopPropagation();dup(i);}} className="p-0.5 hover:bg-gray-200 rounded"><Copy size={10}/></button><button onClick={e=>{e.stopPropagation();rm(i);}} className="p-0.5 hover:bg-red-100 rounded text-red-400"><Trash2 size={10}/></button></div>
-            </div></div>);})}
-        <button onClick={()=>setShowAdd(true)} className="w-full p-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-400 hover:border-brand-400 hover:text-brand-500 flex items-center justify-center gap-1.5 text-xs font-bold"><Plus size={13}/>Add Section</button>
-      </div>
-      <div className="flex-1 bg-gray-100 rounded-2xl overflow-y-auto p-3">
-        <div className={`mx-auto bg-white rounded-xl shadow-sm overflow-hidden ${preview==='mobile'?'max-w-[375px]':'max-w-[900px]'}`}>
-          {sections.filter(s=>s.visible).length===0?<div className="py-16 text-center"><Layers size={36} className="mx-auto text-gray-300 mb-3"/><p className="text-sm text-gray-400 mb-3">No sections yet</p><button onClick={()=>setShowTemplates(true)} className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-bold">Choose a Template</button></div>:
-          sections.filter(s=>s.visible).map(sec=>(<div key={sec.id} onClick={()=>setSelected(sections.indexOf(sec))} className={`cursor-pointer transition-all ${selected===sections.indexOf(sec)?'ring-2 ring-brand-400 ring-inset':''}`}><Preview section={sec}/></div>))}
+    {isMobile?(
+      <>
+        <div className="sticky top-0 z-10 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 mb-3 bg-gray-50/95 backdrop-blur-sm border-b border-gray-100 flex gap-1.5">
+          {[{v:'sections',l:'Sections',i:Layers},{v:'preview',l:'Preview',i:Eye},{v:'style',l:'Style',i:Wand2}].map(tab=>{const I=tab.i;return(
+            <button key={tab.v} onClick={()=>setMobileTab(tab.v)} className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${mobileTab===tab.v?'bg-brand-500 text-white shadow':'bg-white text-gray-500 border border-gray-200'}`}><I size={13}/>{tab.l}</button>
+          );})}
         </div>
+        <div className="animate-fade-in pb-8">
+          {mobileTab==='sections'&&sectionListPanel}
+          {mobileTab==='preview'&&<div className="bg-gray-100 rounded-2xl p-3">{previewPanel}</div>}
+          {mobileTab==='style'&&<div className="bg-white rounded-2xl border border-gray-200 p-3">{styleEditorPanel}</div>}
+        </div>
+      </>
+    ):(
+      <div className="flex gap-4" style={{height:'calc(100vh - 160px)'}}>
+        <div className="w-56 shrink-0 overflow-y-auto pr-1">{sectionListPanel}</div>
+        <div className="flex-1 bg-gray-100 rounded-2xl overflow-y-auto p-3">{previewPanel}</div>
+        <div className="w-64 shrink-0 bg-white rounded-2xl border border-gray-200 overflow-y-auto p-3">{styleEditorPanel}</div>
       </div>
-      <div className="w-64 shrink-0 bg-white rounded-2xl border border-gray-200 overflow-y-auto p-3">
-        {selected!==null&&sections[selected]?<div><div className="flex items-center justify-between mb-3"><h3 className="font-bold text-xs text-gray-900">{SECTION_TYPES.find(t=>t.type===sections[selected].type)?.label||'Section'}</h3><button onClick={()=>setSelected(null)} className="p-1 hover:bg-gray-100 rounded"><X size={12}/></button></div><StylePanel section={sections[selected]} onChange={s=>upd(selected,s)}/></div>:<div className="text-center py-10"><Layout size={28} className="mx-auto text-gray-300 mb-2"/><p className="text-xs text-gray-400">Click a section to edit</p></div>}
-      </div>
-    </div>
+    )}
     {showAdd&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowAdd(false)}><div className="bg-white rounded-3xl p-5 w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between mb-3"><h2 className="text-lg font-bold">Add Section</h2><button onClick={()=>setShowAdd(false)}><X size={18}/></button></div><div className="space-y-1.5">{SECTION_TYPES.map(t=>{const Icon=t.icon;return<button key={t.type} onClick={()=>add(t.type)} className="w-full p-3 rounded-xl border-2 border-gray-200 hover:border-brand-400 text-left flex items-center gap-3 transition-all"><div className="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center shrink-0"><Icon size={16} className="text-brand-500"/></div><div><p className="font-bold text-sm text-gray-900">{t.label}</p><p className="text-[10px] text-gray-400">{t.desc}</p></div></button>;})}</div></div></div>}
     {showTemplates&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setShowTemplates(false)}><div className="bg-white rounded-3xl p-6 w-full max-w-6xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
       <div className="flex items-center justify-between mb-6"><div><h2 className="text-2xl font-bold">Choose a Template</h2><p className="text-sm text-gray-500 mt-1">Pick a starting design — everything is fully customizable after you apply it</p></div><button onClick={()=>setShowTemplates(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={20}/></button></div>
@@ -269,5 +312,37 @@ return sec;});setSections(fresh);setSelected(null);setShowTemplates(false);setDi
         );})}
       </div>
     </div></div>}
+    {showAnim&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setShowAnim(false)}>
+      <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0"><Wand2 size={20} className="text-violet-600"/></div>
+            <div className="min-w-0"><h2 className="text-lg sm:text-xl font-bold truncate">Section Motion</h2><p className="text-xs text-gray-400">Pick how every section reveals as buyers scroll.</p></div>
+          </div>
+          <button onClick={()=>setShowAnim(false)} className="p-2 hover:bg-gray-100 rounded-full shrink-0"><X size={18}/></button>
+        </div>
+        <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer mb-4">
+          <div><p className="font-bold text-sm text-gray-800">Enable Animations</p><p className="text-[11px] text-gray-400 mt-0.5">Master switch — turns all section animations on or off.</p></div>
+          <div className={`w-11 h-6 rounded-full transition-colors ${animEnabled?'bg-brand-500':'bg-gray-300'} relative shrink-0`}>
+            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${animEnabled?'translate-x-5':'translate-x-0.5'}`}/>
+          </div>
+          <input type="checkbox" className="sr-only" checked={animEnabled} onChange={e=>setAnimEn(e.target.checked)}/>
+        </label>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Animation Style</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {ANIMATION_PRESETS.map(a=>(
+            <button key={a.v||'default'} onClick={()=>setAnim(a.v)} disabled={!animEnabled&&a.v!=='none'} className={`p-3 rounded-xl border-2 text-left transition-all ${animStyle===a.v?'border-brand-500 bg-brand-50 ring-2 ring-brand-200':'border-gray-200 bg-white hover:border-gray-300'} ${!animEnabled&&a.v!=='none'?'opacity-40':''}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{a.emoji}</span>
+                <div className="min-w-0 flex-1"><p className="font-bold text-sm truncate">{a.l}</p><p className="text-[10px] text-gray-400 truncate">{a.d}</p></div>
+                {animStyle===a.v&&<Check size={16} className="text-brand-500 shrink-0"/>}
+              </div>
+            </button>
+          ))}
+        </div>
+        <p className="text-[11px] text-gray-400 mt-4">Your choice overrides the motion baked into whichever template you applied. The change saves when you hit the main <strong>Save</strong> button.</p>
+        <button onClick={()=>setShowAnim(false)} className="btn-primary w-full mt-4">Done</button>
+      </div>
+    </div>}
   </DashboardLayout>);
 }
