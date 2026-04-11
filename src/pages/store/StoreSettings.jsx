@@ -5,7 +5,7 @@ import { useStoreManagement, useAuthStore } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp } from 'lucide-react';
+import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight } from 'lucide-react';
 
 const themes=[{id:'classic',name:'Classic Store',desc:'PROFESSIONAL & CLEAN',c:'#7C3AED'},{id:'nova-dark',name:'Nova Dark',desc:'FUTURISTIC & SLEEK',c:'#8B5CF6'},{id:'enterprise',name:'Enterprise',desc:'DENSE & FUNCTIONAL',c:'#3B82F6'},{id:'ocean-bloom',name:'Ocean Bloom',desc:'SOFT & FRIENDLY',c:'#06B6D4'},{id:'nzxt-pro',name:'NZXT Pro',desc:'HIGH CONTRAST',c:'#A855F7'},{id:'moonlight',name:'Moonlight',desc:'ETHEREAL & CALM',c:'#818CF8'}];
 const brandColors=['#10B981','#06B6D4','#3B82F6','#6366F1','#8B5CF6','#A855F7','#D946EF','#EC4899','#F43F5E','#EF4444','#F97316','#EAB308','#84CC16','#22C55E','#14B8A6','#0EA5E9'];
@@ -51,7 +51,9 @@ function SubscriptionSection(){
 
 export default function StoreSettings(){
   const{t}=useTranslation();const{currentStore,setCurrentStore}=useStoreManagement();const{user,logout}=useAuthStore();
-  const[s,setS]=useState({});const[sec,setSec]=useState('store-details');const[loading,setLoading]=useState(false);
+  const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
+  useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
+  const[s,setS]=useState({});const[sec,setSec]=useState(typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details');const[loading,setLoading]=useState(false);
   const[staff,setStaff]=useState([]);const[wilayas,setWilayas]=useState([]);const[showRole,setShowRole]=useState(null);
   const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',role:'viewer'});
   const logoR=useRef(null);const coverR=useRef(null);
@@ -82,14 +84,33 @@ export default function StoreSettings(){
   const secs=[{id:'store-details',icon:Store,l:t('storePage.secStoreDetails','Store Details')},{id:'customization',icon:Palette,l:t('storePage.secCustomization','Customization')},{id:'dashboard-config',icon:Layout,l:t('storePage.secDashboard','Dashboard')},{id:'users',icon:Users,l:t('storePage.secUsersPerms','Users & Permissions')},{id:'checkout',icon:ShoppingCart,l:t('storePage.secCheckout','Checkout')},{id:'shipping',icon:Truck,l:t('storePage.secShipping','Shipping')},{id:'payments',icon:CreditCard,l:t('storePage.secPayments','Payments')},{id:'taxes',icon:Percent,l:t('storePage.secTaxes','Taxes')},{id:'notifications',icon:Bell,l:t('storePage.secNotifications','Notifications')},{id:'orders-config',icon:Package,l:t('storePage.secOrders','Orders')},{id:'customers-config',icon:Users,l:t('storePage.secCustomers','Customers')},{id:'inventory',icon:BarChart3,l:t('storePage.secInventory','Inventory')},{id:'domains',icon:Globe,l:t('storePage.secDomains','Domains')},{id:'ai',icon:Bot,l:t('storePage.secAi','AI Messaging')},{id:'subscription',icon:Zap,l:t('storePage.secSubscription','Subscription')},{id:'account',icon:SI,l:t('storePage.secAccount','Account')}];
   const storeDomain=currentStore?.slug?`${currentStore.slug}.ender-store.com`:'';
 
+  const activeSec=secs.find(x=>x.id===sec);
   return(<DashboardLayout>
-    <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3"><h1 className="page-header text-lg sm:text-2xl truncate">{t('sidebar.settings')}</h1><button onClick={save} disabled={loading} className="btn-primary flex items-center gap-2 text-xs sm:text-sm !px-3 sm:!px-6 !py-2 sm:!py-3 shrink-0">{loading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={16}/>}<span className="hidden sm:inline">{t('storePage.saveChanges','Save Changes')}</span><span className="sm:hidden">Save</span></button></div>
-    {/* Mobile: horizontal scrollable tab bar */}
-    <div className="lg:hidden -mx-3 sm:-mx-4 px-3 sm:px-4 mb-4 overflow-x-auto scroll-x-mobile sticky top-0 z-20 bg-gray-50/90 backdrop-blur-sm py-2 border-b border-gray-100"><div className="flex gap-1.5 w-max">{secs.map(x=>{const I=x.icon;return(<button key={x.id} onClick={()=>setSec(x.id)} className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${sec===x.id?'bg-brand-500 text-white shadow':'bg-white text-gray-500 border border-gray-200'}`}><I size={13}/>{x.l}</button>);})}</div></div>
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+    {isMobile&&!sec?(
+      <div className="animate-fade-in">
+        <h1 className="page-header text-xl mb-4">{t('sidebar.settings')}</h1>
+        <p className="text-xs text-gray-400 mb-4">{t('storePage.mobileSettingsHint','Tap any setting to open its dedicated page.')}</p>
+        <div className="space-y-2">{secs.map(x=>{const I=x.icon;return(
+          <button key={x.id} onClick={()=>setSec(x.id)} className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 hover:border-brand-300 active:bg-brand-50 transition-all shadow-sm">
+            <div className="flex items-center gap-3 min-w-0"><div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><I size={20} className="text-brand-500"/></div><span className="font-bold text-gray-800 text-sm text-left truncate">{x.l}</span></div>
+            <ChevronRight size={18} className="text-gray-400 shrink-0"/>
+          </button>
+        );})}</div>
+      </div>
+    ):(<>
+    {isMobile?(
+      <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 mb-4 bg-gray-50/95 backdrop-blur-sm border-b border-gray-100 flex items-center gap-2">
+        <button onClick={()=>setSec('')} className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shrink-0 hover:bg-gray-50 active:scale-95 transition-all"><ChevronLeft size={18}/></button>
+        <h1 className="font-black text-base flex-1 truncate">{activeSec?.l||t('sidebar.settings')}</h1>
+        <button onClick={save} disabled={loading} className="btn-primary flex items-center gap-1.5 text-xs !px-3 !py-2 shrink-0">{loading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={14}/>}Save</button>
+      </div>
+    ):(
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3"><h1 className="page-header text-lg sm:text-2xl truncate">{t('sidebar.settings')}</h1><button onClick={save} disabled={loading} className="btn-primary flex items-center gap-2 text-xs sm:text-sm !px-3 sm:!px-6 !py-2 sm:!py-3 shrink-0">{loading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={16}/>}<span className="hidden sm:inline">{t('storePage.saveChanges','Save Changes')}</span><span className="sm:hidden">Save</span></button></div>
+    )}
+    <div className={isMobile?"":"flex flex-col lg:flex-row gap-4 lg:gap-6"}>
       {/* Desktop sidebar */}
-      <div className="hidden lg:block w-56 shrink-0 space-y-0.5">{secs.map(x=>{const I=x.icon;return(<button key={x.id} onClick={()=>setSec(x.id)} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${sec===x.id?'bg-brand-50 text-brand-600':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}><I size={16}/>{x.l}</button>);})}</div>
-      <div className="flex-1 min-w-0 space-y-4 sm:space-y-6 animate-fade-in">
+      {!isMobile&&<div className="hidden lg:block w-56 shrink-0 space-y-0.5">{secs.map(x=>{const I=x.icon;return(<button key={x.id} onClick={()=>setSec(x.id)} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${sec===x.id?'bg-brand-50 text-brand-600':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}><I size={16}/>{x.l}</button>);})}</div>}
+      <div className={isMobile?"min-w-0 space-y-4 animate-fade-in pb-8":"flex-1 min-w-0 space-y-4 sm:space-y-6 animate-fade-in"}>
 
 {sec==='store-details'&&<><div className="grid lg:grid-cols-2 gap-6">
 <div className="glass-card-solid p-4 sm:p-6 space-y-4"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><Store size={20} className="text-brand-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.storeIdentity','Store Identity')}</h3><p className="text-xs text-gray-400">{t('storePage.storeIdentityDesc','Manage how your business appears to the world.')}</p></div></div><div><label className="input-label">{t('storePage.storeName','Store Name')}</label><input className="input-field" value={s.name||s.store_name||''} onChange={e=>setS({...s,name:e.target.value})}/></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label className="input-label">{t('storePage.storePhone','Store Phone')}</label><input className="input-field" value={s.contact_phone||''} onChange={set('contact_phone')}/></div><div><label className="input-label">{t('storePage.supportPhone','Support Phone')}</label><input className="input-field" value={s.support_phone||''} onChange={set('support_phone')}/></div></div>
@@ -182,6 +203,7 @@ export default function StoreSettings(){
 
       </div>
     </div>
+    </>)}
     {showRole&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowRole(null)}><div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">Role: {roles[showRole]?.label}</h2><button onClick={()=>setShowRole(null)} className="text-gray-400 hover:text-gray-600">✕</button></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{[['Orders',['View Dashboard','View Orders','Manage Orders','Delete Orders','Confirm Orders','Prepare Orders']],['Products',['View Products','Manage Products','Delete Products']],['Customers',['View Customers','Manage Customers']]].map(([cat,perms])=>(<div key={cat}><h4 className="font-bold text-xs text-gray-500 uppercase mb-2">{cat}</h4>{perms.map(p=>{const has=roles[showRole]?.perms.includes(p);return(<label key={p} className="flex items-center gap-2 mb-1.5"><div className={`w-5 h-5 rounded flex items-center justify-center text-white text-xs ${has?'bg-brand-500':'bg-gray-200'}`}>{has&&<Check size={12}/>}</div><span className="text-sm text-gray-700">{p}</span></label>);})}</div>))}</div><button onClick={()=>setShowRole(null)} className="btn-primary w-full mt-6">Close</button></div></div>}
     {showStaff&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowStaff(false)}><div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}><h2 className="text-xl font-bold mb-6">Create User</h2><div className="space-y-3"><div><label className="input-label">Name</label><input className="input-field" value={sf.name} onChange={e=>setSf({...sf,name:e.target.value})}/></div><div><label className="input-label">Email</label><input className="input-field" value={sf.email} onChange={e=>setSf({...sf,email:e.target.value})}/></div><div><label className="input-label">Phone</label><input className="input-field" value={sf.phone} onChange={e=>setSf({...sf,phone:e.target.value})}/></div><div><label className="input-label">Password</label><input type="password" className="input-field" value={sf.password} onChange={e=>setSf({...sf,password:e.target.value})}/></div><div><label className="input-label">Role</label><select className="input-field" value={sf.role} onChange={e=>setSf({...sf,role:e.target.value})}><option value="admin">Admin</option><option value="preparer">Preparer</option><option value="confirmer">Confirmer</option><option value="viewer">Viewer</option></select></div></div><div className="flex gap-3 mt-6"><button onClick={()=>setShowStaff(false)} className="btn-ghost flex-1">Cancel</button><button onClick={addStaff} className="btn-primary flex-1">Create</button></div></div></div>}
   </DashboardLayout>);
