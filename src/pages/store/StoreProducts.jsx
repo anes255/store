@@ -20,7 +20,7 @@ export default function StoreProducts() {
   const variantFileRef = useRef(null);
   const [activeVarIdx, setActiveVarIdx] = useState(null);
 
-  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,variants:[]};
+  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[]};
   const [form, setForm] = useState({...empty});
 
   const loadProducts = async () => {
@@ -104,7 +104,7 @@ export default function StoreProducts() {
   const openEdit = (p) => {
     setEditing(p);
     let vars = p.variants||[]; if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];} if(!Array.isArray(vars))vars=[];
-    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,variants:vars});
+    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars});
     setShowModal(true);
   };
 
@@ -178,6 +178,15 @@ export default function StoreProducts() {
                 <div><label className="input-label text-xs">{t('storePage.stock','Stock')}</label><input type="number" className="input-field" value={form.stock_quantity} onChange={set('stock_quantity')}/></div>
                 <div><label className="input-label text-xs">{t('storePage.sku','SKU')}</label><input className="input-field" value={form.sku} onChange={set('sku')}/></div>
               </div>
+
+              {/* Allow Oversell Toggle */}
+              <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors">
+                <input type="checkbox" checked={form.allow_oversell} onChange={e=>setForm({...form,allow_oversell:e.target.checked})} className="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"/>
+                <div>
+                  <p className="text-sm font-bold text-amber-800">{t('storePage.allowOversell','Allow selling when out of stock')}</p>
+                  <p className="text-[11px] text-amber-600">{t('storePage.allowOversellDesc','Customers can still buy this product even if stock reaches 0')}</p>
+                </div>
+              </label>
 
               {/* Images */}
               <div>

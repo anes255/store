@@ -287,7 +287,12 @@ export default function ProductDetail() {
                     <span className="w-2 h-2 bg-emerald-500 rounded-full"/>
                     {store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}
                   </span>
-                : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
+                : product.allow_oversell
+                  ? <span className="inline-flex items-center gap-1.5 text-amber-600 text-sm font-semibold">
+                      <span className="w-2 h-2 bg-amber-500 rounded-full"/>
+                      Available for order
+                    </span>
+                  : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
             </div>
 
             {/* ═══ VARIANT SELECTORS ═══ */}
@@ -375,7 +380,7 @@ export default function ProductDetail() {
                 </div>
                 <button
                   onClick={handleAddToCart}
-                  disabled={stockCount <= 0}
+                  disabled={stockCount <= 0 && !product.allow_oversell}
                   className="flex-1 py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
                   style={{backgroundColor:pc}}
                 >
@@ -391,7 +396,7 @@ export default function ProductDetail() {
               {/* Buy Now — goes straight to checkout */}
               <button
                 onClick={handleBuyNow}
-                disabled={stockCount <= 0}
+                disabled={stockCount <= 0 && !product.allow_oversell}
                 className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 shadow-sm disabled:opacity-50 transition-all"
                 style={{borderColor:pc, color:pc, backgroundColor: pc + '08'}}
               >

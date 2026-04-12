@@ -178,6 +178,8 @@ export const storeApi = {
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
+  // Shipping wilayas (public, for checkout)
+  getShippingWilayas: (slug) => api.get(`/store/${slug}/shipping-wilayas`),
   // Domain lookup
   lookupDomain: (domain) => api.get(`/store/by-domain/${domain}`),
 };

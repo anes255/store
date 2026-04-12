@@ -5,6 +5,7 @@ import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
+import WILAYA_CITIES from '../../data/wilayaCities';
 
 // directItems: optional array of items for "Buy Now" flow (skips cart).
 // Each item: { product_id, name, price, image, quantity, variant }
@@ -40,12 +41,26 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '', shipping_zip: '',
+    shipping_type: 'desk', // 'desk' (to desk/relay point) or 'home' (domicile)
     payment_method: 'cod', notes: '', coupon_code: '',
     notification_preference: 'whatsapp',
   });
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
+  const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
 
   useEffect(() => { storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {}); }, [storeSlug]);
+  // Load shipping wilayas for real pricing
+  useEffect(() => {
+    if (!storeSlug) return;
+    storeApi.getShippingWilayas(storeSlug).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
+  }, [storeSlug]);
+  // When wilaya changes, update selected wilaya data and auto-fill zip
+  useEffect(() => {
+    if (!form.shipping_wilaya || !shippingWilayas.length) { setSelectedWilayaData(null); return; }
+    const match = shippingWilayas.find(w => w.wilaya_name === form.shipping_wilaya);
+    setSelectedWilayaData(match || null);
+  }, [form.shipping_wilaya, shippingWilayas]);
 
   // Sync cart to backend for abandoned cart recovery
   useEffect(() => {
@@ -70,7 +85,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   }, [items, storeSlug, isBuyNow]);
 
   const subtotal = getTotal();
-  const shipping = store ? parseFloat(store.shipping_default_price || 0) : 0;
+  // Use per-wilaya shipping price (desk vs home), fall back to store default
+  const shipping = selectedWilayaData
+    ? parseFloat(form.shipping_type === 'home' ? selectedWilayaData.home_delivery_price : selectedWilayaData.desk_delivery_price) || 0
+    : (store ? parseFloat(store.shipping_default_price || 0) : 0);
   const total = subtotal + shipping - couponDiscount;
   const pc = store?.primary_color || '#7C3AED';
 
@@ -104,7 +122,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       const authUser = useAuthStore.getState().user;
       const authRole = useAuthStore.getState().role;
       const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
-      const { data } = await storeApi.placeOrder(storeSlug, { ...form, customer_id, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
+      const { data } = await storeApi.placeOrder(storeSlug, { ...form, shipping_type: form.shipping_type, customer_id, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
       setOrderSuccess(data);
       clearItems();
       // If non-COD method, show payment step
@@ -285,7 +303,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           <div className="lg:col-span-3 space-y-6">
             {/* Shipping */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full text-xs font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>1</span>Shipping Information</h3>
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full text-xs font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>1</span>{t('checkout.shippingInfo','Shipping Information')}</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
@@ -293,11 +311,67 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 </div>
                 <div><label className="input-label">{t('auth.email')} *</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required/></div>
                 <div><label className="input-label">{t('auth.address')} *</label><input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div><label className="input-label">{t('auth.city')}</label><input className="input-field" value={form.shipping_city} onChange={set('shipping_city')}/></div>
-                  <div><label className="input-label">{t('auth.wilaya')} *</label><select className="input-field" value={form.shipping_wilaya} onChange={set('shipping_wilaya')}><option value="">Select...</option>{["Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Béjaïa","Biskra","Béchar","Blida","Bouira","Tamanrasset","Tébessa","Tlemcen","Tiaret","Tizi Ouzou","Alger","Djelfa","Jijel","Sétif","Saïda","Skikda","Sidi Bel Abbès","Annaba","Guelma","Constantine","Médéa","Mostaganem","M'Sila","Mascara","Ouargla","Oran","El Bayadh","Illizi","Bordj Bou Arréridj","Boumerdès","El Tarf","Tindouf","Tissemsilt","El Oued","Khenchela","Souk Ahras","Tipaza","Mila","Aïn Defla","Naâma","Aïn Témouchent","Ghardaïa","Relizane"].map(w=><option key={w} value={w}>{w}</option>)}</select></div>
-                  <div><label className="input-label">ZIP</label><input className="input-field" value={form.shipping_zip} onChange={set('shipping_zip')}/></div>
+
+                {/* Wilaya → City → ZIP */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="input-label">{t('auth.wilaya')} *</label>
+                    <select className="input-field" value={form.shipping_wilaya} onChange={e => {
+                      const w = e.target.value;
+                      setForm(prev => ({ ...prev, shipping_wilaya: w, shipping_city: '', shipping_zip: '' }));
+                    }}>
+                      <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
+                      {(shippingWilayas.length ? shippingWilayas : [{wilaya_name:'Adrar',wilaya_code:'01'},{wilaya_name:'Chlef',wilaya_code:'02'},{wilaya_name:'Laghouat',wilaya_code:'03'},{wilaya_name:'Oum El Bouaghi',wilaya_code:'04'},{wilaya_name:'Batna',wilaya_code:'05'},{wilaya_name:'Béjaïa',wilaya_code:'06'},{wilaya_name:'Biskra',wilaya_code:'07'},{wilaya_name:'Béchar',wilaya_code:'08'},{wilaya_name:'Blida',wilaya_code:'09'},{wilaya_name:'Bouira',wilaya_code:'10'},{wilaya_name:'Tamanrasset',wilaya_code:'11'},{wilaya_name:'Tébessa',wilaya_code:'12'},{wilaya_name:'Tlemcen',wilaya_code:'13'},{wilaya_name:'Tiaret',wilaya_code:'14'},{wilaya_name:'Tizi Ouzou',wilaya_code:'15'},{wilaya_name:'Alger',wilaya_code:'16'},{wilaya_name:'Djelfa',wilaya_code:'17'},{wilaya_name:'Jijel',wilaya_code:'18'},{wilaya_name:'Sétif',wilaya_code:'19'},{wilaya_name:'Saïda',wilaya_code:'20'},{wilaya_name:'Skikda',wilaya_code:'21'},{wilaya_name:'Sidi Bel Abbès',wilaya_code:'22'},{wilaya_name:'Annaba',wilaya_code:'23'},{wilaya_name:'Guelma',wilaya_code:'24'},{wilaya_name:'Constantine',wilaya_code:'25'},{wilaya_name:'Médéa',wilaya_code:'26'},{wilaya_name:'Mostaganem',wilaya_code:'27'},{wilaya_name:"M'Sila",wilaya_code:'28'},{wilaya_name:'Mascara',wilaya_code:'29'},{wilaya_name:'Ouargla',wilaya_code:'30'},{wilaya_name:'Oran',wilaya_code:'31'},{wilaya_name:'El Bayadh',wilaya_code:'32'},{wilaya_name:'Illizi',wilaya_code:'33'},{wilaya_name:'Bordj Bou Arréridj',wilaya_code:'34'},{wilaya_name:'Boumerdès',wilaya_code:'35'},{wilaya_name:'El Tarf',wilaya_code:'36'},{wilaya_name:'Tindouf',wilaya_code:'37'},{wilaya_name:'Tissemsilt',wilaya_code:'38'},{wilaya_name:'El Oued',wilaya_code:'39'},{wilaya_name:'Khenchela',wilaya_code:'40'},{wilaya_name:'Souk Ahras',wilaya_code:'41'},{wilaya_name:'Tipaza',wilaya_code:'42'},{wilaya_name:'Mila',wilaya_code:'43'},{wilaya_name:'Aïn Defla',wilaya_code:'44'},{wilaya_name:'Naâma',wilaya_code:'45'},{wilaya_name:'Aïn Témouchent',wilaya_code:'46'},{wilaya_name:'Ghardaïa',wilaya_code:'47'},{wilaya_name:'Relizane',wilaya_code:'48'}]).map(w => (
+                        <option key={w.wilaya_code} value={w.wilaya_name}>{w.wilaya_code} - {w.wilaya_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="input-label">{t('auth.city','City')} *</label>
+                    <select className="input-field" value={form.shipping_city} onChange={e => {
+                      const city = e.target.value;
+                      // Auto-fill ZIP from wilaya code
+                      const wCode = selectedWilayaData?.wilaya_code || shippingWilayas.find(w=>w.wilaya_name===form.shipping_wilaya)?.wilaya_code || '';
+                      setForm(prev => ({ ...prev, shipping_city: city, shipping_zip: wCode ? wCode + '000' : '' }));
+                    }} disabled={!form.shipping_wilaya}>
+                      <option value="">{form.shipping_wilaya ? t('checkout.selectCity','Select city...') : t('checkout.selectWilayaFirst','Select wilaya first')}</option>
+                      {form.shipping_wilaya && (WILAYA_CITIES[form.shipping_wilaya] || [form.shipping_wilaya]).map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="input-label">ZIP</label>
+                    <input className="input-field bg-gray-50" value={form.shipping_zip} onChange={set('shipping_zip')} placeholder="Auto-filled"/>
+                  </div>
                 </div>
+
+                {/* Desk vs Home delivery toggle */}
+                {selectedWilayaData && (
+                  <div>
+                    <label className="input-label mb-2">{t('checkout.deliveryType','Delivery Type')} *</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { key: 'desk', label: t('checkout.deskDelivery','Desk / Relay Point'), price: parseFloat(selectedWilayaData.desk_delivery_price)||0, icon: '🏢' },
+                        { key: 'home', label: t('checkout.homeDelivery','Home Delivery'), price: parseFloat(selectedWilayaData.home_delivery_price)||0, icon: '🏠' },
+                      ].map(dt => {
+                        const sel = form.shipping_type === dt.key;
+                        return (
+                          <label key={dt.key} className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
+                            <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => setForm(prev => ({ ...prev, shipping_type: dt.key }))} className="sr-only"/>
+                            <span className="text-xl">{dt.icon}</span>
+                            <div className="flex-1">
+                              <p className="font-bold text-sm text-gray-800">{dt.label}</p>
+                              <p className="text-xs text-gray-400">{selectedWilayaData.delivery_days || '?'} {t('checkout.days','days')}</p>
+                            </div>
+                            <span className="font-extrabold text-sm" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
+                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
