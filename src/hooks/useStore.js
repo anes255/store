@@ -92,6 +92,82 @@ export const useCartStore = create((set, get) => ({
   getCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
 }));
 
+// ============ WISHLIST STORE ============
+// Per-store wishlist persisted to localStorage under `wishlist_${slug}`.
+// Stores full product objects so the Favorites page can render with no extra
+// API calls. Synchronises across tabs/components via the `storage` event.
+const readWishlist = (slug) => {
+  if (!slug) return [];
+  try { return JSON.parse(localStorage.getItem('wishlist_' + slug) || '[]'); } catch { return []; }
+};
+
+export const useWishlistStore = create((set, get) => ({
+  slug: null,
+  items: [],
+
+  // Bind the store to a specific store slug. Idempotent — calling repeatedly
+  // with the same slug is a no-op so we don't thrash state during re-renders.
+  init: (slug) => {
+    if (!slug || get().slug === slug) return;
+    set({ slug, items: readWishlist(slug) });
+  },
+
+  // Replace the in-memory list (used by storage-event syncing)
+  hydrate: (slug) => {
+    if (!slug) return;
+    set({ items: readWishlist(slug) });
+  },
+
+  has: (productId) => get().items.some(p => p.id === productId),
+
+  // Toggle a product. Returns true if it was added, false if removed,
+  // so callers can show the appropriate toast.
+  toggle: (product) => {
+    const slug = get().slug;
+    if (!slug || !product) return false;
+    const items = get().items;
+    const exists = items.some(p => p.id === product.id);
+    const next = exists ? items.filter(p => p.id !== product.id) : [...items, product];
+    localStorage.setItem('wishlist_' + slug, JSON.stringify(next));
+    set({ items: next });
+    return !exists;
+  },
+
+  remove: (productId) => {
+    const slug = get().slug;
+    if (!slug) return;
+    const next = get().items.filter(p => p.id !== productId);
+    localStorage.setItem('wishlist_' + slug, JSON.stringify(next));
+    set({ items: next });
+  },
+
+  clear: () => {
+    const slug = get().slug;
+    if (!slug) return;
+    localStorage.removeItem('wishlist_' + slug);
+    set({ items: [] });
+  },
+
+  setItems: (items) => {
+    const slug = get().slug;
+    if (!slug) return;
+    localStorage.setItem('wishlist_' + slug, JSON.stringify(items));
+    set({ items });
+  },
+
+  count: () => get().items.length,
+}));
+
+// Cross-tab sync — when localStorage changes in another tab, mirror it.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (!e.key || !e.key.startsWith('wishlist_')) return;
+    const slug = e.key.slice('wishlist_'.length);
+    const state = useWishlistStore.getState();
+    if (state.slug === slug) state.hydrate(slug);
+  });
+}
+
 export const useLangStore = create((set) => ({
   lang: localStorage.getItem('lang') || 'en',
   setLang: (lang) => {

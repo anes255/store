@@ -1,4 +1,14 @@
-import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock}from'lucide-react';
+
+// Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
+// include the key the sidebar item renders with a lock icon + muted styling,
+// and clicking it toasts a "locked" message instead of navigating.
+const FEATURE_GATE_MAP = {
+  'page-builder': 'page_builder',
+  'ai-intelligence': 'ai_chatbot',
+  'smart-reviews': 'ai_moderation',
+  'abandoned': 'abandoned_cart',
+};
 
 function NotifBell(){
   const[open,setOpen]=React.useState(false);
@@ -99,6 +109,7 @@ const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarCha
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
   const{user,logout}=useAuthStore();const{currentStore}=useStoreManagement();
+  const planCtx = usePlanFeatures();
   const[isMobile,setIsMobile]=useState(()=>typeof window!=='undefined'&&window.innerWidth<1024);
   const[sidebarOpen,setSidebarOpen]=useState(()=>typeof window!=='undefined'?window.innerWidth>=1024:true);
   const[openMenus,setOpenMenus]=useState({});
@@ -160,8 +171,30 @@ export default function DashboardLayout({children}){
   const toggle=(k)=>setOpenMenus({...openMenus,[k]:!openMenus[k]});
   const isActive=(p)=>location.pathname===p;
 
-  const SLink=({to,icon:Icon,label})=>(<Link to={to} className={isActive(to)?'sidebar-link-active':'sidebar-link'}><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
-  const SubLink=({to,label})=>{const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;return(<Link to={to} className={`pl-12 py-1.5 block text-sm ${isActive(to)?'text-brand-600 font-semibold':'text-gray-400 hover:text-gray-600'}`}>{lbl}</Link>);};
+  // Check if a sidebar route is gated by the plan. Look up by the route path
+  // last segment or by the item id for top-level links.
+  const isGated=(idOrTo)=>{
+    if(!idOrTo)return false;
+    const key=FEATURE_GATE_MAP[idOrTo];
+    if(!key)return false;
+    return !planCtx.hasFeature(key);
+  };
+  const handleGated=(e,label)=>{e.preventDefault();
+    const toast=require('react-hot-toast').default;
+    toast.error(`"${label}" is locked on your current plan. Upgrade to unlock it.`);};
+
+  const SLink=({to,icon:Icon,label,gated})=>{
+    if(gated)return(<button onClick={e=>handleGated(e,label)} className="sidebar-link opacity-50 w-full"><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
+    return(<Link to={to} className={isActive(to)?'sidebar-link-active':'sidebar-link'}><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
+  };
+  const SubLink=({to,label})=>{
+    const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
+    // Check if this sub-route is gated (e.g. /dashboard/abandoned -> 'abandoned')
+    const segment=to.split('/').pop();
+    const gated=isGated(segment);
+    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm text-gray-300 cursor-not-allowed w-full text-left"><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
+    return(<Link to={to} className={`pl-12 py-1.5 block text-sm ${isActive(to)?'text-brand-600 font-semibold':'text-gray-400 hover:text-gray-600'}`}>{lbl}</Link>);
+  };
 
   const renderItem=(item,idx)=>{
     const Icon=ICONS[item.icon]||Settings;
@@ -182,7 +215,7 @@ export default function DashboardLayout({children}){
         {item.type==='link'?(
           <div className="flex items-center group">
             {sidebarOpen&&<div className="opacity-0 group-hover:opacity-40 px-0.5"><GripVertical size={12} className="text-gray-400"/></div>}
-            <div className="flex-1"><SLink to={item.to} icon={Icon} label={lbl}/></div>
+            <div className="flex-1"><SLink to={item.to} icon={Icon} label={lbl} gated={isGated(item.id)}/></div>
           </div>
         ):(
           <div className="group">

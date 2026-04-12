@@ -107,6 +107,7 @@ export const ownerApi = {
   // Subscription
   getSubscription: () => api.get('/owner/subscription'),
   paySubscription: (data) => api.post('/owner/subscription/pay', data),
+  getMyFeatures: () => api.get('/owner/me/features'),
   // Push notifications
   getVapidKey: () => api.get('/owner/push/vapid-key'),
   subscribePush: (data) => api.post('/owner/push/subscribe', data),

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
-import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -149,48 +149,65 @@ export default function Storefront() {
   const { addItem, getCount } = useCartStore();
   const { token: authToken, role: authRole } = useAuthStore();
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
+  const wishlistStore = useWishlistStore();
+  // Bind the wishlist store to this storefront's slug as soon as we mount.
+  useEffect(()=>{ wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
+  const wishlist = wishlistStore.items.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
-  // Start not-loading if we already have a cached store — render instantly
-  const [loading, setLoading] = useState(() => { try { return !JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return true; } });
-  const [wishlist, setWishlist] = useState(()=>{try{return JSON.parse(localStorage.getItem('wishlist_'+storeSlug)||'[]').map(x=>x.id||x);}catch{return[];}});
+  // We only flip "ready" once the store, products and categories have all
+  // resolved, so the page never appears half-rendered. Start true if we have
+  // every piece in cache so returning visitors see the page instantly.
+  const cachedStore = (() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } })();
+  const [loading, setLoading] = useState(!cachedStore);
+  const [contentReady, setContentReady] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
   const [suspended, setSuspended] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
+      // Reset readiness — we don't show the page again until everything is back
+      setContentReady(false);
       try {
-        // Load store FIRST to catch 403 properly
+        // Fire all three requests in parallel — much faster than waiting on
+        // the store first. We still catch the store error separately so 403
+        // (suspended) and 404 (not found) can be handled correctly.
+        const storeP = storeApi.getStore(storeSlug);
+        const prodsP = storeApi.getProducts(storeSlug, { search, category: selectedCategory });
+        const catsP  = storeApi.getCategories(storeSlug);
+
         let storeData;
         try {
-          const storeRes = await storeApi.getStore(storeSlug);
+          const storeRes = await storeP;
           storeData = storeRes.data;
         } catch(e) {
+          if (cancelled) return;
           if(e.response?.status===403) { setSuspended(true); setLoading(false); return; }
           setStore(null); setLoading(false); return;
         }
+        if (cancelled) return;
         setStore(storeData);
         try { localStorage.setItem('storeCache_' + storeSlug, JSON.stringify(storeData)); } catch {}
-        // Set store title and favicon
-        if(storeData.name)document.title=storeData.name;
+        if(storeData.name) document.title = storeData.name;
         if(storeData.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=storeData.favicon;}
-        // Then load products and categories
-        try {
-          const [productsRes, catsRes] = await Promise.all([
-            storeApi.getProducts(storeSlug, { search, category: selectedCategory }),
-            storeApi.getCategories(storeSlug),
-          ]);
-          setProducts(productsRes.data.products);
-          setCategories(catsRes.data);
-        } catch(e) { setProducts([]); setCategories([]); }
-      } catch(e) { setStore(null); }
-      setLoading(false);
+
+        // Wait for products + categories so the layout never pops in.
+        const [prodsRes, catsRes] = await Promise.allSettled([prodsP, catsP]);
+        if (cancelled) return;
+        setProducts(prodsRes.status==='fulfilled' ? (prodsRes.value.data.products||[]) : []);
+        setCategories(catsRes.status==='fulfilled' ? (catsRes.value.data||[]) : []);
+      } catch(e) {
+        if (!cancelled) setStore(null);
+      }
+      if (!cancelled) { setLoading(false); setContentReady(true); }
     };
     load();
+    return () => { cancelled = true; };
   }, [storeSlug, search, selectedCategory]);
 
   const getName = (item) => {
@@ -199,13 +216,21 @@ export default function Storefront() {
     return item.name_en||item.name||'';
   };
 
-  const toggleWishlist = (id) => {
-    const inList = wishlist.includes(id);
-    const newList = inList ? wishlist.filter(x=>x!==id) : [...wishlist, id];
-    setWishlist(newList);
-    // Save full product objects for the Favorites page
-    const saved = products.filter(p=>newList.includes(p.id));
-    localStorage.setItem('wishlist_'+storeSlug, JSON.stringify(saved));
+  // Toggle a product in/out of the wishlist. Toasts confirm both actions so
+  // shoppers always get feedback even from a quick-add button.
+  const toggleWishlist = (productOrId) => {
+    const product = typeof productOrId === 'object' ? productOrId : products.find(p=>p.id===productOrId);
+    if (!product) return;
+    const added = wishlistStore.toggle(product);
+    if (added) toast.success(t('store.addedToFavorites','Added to favorites'));
+    else toast.success(t('store.removedFromFavorites','Removed from favorites'));
+  };
+
+  // Wrapper around the cart store that fires a toast — used everywhere on the
+  // storefront so the feedback is consistent.
+  const quickAddToCart = (product) => {
+    addItem(product);
+    toast.success(t('store.addedToCart','Added to cart'));
   };
 
   const getThumb = (p) => {
@@ -214,7 +239,10 @@ export default function Storefront() {
     return null;
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
+  // Block the entire page until store, products and categories are all in.
+  // This is the "don't appear half-loaded" guarantee — the spinner stays until
+  // every dependency is ready, then the real layout slides in.
+  if (loading || !contentReady) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
   if (suspended) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center max-w-md"><div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Package size={32} className="text-red-500"/></div><h1 className="text-2xl font-bold text-gray-900 mb-2">Store Temporarily Unavailable</h1><p className="text-gray-500">This store is currently suspended. Please check back later or contact the store owner.</p></div></div>;
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
 
@@ -276,7 +304,7 @@ export default function Storefront() {
       </header>
 
       {store.page_builder&&Array.isArray(store.page_builder)&&store.page_builder.length>0?(
-        <BuilderSections sections={store.page_builder} products={products} categories={categories} store={store} storeSlug={storeSlug} pc={pc} getName={getName} getThumb={getThumb} addItem={addItem} wishlist={wishlist} toggleWishlist={toggleWishlist} search={search} setSearch={setSearch} t={t}/>
+        <BuilderSections sections={store.page_builder} products={products} categories={categories} store={store} storeSlug={storeSlug} pc={pc} getName={getName} getThumb={getThumb} addItem={quickAddToCart} wishlist={wishlist} toggleWishlist={toggleWishlist} search={search} setSearch={setSearch} t={t}/>
       ):<>
 
       {/* ============ HERO ============ */}
@@ -333,10 +361,10 @@ export default function Storefront() {
                     </div>
                   </Link>
 
-                  {/* Action buttons — floating */}
+                  {/* Action buttons — floating, quick add directly from grid */}
                   <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-                    <button onClick={()=>{addItem(product);toast.success('Added!');}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}}><ShoppingCart size={14}/></button>
-                    <button onClick={()=>toggleWishlist(product.id)} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inWishlist?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`}><Heart size={14} fill={inWishlist?'white':'none'}/></button>
+                    <button onClick={(e)=>{e.preventDefault();e.stopPropagation();quickAddToCart(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>
+                    <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inWishlist?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inWishlist?'white':'none'}/></button>
                   </div>
 
                   {/* Product Info */}
@@ -418,8 +446,12 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
           <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:20}}>
             {shown.map(product=>{const thumb=getThumb(product);const inW=wishlist.includes(product.id);return(
               <div key={product.id} className={`bg-white rounded-2xl overflow-hidden ${cardClass} group relative transition-all`}>
-                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><span style={{fontSize:32,color:'#d1d5db'}}>📦</span></div>}{product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
-                {c.showBtn!==false&&<div className="absolute top-3 right-3 flex flex-col gap-1.5"><button onClick={()=>{addItem(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg" style={{backgroundColor:pc}}>🛒</button></div>}
+                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
+                {/* Floating quick actions — cart + favorite, no navigation required */}
+                <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+                  {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();addItem(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>}
+                  <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
+                </div>
                 <div className="p-3.5">{c.showName!==false&&<Link to={`/s/${storeSlug}/product/${product.slug}`}><h3 className="font-semibold text-sm text-gray-800 truncate">{getName(product)}</h3></Link>}{c.showPrice!==false&&<div className="flex items-baseline gap-2 mt-2"><span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span><span className="text-xs text-gray-400">{store.currency||'DZD'}</span>{product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}</div>}</div>
               </div>);})}
           </div>}

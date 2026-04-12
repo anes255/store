@@ -214,9 +214,49 @@ export default function AdvancedBuilder(){
   const dup=(i)=>{const s={...JSON.parse(JSON.stringify(sections[i])),id:uid()};const n=[...sections];n.splice(i+1,0,s);setSections(n);setDirty(true);};
   const add=(type)=>{setSections([...sections,defaultSection(type)]);setSelected(sections.length);setShowAdd(false);setDirty(true);};
   const toggle=(i)=>{const n=[...sections];n[i]={...n[i],visible:!n[i].visible};setSections(n);setDirty(true);};
-  const applyTemplate=(t)=>{const anim=t.animation||'calm';const cover=currentStore?.cover_image||currentStore?.config?.cover_image||'';const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>{const sec={...s,id:uid(),animation:anim,animationIndex:i};// Inject the store's cover image into any hero/banner section that supports a background image
-if(cover&&(sec.type==='hero'||sec.type==='banner'||sec.type==='hero-banner'||sec.type==='cover')){if(!sec.bgImage)sec.bgImage=cover;if(!sec.image)sec.image=cover;if(!sec.backgroundImage)sec.backgroundImage=cover;}
-return sec;});setSections(fresh);setSelected(null);setShowTemplates(false);setDirty(true);toast.success(`"${t.name}" applied!`);};
+  // Apply a template — but preserve every store-level customization (colors,
+  // fonts, logo, cover, store name, welcome message). Templates are starting
+  // points, not destructive overwrites.
+  const applyTemplate=(t)=>{
+    const anim=t.animation||'calm';
+    const cs=currentStore||{};
+    const cfg=cs.config||{};
+    const cover=cs.cover_image||cfg.cover_image||'';
+    const logo=cs.logo||cfg.logo||'';
+    const brand=cs.primary_color||cfg.primary_color||'';
+    const text=cs.text_color||cfg.text_color||'';
+    const font=cs.header_font||cfg.header_font||'';
+    const storeName=cs.name||cs.store_name||cfg.name||'';
+    const welcome=cs.welcome_message||cfg.welcome_message||'';
+    const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>{
+      const sec={...s,id:uid(),animation:anim,animationIndex:i};
+      sec.style=sec.style||{};
+      sec.content=sec.content||{};
+      // Override template fonts with the store's chosen header font
+      if(font)sec.style.fontFamily=font;
+      // Override template button color with store brand color
+      if(brand&&sec.content.btnColor)sec.content.btnColor=brand;
+      // Hero: inject cover image, store name, welcome message, brand button color
+      if(sec.type==='hero'){
+        if(cover){sec.content.bgImage=cover;}
+        if(storeName)sec.content.title=storeName;
+        if(welcome)sec.content.subtitle=welcome;
+        if(brand)sec.content.btnColor=brand;
+      }
+      // Banner / hero-banner / cover: also accept the cover image
+      if(cover&&(sec.type==='banner'||sec.type==='hero-banner'||sec.type==='cover')){
+        if(!sec.content.bgImage)sec.content.bgImage=cover;
+      }
+      // Image section: drop in the logo if it's empty
+      if(sec.type==='image'&&logo&&!sec.content.src)sec.content.src=logo;
+      return sec;
+    });
+    setSections(fresh);
+    setSelected(null);
+    setShowTemplates(false);
+    setDirty(true);
+    toast.success(`"${t.name}" applied — your colors, fonts and brand assets are preserved.`);
+  };
   const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections,animation_style:animStyle,animations_enabled:animEnabled});setCurrentStore(data);setDirty(false);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
   const selectSection=(i)=>{setSelected(i);if(isMobile)setMobileTab('style');};
   const setAnim=(v)=>{setAnimStyle(v);setDirty(true);};
