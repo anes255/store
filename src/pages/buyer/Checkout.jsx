@@ -325,11 +325,35 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-20">
               <h3 className="font-bold text-gray-900 mb-4">{t('store.orderSummary')}</h3>
               <div className="space-y-3 mb-4">
-                {items.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
-                    {item.image && <img src={item.image} className="w-12 h-12 rounded-lg object-cover" alt=""/>}
+                {items.map((item, i) => {
+                  // Build a variant label from whatever was stored
+                  const vLabel = (() => {
+                    const v = item.variant;
+                    if (!v) return '';
+                    if (v.label) return v.label; // composite label
+                    if (v.selections) return v.selections.map(s => s.name).filter(Boolean).join(' / ');
+                    if (v.name) return v.name;
+                    return '';
+                  })();
+                  // Determine color swatch if it's a color variant
+                  const vColor = (() => {
+                    const v = item.variant;
+                    if (!v) return null;
+                    if (v.type === 'color' && v.value) return v.value;
+                    if (v.selections) { const c = v.selections.find(s => s.type === 'color'); return c?.value || null; }
+                    return null;
+                  })();
+                  return (
+                  <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
+                    {item.image && <img src={item.image} className="w-12 h-12 rounded-lg object-cover shrink-0" alt=""/>}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
+                      {vLabel && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {vColor && <span className="w-3.5 h-3.5 rounded-full border border-gray-200 shrink-0" style={{backgroundColor: vColor}}/>}
+                          <span className="text-[11px] text-gray-500 font-medium truncate">{vLabel}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center"><Minus size={10}/></button>
                         <span className="text-xs font-bold">{item.quantity}</span>
@@ -338,7 +362,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     </div>
                     <div className="text-right"><p className="font-bold text-sm">{(item.price * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
               <div className="space-y-2 border-t pt-4">

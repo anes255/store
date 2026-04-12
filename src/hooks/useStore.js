@@ -52,11 +52,15 @@ export const useCartStore = create((set, get) => ({
       newItems = [...items];
       newItems[existingIndex].quantity += quantity;
     } else {
+      // Parse images safely — backend sometimes returns a JSON string
+      let imgs = product.images;
+      if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
+      if (!Array.isArray(imgs)) imgs = [];
       newItems = [...items, {
         product_id: product.id,
-        name: product.name_en || product.name_fr || product.name_ar,
+        name: product.name_en || product.name_fr || product.name_ar || product.name,
         price: product.price,
-        image: product.thumbnail || (product.images && product.images[0]),
+        image: product.thumbnail || imgs[0] || null,
         quantity,
         variant,
       }];

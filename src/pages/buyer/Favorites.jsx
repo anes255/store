@@ -89,14 +89,15 @@ export default function Favorites() {
   };
 
   const handleAddToCart = (product) => {
-    addItem(product);
-    toast.success(t('store.addedToCart', 'Added to cart'));
+    addItem(product, 1, product._selectedVariant || null);
+    const label = product._variantLabel ? ` (${product._variantLabel})` : '';
+    toast.success(t('store.addedToCart', 'Added to cart') + label);
   };
 
   const handleBulkAddToCart = () => {
     const picks = items.filter(p => selected.includes(p.id));
     if (!picks.length) return;
-    picks.forEach(p => addItem(p));
+    picks.forEach(p => addItem(p, 1, p._selectedVariant || null));
     toast.success(t('store.bulkAddedToCart', `${picks.length} item${picks.length > 1 ? 's' : ''} added to cart`));
     setSelected([]);
   };
@@ -341,6 +342,15 @@ export default function Favorites() {
                       <Link to={`/s/${storeSlug}/product/${product.slug}`}>
                         <h3 className="font-bold text-sm text-gray-900 truncate hover:text-brand-600 transition-colors">{getName(product)}</h3>
                       </Link>
+                      {/* Variant label if saved from product detail */}
+                      {product._variantLabel && (
+                        <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1">
+                          {product._selectedVariant?.type === 'color' && product._selectedVariant?.value && (
+                            <span className="w-3 h-3 rounded-full border border-gray-200 shrink-0 inline-block" style={{backgroundColor: product._selectedVariant.value}}/>
+                          )}
+                          {product._variantLabel}
+                        </p>
+                      )}
                       <div className="flex items-baseline gap-2 mt-1.5">
                         <span className="text-base sm:text-lg font-black" style={{color: accent}}>
                           {parseFloat(product.price || 0).toLocaleString()}

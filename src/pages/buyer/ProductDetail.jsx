@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
-import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X } from 'lucide-react';
 import Checkout from './Checkout';
 
 export default function ProductDetail() {
@@ -11,13 +11,17 @@ export default function ProductDetail() {
   const { addItem, getCount } = useCartStore();
   const { lang } = useLangStore();
   const { token:authToken, role:authRole } = useAuthStore();
+  const wishlistStore = useWishlistStore();
+  useEffect(() => { wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
   const [store, setStore] = useState(null);
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState(null);
+  // Track selected variants per type so buyers can pick one from each group
+  // e.g. { color: 2, size: 0 }
+  const [selectedVariants, setSelectedVariants] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
@@ -33,23 +37,105 @@ export default function ProductDetail() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-brand-200 border-t-brand-500 rounded-full animate-spin"/></div>;
   if (!product || !store) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Product not found</p></div>;
 
-  const getName = (item) => lang==='ar'?(item.name_ar||item.name_en):lang==='fr'?(item.name_fr||item.name_en):item.name_en;
-  const getDesc = () => lang==='ar'?(product.description_ar||product.description_en):lang==='fr'?(product.description_fr||product.description_en):product.description_en;
+  const getName = (item) => lang==='ar'?(item.name_ar||item.name_en||item.name):lang==='fr'?(item.name_fr||item.name_en||item.name):item.name_en||item.name;
+  const getDesc = () => lang==='ar'?(product.description_ar||product.description_en||product.description):lang==='fr'?(product.description_fr||product.description_en||product.description):product.description_en||product.description;
   const pc = store.primary_color || '#7C3AED';
+  const currency = store.currency || 'DZD';
 
+  // Parse variants safely
   let variants = product.variants || [];
   if (typeof variants === 'string') try { variants = JSON.parse(variants); } catch { variants = []; }
   if (!Array.isArray(variants)) variants = [];
 
+  // Group variants by type (color, size, material, style, custom, etc.)
   const variantGroups = {};
-  variants.forEach((v,i) => { const t = v.type||'option'; if(!variantGroups[t])variantGroups[t]=[]; variantGroups[t].push({...v,_idx:i}); });
+  variants.forEach((v,i) => {
+    const t = (v.type || 'option').toLowerCase();
+    if (!variantGroups[t]) variantGroups[t] = [];
+    variantGroups[t].push({ ...v, _idx: i });
+  });
+  const groupTypes = Object.keys(variantGroups);
 
-  const sv = selectedVariant !== null ? variants[selectedVariant] : null;
-  const displayImages = (sv?.images?.length > 0) ? sv.images : (Array.isArray(product.images) ? product.images : [product.thumbnail].filter(Boolean));
+  // Build the combined selected variant info. When there's only one group,
+  // the selected variant is directly from that group. With multiple groups
+  // we build a composite label from all selections.
+  const selectedIdxes = Object.values(selectedVariants).filter(v => v !== null && v !== undefined);
+  const primarySelected = selectedIdxes.length > 0 ? variants[selectedIdxes[0]] : null;
+
+  // For images/stock, use the first selected variant's data
+  const sv = primarySelected;
+  const allImages = (() => {
+    // If a color or image-bearing variant is selected, show its images first
+    if (sv?.images?.length > 0) return sv.images;
+    let imgs = product.images;
+    if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
+    if (!Array.isArray(imgs)) imgs = [];
+    if (imgs.length === 0 && product.thumbnail) imgs = [product.thumbnail];
+    return imgs;
+  })();
+
   const basePrice = parseFloat(product.price) || 0;
-  const priceAdj = sv ? (parseFloat(sv.price_adjustment) || 0) : 0;
+  // Sum all price adjustments from selected variants
+  const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
   const finalPrice = basePrice + priceAdj;
-  const stockCount = sv ? (sv.stock || product.stock_quantity) : product.stock_quantity;
+  const stockCount = sv ? (sv.stock ?? product.stock_quantity) : product.stock_quantity;
+
+  // Build a variant label for display
+  const variantLabel = selectedIdxes.map(idx => {
+    const v = variants[idx];
+    return v?.name || v?.value || '';
+  }).filter(Boolean).join(' / ');
+
+  // Build the variant object to pass to cart/wishlist
+  const buildVariantObj = () => {
+    if (selectedIdxes.length === 0) return null;
+    const parts = selectedIdxes.map(idx => {
+      const v = variants[idx];
+      return { name: v.name, type: v.type, value: v.value };
+    });
+    // For a single variant type, return a flat object.
+    // For multiple, return the array so the cart/favorites can display all.
+    if (parts.length === 1) return parts[0];
+    return { selections: parts, label: variantLabel };
+  };
+
+  const selectVariant = (type, idx) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [type]: prev[type] === idx ? null : idx,
+    }));
+    setSelectedImage(0);
+  };
+
+  const handleAddToCart = () => {
+    addItem({ ...product, price: finalPrice }, quantity, buildVariantObj());
+    toast.success(variantLabel ? `Added "${variantLabel}" to cart` : 'Added to cart');
+  };
+
+  const handleToggleWishlist = () => {
+    // Store variant info with the product in the wishlist
+    const productWithVariant = {
+      ...product,
+      price: finalPrice,
+      _selectedVariant: buildVariantObj(),
+      _variantLabel: variantLabel,
+    };
+    const added = wishlistStore.toggle(productWithVariant);
+    if (added) toast.success(variantLabel ? `"${variantLabel}" added to favorites` : 'Added to favorites');
+    else toast.success('Removed from favorites');
+  };
+
+  const inWishlist = wishlistStore.has(product.id);
+
+  // Detect if a value looks like a CSS color
+  const isColor = (val) => {
+    if (!val) return false;
+    if (/^#[0-9A-Fa-f]{3,8}$/.test(val)) return true;
+    if (/^(rgb|hsl)a?\(/.test(val)) return true;
+    // Common color names
+    const names = ['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'];
+    return names.includes(val.toLowerCase());
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -62,7 +148,10 @@ export default function ProductDetail() {
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
+              <Heart size={20}/>
+              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{wishlistStore.count()}</span>}
+            </Link>
             <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
@@ -70,33 +159,178 @@ export default function ProductDetail() {
           </div>
         </div>
       </header>
+
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+          {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
             <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden">
-              {displayImages[selectedImage]?<img src={displayImages[selectedImage]} className="w-full h-full object-cover" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
+              {allImages[selectedImage]
+                ? <img src={allImages[selectedImage]} className="w-full h-full object-cover" alt=""/>
+                : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
             </div>
-            {displayImages.length>1&&<div className="flex gap-2 overflow-x-auto pb-1">{displayImages.map((img,i)=><button key={i} onClick={()=>setSelectedImage(i)} className={`w-20 h-20 rounded-xl bg-gray-100 overflow-hidden shrink-0 border-2 ${selectedImage===i?'border-brand-500 shadow-md':'border-transparent hover:border-gray-300'}`}><img src={img} className="w-full h-full object-cover" alt=""/></button>)}</div>}
+            {allImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {allImages.map((img,i) => (
+                  <button key={i} onClick={() => setSelectedImage(i)}
+                    className={`w-20 h-20 rounded-xl bg-gray-100 overflow-hidden shrink-0 border-2 transition-all ${selectedImage===i ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-gray-300'}`}>
+                    <img src={img} className="w-full h-full object-cover" alt=""/>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* ═══ DETAILS ═══ */}
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">{getName(product)}</h1>
-            <div className="mt-4 flex items-baseline gap-3">
-              <span className="text-3xl font-extrabold" style={{color:pc}}>{finalPrice.toLocaleString()} {store.currency||'DZD'}</span>
-              {product.compare_at_price&&<span className="text-lg text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}
-              {priceAdj!==0&&<span className="text-xs text-gray-400">({priceAdj>0?'+':''}{priceAdj})</span>}
-            </div>
-            {getDesc()&&<p className="mt-4 text-gray-600 leading-relaxed">{getDesc()}</p>}
-            {sv?.description&&<p className="mt-2 text-sm text-gray-500 italic">{sv.description}</p>}
-            <div className="mt-3">{stockCount>0?<span className="inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold"><span className="w-2 h-2 bg-emerald-500 rounded-full"/>{store.show_stock_storefront?`${stockCount} in stock`:'In stock'}</span>:<span className="text-red-500 text-sm font-semibold">Out of stock</span>}</div>
 
-            {Object.keys(variantGroups).length>0&&<div className="mt-6 space-y-4">{Object.entries(variantGroups).map(([type,items])=><div key={type}><p className="text-xs font-bold text-gray-400 uppercase mb-2">{type==='color'?'Color':type==='size'?'Size':type}</p><div className="flex flex-wrap gap-2">{items.map(v=>{const isSel=selectedVariant===v._idx;return type==='color'?<button key={v._idx} onClick={()=>{setSelectedVariant(isSel?null:v._idx);setSelectedImage(0);}} className={`relative w-10 h-10 rounded-full border-2 transition-all ${isSel?'border-gray-900 scale-110 shadow-md':'border-gray-200 hover:border-gray-400'}`} style={{backgroundColor:v.value||'#ccc'}} title={v.name}>{isSel&&<Check size={14} className="absolute inset-0 m-auto text-white drop-shadow"/>}</button>:<button key={v._idx} onClick={()=>{setSelectedVariant(isSel?null:v._idx);setSelectedImage(0);}} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 ${isSel?'border-gray-900 bg-gray-900 text-white':'border-gray-200 text-gray-700 hover:border-gray-400'}`}>{v.name}</button>;})}</div></div>)}</div>}
-
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex items-center bg-gray-100 rounded-xl"><button onClick={()=>setQuantity(Math.max(1,quantity-1))} className="p-3 hover:bg-gray-200 rounded-l-xl"><Minus size={16}/></button><span className="w-12 text-center font-bold">{quantity}</span><button onClick={()=>setQuantity(quantity+1)} className="p-3 hover:bg-gray-200 rounded-r-xl"><Plus size={16}/></button></div>
-              <button onClick={()=>{addItem({...product,price:finalPrice},quantity,sv?{name:sv.name,type:sv.type,value:sv.value}:null);toast.success('Added!');}} disabled={stockCount<=0} className="flex-1 py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50" style={{backgroundColor:pc}}><ShoppingCart size={18}/>{store.btn_add_cart||'Add to Cart'}</button>
-              <button className="p-3.5 rounded-xl border-2 border-gray-200 hover:border-red-200 hover:bg-red-50 text-gray-400 hover:text-red-500"><Heart size={18}/></button>
+            {/* Price */}
+            <div className="mt-4 flex items-baseline gap-3 flex-wrap">
+              <span className="text-3xl font-extrabold" style={{color:pc}}>{finalPrice.toLocaleString()} {currency}</span>
+              {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
+                <span className="text-lg text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>
+              )}
+              {priceAdj !== 0 && <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-500 font-bold">{priceAdj > 0 ? '+' : ''}{priceAdj.toLocaleString()} {currency}</span>}
             </div>
-            <div className="mt-8 grid grid-cols-3 gap-3">{[{icon:Truck,label:'Fast Delivery',desc:'All 58 wilayas'},{icon:Shield,label:'Secure',desc:'Multiple options'},{icon:Package,label:'Returns',desc:'30-day policy'}].map((f,i)=>{const I=f.icon;return<div key={i} className="p-3 bg-gray-50 rounded-xl text-center"><I size={18} className="mx-auto text-gray-500 mb-1"/><p className="text-xs font-bold text-gray-700">{f.label}</p><p className="text-[10px] text-gray-400">{f.desc}</p></div>;})}</div>
+
+            {/* Selected variant label */}
+            {variantLabel && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-sm text-gray-500">Selected:</span>
+                <span className="text-sm font-bold text-gray-800 px-2.5 py-1 bg-gray-100 rounded-lg">{variantLabel}</span>
+              </div>
+            )}
+
+            {/* Description */}
+            {getDesc() && <p className="mt-4 text-gray-600 leading-relaxed">{getDesc()}</p>}
+            {sv?.description && <p className="mt-2 text-sm text-gray-500 italic border-l-2 border-gray-200 pl-3">{sv.description}</p>}
+
+            {/* Stock */}
+            <div className="mt-3">
+              {stockCount > 0
+                ? <span className="inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full"/>
+                    {store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}
+                  </span>
+                : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
+            </div>
+
+            {/* ═══ VARIANT SELECTORS ═══ */}
+            {groupTypes.length > 0 && (
+              <div className="mt-6 space-y-5">
+                {groupTypes.map(type => {
+                  const group = variantGroups[type];
+                  const typeLabel = type === 'color' ? 'Color' : type === 'size' ? 'Size' : type === 'material' ? 'Material' : type === 'style' ? 'Style' : type.charAt(0).toUpperCase() + type.slice(1);
+                  const selectedInGroup = selectedVariants[type];
+                  const selName = selectedInGroup != null ? variants[selectedInGroup]?.name : null;
+
+                  return (
+                    <div key={type}>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                        {typeLabel}
+                        {selName && <span className="text-gray-800 normal-case font-semibold text-sm">— {selName}</span>}
+                      </p>
+
+                      {/* COLOR TYPE — render swatches */}
+                      {type === 'color' ? (
+                        <div className="flex flex-wrap gap-3">
+                          {group.map(v => {
+                            const isSel = selectedInGroup === v._idx;
+                            const colorVal = v.value || '#ccc';
+                            const useColor = isColor(colorVal);
+                            return (
+                              <button
+                                key={v._idx}
+                                onClick={() => selectVariant(type, v._idx)}
+                                className={`relative flex flex-col items-center gap-1 transition-all`}
+                                title={v.name}
+                              >
+                                <div
+                                  className={`w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center ${isSel ? 'border-gray-900 scale-110 shadow-lg ring-2 ring-gray-900/20' : 'border-gray-200 hover:border-gray-400 hover:scale-105'}`}
+                                  style={useColor ? { backgroundColor: colorVal } : {}}
+                                >
+                                  {!useColor && <span className="text-[9px] font-bold text-gray-500 text-center leading-tight px-0.5">{(v.value || v.name || '?').slice(0, 3)}</span>}
+                                  {isSel && <Check size={16} className="text-white drop-shadow-md"/>}
+                                </div>
+                                <span className={`text-[10px] font-medium ${isSel ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>{v.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* NON-COLOR TYPES — render pill buttons */
+                        <div className="flex flex-wrap gap-2">
+                          {group.map(v => {
+                            const isSel = selectedInGroup === v._idx;
+                            return (
+                              <button
+                                key={v._idx}
+                                onClick={() => selectVariant(type, v._idx)}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                                  isSel
+                                    ? 'text-white shadow-md'
+                                    : 'border-gray-200 text-gray-700 hover:border-gray-400 bg-white'
+                                }`}
+                                style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}
+                              >
+                                {v.name || v.value || 'Option'}
+                                {v.price_adjustment && parseFloat(v.price_adjustment) !== 0 && (
+                                  <span className="ml-1.5 opacity-70 text-xs">
+                                    ({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ═══ ADD TO CART + WISHLIST ═══ */}
+            <div className="mt-6 flex items-center gap-3">
+              <div className="flex items-center bg-gray-100 rounded-xl">
+                <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-3 hover:bg-gray-200 rounded-l-xl"><Minus size={16}/></button>
+                <span className="w-12 text-center font-bold">{quantity}</span>
+                <button onClick={() => setQuantity(quantity+1)} className="p-3 hover:bg-gray-200 rounded-r-xl"><Plus size={16}/></button>
+              </div>
+              <button
+                onClick={handleAddToCart}
+                disabled={stockCount <= 0}
+                className="flex-1 py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
+                style={{backgroundColor:pc}}
+              >
+                <ShoppingCart size={18}/>{store.btn_add_cart || 'Add to Cart'}
+              </button>
+              <button
+                onClick={handleToggleWishlist}
+                className={`p-3.5 rounded-xl border-2 transition-all ${inWishlist ? 'border-red-300 bg-red-50 text-red-500' : 'border-gray-200 hover:border-red-200 hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
+              >
+                <Heart size={18} fill={inWishlist ? 'currentColor' : 'none'}/>
+              </button>
+            </div>
+
+            {/* Trust badges */}
+            <div className="mt-8 grid grid-cols-3 gap-3">
+              {[
+                {icon:Truck, label:'Fast Delivery', desc:'All 58 wilayas'},
+                {icon:Shield, label:'Secure', desc:'Multiple options'},
+                {icon:Package, label:'Returns', desc:'30-day policy'},
+              ].map((f,i) => {
+                const I = f.icon;
+                return (
+                  <div key={i} className="p-3 bg-gray-50 rounded-xl text-center">
+                    <I size={18} className="mx-auto text-gray-500 mb-1"/>
+                    <p className="text-xs font-bold text-gray-700">{f.label}</p>
+                    <p className="text-[10px] text-gray-400">{f.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -124,7 +358,6 @@ function ReviewsSection({storeSlug,productSlug,pc}){
       await storeApi.submitReview(storeSlug,productSlug,form);
       toast.success('Review submitted! It will appear after approval.');
       setShowForm(false);setForm({customer_name:'',customer_phone:'',rating:5,title:'',content:''});
-      // Reload reviews
       const r=await storeApi.getProductReviews(storeSlug,productSlug);setReviews(r.data.reviews||[]);setStats(r.data.stats||{});
     }catch(e){toast.error(e.response?.data?.error||'Failed to submit review');}
     setSubmitting(false);
