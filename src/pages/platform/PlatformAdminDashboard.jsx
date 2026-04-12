@@ -281,22 +281,41 @@ function Subscriptions(){
 
 // ═══════ BILLING CONFIG ═══════
 function BillingConfig(){
-  const[config,setConfig]=useState({billing_ccp_account:'',billing_ccp_name:'',billing_baridimob_rip:'',billing_baridimob_qr:'',subscription_monthly_price:'2900',subscription_yearly_price:'29000'});
+  const[config,setConfig]=useState({billing_ccp_account:'',billing_ccp_name:'',billing_baridimob_rip:'',billing_baridimob_qr:''});
+  const[plans,setPlans]=useState([]);
   const[saving,setSaving]=useState(false);const fileRef=useRef(null);
-  useEffect(()=>{platformApi.getSettings().then(r=>{const s=r.data||{};setConfig({billing_ccp_account:s.billing_ccp_account||'',billing_ccp_name:s.billing_ccp_name||'',billing_baridimob_rip:s.billing_baridimob_rip||'',billing_baridimob_qr:s.billing_baridimob_qr||'',subscription_monthly_price:s.subscription_monthly_price||'2900',subscription_yearly_price:s.subscription_yearly_price||'29000'});}).catch(()=>{});},[]);
+  useEffect(()=>{
+    platformApi.getSettings().then(r=>{const s=r.data||{};setConfig({billing_ccp_account:s.billing_ccp_account||'',billing_ccp_name:s.billing_ccp_name||'',billing_baridimob_rip:s.billing_baridimob_rip||'',billing_baridimob_qr:s.billing_baridimob_qr||''});}).catch(()=>{});
+    platformApi.getPlans().then(r=>{setPlans(r.data?.plans||[]);}).catch(()=>{});
+  },[]);
   const save=async()=>{setSaving(true);try{await platformApi.updateBillingConfig(config);toast.success('Billing config saved!');}catch{toast.error('Failed');}setSaving(false);};
   const uploadQR=(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setConfig({...config,billing_baridimob_qr:r.result});r.readAsDataURL(f);};
   return(<div>
     <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
-    <div className="grid lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-        <h3 className="font-bold text-gray-900 flex items-center gap-2"><CreditCard size={18}/>Subscription Pricing</h3>
-        <p className="text-xs text-gray-400">Set the prices store owners pay for their subscriptions</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div><label className="text-xs font-bold text-gray-500 uppercase">Monthly Price (DZD)</label><input type="number" className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.subscription_monthly_price} onChange={e=>setConfig({...config,subscription_monthly_price:e.target.value})}/></div>
-          <div><label className="text-xs font-bold text-gray-500 uppercase">Yearly Price (DZD)</label><input type="number" className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-red-500/20" value={config.subscription_yearly_price} onChange={e=>setConfig({...config,subscription_yearly_price:e.target.value})}/></div>
+
+    {/* Active subscription plans summary */}
+    <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+      <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-1"><CreditCard size={18}/>Subscription Plans & Pricing</h3>
+      <p className="text-xs text-gray-400 mb-4">Pricing is managed per plan in the <strong>Subscriptions</strong> page. Below is a summary of your active plans.</p>
+      {plans.length===0?<div className="p-4 bg-amber-50 rounded-xl text-sm text-amber-700 flex items-center gap-2"><AlertTriangle size={16}/>No subscription plans created yet. Go to <strong className="mx-1">Subscriptions</strong> to add plans with pricing.</div>:(
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {plans.filter(p=>p.is_active).map(p=>(
+            <div key={p.id} className={`p-4 rounded-xl border-2 ${p.is_popular?'border-brand-400 bg-brand-50':'border-gray-200 bg-gray-50'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-gray-900">{p.name?.en||p.slug}</span>
+                {p.is_popular&&<span className="text-[9px] font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full">POPULAR</span>}
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-500">Monthly</span><span className="font-bold text-gray-900">{(p.price_monthly||0).toLocaleString()} {p.currency||'DZD'}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-500">Yearly</span><span className="font-bold text-gray-900">{(p.price_yearly||0).toLocaleString()} {p.currency||'DZD'}</span></div>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+    </div>
+
+    <div className="grid lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
         <h3 className="font-bold text-gray-900">CCP Account</h3>
         <p className="text-xs text-gray-400">Store owners will transfer payments to this CCP account</p>
@@ -320,7 +339,7 @@ function BillingConfig(){
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadQR}/>
         </div>
       </div>
-      <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <div className="bg-white rounded-2xl p-6 shadow-sm lg:col-span-2">
         <h3 className="font-bold text-gray-900 mb-4">Preview — What store owners see</h3>
         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
           {config.billing_ccp_account&&<div className="flex items-center justify-between"><span className="text-sm text-gray-500">CCP</span><span className="font-mono font-bold">{config.billing_ccp_account}</span></div>}

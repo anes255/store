@@ -1,13 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search } from 'lucide-react';
 import Checkout from './Checkout';
+
+function StoreLangSwitcher() {
+  const { i18n } = useTranslation();
+  const { lang, setLang } = useLangStore();
+  const langs = [{code:'en',label:'EN',flag:'🟢'},{code:'fr',label:'FR',flag:'🇫🇷'},{code:'ar',label:'AR',flag:'🇩🇿'}];
+  return (
+    <div className="flex items-center gap-0.5 bg-gray-100 rounded-full p-0.5">
+      {langs.map(l=>(
+        <button key={l.code} onClick={()=>{i18n.changeLanguage(l.code);setLang(l.code);}} className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${lang===l.code?'bg-brand-500 text-white shadow':'text-gray-500'}`}>
+          {l.flag} {l.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { addItem, getCount } = useCartStore();
   const { lang } = useLangStore();
   const { token:authToken, role:authRole } = useAuthStore();
@@ -23,6 +41,12 @@ export default function ProductDetail() {
   // e.g. { color: 2, size: 0 }
   const [selectedVariants, setSelectedVariants] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) navigate(`/s/${storeSlug}?search=${encodeURIComponent(searchQuery.trim())}`);
+  };
 
   useEffect(() => {
     (async () => {
@@ -137,27 +161,58 @@ export default function ProductDetail() {
     return names.includes(val.toLowerCase());
   };
 
+  // Match header style to the storefront's page builder template
+  const tplSec = Array.isArray(store.page_builder) ? store.page_builder.find(s => s.visible !== false) : null;
+  const tplStyle = tplSec?.style || {};
+  const headerBg = tplStyle.bg || pc;
+  const headerText = tplStyle.textColor || '#ffffff';
+  const nameFont = store.header_font || tplStyle.fontFamily || 'Inter';
+  const headerFont = tplStyle.fontFamily || 'Inter';
+
   return (
-    <div className="min-h-screen bg-white">
-      <header className="bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-            {store.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store.name?.[0]}</div>}
-            <span className="text-lg font-extrabold text-gray-900">{store.name}</span>
+    <div className="min-h-screen bg-[#f5f5f5]">
+      <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
+          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
+            {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
+            <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
-            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
-              <Heart size={20}/>
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-8">
+            <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+              <Search size={20} className="ml-5 text-gray-400"/>
+              <input
+                className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none text-gray-800"
+                placeholder={t('store.search','Search products...')}
+                value={searchQuery}
+                onChange={e=>setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+            <div className="hidden sm:block"><StoreLangSwitcher /></div>
+            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
+              <Heart size={18} className="sm:w-5 sm:h-5"/>
               {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{wishlistStore.count()}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative">
-              <ShoppingCart size={20}/>
+            <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
+              <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
             </button>
           </div>
         </div>
+        {/* Mobile search */}
+        <form onSubmit={handleSearch} className="md:hidden px-3 pb-3">
+          <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+            <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
+            <input
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800"
+              placeholder={t('store.search','Search products...')}
+              value={searchQuery}
+              onChange={e=>setSearchQuery(e.target.value)}
+            />
+          </div>
+        </form>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-8">

@@ -99,17 +99,31 @@ export default function LandingPage() {
             </div>
           </section>
         );
-      case 'pricing':
+      case 'pricing': {
+        // Use real plans from the API if available — ensures pricing on the
+        // landing page always matches what the super admin configured in the
+        // Subscriptions page. Falls back to the page-builder hardcoded plans
+        // only when the API hasn't returned data yet.
+        const realPlans = apiPlans && apiPlans.length ? apiPlans.map(p => ({
+          name: pick(p.name, 'Plan'),
+          price: p.price_monthly > 0 ? `${Number(p.price_monthly).toLocaleString()}` : t('landing.free','Free'),
+          currency: p.currency || 'DZD',
+          period: p.price_monthly > 0 ? t('landing.perMonth','/month') : '',
+          popular: !!p.is_popular,
+          features: (p.features && (p.features[lang] && p.features[lang].length ? p.features[lang] : p.features.en)) || [],
+          btnText: block.plans?.[0]?.btnText || t('pricing.start','Get Started'),
+          btnLink: block.plans?.[0]?.btnLink || '/register',
+        })) : (block.plans || []);
         return (
           <section key={i} style={{ backgroundColor: bg, padding: pad || '64px 24px' }}>
             <div className="max-w-5xl mx-auto">
               <h2 className="font-extrabold text-center mb-12" style={{ color: tc, fontSize: '36px' }}>{block.title}</h2>
-              <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${Math.min((block.plans || []).length, 3)}, 1fr)` }}>
-                {(block.plans || []).map((plan, j) => (
+              <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${Math.min(realPlans.length, 3)}, 1fr)` }}>
+                {realPlans.map((plan, j) => (
                   <div key={j} className={`relative rounded-3xl p-8 transition-all hover:shadow-xl ${plan.popular ? 'scale-105 shadow-2xl text-white' : 'border-2 border-gray-200'}`} style={{ backgroundColor: plan.popular ? '#111827' : '#FFF' }}>
                     {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
                     <h3 className="text-xl font-bold">{plan.name}</h3>
-                    <div className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-extrabold">{parseFloat(plan.price).toLocaleString()} DZD</span><span className="text-sm opacity-60">/{plan.period}</span></div>
+                    <div className="mt-4 flex items-baseline gap-1"><span className="text-4xl font-extrabold">{typeof plan.price === 'string' && plan.price.includes('DZD') ? plan.price : `${plan.price} ${plan.currency || 'DZD'}`}</span><span className="text-sm opacity-60">{plan.period}</span></div>
                     <div className="mt-6 space-y-3">{(plan.features || []).map((f, k) => <div key={k} className="flex items-center gap-2"><Check size={16} className={plan.popular ? 'text-emerald-400' : 'text-brand-500'} /><span className="text-sm">{f}</span></div>)}</div>
                     {plan.btnText && <Link to={plan.btnLink || '/register'} className={`block mt-8 text-center py-3.5 rounded-xl font-bold transition-all ${plan.popular ? 'bg-brand-500 text-white hover:bg-brand-600' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>{plan.btnText}</Link>}
                   </div>
@@ -118,6 +132,7 @@ export default function LandingPage() {
             </div>
           </section>
         );
+      }
       case 'cta':
         return (
           <section key={i} style={{ padding: pad || '48px 24px' }}>

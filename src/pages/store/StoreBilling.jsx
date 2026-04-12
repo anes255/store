@@ -63,10 +63,11 @@ export default function StoreBilling(){
       <button onClick={()=>setPeriod('yearly')} className={`px-6 py-2 rounded-xl text-sm font-bold ${period==='yearly'?'bg-brand-500 text-white':'bg-gray-100 text-gray-500'}`}>{t('storePage.yearly','Yearly')} <span className="text-[10px] ml-1 opacity-70">{t('storePage.save20','Save 20%')}</span></button>
     </div>
 
-    {/* Plan */}
-    <div className="max-w-md mx-auto mb-8">
+    {/* Plans */}
+    <div className={`mb-8 grid gap-6 mx-auto ${Object.keys(plans).length>=3?'max-w-5xl sm:grid-cols-2 lg:grid-cols-3':Object.keys(plans).length===2?'max-w-3xl sm:grid-cols-2':'max-w-md'}`}>
       {Object.entries(plans).map(([key,plan])=>{const price=period==='yearly'?plan.yearly:plan.monthly;const isCurrent=data?.plan===key&&isActive;return(
-        <div key={key} className="glass-card-solid p-8 ring-2 ring-brand-400">
+        <div key={key} className={`glass-card-solid p-8 ${plan.is_popular?'ring-2 ring-brand-400 relative':'border border-gray-200'}`}>
+          {plan.is_popular&&<span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-amber-400 text-amber-900 text-[10px] font-bold rounded-full">{t('storePage.mostPopular','MOST POPULAR')}</span>}
           <div className="text-center mb-4"><h3 className="text-2xl font-black text-gray-900">{localizedName(plan)}</h3></div>
           <div className="text-center mb-6"><span className="text-4xl font-black text-brand-600">{price.toLocaleString()}</span><span className="text-gray-400 text-sm ml-1">{plan.currency||t('storePage.dzd','DZD')} / {period==='yearly'?t('storePage.year','year'):t('storePage.month','month')}</span></div>
           <div className="space-y-2 mb-6">{localizedFeatures(plan).map((f,i)=><div key={i} className="flex items-center gap-2 text-sm"><Check size={14} className="text-emerald-500 shrink-0"/><span className="text-gray-600">{f}</span></div>)}</div>
