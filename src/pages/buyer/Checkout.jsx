@@ -6,7 +6,9 @@ import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
 
-export default function Checkout({ isModal = false, onClose, storeSlug: storeSlugProp }) {
+// directItems: optional array of items for "Buy Now" flow (skips cart).
+// Each item: { product_id, name, price, image, quantity, variant }
+export default function Checkout({ isModal = false, onClose, storeSlug: storeSlugProp, directItems = null }) {
   const params = useParams();
   const storeSlug = storeSlugProp || params.storeSlug;
   const { t } = useTranslation();
@@ -19,7 +21,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [isModal]);
-  const { items, removeItem, updateQuantity, clearCart, getTotal } = useCartStore();
+  const cartStore = useCartStore();
+  // "Buy Now" uses directItems; regular checkout uses the cart store.
+  const isBuyNow = !!directItems;
+  const [buyNowItems, setBuyNowItems] = useState(directItems || []);
+  const items = isBuyNow ? buyNowItems : cartStore.items;
+  const removeItem = (idx) => { if (isBuyNow) setBuyNowItems(prev => prev.filter((_,i)=>i!==idx)); else cartStore.removeItem(idx); };
+  const updateQuantity = (idx, qty) => { if (isBuyNow) setBuyNowItems(prev => { const n=[...prev]; n[idx]={...n[idx],quantity:Math.max(1,qty)}; return n; }); else cartStore.updateQuantity(idx, qty); };
+  const clearItems = () => { if (isBuyNow) setBuyNowItems([]); else cartStore.clearCart(); };
+  const getTotal = () => items.reduce((s,i) => s + (i.price||0) * (i.quantity||1), 0);
+
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
@@ -40,11 +51,23 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   useEffect(() => {
     if (!form.customer_phone || form.customer_phone.length < 8 || !items.length || !storeSlug) return;
     const timer = setTimeout(() => {
-      const cartItems = items.map(i => ({ product_id: i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
-      storeApi.saveCart(storeSlug, { customer_phone: form.customer_phone, customer_name: form.customer_name, items: cartItems }).catch(() => {});
+      const cartItems = items.map(i => ({ product_id: i.product_id || i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
+      storeApi.saveCart(storeSlug, { customer_phone: form.customer_phone, customer_name: form.customer_name, customer_email: form.customer_email || '', items: cartItems }).catch(() => {});
     }, 2000);
     return () => clearTimeout(timer);
-  }, [form.customer_phone, form.customer_name, items, storeSlug]);
+  }, [form.customer_phone, form.customer_name, form.customer_email, items, storeSlug]);
+
+  // For registered customers, auto-save cart on mount and whenever items change
+  useEffect(() => {
+    if (isBuyNow || !items.length || !storeSlug) return;
+    const auth = useAuthStore.getState();
+    if (auth.role !== 'customer' || !auth.user?.phone) return;
+    const timer = setTimeout(() => {
+      const cartItems = items.map(i => ({ product_id: i.product_id || i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
+      storeApi.saveCart(storeSlug, { customer_phone: auth.user.phone, customer_name: auth.user.name || '', customer_email: auth.user.email || '', items: cartItems }).catch(() => {});
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [items, storeSlug, isBuyNow]);
 
   const subtotal = getTotal();
   const shipping = store ? parseFloat(store.shipping_default_price || 0) : 0;
@@ -83,7 +106,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
       const { data } = await storeApi.placeOrder(storeSlug, { ...form, customer_id, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
       setOrderSuccess(data);
-      clearCart();
+      clearItems();
       // If non-COD method, show payment step
       if (form.payment_method !== 'cod') setPaymentStep(form.payment_method);
     } catch (err) { toast.error(err.response?.data?.error || 'Order failed'); }

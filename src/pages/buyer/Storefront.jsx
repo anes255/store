@@ -168,6 +168,20 @@ export default function Storefront() {
 
   const [suspended, setSuspended] = useState(false);
 
+  // For registered customers, sync cart to backend every time items change.
+  // This ensures cart recovery works even if they never open checkout.
+  const cartItems = useCartStore(s => s.items);
+  useEffect(() => {
+    if (!isLoggedInCustomer || !cartItems.length || !storeSlug) return;
+    const auth = useAuthStore.getState();
+    if (!auth.user?.phone) return;
+    const timer = setTimeout(() => {
+      const mapped = cartItems.map(i => ({ product_id: i.product_id || i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
+      storeApi.saveCart(storeSlug, { customer_phone: auth.user.phone, customer_name: auth.user.name || '', customer_email: auth.user.email || '', items: mapped }).catch(() => {});
+    }, 5000); // Debounce 5s to avoid spamming
+    return () => clearTimeout(timer);
+  }, [cartItems, storeSlug, isLoggedInCustomer]); // eslint-disable-line
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {

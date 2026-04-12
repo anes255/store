@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap } from 'lucide-react';
 import Checkout from './Checkout';
 
 function StoreLangSwitcher() {
@@ -41,6 +41,8 @@ export default function ProductDetail() {
   // e.g. { color: 2, size: 0 }
   const [selectedVariants, setSelectedVariants] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
+  const [buyNowOpen, setBuyNowOpen] = useState(false);
+  const [buyNowItems, setBuyNowItems] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e) => {
@@ -134,6 +136,23 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     addItem({ ...product, price: finalPrice }, quantity, buildVariantObj());
     toast.success(variantLabel ? `Added "${variantLabel}" to cart` : 'Added to cart');
+  };
+
+  const handleBuyNow = () => {
+    // Parse images safely
+    let imgs = product.images;
+    if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
+    if (!Array.isArray(imgs)) imgs = [];
+    const directItem = {
+      product_id: product.id,
+      name: product.name_en || product.name_fr || product.name_ar || product.name,
+      price: finalPrice,
+      image: product.thumbnail || imgs[0] || null,
+      quantity,
+      variant: buildVariantObj(),
+    };
+    setBuyNowItems([directItem]);
+    setBuyNowOpen(true);
   };
 
   const handleToggleWishlist = () => {
@@ -346,26 +365,37 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* ═══ ADD TO CART + WISHLIST ═══ */}
-            <div className="mt-6 flex items-center gap-3">
-              <div className="flex items-center bg-gray-100 rounded-xl">
-                <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-3 hover:bg-gray-200 rounded-l-xl"><Minus size={16}/></button>
-                <span className="w-12 text-center font-bold">{quantity}</span>
-                <button onClick={() => setQuantity(quantity+1)} className="p-3 hover:bg-gray-200 rounded-r-xl"><Plus size={16}/></button>
+            {/* ═══ ADD TO CART + BUY NOW + WISHLIST ═══ */}
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-gray-100 rounded-xl">
+                  <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-3 hover:bg-gray-200 rounded-l-xl"><Minus size={16}/></button>
+                  <span className="w-12 text-center font-bold">{quantity}</span>
+                  <button onClick={() => setQuantity(quantity+1)} className="p-3 hover:bg-gray-200 rounded-r-xl"><Plus size={16}/></button>
+                </div>
+                <button
+                  onClick={handleAddToCart}
+                  disabled={stockCount <= 0}
+                  className="flex-1 py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
+                  style={{backgroundColor:pc}}
+                >
+                  <ShoppingCart size={18}/>{store.btn_add_cart || 'Add to Cart'}
+                </button>
+                <button
+                  onClick={handleToggleWishlist}
+                  className={`p-3.5 rounded-xl border-2 transition-all ${inWishlist ? 'border-red-300 bg-red-50 text-red-500' : 'border-gray-200 hover:border-red-200 hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
+                >
+                  <Heart size={18} fill={inWishlist ? 'currentColor' : 'none'}/>
+                </button>
               </div>
+              {/* Buy Now — goes straight to checkout */}
               <button
-                onClick={handleAddToCart}
+                onClick={handleBuyNow}
                 disabled={stockCount <= 0}
-                className="flex-1 py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
-                style={{backgroundColor:pc}}
+                className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 shadow-sm disabled:opacity-50 transition-all"
+                style={{borderColor:pc, color:pc, backgroundColor: pc + '08'}}
               >
-                <ShoppingCart size={18}/>{store.btn_add_cart || 'Add to Cart'}
-              </button>
-              <button
-                onClick={handleToggleWishlist}
-                className={`p-3.5 rounded-xl border-2 transition-all ${inWishlist ? 'border-red-300 bg-red-50 text-red-500' : 'border-gray-200 hover:border-red-200 hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
-              >
-                <Heart size={18} fill={inWishlist ? 'currentColor' : 'none'}/>
+                <Zap size={18}/>{store.btn_buy_now || 'Buy Now'}
               </button>
             </div>
 
@@ -393,6 +423,7 @@ export default function ProductDetail() {
         <ReviewsSection storeSlug={storeSlug} productSlug={productSlug} pc={pc}/>
       </div>
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
+      {buyNowOpen && <Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/>}
     </div>
   );
 }
