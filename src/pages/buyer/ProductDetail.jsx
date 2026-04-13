@@ -6,21 +6,7 @@ import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../.
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap } from 'lucide-react';
 import Checkout from './Checkout';
-
-function StoreLangSwitcher() {
-  const { i18n } = useTranslation();
-  const { lang, setLang } = useLangStore();
-  const langs = [{code:'en',label:'EN',flag:'🟢'},{code:'fr',label:'FR',flag:'🇫🇷'},{code:'ar',label:'AR',flag:'🇩🇿'}];
-  return (
-    <div className="flex items-center gap-0.5 bg-gray-100 rounded-full p-0.5">
-      {langs.map(l=>(
-        <button key={l.code} onClick={()=>{i18n.changeLanguage(l.code);setLang(l.code);}} className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${lang===l.code?'bg-brand-500 text-white shadow':'text-gray-500'}`}>
-          {l.flag} {l.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
@@ -208,7 +194,7 @@ export default function ProductDetail() {
             </div>
           </form>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <div className="hidden sm:block"><StoreLangSwitcher /></div>
+            <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>

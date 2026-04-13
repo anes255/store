@@ -5,6 +5,7 @@ import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag } from 'lucide-react';
+import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 
@@ -122,22 +123,6 @@ function AIChatbot({ store, slug }) {
         </div>
       )}
     </>
-  );
-}
-
-// ============ LANGUAGE SWITCHER (inline for store header) ============
-function StoreLangSwitcher() {
-  const { i18n } = useTranslation();
-  const { lang, setLang } = useLangStore();
-  const langs = [{code:'en',label:'EN',flag:'🟢'},{code:'fr',label:'FR',flag:'🇫🇷'},{code:'ar',label:'AR',flag:'🇩🇿'}];
-  return (
-    <div className="flex items-center gap-0.5 bg-gray-100 rounded-full p-0.5">
-      {langs.map(l=>(
-        <button key={l.code} onClick={()=>{i18n.changeLanguage(l.code);setLang(l.code);}} className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${lang===l.code?'bg-brand-500 text-white shadow':'text-gray-500'}`}>
-          {l.flag} {l.label}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -295,7 +280,7 @@ export default function Storefront() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <div className="hidden sm:block"><StoreLangSwitcher /></div>
+            <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>

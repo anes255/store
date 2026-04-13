@@ -685,7 +685,7 @@ export default function PlatformAdminDashboard(){
           </div>
           <div className="flex items-center gap-3">
             <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
-            <LanguageSwitcher compact/>
+            <LanguageSwitcher/>
             <span className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
           </div>
         </header>

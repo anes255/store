@@ -308,11 +308,11 @@ export default function LandingPage() {
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.pricing')}</a></>}
-            <LanguageSwitcher compact />
+            <LanguageSwitcher />
             <Link to="/login" className="text-sm font-semibold text-gray-700 hover:text-brand-600">{t('nav.login')}</Link>
             <Link to="/register" className="btn-primary text-sm !py-2.5 !px-5">{t('nav.signup')}</Link>
           </div>
-          <div className="md:hidden flex items-center gap-3"><LanguageSwitcher compact /><Link to="/register" className="btn-primary text-xs !py-2 !px-4">{t('nav.signup')}</Link></div>
+          <div className="md:hidden flex items-center gap-3"><LanguageSwitcher /><Link to="/register" className="btn-primary text-xs !py-2 !px-4">{t('nav.signup')}</Link></div>
         </div>
       </nav>
 

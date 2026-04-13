@@ -56,7 +56,7 @@ export default function OwnerLogin() {
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
               <span className="text-xl font-extrabold font-display">KyoMarket</span>
             </Link>
-            <LanguageSwitcher compact />
+            <LanguageSwitcher />
           </div>
 
           <h1 className="text-3xl font-extrabold font-display text-gray-900 mb-2">{t('auth.login')}</h1>
