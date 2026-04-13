@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { platformApi } from '../../utils/api';
-import { useAuthStore, usePlatformTheme } from '../../hooks/useStore';
+import { useAuthStore, usePlatformTheme, generatePalette } from '../../hooks/useStore';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import PlansEditor from './PlansEditor';
@@ -11,7 +11,7 @@ import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
-function Sidebar({open,onClose,isDark,pc}){
+function Sidebar({open,onClose,isDark,pc,pl}){
   const {t}=useTranslation();
   const loc=useLocation();const{logout,user}=useAuthStore();const nav=useNavigate();
   const links=[
@@ -35,15 +35,22 @@ function Sidebar({open,onClose,isDark,pc}){
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{backgroundColor:pc}}><Shield size={16} className="text-white"/></div>
-          <div><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-800'}`}>{t('admin.superAdmin','Super Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.controlPanel','CONTROL PANEL')}</p></div>
+          <div><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-800'}`}>{t('admin.superAdmin','Super Admin')}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('admin.controlPanel','CONTROL PANEL')}</p></div>
         </div>
         <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-600"><X size={18}/></button>
       </div>
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        <p className="px-3 pt-1 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main Menu</p>
-        {links.map(l=>{const I=l.icon;const active=loc.pathname===l.path;return(
-          <Link key={l.path} to={l.path} onClick={onClose} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${active?'text-white font-bold shadow-md':isDark?'text-gray-400 hover:bg-white/5 hover:text-gray-200':'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`} style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{}}>
-            <I size={16} className={active?'text-white':isDark?'text-gray-500':'text-gray-400'}/><span>{l.label}</span>
+        <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>Main Menu</p>
+        {links.map(l=>{const I=l.icon;const active=loc.pathname===l.path;
+          // Generate palette for platform primary color
+          return(
+          <Link key={l.path} to={l.path} onClick={onClose}
+            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${active?'text-white font-bold shadow-md':''}`}
+            style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:isDark?pl[300]:pl[600]}}
+            onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':pl[50];e.currentTarget.style.color=isDark?pl[200]:pl[700];}}}
+            onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pl[300]:pl[600];}}}
+          >
+            <I size={16}/><span>{l.label}</span>
           </Link>
         );})}
       </nav>
@@ -669,7 +676,7 @@ export default function PlatformAdminDashboard(){
   useEffect(() => { theme.init(); }, []); // eslint-disable-line
   return(
     <div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/80'}`}>
-      <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} isDark={isDark} pc={pc}/>
+      <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} isDark={isDark} pc={pc} pl={generatePalette(pc)}/>
       <main className="flex-1 lg:ml-56 min-w-0">
         <header className={`sticky top-0 z-10 backdrop-blur-xl border-b px-4 md:px-8 py-3 flex items-center justify-between ${isDark?'bg-gray-900/90 border-gray-800':'bg-white border-gray-100'}`}>
           <div className="flex items-center gap-3">

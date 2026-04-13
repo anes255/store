@@ -190,20 +190,25 @@ export default function DashboardLayout({children}){
     toast.error(`"${label}" is locked on your current plan. Upgrade to unlock it.`);};
 
   const SLink=({to,icon:Icon,label,gated})=>{
-    if(gated)return(<button onClick={e=>handleGated(e,label)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full ${isDark?'text-gray-500':'text-gray-600'}`}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
+    if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pl[300]:pl[400]}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
     const active=isActive(to);
-    return(<Link to={to} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':isDark?'text-gray-400 hover:text-gray-200 hover:bg-white/5':'text-gray-600 hover:text-gray-900'}`} style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:!active&&!isDark?{':hover':{backgroundColor:pl[50]}}:{}}
-      onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?'rgba(255,255,255,0.05)':pl[50];}}}
-      onMouseLeave={e=>{if(!active)e.currentTarget.style.backgroundColor='';}}
+    return(<Link to={to} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
+      style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:isDark?pl[300]:pl[600]}}
+      onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':pl[50];e.currentTarget.style.color=isDark?pl[200]:pl[700];}}}
+      onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pl[300]:pl[600];}}}
     ><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
   };
   const SubLink=({to,label})=>{
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
     const segment=to.split('/').pop();
     const gated=isGated(segment);
-    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className={`pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left ${isDark?'text-gray-600':'text-gray-300'}`}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
+    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pl[400]+'80':pl[300]}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
     const active=isActive(to);
-    return(<Link to={to} className={`pl-12 py-1.5 block text-sm ${active?'font-semibold':isDark?'text-gray-500 hover:text-gray-300':'text-gray-400 hover:text-gray-600'}`} style={active?{color:pc}:{}}>{lbl}</Link>);
+    return(<Link to={to} className={`pl-12 py-1.5 block text-sm transition-all ${active?'font-semibold':''}`}
+      style={active?{color:pc}:{color:isDark?pl[400]:pl[300]}}
+      onMouseEnter={e=>{if(!active){e.currentTarget.style.color=isDark?pl[200]:pl[600];}}}
+      onMouseLeave={e=>{if(!active){e.currentTarget.style.color=isDark?pl[400]:pl[300];}}}
+    >{lbl}</Link>);
   };
 
   const renderItem=(item,idx)=>{
@@ -220,8 +225,7 @@ export default function DashboardLayout({children}){
         onDrop={e=>handleDrop(e,idx)}
         onDragEnd={handleDragEnd}
         className={`transition-all ${isDragging?'opacity-30':'opacity-100'} ${isOver?'border-t-2':''}`}
-        style={isOver?{borderColor:pc}:{}}
-        style={{cursor:sidebarOpen?'grab':'default'}}
+        style={{cursor:sidebarOpen?'grab':'default',...(isOver?{borderColor:pc}:{})}}
       >
         {item.type==='link'?(
           <div className="flex items-center group">
@@ -232,7 +236,11 @@ export default function DashboardLayout({children}){
           <div className="group">
             <div className="flex items-center">
               {sidebarOpen&&<div className="opacity-0 group-hover:opacity-40 px-0.5"><GripVertical size={12} className="text-gray-400"/></div>}
-              <button onClick={()=>toggle(item.id)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all ${isDark?'text-gray-400 hover:bg-white/5 hover:text-gray-200':'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+              <button onClick={()=>toggle(item.id)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all"
+                style={{color:isDark?pl[300]:pl[600]}}
+                onMouseEnter={e=>{e.currentTarget.style.backgroundColor=isDark?pc+'15':pl[50];e.currentTarget.style.color=isDark?pl[200]:pl[700];}}
+                onMouseLeave={e=>{e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pl[300]:pl[600];}}
+              >
                 <div className="flex items-center gap-3"><Icon size={18}/>{sidebarOpen&&<span>{lbl}</span>}</div>
                 {sidebarOpen&&<ChevronDown size={14} className={`transition-transform ${openMenus[item.id]?'rotate-180':''}`}/>}
               </button>
@@ -249,7 +257,7 @@ export default function DashboardLayout({children}){
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
+        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
       {sidebarOpen&&<div className="px-3 pt-3 relative">
@@ -264,7 +272,7 @@ export default function DashboardLayout({children}){
         {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
       </div>}
       <nav className={`flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
-        {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('sidebar.mainMenu','Main Menu')}</p>}
+        {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>{t('sidebar.mainMenu','Main Menu')}</p>}
         {(()=>{
           const q=sideQuery.trim().toLowerCase();
           if(!q)return items.map((item,idx)=>renderItem(item,idx));
