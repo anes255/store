@@ -4,9 +4,9 @@ import { useLangStore } from '../../hooks/useStore';
 import { Globe, Check } from 'lucide-react';
 
 const languages = [
-  { code: 'en', label: 'English', short: 'EN', flag: '🇬🇧' },
+  { code: 'en', label: 'English', short: 'EN', flag: '🇺🇸' },
   { code: 'fr', label: 'Français', short: 'FR', flag: '🇫🇷' },
-  { code: 'ar', label: 'العربية', short: 'AR', flag: '🇩🇿' },
+  { code: 'ar', label: 'العربية', short: 'AR', flag: '🇸🇦' },
 ];
 
 /**
