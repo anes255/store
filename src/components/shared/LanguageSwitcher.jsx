@@ -1,13 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLangStore } from '../../hooks/useStore';
-import { Globe, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const languages = [
-  { code: 'en', label: 'English', short: 'EN', flag: '🇺🇸' },
-  { code: 'fr', label: 'Français', short: 'FR', flag: '🇫🇷' },
-  { code: 'ar', label: 'العربية', short: 'AR', flag: '🇸🇦' },
+  { code: 'en', label: 'English', short: 'EN', country: 'gb' },
+  { code: 'fr', label: 'Français', short: 'FR', country: 'fr' },
+  { code: 'ar', label: 'العربية', short: 'AR', country: 'dz' },
 ];
+
+const Flag = ({ country, size = 20 }) => (
+  <img
+    src={`https://flagcdn.com/w40/${country}.png`}
+    srcSet={`https://flagcdn.com/w80/${country}.png 2x`}
+    width={size}
+    height={Math.round(size * 0.75)}
+    alt=""
+    className="rounded-sm object-cover shrink-0"
+    style={{ width: size, height: Math.round(size * 0.75) }}
+  />
+);
 
 /**
  * Single-button language switcher with dropdown.
@@ -42,20 +54,18 @@ export default function LanguageSwitcher({ variant }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
           isHeader
             ? 'hover:bg-white/20 text-inherit'
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
-        <span className="text-base leading-none">{current.flag}</span>
+        <Flag country={current.country} size={20}/>
         <span>{current.short}</span>
       </button>
 
       {open && (
-        <div className={`absolute right-0 top-full mt-2 w-44 rounded-xl shadow-2xl border z-50 overflow-hidden ${
-          isHeader ? 'bg-white border-gray-100' : 'bg-white border-gray-100'
-        }`}>
+        <div className="absolute right-0 top-full mt-2 w-48 rounded-xl shadow-2xl border border-gray-100 bg-white z-50 overflow-hidden">
           {languages.map(l => {
             const active = lang === l.code;
             return (
@@ -66,10 +76,9 @@ export default function LanguageSwitcher({ variant }) {
                   active ? 'bg-gray-50 font-bold' : 'hover:bg-gray-50'
                 }`}
               >
-                <span className="text-xl leading-none">{l.flag}</span>
+                <Flag country={l.country} size={24}/>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm ${active ? 'text-gray-900 font-bold' : 'text-gray-700'}`}>{l.label}</p>
-                  <p className="text-[10px] text-gray-400 uppercase">{l.short}</p>
                 </div>
                 {active && <Check size={14} className="text-emerald-500 shrink-0"/>}
               </button>
