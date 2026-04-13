@@ -2,15 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { platformApi } from '../../utils/api';
-import { useAuthStore } from '../../hooks/useStore';
+import { useAuthStore, usePlatformTheme } from '../../hooks/useStore';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import PlansEditor from './PlansEditor';
 import RoleTemplatesEditor from './RoleTemplatesEditor';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
+import ThemePanel from '../../components/shared/ThemePanel';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
 
-function Sidebar({open,onClose}){
+function Sidebar({open,onClose,isDark,pc}){
   const {t}=useTranslation();
   const loc=useLocation();const{logout,user}=useAuthStore();const nav=useNavigate();
   const links=[
@@ -30,28 +31,28 @@ function Sidebar({open,onClose}){
   ];
   return(<>
     {open&&<div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose}/>}
-    <aside className={`fixed top-0 left-0 z-50 w-56 bg-white border-r border-gray-100 h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${open?'translate-x-0':'-translate-x-full'}`}>
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+    <aside className={`fixed top-0 left-0 z-50 w-56 border-r h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${open?'translate-x-0':'-translate-x-full'}`}>
+      <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center"><Shield size={16} className="text-white"/></div>
-          <div><p className="font-bold text-sm text-gray-800">{t('admin.superAdmin','Super Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.controlPanel','CONTROL PANEL')}</p></div>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{backgroundColor:pc}}><Shield size={16} className="text-white"/></div>
+          <div><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-800'}`}>{t('admin.superAdmin','Super Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.controlPanel','CONTROL PANEL')}</p></div>
         </div>
         <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-600"><X size={18}/></button>
       </div>
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         <p className="px-3 pt-1 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main Menu</p>
         {links.map(l=>{const I=l.icon;const active=loc.pathname===l.path;return(
-          <Link key={l.path} to={l.path} onClick={onClose} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${active?'bg-red-50 text-red-600 font-bold':'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
-            <I size={16} className={active?'text-red-500':'text-gray-400'}/><span>{l.label}</span>
+          <Link key={l.path} to={l.path} onClick={onClose} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${active?'text-white font-bold shadow-md':isDark?'text-gray-400 hover:bg-white/5 hover:text-gray-200':'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`} style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{}}>
+            <I size={16} className={active?'text-white':isDark?'text-gray-500':'text-gray-400'}/><span>{l.label}</span>
           </Link>
         );})}
       </nav>
-      <div className="p-3 border-t border-gray-100">
-        <div className="flex items-center gap-2 bg-red-50 rounded-xl p-2.5 mb-2">
-          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div>
-          <div><p className="text-xs font-bold text-gray-800">{user?.name||'Admin'}</p><p className="text-[10px] text-gray-400">Super Admin</p></div>
+      <div className={`p-3 border-t ${isDark?'border-gray-800':'border-gray-100'}`}>
+        <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div>
+          <div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'Admin'}</p><p className="text-[10px] text-gray-400">Super Admin</p></div>
         </div>
-        <button onClick={()=>{logout();nav('/admin/login');}} className="w-full flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-50 rounded-xl text-sm font-medium"><LogOut size={14}/>{t('admin.logout','Logout')}</button>
+        <button onClick={()=>{logout();nav('/admin/login');}} className={`w-full flex items-center gap-2 px-3 py-2 text-red-500 rounded-xl text-sm font-medium ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}><LogOut size={14}/>{t('admin.logout','Logout')}</button>
       </div>
     </aside></>);
 }
@@ -662,18 +663,23 @@ function AdminManagement(){
 export default function PlatformAdminDashboard(){
   const {t}=useTranslation();
   const[sidebarOpen,setSidebarOpen]=useState(false);
+  const theme = usePlatformTheme();
+  const isDark = theme.mode === 'dark';
+  const pc = theme.primaryColor;
+  useEffect(() => { theme.init(); }, []); // eslint-disable-line
   return(
-    <div className="flex min-h-screen bg-gray-50/80">
-      <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)}/>
+    <div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/80'}`}>
+      <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} isDark={isDark} pc={pc}/>
       <main className="flex-1 lg:ml-56 min-w-0">
-        <header className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between">
+        <header className={`sticky top-0 z-10 backdrop-blur-xl border-b px-4 md:px-8 py-3 flex items-center justify-between ${isDark?'bg-gray-900/90 border-gray-800':'bg-white border-gray-100'}`}>
           <div className="flex items-center gap-3">
-            <button onClick={()=>setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl"><Menu size={20} className="text-gray-600"/></button>
-            <span className="text-sm font-bold text-gray-700">{t('admin.platformAdministration','Platform Administration')}</span>
+            <button onClick={()=>setSidebarOpen(true)} className={`lg:hidden p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>
+            <span className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-700'}`}>{t('admin.platformAdministration','Platform Administration')}</span>
           </div>
           <div className="flex items-center gap-3">
+            <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
             <LanguageSwitcher compact/>
-            <span className="px-3 py-1 bg-red-50 rounded-full text-[10px] font-bold text-red-600 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-red-500 rounded-full"/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
+            <span className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
           </div>
         </header>
         <div className="p-4 md:p-8">

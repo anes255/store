@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock}from'lucide-react';
 
 // Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
 // include the key the sidebar item renders with a lock icon + muted styling,
@@ -69,7 +69,7 @@ function NotifBell(){
   const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
   
   return(<div className="relative flex items-center gap-1">
-    {!pushOk&&<button onClick={enablePush} className="px-2 py-1 bg-brand-500 text-white text-[10px] font-bold rounded-lg animate-pulse hover:bg-brand-600">🔔 Enable</button>}
+    {!pushOk&&<button onClick={enablePush} className="px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔 Enable</button>}
     <button onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
     {open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
@@ -110,6 +110,12 @@ export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
   const{user,logout}=useAuthStore();const{currentStore}=useStoreManagement();
   const planCtx = usePlanFeatures();
+  const theme = useAdminTheme();
+  const isDark = theme.mode === 'dark';
+  const pc = theme.primaryColor;
+  const pl = theme.palette;
+  // Initialize theme CSS vars on mount
+  useEffect(() => { theme.init(); }, []); // eslint-disable-line
   const[isMobile,setIsMobile]=useState(()=>typeof window!=='undefined'&&window.innerWidth<1024);
   const[sidebarOpen,setSidebarOpen]=useState(()=>typeof window!=='undefined'?window.innerWidth>=1024:true);
   const[openMenus,setOpenMenus]=useState({});
@@ -184,16 +190,20 @@ export default function DashboardLayout({children}){
     toast.error(`"${label}" is locked on your current plan. Upgrade to unlock it.`);};
 
   const SLink=({to,icon:Icon,label,gated})=>{
-    if(gated)return(<button onClick={e=>handleGated(e,label)} className="sidebar-link opacity-50 w-full"><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
-    return(<Link to={to} className={isActive(to)?'sidebar-link-active':'sidebar-link'}><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
+    if(gated)return(<button onClick={e=>handleGated(e,label)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full ${isDark?'text-gray-500':'text-gray-600'}`}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
+    const active=isActive(to);
+    return(<Link to={to} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':isDark?'text-gray-400 hover:text-gray-200 hover:bg-white/5':'text-gray-600 hover:text-gray-900'}`} style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:!active&&!isDark?{':hover':{backgroundColor:pl[50]}}:{}}
+      onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?'rgba(255,255,255,0.05)':pl[50];}}}
+      onMouseLeave={e=>{if(!active)e.currentTarget.style.backgroundColor='';}}
+    ><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
   };
   const SubLink=({to,label})=>{
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
-    // Check if this sub-route is gated (e.g. /dashboard/abandoned -> 'abandoned')
     const segment=to.split('/').pop();
     const gated=isGated(segment);
-    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm text-gray-300 cursor-not-allowed w-full text-left"><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
-    return(<Link to={to} className={`pl-12 py-1.5 block text-sm ${isActive(to)?'text-brand-600 font-semibold':'text-gray-400 hover:text-gray-600'}`}>{lbl}</Link>);
+    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className={`pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left ${isDark?'text-gray-600':'text-gray-300'}`}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
+    const active=isActive(to);
+    return(<Link to={to} className={`pl-12 py-1.5 block text-sm ${active?'font-semibold':isDark?'text-gray-500 hover:text-gray-300':'text-gray-400 hover:text-gray-600'}`} style={active?{color:pc}:{}}>{lbl}</Link>);
   };
 
   const renderItem=(item,idx)=>{
@@ -209,7 +219,8 @@ export default function DashboardLayout({children}){
         onDragOver={e=>handleDragOver(e,idx)}
         onDrop={e=>handleDrop(e,idx)}
         onDragEnd={handleDragEnd}
-        className={`transition-all ${isDragging?'opacity-30':'opacity-100'} ${isOver?'border-t-2 border-brand-400':''}`}
+        className={`transition-all ${isDragging?'opacity-30':'opacity-100'} ${isOver?'border-t-2':''}`}
+        style={isOver?{borderColor:pc}:{}}
         style={{cursor:sidebarOpen?'grab':'default'}}
       >
         {item.type==='link'?(
@@ -221,7 +232,7 @@ export default function DashboardLayout({children}){
           <div className="group">
             <div className="flex items-center">
               {sidebarOpen&&<div className="opacity-0 group-hover:opacity-40 px-0.5"><GripVertical size={12} className="text-gray-400"/></div>}
-              <button onClick={()=>toggle(item.id)} className="sidebar-link w-full justify-between flex-1">
+              <button onClick={()=>toggle(item.id)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all ${isDark?'text-gray-400 hover:bg-white/5 hover:text-gray-200':'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
                 <div className="flex items-center gap-3"><Icon size={18}/>{sidebarOpen&&<span>{lbl}</span>}</div>
                 {sidebarOpen&&<ChevronDown size={14} className={`transition-transform ${openMenus[item.id]?'rotate-180':''}`}/>}
               </button>
@@ -233,25 +244,26 @@ export default function DashboardLayout({children}){
     );
   };
 
-  return(<div className="flex min-h-screen bg-gray-50/50">
+  return(<div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/50'}`}>
     {/* Mobile overlay */}
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
-    <aside className={`bg-white border-r border-gray-100 flex flex-col fixed h-screen z-40 transition-all duration-300 ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-xs">{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className="font-bold text-sm text-gray-800 truncate">{currentStore?.name||'MyMarket'}</p><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
+    <aside className={`flex flex-col fixed h-screen z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
+      <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
+        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
       {sidebarOpen&&<div className="px-3 pt-3 relative">
         <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
         <input
-          className="w-full pl-7 pr-7 py-2 bg-gray-50 rounded-lg text-xs border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+          className={`w-full pl-7 pr-7 py-2 rounded-lg text-xs border focus:outline-none focus:ring-2 ${isDark?'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500':'bg-gray-50 border-gray-100 text-gray-700 placeholder-gray-400'}`}
+          style={{'--tw-ring-color':pc+'30'}}
           placeholder={t('common.search','Search...')}
           value={sideQuery}
           onChange={e=>setSideQuery(e.target.value)}
         />
         {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
       </div>}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm">
+      <nav className={`flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
         {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('sidebar.mainMenu','Main Menu')}</p>}
         {(()=>{
           const q=sideQuery.trim().toLowerCase();
@@ -282,28 +294,29 @@ export default function DashboardLayout({children}){
           });
         })()}
       </nav>
-      <div className="border-t border-gray-100 p-3">
-        <div className="flex items-center gap-2 bg-brand-50 rounded-xl p-2.5 mb-2"><div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className="text-xs font-bold text-gray-800">{user?.name||'User'}</p><p className="text-[10px] text-gray-400">{t('sidebar.adminRole','Admin')}</p></div>}</div>
-        {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className="sidebar-link w-full"><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
+      <div className={`border-t p-3 ${isDark?'border-gray-800':'border-gray-100'}`}>
+        <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400">{t('sidebar.adminRole','Admin')}</p></div>}</div>
+        {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
           onClick={(e)=>{e.preventDefault();e.stopPropagation();try{logout();}catch{}try{localStorage.removeItem('token');}catch{}window.location.href='/login';}}
-          className="sidebar-link w-full text-red-500 cursor-pointer"
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full text-red-500 cursor-pointer transition-all ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}
         ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>
     </aside>
     <main className={`flex-1 transition-all duration-300 ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
-      <header className={`sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-gray-100 px-4 md:px-6 py-3 flex items-center justify-between transition-transform duration-300 ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
+      <header className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center justify-between transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
         <div className="flex items-center gap-3">
-          {isMobile&&<button onClick={()=>setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl lg:hidden"><Menu size={20} className="text-gray-600"/></button>}
-          <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p><p className="font-bold text-sm">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p></div></div>
-          <p className="md:hidden font-bold text-sm text-gray-800">{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p>
+          {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}
+          <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p></div></div>
+          <p className={`md:hidden font-bold text-sm ${isDark?'text-gray-100':'text-gray-800'}`}>{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
           <div className="relative hidden md:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input
-              className="pl-9 pr-8 py-2 bg-gray-50 rounded-xl text-sm w-64 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              className={`pl-9 pr-8 py-2 rounded-xl text-sm w-64 border focus:outline-none focus:ring-2 ${isDark?'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500':'bg-gray-50 border-gray-100 text-gray-800 placeholder-gray-400'}`}
+              style={{'--tw-ring-color':pc+'30'}}
               placeholder={t('sidebar.searchEverything','Search everything...')}
               value={topQuery}
               onChange={e=>setTopQuery(e.target.value)}
@@ -329,23 +342,24 @@ export default function DashboardLayout({children}){
                 else if(it.children){it.children.forEach(c=>{const cl=typeof c.label==='string'&&c.label.startsWith('sidebar.')?t(c.label):c.label;flat.push({to:c.to,label:cl,parent:lbl});});}
               });
               const matches=flat.filter(x=>(x.label||'').toLowerCase().includes(q)||(x.parent||'').toLowerCase().includes(q)).slice(0,12);
-              return(<div className="absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
+              return(<div className={`absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
                 {matches.length===0?<p className="p-4 text-center text-xs text-gray-400">{t('common.noResults','No matches')}</p>:
                 matches.map((m,i)=>(
-                  <button key={i} onMouseDown={e=>{e.preventDefault();navigate(m.to);setTopQuery('');setTopFocus(false);}} className="w-full px-4 py-2.5 text-left hover:bg-brand-50 flex items-center gap-2 border-b border-gray-50 last:border-0">
-                    <Search size={12} className="text-gray-300 shrink-0"/>
-                    <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{m.label}</p>{m.parent&&<p className="text-[10px] text-gray-400 truncate">{m.parent}</p>}</div>
-                    <span className="text-[10px] text-gray-300 font-mono shrink-0">{m.to}</span>
+                  <button key={i} onMouseDown={e=>{e.preventDefault();navigate(m.to);setTopQuery('');setTopFocus(false);}} className={`w-full px-4 py-2.5 text-left flex items-center gap-2 border-b last:border-0 ${isDark?'hover:bg-white/5 border-gray-800':'hover:bg-gray-50 border-gray-50'}`}>
+                    <Search size={12} className="text-gray-400 shrink-0"/>
+                    <div className="flex-1 min-w-0"><p className={`text-sm font-semibold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{m.label}</p>{m.parent&&<p className="text-[10px] text-gray-500 truncate">{m.parent}</p>}</div>
+                    <span className="text-[10px] text-gray-400 font-mono shrink-0">{m.to}</span>
                   </button>
                 ))}
               </div>);
             })()}
           </div>
           {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● {t('sidebar.live','Live')}</span>}
-          <Link to={`/s/${currentStore?.slug}`} target="_blank" className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"><Eye size={18}/></Link>
+          <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
+          <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
           <div className="hidden md:block"><LanguageSwitcher compact/></div>
-          <div className="hidden md:flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5"><span className="text-sm font-bold text-gray-700">{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">{user?.name?.[0]||'A'}</div></div>
+          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
       <div className="p-3 sm:p-4 md:p-6 max-w-full overflow-x-auto">{children}</div>

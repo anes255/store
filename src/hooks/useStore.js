@@ -182,3 +182,111 @@ export const useLangStore = create((set) => ({
     set({ lang });
   },
 }));
+
+// ============ THEME STORE ============
+// Persists admin dashboard theme preferences: mode (light/dark) + primary color.
+// CSS custom properties on :root are updated whenever theme changes so Tailwind
+// and globals.css pick up the new values immediately.
+
+const COLOR_PRESETS = {
+  '#7C3AED': { 50:'#f3f0ff',100:'#e9e3ff',200:'#d5cbff',300:'#b5a3ff',400:'#9171ff',500:'#7C3AED',600:'#6d28d9',700:'#5b21b6' },
+  '#3B82F6': { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3B82F6',600:'#2563eb',700:'#1d4ed8' },
+  '#10B981': { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10B981',600:'#059669',700:'#047857' },
+  '#F59E0B': { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#F59E0B',600:'#d97706',700:'#b45309' },
+  '#EF4444': { 50:'#fef2f2',100:'#fee2e2',200:'#fecaca',300:'#fca5a5',400:'#f87171',500:'#EF4444',600:'#dc2626',700:'#b91c1c' },
+  '#EC4899': { 50:'#fdf2f8',100:'#fce7f3',200:'#fbcfe8',300:'#f9a8d4',400:'#f472b6',500:'#EC4899',600:'#db2777',700:'#be185d' },
+  '#06B6D4': { 50:'#ecfeff',100:'#cffafe',200:'#a5f3fc',300:'#67e8f9',400:'#22d3ee',500:'#06B6D4',600:'#0891b2',700:'#0e7490' },
+  '#8B5CF6': { 50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8B5CF6',600:'#7c3aed',700:'#6d28d9' },
+  '#F97316': { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#F97316',600:'#ea580c',700:'#c2410c' },
+  '#14B8A6': { 50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14B8A6',600:'#0d9488',700:'#0f766e' },
+};
+
+// Generate palette shades from an arbitrary hex color via HSL shifting
+function generatePalette(hex) {
+  if (COLOR_PRESETS[hex]) return COLOR_PRESETS[hex];
+  const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max-min;
+  let h = 0, s = 0, l = (max+min)/2;
+  if (d !== 0) { s = l>0.5 ? d/(2-max-min) : d/(max-min); h = max===r ? ((g-b)/d+(g<b?6:0))*60 : max===g ? ((b-r)/d+2)*60 : ((r-g)/d+4)*60; }
+  const hsl = (h2,s2,l2) => { s2/=100; l2/=100; const a=s2*Math.min(l2,1-l2); const f=n=>{const k=(n+h2/30)%12;return l2-a*Math.max(Math.min(k-3,9-k,1),-1);}; return '#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join(''); };
+  return { 50:hsl(h,Math.min(100,s*100+10),97), 100:hsl(h,Math.min(100,s*100+5),93), 200:hsl(h,s*100,86), 300:hsl(h,s*100,76), 400:hsl(h,s*100,64), 500:hex, 600:hsl(h,s*100,l*100-10), 700:hsl(h,s*100,l*100-20) };
+}
+
+function applyThemeToDOM(mode, color, context) {
+  const root = document.documentElement;
+  const palette = generatePalette(color);
+
+  // Set the palette as CSS custom properties
+  Object.entries(palette).forEach(([shade, val]) => {
+    root.style.setProperty(`--${context}-${shade}`, val);
+  });
+  root.style.setProperty(`--${context}`, color);
+
+  // Apply dark mode class per-context
+  if (context === 'admin') {
+    const adminMode = localStorage.getItem('admin_theme_mode') || 'light';
+    if (adminMode === 'dark') root.classList.add('admin-dark');
+    else root.classList.remove('admin-dark');
+  }
+  if (context === 'platform') {
+    const platformMode = localStorage.getItem('platform_theme_mode') || 'light';
+    if (platformMode === 'dark') root.classList.add('platform-dark');
+    else root.classList.remove('platform-dark');
+  }
+}
+
+// Store admin theme
+export const useAdminTheme = create((set, get) => ({
+  mode: localStorage.getItem('admin_theme_mode') || 'light',
+  primaryColor: localStorage.getItem('admin_theme_color') || '#7C3AED',
+  palette: generatePalette(localStorage.getItem('admin_theme_color') || '#7C3AED'),
+
+  init: () => {
+    const state = get();
+    applyThemeToDOM(state.mode, state.primaryColor, 'admin');
+  },
+
+  setMode: (mode) => {
+    localStorage.setItem('admin_theme_mode', mode);
+    const state = get();
+    applyThemeToDOM(mode, state.primaryColor, 'admin');
+    set({ mode });
+  },
+
+  setPrimaryColor: (color) => {
+    localStorage.setItem('admin_theme_color', color);
+    const palette = generatePalette(color);
+    const state = get();
+    applyThemeToDOM(state.mode, color, 'admin');
+    set({ primaryColor: color, palette });
+  },
+}));
+
+// Platform super admin theme
+export const usePlatformTheme = create((set, get) => ({
+  mode: localStorage.getItem('platform_theme_mode') || 'light',
+  primaryColor: localStorage.getItem('platform_theme_color') || '#EF4444',
+  palette: generatePalette(localStorage.getItem('platform_theme_color') || '#EF4444'),
+
+  init: () => {
+    const state = get();
+    applyThemeToDOM(state.mode, state.primaryColor, 'platform');
+  },
+
+  setMode: (mode) => {
+    localStorage.setItem('platform_theme_mode', mode);
+    const state = get();
+    applyThemeToDOM(mode, state.primaryColor, 'platform');
+    set({ mode });
+  },
+
+  setPrimaryColor: (color) => {
+    localStorage.setItem('platform_theme_color', color);
+    const palette = generatePalette(color);
+    const state = get();
+    applyThemeToDOM(state.mode, color, 'platform');
+    set({ primaryColor: color, palette });
+  },
+}));
+
+export { COLOR_PRESETS, generatePalette };
