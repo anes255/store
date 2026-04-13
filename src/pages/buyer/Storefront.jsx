@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu } from 'lucide-react';
+import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 
@@ -158,6 +158,10 @@ export default function Storefront() {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [sortBy, setSortBy] = useState('newest'); // newest, price_asc, price_desc
+  const [priceRange, setPriceRange] = useState([0, 0]); // [min, max] — 0 means no filter
+  const [onlyOnSale, setOnlyOnSale] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   // We only flip "ready" once the store, products and categories have all
   // resolved, so the page never appears half-rendered. Start true if we have
   // every piece in cache so returning visitors see the page instantly.
@@ -192,7 +196,7 @@ export default function Storefront() {
         // the store first. We still catch the store error separately so 403
         // (suspended) and 404 (not found) can be handled correctly.
         const storeP = storeApi.getStore(storeSlug);
-        const prodsP = storeApi.getProducts(storeSlug, { search, category: selectedCategory });
+        const prodsP = storeApi.getProducts(storeSlug, { search, category: selectedCategory, sort: sortBy === 'price_asc' ? 'price_asc' : sortBy === 'price_desc' ? 'price_desc' : undefined });
         const catsP  = storeApi.getCategories(storeSlug);
 
         let storeData;
@@ -222,7 +226,7 @@ export default function Storefront() {
     };
     load();
     return () => { cancelled = true; };
-  }, [storeSlug, search, selectedCategory]);
+  }, [storeSlug, search, selectedCategory, sortBy]);
 
   const getName = (item) => {
     if (lang==='ar') return item.name_ar||item.name_en||item.name||'';
@@ -355,13 +359,116 @@ export default function Storefront() {
         </div>
       </div>
 
+      {/* ============ FILTER BAR ============ */}
+      <div className="max-w-7xl mx-auto px-4 mt-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border ${showFilters ? 'text-white shadow-md border-transparent' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+              style={showFilters ? { backgroundColor: pc } : {}}
+            >
+              <SlidersHorizontal size={15}/>
+              {t('store.filters','Filters')}
+              {(onlyOnSale || priceRange[1] > 0) && (
+                <span className="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ backgroundColor: showFilters ? 'rgba(255,255,255,0.3)' : pc }}>
+                  {(onlyOnSale ? 1 : 0) + (priceRange[1] > 0 ? 1 : 0)}
+                </span>
+              )}
+            </button>
+            <span className="text-sm text-gray-400">{products.length} {t('store.products','products')}</span>
+          </div>
+          {/* Sort dropdown */}
+          <div className="relative group">
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-300 transition-all">
+              <ArrowUpDown size={14}/>
+              {sortBy === 'price_asc' ? t('store.sortPriceLow','Price: Low to High') : sortBy === 'price_desc' ? t('store.sortPriceHigh','Price: High to Low') : t('store.sortNewest','Newest')}
+              <ChevronDown size={13} className="text-gray-400"/>
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+              {[
+                { key: 'newest', label: t('store.sortNewest','Newest'), icon: Sparkles },
+                { key: 'price_asc', label: t('store.sortPriceLow','Price: Low to High'), icon: ArrowUpDown },
+                { key: 'price_desc', label: t('store.sortPriceHigh','Price: High to Low'), icon: ArrowUpDown },
+              ].map(s => (
+                <button key={s.key} onClick={() => setSortBy(s.key)} className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-all first:rounded-t-xl last:rounded-b-xl ${sortBy === s.key ? 'font-bold' : 'text-gray-600 hover:bg-gray-50'}`} style={sortBy === s.key ? { color: pc, backgroundColor: pc + '10' } : {}}>
+                  <s.icon size={13}/>{s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Expandable Filter Panel */}
+        {showFilters && (
+          <div className="mt-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top duration-200">
+            <div className="flex flex-wrap gap-6 items-end">
+              {/* Price Range */}
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">{t('store.priceRange','Price Range')} ({store.currency || 'DZD'})</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={t('store.min','Min')}
+                    value={priceRange[0] || ''}
+                    onChange={e => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                    style={{ '--tw-ring-color': pc + '30' }}
+                  />
+                  <span className="text-gray-300 font-bold">—</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={t('store.max','Max')}
+                    value={priceRange[1] || ''}
+                    onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || 0])}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                    style={{ '--tw-ring-color': pc + '30' }}
+                  />
+                </div>
+              </div>
+
+              {/* On Sale toggle */}
+              <label className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border cursor-pointer transition-all" style={onlyOnSale ? { borderColor: pc, backgroundColor: pc + '10' } : { borderColor: '#e5e7eb' }}>
+                <input type="checkbox" checked={onlyOnSale} onChange={e => setOnlyOnSale(e.target.checked)} className="sr-only"/>
+                <Tag size={15} style={{ color: onlyOnSale ? pc : '#9ca3af' }}/>
+                <span className={`text-sm font-bold ${onlyOnSale ? '' : 'text-gray-500'}`} style={onlyOnSale ? { color: pc } : {}}>{t('store.onSale','On Sale')}</span>
+              </label>
+
+              {/* Clear All */}
+              {(onlyOnSale || priceRange[0] > 0 || priceRange[1] > 0) && (
+                <button
+                  onClick={() => { setPriceRange([0, 0]); setOnlyOnSale(false); }}
+                  className="px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  {t('store.clearFilters','Clear Filters')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ============ PRODUCTS GRID ============ */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {products.length===0?(
-          <div className="text-center py-20"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">No products found</p></div>
+        {(()=>{
+          // Client-side filtering for price range and on-sale
+          let filtered = products;
+          if (priceRange[0] > 0) filtered = filtered.filter(p => parseFloat(p.price) >= priceRange[0]);
+          if (priceRange[1] > 0) filtered = filtered.filter(p => parseFloat(p.price) <= priceRange[1]);
+          if (onlyOnSale) filtered = filtered.filter(p => p.compare_at_price && parseFloat(p.compare_at_price) > parseFloat(p.price));
+          return filtered.length===0 ? (
+          <div className="text-center py-20">
+            <Package size={48} className="mx-auto text-gray-300 mb-4"/>
+            <p className="text-gray-500">{t('store.noProducts','No products found')}</p>
+            {(onlyOnSale || priceRange[0] > 0 || priceRange[1] > 0) && (
+              <button onClick={() => { setPriceRange([0, 0]); setOnlyOnSale(false); }} className="mt-3 text-sm font-bold hover:underline" style={{ color: pc }}>{t('store.clearFilters','Clear Filters')}</button>
+            )}
+          </div>
         ):(
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-            {products.map(product=>{
+            {filtered.map(product=>{
               const thumb = getThumb(product);
               const inWishlist = wishlist.includes(product.id);
               return (
@@ -396,7 +503,7 @@ export default function Storefront() {
               );
             })}
           </div>
-        )}
+        );})()}
       </div>
       </>}
 
