@@ -1,5 +1,6 @@
 import React,{useState,useRef,useEffect} from 'react';
 import {aiApi} from '../../utils/api';
+import {useAdminTheme} from '../../hooks/useStore';
 import {MessageCircle,Phone,Send,X,Save,Clock,ShoppingCart,QrCode,RefreshCw,Wifi,WifiOff} from 'lucide-react';
 
 const WA_STATUSES=['new_order','confirmed','under_preparation','shipped','delivered','cancelled','awaiting','failed_call_1','failed_call_2','failed_call_3','returned'];
@@ -24,6 +25,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   const[waLoading,setWaLoading]=useState(false);
   const[waError,setWaError]=useState(null);
   const msgRef=useRef(null);
+  const dk=useAdminTheme(s=>s.mode==='dark');
 
   useEffect(()=>{if(show&&initialConfig)setCfg({...initialConfig});},[show,initialConfig]);
   useEffect(()=>{if(show&&storeId&&!waStatus)checkStatus();},[show,storeId]);
@@ -53,21 +55,37 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
 
   if(!show)return null;
 
+  const b=dk?'bg-gray-800':'bg-white';
+  const b2=dk?'bg-gray-900':'bg-gray-50';
+  const br=dk?'border-gray-700':'border-gray-100';
+  const br2=dk?'border-gray-600':'border-gray-200';
+  const t1=dk?'text-white':'text-gray-900';
+  const t2=dk?'text-gray-300':'text-gray-700';
+  const t3=dk?'text-gray-400':'text-gray-400';
+  const inp=dk?'bg-gray-700 border-gray-600 text-white placeholder-gray-400':'bg-white border-gray-200 text-gray-900';
+  const pill=dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200';
+  const card=dk?'bg-gray-700 border-gray-600':'bg-white border-gray-100';
+  const varBtn=dk?'bg-gray-700 border-gray-600 text-emerald-400 hover:bg-gray-600':'bg-white border-gray-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300';
+  const cartBg=dk?'bg-purple-900/30':'bg-purple-50';
+  const cartVar=dk?'bg-gray-700 border-purple-500/40 text-purple-300 hover:bg-gray-600':'bg-white border-purple-200 text-purple-700 hover:bg-purple-50';
+  const cartInp=dk?'bg-gray-700 border-purple-500/40 text-white placeholder-gray-400':'bg-white border-purple-200';
+  const connBox=dk?'bg-gray-700 border-gray-600':'bg-white border-gray-200';
+
   return(<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
-    <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col" onClick={e=>e.stopPropagation()}>
+    <div className={`${b} rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col`} onClick={e=>e.stopPropagation()}>
       {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center"><MessageCircle size={20} className="text-white"/></div><div><h2 className="font-black text-lg text-gray-900">WhatsApp Configuration</h2><p className="text-xs text-gray-400">Configure automated messages for every order status</p></div></div>
+      <div className={`px-4 sm:px-6 py-4 border-b ${br} flex items-center justify-between shrink-0`}>
+        <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center"><MessageCircle size={20} className="text-white"/></div><div><h2 className={`font-black text-lg ${t1}`}>WhatsApp Configuration</h2><p className={`text-xs ${t3}`}>Configure automated messages for every order status</p></div></div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">{[{c:'fr',l:'FR',f:'🇫🇷'},{c:'ar',l:'AR',f:'🇩🇿'},{c:'en',l:'EN',f:'🇬🇧'}].map(lg=>(<button key={lg.c} onClick={()=>{setLang(lg.c);setV('wa_language',lg.c);}} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${lang===lg.c?'bg-white shadow text-gray-900':'text-gray-500 hover:text-gray-700'}`}><span>{lg.f}</span>{lg.l}</button>))}</div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={18}/></button>
+          <div className={`flex ${dk?'bg-gray-700':'bg-gray-100'} rounded-xl p-1 gap-0.5`}>{[{c:'fr',l:'FR',f:'🇫🇷'},{c:'ar',l:'AR',f:'🇩🇿'},{c:'en',l:'EN',f:'🇬🇧'}].map(lg=>(<button key={lg.c} onClick={()=>{setLang(lg.c);setV('wa_language',lg.c);}} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${lang===lg.c?(dk?'bg-gray-600 shadow text-white':'bg-white shadow text-gray-900'):(dk?'text-gray-400 hover:text-gray-200':'text-gray-500 hover:text-gray-700')}`}><span>{lg.f}</span>{lg.l}</button>))}</div>
+          <button onClick={onClose} className={`w-8 h-8 rounded-lg ${dk?'hover:bg-gray-700 text-gray-300':'hover:bg-gray-100'} flex items-center justify-center`}><X size={18}/></button>
         </div>
       </div>
       {/* Body */}
       <div className="flex-1 overflow-y-auto"><div className="flex flex-col lg:flex-row">
         {/* LEFT: WhatsApp Preview */}
-        <div className="lg:w-[340px] shrink-0 p-4 sm:p-5 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-100">
-          <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">Message Preview</p>
+        <div className={`lg:w-[340px] shrink-0 p-4 sm:p-5 ${b2} border-b lg:border-b-0 lg:border-r ${br}`}>
+          <p className={`text-[10px] font-bold ${t3} uppercase mb-3`}>Message Preview</p>
           <div className="bg-[#0b141a] rounded-2xl overflow-hidden shadow-xl max-w-[300px] mx-auto">
             <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">{(cfg.name||cfg.store_name||'S')[0]?.toUpperCase()}</div><div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{cfg.name||cfg.store_name||'My Store'}</p><p className="text-[10px] text-emerald-400">online</p></div><Phone size={16} className="text-gray-400"/></div>
             <div className="p-3 min-h-[280px] max-h-[350px] overflow-y-auto" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
@@ -75,42 +93,42 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             </div>
             <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">Type a message</span></div><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div></div>
           </div>
-          <p className="text-[10px] text-gray-400 text-center mt-2">Preview updates in real-time as you type</p>
+          <p className={`text-[10px] ${t3} text-center mt-2`}>Preview updates in real-time as you type</p>
           {/* Connection Status */}
-          <div className="mt-4 p-3 bg-white rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between mb-2"><p className="text-xs font-bold text-gray-700">Connection</p>{waStatus?.connected?<span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><Wifi size={12}/>Connected</span>:<span className="flex items-center gap-1 text-xs font-bold text-gray-400"><WifiOff size={12}/>Disconnected</span>}</div>
-            {waStatus?.connected?(<button onClick={disconnect} className="w-full py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">Disconnect</button>):waStatus?.qr?(<div className="text-center"><img src={waStatus.qr.startsWith('data:')?waStatus.qr:`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/><p className="text-[10px] text-gray-400 mt-1">Scan with WhatsApp</p><button onClick={startConnection} className="mt-2 text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button></div>):(<div><button onClick={startConnection} disabled={waLoading} className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">{waLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<QrCode size={14}/>}{waLoading?'Connecting...':'Connect WhatsApp'}</button>{waError&&<p className="text-xs text-red-500 mt-2 text-center">{waError}</p>}</div>)}
+          <div className={`mt-4 p-3 rounded-xl border ${connBox}`}>
+            <div className="flex items-center justify-between mb-2"><p className={`text-xs font-bold ${t2}`}>Connection</p>{waStatus?.connected?<span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><Wifi size={12}/>Connected</span>:<span className={`flex items-center gap-1 text-xs font-bold ${t3}`}><WifiOff size={12}/>Disconnected</span>}</div>
+            {waStatus?.connected?(<button onClick={disconnect} className={`w-full py-2 ${dk?'bg-red-900/30 text-red-400':'bg-red-50 text-red-600'} rounded-lg text-xs font-bold hover:opacity-80 transition-colors`}>Disconnect</button>):waStatus?.qr?(<div className="text-center"><img src={waStatus.qr.startsWith('data:')?waStatus.qr:`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/><p className={`text-[10px] ${t3} mt-1`}>Scan with WhatsApp</p><button onClick={startConnection} className="mt-2 text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button></div>):(<div><button onClick={startConnection} disabled={waLoading} className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">{waLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<QrCode size={14}/>}{waLoading?'Connecting...':'Connect WhatsApp'}</button>{waError&&<p className="text-xs text-red-500 mt-2 text-center">{waError}</p>}</div>)}
           </div>
         </div>
         {/* RIGHT: Configuration */}
         <div className="flex-1 min-w-0 p-4 sm:p-5 space-y-4">
-          <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Order Status Templates</p><div className="flex flex-wrap gap-1.5">{WA_STATUSES.map(st=>(<button key={st} onClick={()=>setActiveStatus(st)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${activeStatus===st?'bg-emerald-500 text-white shadow-sm':'bg-gray-100 text-gray-600 hover:bg-gray-200'} ${!getEnabled(st)?'opacity-50':''}`}>{WA_STATUS_LABELS[st]?.[lang]||st}</button>))}</div></div>
+          <div><p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>Order Status Templates</p><div className="flex flex-wrap gap-1.5">{WA_STATUSES.map(st=>(<button key={st} onClick={()=>setActiveStatus(st)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${activeStatus===st?'bg-emerald-500 text-white shadow-sm':pill} ${!getEnabled(st)?'opacity-50':''}`}>{WA_STATUS_LABELS[st]?.[lang]||st}</button>))}</div></div>
           {/* Active Status Config */}
-          <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+          <div className={`${b2} rounded-xl p-4 space-y-3`}>
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-sm text-gray-900 flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${getEnabled(activeStatus)?'bg-emerald-500':'bg-gray-300'}`}/>{WA_STATUS_LABELS[activeStatus]?.[lang]||activeStatus}</h4>
+              <h4 className={`font-bold text-sm ${t1} flex items-center gap-2`}><span className={`w-2 h-2 rounded-full ${getEnabled(activeStatus)?'bg-emerald-500':'bg-gray-300'}`}/>{WA_STATUS_LABELS[activeStatus]?.[lang]||activeStatus}</h4>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400"/><select className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 font-medium" value={getTiming(activeStatus)} onChange={e=>setTiming(activeStatus,e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div>
+                <div className="flex items-center gap-1.5"><Clock size={14} className={t3}/><select className={`text-xs ${inp} rounded-lg px-2 py-1.5 font-medium border`} value={getTiming(activeStatus)} onChange={e=>setTiming(activeStatus,e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div>
                 <div className={`w-10 rounded-full cursor-pointer ${getEnabled(activeStatus)?'bg-emerald-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setEnabled(activeStatus,!getEnabled(activeStatus))}><div className={`absolute bg-white rounded-full shadow transition-transform ${getEnabled(activeStatus)?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div>
               </div>
             </div>
-            <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Insert Variable</p><div className="flex flex-wrap gap-1">{WA_VARS.map(v=>(<button key={v} onClick={()=>insertVar(v)} className="px-2 py-1 bg-white border border-gray-200 rounded-md text-[10px] font-mono text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-colors">{v}</button>))}</div></div>
-            <div><textarea ref={msgRef} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all" rows={4} value={getTpl(activeStatus)} onChange={e=>setTpl(activeStatus,e.target.value)} placeholder="Type your message template..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!getEnabled(activeStatus)}/><div className="flex items-center justify-between mt-1"><p className="text-[10px] text-gray-400">{getTpl(activeStatus).length} characters</p><button onClick={()=>setTpl(activeStatus,WA_DEFAULT_TEMPLATES[lang]?.[activeStatus]||'')} className="text-[10px] text-emerald-600 font-bold hover:underline">Reset to default</button></div></div>
+            <div><p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>Insert Variable</p><div className="flex flex-wrap gap-1">{WA_VARS.map(v=>(<button key={v} onClick={()=>insertVar(v)} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{v}</button>))}</div></div>
+            <div><textarea ref={msgRef} className={`w-full ${inp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all`} rows={4} value={getTpl(activeStatus)} onChange={e=>setTpl(activeStatus,e.target.value)} placeholder="Type your message template..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!getEnabled(activeStatus)}/><div className="flex items-center justify-between mt-1"><p className={`text-[10px] ${t3}`}>{getTpl(activeStatus).length} characters</p><button onClick={()=>setTpl(activeStatus,WA_DEFAULT_TEMPLATES[lang]?.[activeStatus]||'')} className="text-[10px] text-emerald-600 font-bold hover:underline">Reset to default</button></div></div>
           </div>
           {/* All Statuses Overview */}
-          <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">All Status Overview</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">{WA_STATUSES.map(st=>(<div key={st} onClick={()=>setActiveStatus(st)} className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${activeStatus===st?'border-emerald-400 bg-emerald-50':'border-gray-100 bg-white hover:border-gray-200'}`}><div className="flex items-center gap-2 min-w-0"><div className={`w-2 h-2 rounded-full shrink-0 ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'}`}/><span className="text-xs font-medium text-gray-700 truncate">{WA_STATUS_LABELS[st]?.[lang]||st}</span></div><div className="flex items-center gap-1.5 shrink-0"><span className="text-[9px] text-gray-400 font-medium">{WA_TIMING_OPTIONS.find(o=>o.v===getTiming(st))?.[lang]||'Immediately'}</span><div className={`w-7 h-4 rounded-full ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'} relative`} onClick={e=>{e.stopPropagation();setEnabled(st,!getEnabled(st));}}><div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform ${getEnabled(st)?'translate-x-3.5':'translate-x-0.5'}`} style={{top:2}}/></div></div></div>))}</div></div>
+          <div><p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>All Status Overview</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">{WA_STATUSES.map(st=>(<div key={st} onClick={()=>setActiveStatus(st)} className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${activeStatus===st?(dk?'border-emerald-400 bg-emerald-900/20':'border-emerald-400 bg-emerald-50'):card+' hover:border-gray-300'}`}><div className="flex items-center gap-2 min-w-0"><div className={`w-2 h-2 rounded-full shrink-0 ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'}`}/><span className={`text-xs font-medium ${t2} truncate`}>{WA_STATUS_LABELS[st]?.[lang]||st}</span></div><div className="flex items-center gap-1.5 shrink-0"><span className={`text-[9px] ${t3} font-medium`}>{WA_TIMING_OPTIONS.find(o=>o.v===getTiming(st))?.[lang]||'Immediately'}</span><div className={`w-7 h-4 rounded-full ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'} relative`} onClick={e=>{e.stopPropagation();setEnabled(st,!getEnabled(st));}}><div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform ${getEnabled(st)?'translate-x-3.5':'translate-x-0.5'}`} style={{top:2}}/></div></div></div>))}</div></div>
           {/* Abandoned Cart */}
-          <div className="bg-purple-50 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between"><div className="flex items-center gap-2"><ShoppingCart size={16} className="text-purple-600"/><h4 className="font-bold text-sm text-gray-900">Abandoned Cart Recovery</h4></div><div className="flex items-center gap-3"><div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400"/><select className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 font-medium" value={cfg.wa_abandoned_cart_timing||'3hours'} onChange={e=>setV('wa_abandoned_cart_timing',e.target.value)}>{WA_CART_TIMING.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div><div className={`w-10 rounded-full cursor-pointer ${cfg.wa_abandoned_cart_enabled?'bg-purple-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setV('wa_abandoned_cart_enabled',!cfg.wa_abandoned_cart_enabled)}><div className={`absolute bg-white rounded-full shadow transition-transform ${cfg.wa_abandoned_cart_enabled?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div></div></div>
-            <div className="flex flex-wrap gap-1">{WA_CART_VARS.map(v=>(<button key={v} onClick={()=>{const cur=cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} className="px-2 py-1 bg-white border border-purple-200 rounded-md text-[10px] font-mono text-purple-700 hover:bg-purple-50 transition-colors">{v}</button>))}</div>
-            <textarea className="w-full bg-white border border-purple-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none transition-all" rows={3} value={cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||''} onChange={e=>setV('wa_abandoned_cart_msg',e.target.value)} placeholder="Abandoned cart message..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!cfg.wa_abandoned_cart_enabled}/>
+          <div className={`${cartBg} rounded-xl p-4 space-y-3`}>
+            <div className="flex items-center justify-between"><div className="flex items-center gap-2"><ShoppingCart size={16} className="text-purple-600"/><h4 className={`font-bold text-sm ${t1}`}>Abandoned Cart Recovery</h4></div><div className="flex items-center gap-3"><div className="flex items-center gap-1.5"><Clock size={14} className={t3}/><select className={`text-xs ${inp} border rounded-lg px-2 py-1.5 font-medium`} value={cfg.wa_abandoned_cart_timing||'3hours'} onChange={e=>setV('wa_abandoned_cart_timing',e.target.value)}>{WA_CART_TIMING.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div><div className={`w-10 rounded-full cursor-pointer ${cfg.wa_abandoned_cart_enabled?'bg-purple-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setV('wa_abandoned_cart_enabled',!cfg.wa_abandoned_cart_enabled)}><div className={`absolute bg-white rounded-full shadow transition-transform ${cfg.wa_abandoned_cart_enabled?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div></div></div>
+            <div className="flex flex-wrap gap-1">{WA_CART_VARS.map(v=>(<button key={v} onClick={()=>{const cur=cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${cartVar}`}>{v}</button>))}</div>
+            <textarea className={`w-full ${cartInp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none transition-all`} rows={3} value={cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||''} onChange={e=>setV('wa_abandoned_cart_msg',e.target.value)} placeholder="Abandoned cart message..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!cfg.wa_abandoned_cart_enabled}/>
           </div>
         </div>
       </div></div>
       {/* Footer */}
-      <div className="px-4 sm:px-6 py-3 border-t border-gray-100 flex items-center justify-between shrink-0 bg-gray-50">
-        <p className="text-[10px] text-gray-400">Changes are saved when you click Save & Close</p>
-        <div className="flex items-center gap-2"><button onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700">Close</button><button onClick={handleSave} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 flex items-center gap-1.5"><Save size={14}/>Save & Close</button></div>
+      <div className={`px-4 sm:px-6 py-3 border-t ${br} flex items-center justify-between shrink-0 ${b2}`}>
+        <p className={`text-[10px] ${t3}`}>Changes are saved when you click Save & Close</p>
+        <div className="flex items-center gap-2"><button onClick={onClose} className={`px-4 py-2 text-xs font-bold ${dk?'text-gray-400 hover:text-gray-200':'text-gray-500 hover:text-gray-700'}`}>Close</button><button onClick={handleSave} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 flex items-center gap-1.5"><Save size={14}/>Save & Close</button></div>
       </div>
     </div>
   </div>);
