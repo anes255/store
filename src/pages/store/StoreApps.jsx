@@ -6,6 +6,7 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api, { getPlatformInfo } from '../../utils/api';
 import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut, ChevronRight } from 'lucide-react';
+import WhatsAppConfigModal from '../../components/shared/WhatsAppConfigModal';
 
 function WhatsAppQR({ storeId }) {
   const { t } = useTranslation();
@@ -213,6 +214,7 @@ export default function StoreApps() {
 
   // Test panels
   const [testPanel, setTestPanel] = useState(null); // app slug or tool slug
+  const [showWaConfig, setShowWaConfig] = useState(false);
 
   // Chatbot test
   const [botMessages, setBotMessages] = useState([]);
@@ -789,7 +791,7 @@ export default function StoreApps() {
             return (
               <button
                 key={app.slug}
-                onClick={() => setTestPanel(app.slug)}
+                onClick={() => (app.slug==='whatsapp-recovery'||app.slug==='whatsapp-status')?setShowWaConfig(true):setTestPanel(app.slug)}
                 className={`glass-card-solid p-5 transition-all text-left w-full cursor-pointer hover:ring-2 ${app.colorHover} hover:shadow-lg ${installed ? 'ring-2 ' + colors.ring + ' bg-white' : ''} ${app.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-start gap-4">
@@ -879,6 +881,7 @@ export default function StoreApps() {
           </div>
         );
       })()}
+      <WhatsAppConfigModal show={showWaConfig} onClose={()=>setShowWaConfig(false)} storeId={currentStore?.id} initialConfig={currentStore} onSave={async(cfg)=>{try{const{data}=await ownerApi.updateStore(currentStore.id,cfg);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch{toast.error(t('storePage.failed','Failed'));}}}/>
     </DashboardLayout>
   );
 }
