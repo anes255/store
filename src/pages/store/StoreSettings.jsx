@@ -8,6 +8,19 @@ import api from '../../utils/api';
 import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone } from 'lucide-react';
 
 const themes=[{id:'classic',name:'Classic Store',desc:'PROFESSIONAL & CLEAN',c:'#7C3AED'},{id:'nova-dark',name:'Nova Dark',desc:'FUTURISTIC & SLEEK',c:'#8B5CF6'},{id:'enterprise',name:'Enterprise',desc:'DENSE & FUNCTIONAL',c:'#3B82F6'},{id:'ocean-bloom',name:'Ocean Bloom',desc:'SOFT & FRIENDLY',c:'#06B6D4'},{id:'nzxt-pro',name:'NZXT Pro',desc:'HIGH CONTRAST',c:'#A855F7'},{id:'moonlight',name:'Moonlight',desc:'ETHEREAL & CALM',c:'#818CF8'}];
+
+// ─── WhatsApp Constants (module-level) ───
+const WA_STATUSES=['new_order','confirmed','under_preparation','shipped','delivered','cancelled','awaiting','failed_call_1','failed_call_2','failed_call_3','returned'];
+const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirmé',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En préparation',ar:'قيد التحضير'},shipped:{en:'Shipped',fr:'Expédié',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livré',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annulé',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Failed Call 1',fr:'Appel échoué 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Failed Call 2',fr:'Appel échoué 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Failed Call 3',fr:'Appel échoué 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourné',ar:'مرتجع'}};
+const WA_TIMING_OPTIONS=[{v:'immediately',en:'Immediately',fr:'Immédiatement',ar:'فورا'},{v:'5min',en:'After 5 min',fr:'Après 5 min',ar:'بعد 5 دقائق'},{v:'15min',en:'After 15 min',fr:'Après 15 min',ar:'بعد 15 دقيقة'},{v:'30min',en:'After 30 min',fr:'Après 30 min',ar:'بعد 30 دقيقة'},{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'2hours',en:'After 2 hours',fr:'Après 2 heures',ar:'بعد ساعتين'}];
+const WA_CART_TIMING=[{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'3hours',en:'After 3 hours',fr:'Après 3 heures',ar:'بعد 3 ساعات'},{v:'6hours',en:'After 6 hours',fr:'Après 6 heures',ar:'بعد 6 ساعات'},{v:'12hours',en:'After 12 hours',fr:'Après 12 heures',ar:'بعد 12 ساعة'},{v:'24hours',en:'After 24 hours',fr:'Après 24 heures',ar:'بعد 24 ساعة'}];
+const WA_VARS=['{store_name}','{order_number}','{customer_name}','{total}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{payment_method}','{tracking_number}','{delivery_company}'];
+const WA_CART_VARS=['{store_name}','{cart_url}','{item_count}','{customer_name}'];
+const WA_DEFAULT_TEMPLATES={
+  en:{new_order:'Hi {customer_name}! We received your order #{order_number} at {store_name}. Total: {total} {currency}. We will process it shortly!',confirmed:'Hi {customer_name}! Your order #{order_number} from {store_name} has been confirmed. Total: {total} {currency}. We\'ll keep you updated!',under_preparation:'Hello {customer_name}! Your order #{order_number} is now being prepared at {store_name}. We\'ll notify you once it ships!',shipped:'Great news {customer_name}! Your order #{order_number} has been shipped. Track: {tracking_number}. Delivery by {delivery_company}.',delivered:'Your order #{order_number} has been delivered! Thank you for shopping at {store_name}!',cancelled:'Hi {customer_name}, your order #{order_number} from {store_name} has been cancelled. If this was a mistake, please contact us.',awaiting:'Hi {customer_name}, your order #{order_number} is awaiting confirmation. We will get back to you soon!',failed_call_1:'Hi {customer_name}, we tried to reach you about order #{order_number}. Please call us back at your convenience.',failed_call_2:'Hello {customer_name}, this is our second attempt to reach you about order #{order_number}. Please respond as soon as possible.',failed_call_3:'Dear {customer_name}, we have been unable to reach you about order #{order_number}. Your order may be cancelled if we don\'t hear from you.',returned:'Hi {customer_name}, your order #{order_number} has been returned. Please contact {store_name} for more details.',abandoned_cart:'Hi {customer_name}! You left {item_count} item(s) in your cart at {store_name}. Complete your order here: {cart_url}'},
+  fr:{new_order:'Bonjour {customer_name}! Nous avons reçu votre commande #{order_number} chez {store_name}. Total: {total} {currency}.',confirmed:'Bonjour {customer_name}! Votre commande #{order_number} de {store_name} est confirmée. Total: {total} {currency}.',under_preparation:'Bonjour {customer_name}! Votre commande #{order_number} est en cours de préparation chez {store_name}.',shipped:'Bonne nouvelle {customer_name}! Votre commande #{order_number} a été expédiée. Suivi: {tracking_number}. Livraison par {delivery_company}.',delivered:'Votre commande #{order_number} a été livrée! Merci d\'avoir choisi {store_name}!',cancelled:'Bonjour {customer_name}, votre commande #{order_number} de {store_name} a été annulée. Si c\'est une erreur, contactez-nous.',awaiting:'Bonjour {customer_name}, votre commande #{order_number} est en attente de confirmation.',failed_call_1:'Bonjour {customer_name}, nous avons essayé de vous joindre concernant la commande #{order_number}. Veuillez nous rappeler.',failed_call_2:'Bonjour {customer_name}, ceci est notre deuxième tentative pour la commande #{order_number}. Merci de nous répondre.',failed_call_3:'Cher {customer_name}, nous n\'arrivons pas à vous joindre pour la commande #{order_number}. Elle risque d\'être annulée.',returned:'Bonjour {customer_name}, votre commande #{order_number} a été retournée. Contactez {store_name} pour plus de détails.',abandoned_cart:'Bonjour {customer_name}! Vous avez laissé {item_count} article(s) dans votre panier chez {store_name}. Complétez ici: {cart_url}'},
+  ar:{new_order:'مرحبا {customer_name}! استلمنا طلبك #{order_number} من {store_name}. المبلغ: {total} {currency}.',confirmed:'مرحبا {customer_name}! تم تأكيد طلبك #{order_number} من {store_name}. المبلغ: {total} {currency}.',under_preparation:'مرحبا {customer_name}! طلبك #{order_number} قيد التحضير في {store_name}.',shipped:'أخبار سارة {customer_name}! تم شحن طلبك #{order_number}. رقم التتبع: {tracking_number}. التوصيل عبر {delivery_company}.',delivered:'تم تسليم طلبك #{order_number}! شكرا لتسوقك من {store_name}!',cancelled:'مرحبا {customer_name}، تم إلغاء طلبك #{order_number} من {store_name}. إذا كان هذا خطأ، تواصل معنا.',awaiting:'مرحبا {customer_name}، طلبك #{order_number} في انتظار التأكيد.',failed_call_1:'مرحبا {customer_name}، حاولنا الاتصال بك بخصوص الطلب #{order_number}. يرجى معاودة الاتصال.',failed_call_2:'مرحبا {customer_name}، هذه المحاولة الثانية للاتصال بك بخصوص الطلب #{order_number}. يرجى الرد.',failed_call_3:'عزيزي {customer_name}، لم نتمكن من الوصول إليك بخصوص الطلب #{order_number}. قد يتم إلغاء طلبك.',returned:'مرحبا {customer_name}، تم إرجاع طلبك #{order_number}. تواصل مع {store_name} لمزيد من التفاصيل.',abandoned_cart:'مرحبا {customer_name}! تركت {item_count} منتج(ات) في سلتك في {store_name}. أكمل طلبك هنا: {cart_url}'}
+};
 const brandColors=['#10B981','#06B6D4','#3B82F6','#6366F1','#8B5CF6','#A855F7','#D946EF','#EC4899','#F43F5E','#EF4444','#F97316','#EAB308','#84CC16','#22C55E','#14B8A6','#0EA5E9'];
 const roles={admin:{label:'Admin',desc:'Full access',color:'bg-brand-500',perms:['View Dashboard','View Orders','Manage Orders','Delete Orders','Confirm Orders','Prepare Orders','View Products','Manage Products','View Customers','Manage Customers']},manager:{label:'Manager',desc:'Orders + Customers',color:'bg-blue-500',perms:['View Dashboard','View Orders','Manage Orders','Confirm Orders','View Products','View Customers']},staff:{label:'Staff',desc:'Orders only',color:'bg-emerald-500',perms:['View Orders','Manage Orders','View Products','View Customers']},viewer:{label:'Viewer',desc:'Read-only',color:'bg-gray-500',perms:['View Dashboard','View Orders','View Products']},confirmer:{label:'Confirmer',desc:'Validate orders',color:'bg-green-500',perms:['View Orders','Confirm Orders','View Customers']}};
 
@@ -70,6 +83,21 @@ export default function StoreSettings(){
   const[waLoading,setWaLoading]=useState(false);
   const[waConnectError,setWaConnectError]=useState(null);
   const msgRef=useRef(null);
+
+  // ─── WhatsApp helper functions ───
+  const waGetTemplates=()=>{try{return s.wa_templates?JSON.parse(typeof s.wa_templates==='string'?s.wa_templates:JSON.stringify(s.wa_templates)):{};}catch{return{};}};
+  const waGetTpl=(status)=>{const tpls=waGetTemplates();return tpls?.[waLang]?.[status]||WA_DEFAULT_TEMPLATES[waLang]?.[status]||'';};
+  const waSetTpl=(status,val)=>{const tpls=waGetTemplates();if(!tpls[waLang])tpls[waLang]={};tpls[waLang][status]=val;setV('wa_templates',JSON.stringify(tpls));};
+  const waGetEnabled=(status)=>{try{const e=s.wa_enabled_statuses?JSON.parse(typeof s.wa_enabled_statuses==='string'?s.wa_enabled_statuses:JSON.stringify(s.wa_enabled_statuses)):{}; return e[status]!==false;}catch{return true;}};
+  const waSetEnabled=(status,val)=>{try{const e=s.wa_enabled_statuses?JSON.parse(typeof s.wa_enabled_statuses==='string'?s.wa_enabled_statuses:JSON.stringify(s.wa_enabled_statuses)):{}; e[status]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
+  const waGetTiming=(status)=>{try{const tm=s.wa_timing?JSON.parse(typeof s.wa_timing==='string'?s.wa_timing:JSON.stringify(s.wa_timing)):{}; return tm[status]||'immediately';}catch{return 'immediately';}};
+  const waSetTiming=(status,val)=>{try{const tm=s.wa_timing?JSON.parse(typeof s.wa_timing==='string'?s.wa_timing:JSON.stringify(s.wa_timing)):{}; tm[status]=val;setV('wa_timing',JSON.stringify(tm));}catch{}};
+  const waInsertVar=(v)=>{const ta=msgRef.current;if(!ta)return;const start=ta.selectionStart;const end=ta.selectionEnd;const cur=waGetTpl(waActiveStatus);const nv=cur.substring(0,start)+v+cur.substring(end);waSetTpl(waActiveStatus,nv);setTimeout(()=>{ta.focus();ta.selectionStart=ta.selectionEnd=start+v.length;},50);};
+  const waPreviewMsg=(tpl)=>{let m=tpl||'';m=m.replace(/\{store_name\}/g,s.name||s.store_name||'My Store');m=m.replace(/\{order_number\}/g,'100254');m=m.replace(/\{customer_name\}/g,'Ahmed');m=m.replace(/\{total\}/g,'3,500');m=m.replace(/\{currency\}/g,s.currency||'DZD');m=m.replace(/\{shipping_address\}/g,'12 Rue Didouche');m=m.replace(/\{shipping_city\}/g,'Alger');m=m.replace(/\{shipping_wilaya\}/g,'Alger');m=m.replace(/\{payment_method\}/g,'COD');m=m.replace(/\{tracking_number\}/g,'TR-98421');m=m.replace(/\{delivery_company\}/g,'Yalidine');m=m.replace(/\{cart_url\}/g,'https://store.com/cart/abc');m=m.replace(/\{item_count\}/g,'3');return m;};
+  const waStartConnection=async()=>{if(!currentStore?.id)return;setWaLoading(true);setWaConnectError(null);try{const{data}=await aiApi.waQrStart(currentStore.id);if(data.qr||data.connected){setWaStatus(data);setWaLoading(false);return;}for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,2000));try{const{data:st}=await aiApi.waQrStatus(currentStore.id);setWaStatus(st);if(st.qr||st.connected){setWaLoading(false);return;}}catch{}}setWaConnectError('QR is taking a while. Try again.');}catch(e){setWaConnectError(e.response?.data?.error||e.message);}setWaLoading(false);};
+  const waDisconnect=async()=>{if(!currentStore?.id)return;try{await aiApi.waQrDisconnect(currentStore.id);setWaStatus({status:'disconnected',connected:false});}catch{}};
+  const waCheckStatus=async()=>{if(!currentStore?.id)return;try{const{data}=await aiApi.waQrStatus(currentStore.id);setWaStatus(data);}catch{setWaStatus({status:'not_started',connected:false});}};
+  const waIsRtl=waLang==='ar';
 
   useEffect(()=>{if(currentStore){setS({...currentStore,theme:currentStore.theme||'classic'});loadData();}},[currentStore?.id]);
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);
@@ -178,35 +206,10 @@ export default function StoreSettings(){
 <div className="glass-card-solid p-4 sm:p-6"><div className="flex items-start gap-3"><div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><Globe size={20} className="text-brand-500"/></div><div className="flex-1 min-w-0"><h3 className="font-bold text-gray-900">Connect a Custom Domain</h3><p className="text-xs text-gray-500 mt-1">Use your own domain (e.g. mystore.com) for your store. Add the domain, configure DNS records, and verify the connection — all in one place.</p><button onClick={()=>window.location.href='/dashboard/domains'} className="btn-primary text-sm mt-4 flex items-center gap-2"><ExternalLink size={14}/>Open Domain Manager</button></div></div></div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold text-sm mb-3">Security</h3><T label="Force HTTPS" desc="Secure connections." checked={s.force_https!==false} onChange={e=>setV('force_https',e.target.checked)}/><T label="Redirect www" desc="www to root." checked={s.redirect_www!==false} onChange={e=>setV('redirect_www',e.target.checked)}/><T label="Clean URLs" desc="Remove .html extensions." checked={s.clean_urls!==false} onChange={e=>setV('clean_urls',e.target.checked)}/></div></>}
 
-{sec==='ai'&&(()=>{
-  const WA_STATUSES=['new_order','confirmed','under_preparation','shipped','delivered','cancelled','awaiting','failed_call_1','failed_call_2','failed_call_3','returned'];
-  const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirme',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En preparation',ar:'قيد التحضير'},shipped:{en:'Shipped',fr:'Expedie',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livre',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annule',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Failed Call 1',fr:'Appel echoue 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Failed Call 2',fr:'Appel echoue 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Failed Call 3',fr:'Appel echoue 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourne',ar:'مرتجع'}};
-  const WA_TIMING_OPTIONS=[{v:'immediately',en:'Immediately',fr:'Immediatement',ar:'فورا'},{v:'5min',en:'After 5 min',fr:'Apres 5 min',ar:'بعد 5 دقائق'},{v:'15min',en:'After 15 min',fr:'Apres 15 min',ar:'بعد 15 دقيقة'},{v:'30min',en:'After 30 min',fr:'Apres 30 min',ar:'بعد 30 دقيقة'},{v:'1hour',en:'After 1 hour',fr:'Apres 1 heure',ar:'بعد ساعة'},{v:'2hours',en:'After 2 hours',fr:'Apres 2 heures',ar:'بعد ساعتين'}];
-  const WA_CART_TIMING=[{v:'1hour',en:'After 1 hour',fr:'Apres 1 heure',ar:'بعد ساعة'},{v:'3hours',en:'After 3 hours',fr:'Apres 3 heures',ar:'بعد 3 ساعات'},{v:'6hours',en:'After 6 hours',fr:'Apres 6 heures',ar:'بعد 6 ساعات'},{v:'12hours',en:'After 12 hours',fr:'Apres 12 heures',ar:'بعد 12 ساعة'},{v:'24hours',en:'After 24 hours',fr:'Apres 24 heures',ar:'بعد 24 ساعة'}];
-  const WA_VARS=['{store_name}','{order_number}','{customer_name}','{total}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{payment_method}','{tracking_number}','{delivery_company}'];
-  const WA_CART_VARS=['{store_name}','{cart_url}','{item_count}'];
-  const DEFAULT_TEMPLATES={
-    en:{new_order:'Hi {customer_name}! We received your order #{order_number} at {store_name}. Total: {total} {currency}. We will process it shortly!',confirmed:'Hi {customer_name}! Your order #{order_number} from {store_name} has been confirmed. Total: {total} {currency}. We\'ll keep you updated!',under_preparation:'Hello {customer_name}! Your order #{order_number} is now being prepared at {store_name}. We\'ll notify you once it ships!',shipped:'Great news {customer_name}! Your order #{order_number} has been shipped. Track: {tracking_number}. Delivery by {delivery_company}.',delivered:'Your order #{order_number} has been delivered! Thank you for shopping at {store_name}!',cancelled:'Hi {customer_name}, your order #{order_number} from {store_name} has been cancelled. If this was a mistake, please contact us.',awaiting:'Hi {customer_name}, your order #{order_number} is awaiting confirmation. We will get back to you soon!',failed_call_1:'Hi {customer_name}, we tried to reach you about order #{order_number}. Please call us back at your convenience.',failed_call_2:'Hello {customer_name}, this is our second attempt to reach you about order #{order_number}. Please respond as soon as possible.',failed_call_3:'Dear {customer_name}, we have been unable to reach you about order #{order_number}. Your order may be cancelled if we don\'t hear from you.',returned:'Hi {customer_name}, your order #{order_number} has been returned. Please contact {store_name} for more details.',abandoned_cart:'Hi {customer_name}! You left {item_count} item(s) in your cart at {store_name}. Complete your order here: {cart_url}'},
-    fr:{new_order:'Bonjour {customer_name}! Nous avons recu votre commande #{order_number} chez {store_name}. Total: {total} {currency}. Nous la traiterons rapidement!',confirmed:'Bonjour {customer_name}! Votre commande #{order_number} de {store_name} est confirmee. Total: {total} {currency}.',under_preparation:'Bonjour {customer_name}! Votre commande #{order_number} est en cours de preparation chez {store_name}.',shipped:'Bonne nouvelle {customer_name}! Votre commande #{order_number} a ete expediee. Suivi: {tracking_number}. Livraison par {delivery_company}.',delivered:'Votre commande #{order_number} a ete livree! Merci d\'avoir choisi {store_name}!',cancelled:'Bonjour {customer_name}, votre commande #{order_number} de {store_name} a ete annulee. Si c\'est une erreur, contactez-nous.',awaiting:'Bonjour {customer_name}, votre commande #{order_number} est en attente de confirmation. Nous reviendrons vers vous bientot!',failed_call_1:'Bonjour {customer_name}, nous avons essaye de vous joindre concernant la commande #{order_number}. Veuillez nous rappeler.',failed_call_2:'Bonjour {customer_name}, ceci est notre deuxieme tentative pour la commande #{order_number}. Merci de nous repondre.',failed_call_3:'Cher {customer_name}, nous n\'arrivons pas a vous joindre pour la commande #{order_number}. Elle risque d\'etre annulee.',returned:'Bonjour {customer_name}, votre commande #{order_number} a ete retournee. Contactez {store_name} pour plus de details.',abandoned_cart:'Bonjour {customer_name}! Vous avez laisse {item_count} article(s) dans votre panier chez {store_name}. Completez ici: {cart_url}'},
-    ar:{new_order:'مرحبا {customer_name}! استلمنا طلبك #{order_number} من {store_name}. المبلغ: {total} {currency}. سنعالجه قريبا!',confirmed:'مرحبا {customer_name}! تم تأكيد طلبك #{order_number} من {store_name}. المبلغ: {total} {currency}.',under_preparation:'مرحبا {customer_name}! طلبك #{order_number} قيد التحضير في {store_name}.',shipped:'أخبار سارة {customer_name}! تم شحن طلبك #{order_number}. رقم التتبع: {tracking_number}. التوصيل عبر {delivery_company}.',delivered:'تم تسليم طلبك #{order_number}! شكرا لتسوقك من {store_name}!',cancelled:'مرحبا {customer_name}، تم إلغاء طلبك #{order_number} من {store_name}. إذا كان هذا خطأ، تواصل معنا.',awaiting:'مرحبا {customer_name}، طلبك #{order_number} في انتظار التأكيد. سنعود إليك قريبا!',failed_call_1:'مرحبا {customer_name}، حاولنا الاتصال بك بخصوص الطلب #{order_number}. يرجى معاودة الاتصال.',failed_call_2:'مرحبا {customer_name}، هذه المحاولة الثانية للاتصال بك بخصوص الطلب #{order_number}. يرجى الرد.',failed_call_3:'عزيزي {customer_name}، لم نتمكن من الوصول إليك بخصوص الطلب #{order_number}. قد يتم إلغاء طلبك.',returned:'مرحبا {customer_name}، تم إرجاع طلبك #{order_number}. تواصل مع {store_name} لمزيد من التفاصيل.',abandoned_cart:'مرحبا {customer_name}! تركت {item_count} منتج(ات) في سلتك في {store_name}. أكمل طلبك هنا: {cart_url}'}
-  };
-  const getTemplates=()=>{try{return s.wa_templates?JSON.parse(typeof s.wa_templates==='string'?s.wa_templates:JSON.stringify(s.wa_templates)):{};}catch{return{};}};
-  const getTpl=(status)=>{const t=getTemplates();return t?.[waLang]?.[status]||DEFAULT_TEMPLATES[waLang]?.[status]||'';};
-  const setTpl=(status,val)=>{const t=getTemplates();if(!t[waLang])t[waLang]={};t[waLang][status]=val;setV('wa_templates',JSON.stringify(t));};
-  const getEnabled=(status)=>{try{const e=s.wa_enabled_statuses?JSON.parse(typeof s.wa_enabled_statuses==='string'?s.wa_enabled_statuses:JSON.stringify(s.wa_enabled_statuses)):{}; return e[status]!==false;}catch{return true;}};
-  const setEnabled=(status,val)=>{try{const e=s.wa_enabled_statuses?JSON.parse(typeof s.wa_enabled_statuses==='string'?s.wa_enabled_statuses:JSON.stringify(s.wa_enabled_statuses)):{}; e[status]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
-  const getTiming=(status)=>{try{const t=s.wa_timing?JSON.parse(typeof s.wa_timing==='string'?s.wa_timing:JSON.stringify(s.wa_timing)):{}; return t[status]||'immediately';}catch{return 'immediately';}};
-  const setTiming=(status,val)=>{try{const t=s.wa_timing?JSON.parse(typeof s.wa_timing==='string'?s.wa_timing:JSON.stringify(s.wa_timing)):{}; t[status]=val;setV('wa_timing',JSON.stringify(t));}catch{}};
-  const insertVar=(v)=>{const ta=msgRef.current;if(!ta)return;const start=ta.selectionStart;const end=ta.selectionEnd;const cur=getTpl(waActiveStatus);const nv=cur.substring(0,start)+v+cur.substring(end);setTpl(waActiveStatus,nv);setTimeout(()=>{ta.focus();ta.selectionStart=ta.selectionEnd=start+v.length;},50);};
-  const previewMsg=(tpl)=>{let m=tpl||'';m=m.replace(/\{store_name\}/g,s.name||s.store_name||'My Store');m=m.replace(/\{order_number\}/g,'100254');m=m.replace(/\{customer_name\}/g,'Ahmed');m=m.replace(/\{total\}/g,'3,500');m=m.replace(/\{currency\}/g,s.currency||'DZD');m=m.replace(/\{shipping_address\}/g,'12 Rue Didouche');m=m.replace(/\{shipping_city\}/g,'Alger');m=m.replace(/\{shipping_wilaya\}/g,'Alger');m=m.replace(/\{payment_method\}/g,'COD');m=m.replace(/\{tracking_number\}/g,'TR-98421');m=m.replace(/\{delivery_company\}/g,'Yalidine');m=m.replace(/\{cart_url\}/g,'https://store.com/cart/abc');m=m.replace(/\{item_count\}/g,'3');return m;};
-  const startWaConnection=async()=>{if(!currentStore?.id)return;setWaLoading(true);setWaConnectError(null);try{const{data}=await aiApi.waQrStart(currentStore.id);if(data.qr||data.connected){setWaStatus(data);setWaLoading(false);return;}for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,2000));try{const{data:st}=await aiApi.waQrStatus(currentStore.id);setWaStatus(st);if(st.qr||st.connected){setWaLoading(false);return;}}catch{}}setWaConnectError('QR is taking a while. Try again.');}catch(e){setWaConnectError(e.response?.data?.error||e.message);}setWaLoading(false);};
-  const disconnectWa=async()=>{if(!currentStore?.id)return;try{await aiApi.waQrDisconnect(currentStore.id);setWaStatus({status:'disconnected',connected:false});}catch{}};
-  const checkWaStatus=async()=>{if(!currentStore?.id)return;try{const{data}=await aiApi.waQrStatus(currentStore.id);setWaStatus(data);}catch{setWaStatus({status:'not_started',connected:false});}};
-  const isRtl=waLang==='ar';
-  return(<>
+{sec==='ai'&&<>
   <SH icon={Bot} title="AI Messaging Agent" subtitle="Automated WhatsApp messaging for your store." accent="brand"/>
-  {/* WhatsApp Card */}
-  <div onClick={()=>{if(!waStatus)checkWaStatus();setShowWaModal(true);}} className="glass-card-solid p-5 sm:p-6 mt-4 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all group">
+  {/* WhatsApp Card - Click to open modal */}
+  <div onClick={()=>{if(!waStatus)waCheckStatus();setShowWaModal(true);}} className="glass-card-solid p-5 sm:p-6 mt-4 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all group">
     <div className="flex items-center gap-4">
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
         <MessageCircle size={28} className="text-white"/>
@@ -221,226 +224,12 @@ export default function StoreSettings(){
       </div>
     </div>
     <div className="mt-4 grid grid-cols-3 gap-3">
-      <div className="p-3 bg-emerald-50 rounded-xl text-center"><p className="text-[10px] font-bold text-emerald-600 uppercase">Status Updates</p><p className="text-lg font-black text-emerald-700">{WA_STATUSES.filter(st=>getEnabled(st)).length}/{WA_STATUSES.length}</p></div>
+      <div className="p-3 bg-emerald-50 rounded-xl text-center"><p className="text-[10px] font-bold text-emerald-600 uppercase">Status Updates</p><p className="text-lg font-black text-emerald-700">{WA_STATUSES.filter(st=>waGetEnabled(st)).length}/{WA_STATUSES.length}</p></div>
       <div className="p-3 bg-blue-50 rounded-xl text-center"><p className="text-[10px] font-bold text-blue-600 uppercase">Language</p><p className="text-lg font-black text-blue-700">{(s.wa_language||waLang).toUpperCase()}</p></div>
       <div className="p-3 bg-purple-50 rounded-xl text-center"><p className="text-[10px] font-bold text-purple-600 uppercase">Cart Recovery</p><p className="text-lg font-black text-purple-700">{s.wa_abandoned_cart_enabled?'ON':'OFF'}</p></div>
     </div>
   </div>
-
-  {/* WhatsApp Modal */}
-  {showWaModal&&<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4" onClick={()=>setShowWaModal(false)}>
-    <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col" onClick={e=>e.stopPropagation()}>
-      {/* Modal Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center"><MessageCircle size={20} className="text-white"/></div>
-          <div><h2 className="font-black text-lg text-gray-900">WhatsApp Configuration</h2><p className="text-xs text-gray-400">Configure automated messages for every order status</p></div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Language selector */}
-          <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
-            {[{c:'fr',l:'FR',f:'🇫🇷'},{c:'ar',l:'AR',f:'🇩🇿'},{c:'en',l:'EN',f:'🇬🇧'}].map(lg=>(
-              <button key={lg.c} onClick={()=>{setWaLang(lg.c);setV('wa_language',lg.c);}} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${waLang===lg.c?'bg-white shadow text-gray-900':'text-gray-500 hover:text-gray-700'}`}><span>{lg.f}</span>{lg.l}</button>
-            ))}
-          </div>
-          <button onClick={()=>setShowWaModal(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={18}/></button>
-        </div>
-      </div>
-
-      {/* Modal Body */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col lg:flex-row">
-          {/* LEFT: WhatsApp Preview */}
-          <div className="lg:w-[340px] shrink-0 p-4 sm:p-5 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">Message Preview</p>
-            {/* WhatsApp Phone Frame */}
-            <div className="bg-[#0b141a] rounded-2xl overflow-hidden shadow-xl max-w-[300px] mx-auto">
-              {/* WA Header */}
-              <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">{(s.name||s.store_name||'S')[0]?.toUpperCase()}</div>
-                <div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{s.name||s.store_name||'My Store'}</p><p className="text-[10px] text-emerald-400">online</p></div>
-                <Phone size={16} className="text-gray-400"/>
-              </div>
-              {/* WA Chat Area */}
-              <div className="p-3 min-h-[280px] max-h-[350px] overflow-y-auto" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
-                {/* Incoming message bubble */}
-                <div className={`flex ${isRtl?'flex-row-reverse':''} mb-2`}>
-                  <div className="max-w-[85%]">
-                    <div className="bg-[#005c4b] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:isRtl?'rtl':'ltr'}}>
-                      <p className="text-white text-[13px] leading-relaxed whitespace-pre-wrap break-words">{previewMsg(getTpl(waActiveStatus))||'Configure a message template...'}</p>
-                      <div className={`flex items-center gap-1 mt-1 ${isRtl?'justify-start':'justify-end'}`}>
-                        <span className="text-[10px] text-emerald-200">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-                        <span className="text-emerald-300 text-[10px]">&#10003;&#10003;</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* WA Input Bar */}
-              <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2">
-                <div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">Type a message</span></div>
-                <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div>
-              </div>
-            </div>
-            <p className="text-[10px] text-gray-400 text-center mt-2">Preview updates in real-time as you type</p>
-
-            {/* Connection Status */}
-            <div className="mt-4 p-3 bg-white rounded-xl border border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-gray-700">Connection</p>
-                {waStatus?.connected?<span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><Wifi size={12}/>Connected</span>:<span className="flex items-center gap-1 text-xs font-bold text-gray-400"><WifiOff size={12}/>Disconnected</span>}
-              </div>
-              {waStatus?.connected?(
-                <button onClick={disconnectWa} className="w-full py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">Disconnect</button>
-              ):waStatus?.qr?(
-                <div className="text-center">
-                  <img src={`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/>
-                  <p className="text-[10px] text-gray-400 mt-1">Scan with WhatsApp</p>
-                  <button onClick={startWaConnection} className="mt-2 text-xs text-brand-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button>
-                </div>
-              ):(
-                <div>
-                  <button onClick={startWaConnection} disabled={waLoading} className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">{waLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<QrCode size={14}/>}{waLoading?'Connecting...':'Connect WhatsApp'}</button>
-                  {waConnectError&&<p className="text-xs text-red-500 mt-2 text-center">{waConnectError}</p>}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT: Configuration */}
-          <div className="flex-1 min-w-0 p-4 sm:p-5 space-y-4">
-            {/* Status Tabs */}
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Order Status Templates</p>
-              <div className="flex flex-wrap gap-1.5">
-                {WA_STATUSES.map(st=>(
-                  <button key={st} onClick={()=>setWaActiveStatus(st)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${waActiveStatus===st?'bg-emerald-500 text-white shadow-sm':'bg-gray-100 text-gray-600 hover:bg-gray-200'} ${!getEnabled(st)?'opacity-50':''}`}>{WA_STATUS_LABELS[st]?.[waLang]||st}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Active Status Config */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-sm text-gray-900 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${getEnabled(waActiveStatus)?'bg-emerald-500':'bg-gray-300'}`}/>
-                  {WA_STATUS_LABELS[waActiveStatus]?.[waLang]||waActiveStatus}
-                </h4>
-                <div className="flex items-center gap-3">
-                  {/* Timing */}
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={14} className="text-gray-400"/>
-                    <select className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 font-medium" value={getTiming(waActiveStatus)} onChange={e=>setTiming(waActiveStatus,e.target.value)}>
-                      {WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[waLang]||o.en}</option>)}
-                    </select>
-                  </div>
-                  {/* Enable/disable */}
-                  <div className={`w-10 h-5.5 rounded-full cursor-pointer ${getEnabled(waActiveStatus)?'bg-emerald-500':'bg-gray-300'} relative transition-colors`} onClick={()=>setEnabled(waActiveStatus,!getEnabled(waActiveStatus))}>
-                    <div className={`absolute top-0.5 w-4.5 h-4.5 bg-white rounded-full shadow transition-transform ${getEnabled(waActiveStatus)?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/>
-                  </div>
-                </div>
-              </div>
-
-              {/* Variable Buttons */}
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Insert Variable</p>
-                <div className="flex flex-wrap gap-1">
-                  {WA_VARS.map(v=>(
-                    <button key={v} onClick={()=>insertVar(v)} className="px-2 py-1 bg-white border border-gray-200 rounded-md text-[10px] font-mono text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-colors">{v}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Message Textarea */}
-              <div>
-                <textarea
-                  ref={msgRef}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all"
-                  rows={4}
-                  value={getTpl(waActiveStatus)}
-                  onChange={e=>setTpl(waActiveStatus,e.target.value)}
-                  placeholder="Type your message template..."
-                  style={{direction:isRtl?'rtl':'ltr'}}
-                  disabled={!getEnabled(waActiveStatus)}
-                />
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-[10px] text-gray-400">{getTpl(waActiveStatus).length} characters</p>
-                  <button onClick={()=>setTpl(waActiveStatus,DEFAULT_TEMPLATES[waLang]?.[waActiveStatus]||'')} className="text-[10px] text-brand-600 font-bold hover:underline">Reset to default</button>
-                </div>
-              </div>
-            </div>
-
-            {/* All Statuses Overview */}
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">All Status Overview</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
-                {WA_STATUSES.map(st=>(
-                  <div key={st} onClick={()=>setWaActiveStatus(st)} className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${waActiveStatus===st?'border-emerald-400 bg-emerald-50':'border-gray-100 bg-white hover:border-gray-200'}`}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'}`}/>
-                      <span className="text-xs font-medium text-gray-700 truncate">{WA_STATUS_LABELS[st]?.[waLang]||st}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[9px] text-gray-400 font-medium">{WA_TIMING_OPTIONS.find(o=>o.v===getTiming(st))?.[waLang]||'Immediately'}</span>
-                      <div className={`w-7 h-4 rounded-full ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'} relative`} onClick={e=>{e.stopPropagation();setEnabled(st,!getEnabled(st));}}>
-                        <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform ${getEnabled(st)?'translate-x-3.5':'translate-x-0.5'}`} style={{top:2}}/>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Abandoned Cart */}
-            <div className="bg-purple-50 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart size={16} className="text-purple-600"/>
-                  <h4 className="font-bold text-sm text-gray-900">Abandoned Cart Recovery</h4>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={14} className="text-gray-400"/>
-                    <select className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 font-medium" value={s.wa_abandoned_cart_timing||'3hours'} onChange={e=>setV('wa_abandoned_cart_timing',e.target.value)}>
-                      {WA_CART_TIMING.map(o=><option key={o.v} value={o.v}>{o[waLang]||o.en}</option>)}
-                    </select>
-                  </div>
-                  <div className={`w-10 rounded-full cursor-pointer ${s.wa_abandoned_cart_enabled?'bg-purple-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setV('wa_abandoned_cart_enabled',!s.wa_abandoned_cart_enabled)}>
-                    <div className={`absolute bg-white rounded-full shadow transition-transform ${s.wa_abandoned_cart_enabled?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {WA_CART_VARS.map(v=>(
-                  <button key={v} onClick={()=>{const ta=msgRef.current;if(!ta)return;const cur=s.wa_abandoned_cart_msg||DEFAULT_TEMPLATES[waLang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} className="px-2 py-1 bg-white border border-purple-200 rounded-md text-[10px] font-mono text-purple-700 hover:bg-purple-50 transition-colors">{v}</button>
-                ))}
-              </div>
-              <textarea
-                className="w-full bg-white border border-purple-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none transition-all"
-                rows={3}
-                value={s.wa_abandoned_cart_msg||DEFAULT_TEMPLATES[waLang]?.abandoned_cart||''}
-                onChange={e=>setV('wa_abandoned_cart_msg',e.target.value)}
-                placeholder="Abandoned cart message..."
-                style={{direction:isRtl?'rtl':'ltr'}}
-                disabled={!s.wa_abandoned_cart_enabled}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal Footer */}
-      <div className="px-4 sm:px-6 py-3 border-t border-gray-100 flex items-center justify-between shrink-0 bg-gray-50">
-        <p className="text-[10px] text-gray-400">Changes are saved when you click Save on the settings page</p>
-        <div className="flex items-center gap-2">
-          <button onClick={()=>setShowWaModal(false)} className="btn-ghost text-xs">Close</button>
-          <button onClick={()=>{setShowWaModal(false);save();}} className="btn-primary text-xs flex items-center gap-1.5"><Save size={14}/>Save & Close</button>
-        </div>
-      </div>
-    </div>
-  </div>}
-  </>);
-})()}
+</>}
 
 {sec==='account'&&<><div className="glass-card-solid p-4 sm:p-6"><h3 className="font-bold text-lg text-gray-900 mb-4">Profile</h3><div className="flex items-start gap-8"><div className="flex-1 space-y-4"><div><label className="input-label text-xs">Full Name</label><input className="input-field" value={profile.full_name||''} onChange={e=>setProfile({...profile,full_name:e.target.value})}/></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label className="input-label text-xs">Username</label>{usernameEdit?<div className="flex gap-2"><input className="input-field flex-1" value={newUsername} onChange={e=>setNewUsername(e.target.value)}/><button onClick={saveUsername} className="btn-primary text-xs">Save</button><button onClick={()=>setUsernameEdit(false)} className="btn-ghost text-xs">×</button></div>:<div className="flex gap-2"><input className="input-field flex-1" value={profile.username||''} readOnly/><button onClick={()=>setUsernameEdit(true)} className="px-3 py-2 border border-brand-500 text-brand-600 rounded-xl text-xs font-bold">Change</button></div>}</div></div><div><label className="input-label text-xs">Email</label>{emailEdit?<div className="space-y-2"><input className="input-field" placeholder="New email" value={newEmail} onChange={e=>setNewEmail(e.target.value)}/><input type="password" className="input-field" placeholder="Password to confirm" value={emailPw} onChange={e=>setEmailPw(e.target.value)}/><div className="flex gap-2"><button onClick={saveEmail} className="btn-primary text-xs">Save</button><button onClick={()=>{setEmailEdit(false);setEmailPw('');}} className="btn-ghost text-xs">×</button></div></div>:<div className="flex gap-2"><input className="input-field flex-1" value={profile.email||''} readOnly/><button onClick={()=>setEmailEdit(true)} className="px-3 py-2 border border-brand-500 text-brand-600 rounded-xl text-xs font-bold">Change</button></div>}</div></div><div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center"><User size={32} className="text-gray-400"/></div></div><button onClick={saveProfile} disabled={profileLoading} className="btn-primary text-sm mt-4">{profileLoading?'Saving...':'Save Profile'}</button></div>
 <div className="glass-card-solid p-4 sm:p-6"><h3 className="font-bold text-sm mb-3">Password</h3><div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"><div className="flex items-center gap-3"><Key size={18} className="text-amber-500"/><div><p className="font-medium text-sm">Security Credentials</p><p className="text-[10px] text-gray-400">Change your account password</p></div></div><button onClick={()=>setShowPwSection(!showPwSection)} className="text-sm text-brand-600 font-medium">Update</button></div>{showPwSection&&<div className="mt-4 space-y-3 pl-4 border-l-2 border-brand-200"><div><label className="input-label text-xs">Current Password</label><input type="password" className="input-field" value={pwForm.current_password} onChange={e=>setPwForm({...pwForm,current_password:e.target.value})}/></div><div><label className="input-label text-xs">New Password</label><input type="password" className="input-field" value={pwForm.new_password} onChange={e=>setPwForm({...pwForm,new_password:e.target.value})}/></div><div><label className="input-label text-xs">Confirm</label><input type="password" className="input-field" value={pwForm.confirm_password} onChange={e=>setPwForm({...pwForm,confirm_password:e.target.value})}/></div><button onClick={changePassword} className="btn-primary text-sm">Update Password</button></div>}</div>
@@ -467,6 +256,68 @@ export default function StoreSettings(){
       </div>
     </div>
     </>)}
+    {/* ═══ WhatsApp Configuration Modal (root-level) ═══ */}
+    {showWaModal&&<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4" onClick={()=>setShowWaModal(false)}>
+    <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col" onClick={e=>e.stopPropagation()}>
+      {/* Header */}
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center"><MessageCircle size={20} className="text-white"/></div><div><h2 className="font-black text-lg text-gray-900">WhatsApp Configuration</h2><p className="text-xs text-gray-400">Configure automated messages for every order status</p></div></div>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">{[{c:'fr',l:'FR',f:'🇫🇷'},{c:'ar',l:'AR',f:'🇩🇿'},{c:'en',l:'EN',f:'🇬🇧'}].map(lg=>(<button key={lg.c} onClick={()=>{setWaLang(lg.c);setV('wa_language',lg.c);}} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${waLang===lg.c?'bg-white shadow text-gray-900':'text-gray-500 hover:text-gray-700'}`}><span>{lg.f}</span>{lg.l}</button>))}</div>
+          <button onClick={()=>setShowWaModal(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={18}/></button>
+        </div>
+      </div>
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto"><div className="flex flex-col lg:flex-row">
+        {/* LEFT: WhatsApp Preview */}
+        <div className="lg:w-[340px] shrink-0 p-4 sm:p-5 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-100">
+          <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">Message Preview</p>
+          <div className="bg-[#0b141a] rounded-2xl overflow-hidden shadow-xl max-w-[300px] mx-auto">
+            <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">{(s.name||s.store_name||'S')[0]?.toUpperCase()}</div><div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{s.name||s.store_name||'My Store'}</p><p className="text-[10px] text-emerald-400">online</p></div><Phone size={16} className="text-gray-400"/></div>
+            <div className="p-3 min-h-[280px] max-h-[350px] overflow-y-auto" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
+              <div className={`flex ${waIsRtl?'flex-row-reverse':''} mb-2`}><div className="max-w-[85%]"><div className="bg-[#005c4b] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:waIsRtl?'rtl':'ltr'}}><p className="text-white text-[13px] leading-relaxed whitespace-pre-wrap break-words">{waPreviewMsg(waGetTpl(waActiveStatus))||'Configure a message template...'}</p><div className={`flex items-center gap-1 mt-1 ${waIsRtl?'justify-start':'justify-end'}`}><span className="text-[10px] text-emerald-200">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><span className="text-emerald-300 text-[10px]">✓✓</span></div></div></div></div>
+            </div>
+            <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">Type a message</span></div><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div></div>
+          </div>
+          <p className="text-[10px] text-gray-400 text-center mt-2">Preview updates in real-time as you type</p>
+          {/* Connection Status */}
+          <div className="mt-4 p-3 bg-white rounded-xl border border-gray-200">
+            <div className="flex items-center justify-between mb-2"><p className="text-xs font-bold text-gray-700">Connection</p>{waStatus?.connected?<span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><Wifi size={12}/>Connected</span>:<span className="flex items-center gap-1 text-xs font-bold text-gray-400"><WifiOff size={12}/>Disconnected</span>}</div>
+            {waStatus?.connected?(<button onClick={waDisconnect} className="w-full py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">Disconnect</button>):waStatus?.qr?(<div className="text-center"><img src={waStatus.qr.startsWith('data:')?waStatus.qr:`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/><p className="text-[10px] text-gray-400 mt-1">Scan with WhatsApp</p><button onClick={waStartConnection} className="mt-2 text-xs text-brand-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button></div>):(<div><button onClick={waStartConnection} disabled={waLoading} className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">{waLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<QrCode size={14}/>}{waLoading?'Connecting...':'Connect WhatsApp'}</button>{waConnectError&&<p className="text-xs text-red-500 mt-2 text-center">{waConnectError}</p>}</div>)}
+          </div>
+        </div>
+        {/* RIGHT: Configuration */}
+        <div className="flex-1 min-w-0 p-4 sm:p-5 space-y-4">
+          <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Order Status Templates</p><div className="flex flex-wrap gap-1.5">{WA_STATUSES.map(st=>(<button key={st} onClick={()=>setWaActiveStatus(st)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${waActiveStatus===st?'bg-emerald-500 text-white shadow-sm':'bg-gray-100 text-gray-600 hover:bg-gray-200'} ${!waGetEnabled(st)?'opacity-50':''}`}>{WA_STATUS_LABELS[st]?.[waLang]||st}</button>))}</div></div>
+          {/* Active Status Config */}
+          <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-sm text-gray-900 flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${waGetEnabled(waActiveStatus)?'bg-emerald-500':'bg-gray-300'}`}/>{WA_STATUS_LABELS[waActiveStatus]?.[waLang]||waActiveStatus}</h4>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400"/><select className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 font-medium" value={waGetTiming(waActiveStatus)} onChange={e=>waSetTiming(waActiveStatus,e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[waLang]||o.en}</option>)}</select></div>
+                <div className={`w-10 rounded-full cursor-pointer ${waGetEnabled(waActiveStatus)?'bg-emerald-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>waSetEnabled(waActiveStatus,!waGetEnabled(waActiveStatus))}><div className={`absolute bg-white rounded-full shadow transition-transform ${waGetEnabled(waActiveStatus)?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div>
+              </div>
+            </div>
+            <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Insert Variable</p><div className="flex flex-wrap gap-1">{WA_VARS.map(v=>(<button key={v} onClick={()=>waInsertVar(v)} className="px-2 py-1 bg-white border border-gray-200 rounded-md text-[10px] font-mono text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-colors">{v}</button>))}</div></div>
+            <div><textarea ref={msgRef} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all" rows={4} value={waGetTpl(waActiveStatus)} onChange={e=>waSetTpl(waActiveStatus,e.target.value)} placeholder="Type your message template..." style={{direction:waIsRtl?'rtl':'ltr'}} disabled={!waGetEnabled(waActiveStatus)}/><div className="flex items-center justify-between mt-1"><p className="text-[10px] text-gray-400">{waGetTpl(waActiveStatus).length} characters</p><button onClick={()=>waSetTpl(waActiveStatus,WA_DEFAULT_TEMPLATES[waLang]?.[waActiveStatus]||'')} className="text-[10px] text-brand-600 font-bold hover:underline">Reset to default</button></div></div>
+          </div>
+          {/* All Statuses Overview */}
+          <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">All Status Overview</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">{WA_STATUSES.map(st=>(<div key={st} onClick={()=>setWaActiveStatus(st)} className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${waActiveStatus===st?'border-emerald-400 bg-emerald-50':'border-gray-100 bg-white hover:border-gray-200'}`}><div className="flex items-center gap-2 min-w-0"><div className={`w-2 h-2 rounded-full shrink-0 ${waGetEnabled(st)?'bg-emerald-500':'bg-gray-300'}`}/><span className="text-xs font-medium text-gray-700 truncate">{WA_STATUS_LABELS[st]?.[waLang]||st}</span></div><div className="flex items-center gap-1.5 shrink-0"><span className="text-[9px] text-gray-400 font-medium">{WA_TIMING_OPTIONS.find(o=>o.v===waGetTiming(st))?.[waLang]||'Immediately'}</span><div className={`w-7 h-4 rounded-full ${waGetEnabled(st)?'bg-emerald-500':'bg-gray-300'} relative`} onClick={e=>{e.stopPropagation();waSetEnabled(st,!waGetEnabled(st));}}><div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform ${waGetEnabled(st)?'translate-x-3.5':'translate-x-0.5'}`} style={{top:2}}/></div></div></div>))}</div></div>
+          {/* Abandoned Cart */}
+          <div className="bg-purple-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between"><div className="flex items-center gap-2"><ShoppingCart size={16} className="text-purple-600"/><h4 className="font-bold text-sm text-gray-900">Abandoned Cart Recovery</h4></div><div className="flex items-center gap-3"><div className="flex items-center gap-1.5"><Clock size={14} className="text-gray-400"/><select className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 font-medium" value={s.wa_abandoned_cart_timing||'3hours'} onChange={e=>setV('wa_abandoned_cart_timing',e.target.value)}>{WA_CART_TIMING.map(o=><option key={o.v} value={o.v}>{o[waLang]||o.en}</option>)}</select></div><div className={`w-10 rounded-full cursor-pointer ${s.wa_abandoned_cart_enabled?'bg-purple-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setV('wa_abandoned_cart_enabled',!s.wa_abandoned_cart_enabled)}><div className={`absolute bg-white rounded-full shadow transition-transform ${s.wa_abandoned_cart_enabled?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div></div></div>
+            <div className="flex flex-wrap gap-1">{WA_CART_VARS.map(v=>(<button key={v} onClick={()=>{const cur=s.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[waLang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} className="px-2 py-1 bg-white border border-purple-200 rounded-md text-[10px] font-mono text-purple-700 hover:bg-purple-50 transition-colors">{v}</button>))}</div>
+            <textarea className="w-full bg-white border border-purple-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none transition-all" rows={3} value={s.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[waLang]?.abandoned_cart||''} onChange={e=>setV('wa_abandoned_cart_msg',e.target.value)} placeholder="Abandoned cart message..." style={{direction:waIsRtl?'rtl':'ltr'}} disabled={!s.wa_abandoned_cart_enabled}/>
+          </div>
+        </div>
+      </div></div>
+      {/* Footer */}
+      <div className="px-4 sm:px-6 py-3 border-t border-gray-100 flex items-center justify-between shrink-0 bg-gray-50">
+        <p className="text-[10px] text-gray-400">Changes are saved when you click Save & Close</p>
+        <div className="flex items-center gap-2"><button onClick={()=>setShowWaModal(false)} className="btn-ghost text-xs">Close</button><button onClick={()=>{setShowWaModal(false);save();}} className="btn-primary text-xs flex items-center gap-1.5"><Save size={14}/>Save & Close</button></div>
+      </div>
+    </div>
+    </div>}
     {showRole&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowRole(null)}><div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">Role: {roles[showRole]?.label}</h2><button onClick={()=>setShowRole(null)} className="text-gray-400 hover:text-gray-600">✕</button></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{[['Orders',['View Dashboard','View Orders','Manage Orders','Delete Orders','Confirm Orders','Prepare Orders']],['Products',['View Products','Manage Products','Delete Products']],['Customers',['View Customers','Manage Customers']]].map(([cat,perms])=>(<div key={cat}><h4 className="font-bold text-xs text-gray-500 uppercase mb-2">{cat}</h4>{perms.map(p=>{const has=roles[showRole]?.perms.includes(p);return(<label key={p} className="flex items-center gap-2 mb-1.5"><div className={`w-5 h-5 rounded flex items-center justify-center text-white text-xs ${has?'bg-brand-500':'bg-gray-200'}`}>{has&&<Check size={12}/>}</div><span className="text-sm text-gray-700">{p}</span></label>);})}</div>))}</div><button onClick={()=>setShowRole(null)} className="btn-primary w-full mt-6">Close</button></div></div>}
     {showStaff&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowStaff(false)}><div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}><h2 className="text-xl font-bold mb-6">Create User</h2><div className="space-y-3"><div><label className="input-label">Name</label><input className="input-field" value={sf.name} onChange={e=>setSf({...sf,name:e.target.value})}/></div><div><label className="input-label">Email</label><input className="input-field" value={sf.email} onChange={e=>setSf({...sf,email:e.target.value})}/></div><div><label className="input-label">Phone</label><input className="input-field" value={sf.phone} onChange={e=>setSf({...sf,phone:e.target.value})}/></div><div><label className="input-label">Password</label><input type="password" className="input-field" value={sf.password} onChange={e=>setSf({...sf,password:e.target.value})}/></div><div><label className="input-label">Role</label><select className="input-field" value={sf.role} onChange={e=>setSf({...sf,role:e.target.value})}><option value="admin">Admin</option><option value="preparer">Preparer</option><option value="confirmer">Confirmer</option><option value="viewer">Viewer</option></select></div></div><div className="flex gap-3 mt-6"><button onClick={()=>setShowStaff(false)} className="btn-ghost flex-1">Cancel</button><button onClick={addStaff} className="btn-primary flex-1">Create</button></div></div></div>}
   </DashboardLayout>);

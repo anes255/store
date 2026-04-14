@@ -5,7 +5,7 @@ import { ownerApi, aiApi } from '../../utils/api';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api, { getPlatformInfo } from '../../utils/api';
-import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut } from 'lucide-react';
+import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut, ChevronRight } from 'lucide-react';
 
 function WhatsAppQR({ storeId }) {
   const { t } = useTranslation();
@@ -46,7 +46,7 @@ function WhatsAppQR({ storeId }) {
 
   const startConnection = async () => {
     setLoading(true); setConnectError(null);
-    try { 
+    try {
       const { data } = await aiApi.waQrStart(storeId);
       // Start response may already contain QR
       if (data.qr || data.connected) { setStatus(data); setLoading(false); return; }
@@ -186,45 +186,53 @@ function WhatsAppQR({ storeId }) {
 
 
 const getAllApps = (t) => [
-  { slug:'abandoned-cart', icon:ShoppingCart, name:t('storePage.app.abandonedCart.name','Abandoned Cart Recovery'), desc:t('storePage.app.abandonedCart.desc','Track and recover abandoned carts with AI messages.'), color:'bg-purple-50 text-purple-600', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
-  { slug:'whatsapp-recovery', icon:MessageCircle, name:t('storePage.app.whatsappRecovery.name','WhatsApp Recovery Messages'), desc:t('storePage.app.whatsappRecovery.desc','Send recovery messages via WhatsApp.'), color:'bg-green-50 text-green-600', configKey:'ai_cart_recovery' },
-  { slug:'whatsapp-status', icon:Bell, name:t('storePage.app.whatsappStatus.name','Order Status Notifications'), desc:t('storePage.app.whatsappStatus.desc','Auto-notify customers on status changes.'), color:'bg-blue-50 text-blue-600', configKey:'ai_agent_enabled' },
-  { slug:'ai-sales-bot', icon:Bot, name:t('storePage.app.aiSalesBot.name','AI Customer Chatbot'), desc:t('storePage.app.aiSalesBot.desc','AI chatbot on storefront — Arabic, French, English.'), color:'bg-brand-50 text-brand-600', configKey:'ai_chatbot_enabled' },
-  { slug:'fake-detection', icon:Shield, name:t('storePage.app.fakeDetection.name','Fake Order Detection'), desc:t('storePage.app.fakeDetection.desc','AI-powered fraud scoring.'), color:'bg-red-50 text-red-600', configKey:'ai_fake_detection' },
-  { slug:'smart-reviews', icon:Star, name:t('storePage.app.smartReviews.name','Smart Reviews'), desc:t('storePage.app.smartReviews.desc','AI-moderated product reviews.'), color:'bg-amber-50 text-amber-600', configKey:'smart_reviews' },
-  { slug:'google-sheets', icon:FileSpreadsheet, name:t('storePage.app.googleSheets.name','Google Sheets Sync'), desc:t('storePage.app.googleSheets.desc','Export orders to Google Sheets.'), color:'bg-emerald-50 text-emerald-600', configKey:'google_sheets_sync' },
+  { slug:'abandoned-cart', icon:ShoppingCart, name:t('storePage.app.abandonedCart.name','Abandoned Cart Recovery'), desc:t('storePage.app.abandonedCart.desc','Track and recover abandoned carts with AI messages.'), color:'bg-purple-50 text-purple-600', colorHover:'hover:ring-purple-400', gradient:'from-purple-500 to-purple-700', badge:'purple', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
+  { slug:'whatsapp-recovery', icon:MessageCircle, name:t('storePage.app.whatsappRecovery.name','WhatsApp Recovery Messages'), desc:t('storePage.app.whatsappRecovery.desc','Send recovery messages via WhatsApp.'), color:'bg-green-50 text-green-600', colorHover:'hover:ring-green-400', gradient:'from-green-500 to-green-700', badge:'green', configKey:'ai_cart_recovery' },
+  { slug:'whatsapp-status', icon:Bell, name:t('storePage.app.whatsappStatus.name','Order Status Notifications'), desc:t('storePage.app.whatsappStatus.desc','Auto-notify customers on status changes.'), color:'bg-blue-50 text-blue-600', colorHover:'hover:ring-blue-400', gradient:'from-blue-500 to-blue-700', badge:'blue', configKey:'ai_agent_enabled' },
+  { slug:'ai-sales-bot', icon:Bot, name:t('storePage.app.aiSalesBot.name','AI Customer Chatbot'), desc:t('storePage.app.aiSalesBot.desc','AI chatbot on storefront — Arabic, French, English.'), color:'bg-brand-50 text-brand-600', colorHover:'hover:ring-brand-400', gradient:'from-brand-500 to-purple-600', badge:'brand', configKey:'ai_chatbot_enabled' },
+  { slug:'fake-detection', icon:Shield, name:t('storePage.app.fakeDetection.name','Fake Order Detection'), desc:t('storePage.app.fakeDetection.desc','AI-powered fraud scoring.'), color:'bg-red-50 text-red-600', colorHover:'hover:ring-red-400', gradient:'from-red-500 to-orange-500', badge:'red', configKey:'ai_fake_detection' },
+  { slug:'smart-reviews', icon:Star, name:t('storePage.app.smartReviews.name','Smart Reviews'), desc:t('storePage.app.smartReviews.desc','AI-moderated product reviews.'), color:'bg-amber-50 text-amber-600', colorHover:'hover:ring-amber-400', gradient:'from-amber-500 to-orange-500', badge:'amber', configKey:'smart_reviews' },
+  { slug:'google-sheets', icon:FileSpreadsheet, name:t('storePage.app.googleSheets.name','Google Sheets Sync'), desc:t('storePage.app.googleSheets.desc','Export orders to Google Sheets.'), color:'bg-emerald-50 text-emerald-600', colorHover:'hover:ring-emerald-400', gradient:'from-emerald-600 to-green-700', badge:'emerald', configKey:'google_sheets_sync' },
+];
+
+// Tool cards (test-only tools, not installable apps)
+const getToolCards = (t) => [
+  { slug:'description', icon:Sparkles, name:t('storePage.aiProductDescriptions','AI Product Descriptions'), desc:t('storePage.generateDescriptionsInstantly','Generate descriptions instantly'), color:'bg-purple-50 text-purple-600', colorHover:'hover:ring-purple-400', gradient:'from-purple-500 to-indigo-600', badge:'purple' },
+  { slug:'whatsapp-direct', icon:Smartphone, name:t('storePage.whatsappDirectTest','WhatsApp Direct Test'), desc:t('storePage.connectWhatsappDesc','Connect your WhatsApp to send order updates'), color:'bg-green-50 text-green-600', colorHover:'hover:ring-green-400', gradient:'from-green-600 to-green-700', badge:'green' },
+  { slug:'email-test', icon:Mail, name:t('storePage.testEmail','Test Email'), desc:t('storePage.sendTestEmailDesc','Send a test email'), color:'bg-blue-50 text-blue-600', colorHover:'hover:ring-blue-400', gradient:'from-blue-500 to-blue-600', badge:'blue' },
 ];
 
 export default function StoreApps() {
   const { t } = useTranslation();
   const allApps = getAllApps(t);
+  const toolCards = getToolCards(t);
   const { currentStore, setCurrentStore } = useStoreManagement();
   const [installedApps, setInstalledApps] = useState([]);
   const [installing, setInstalling] = useState(null);
   const [aiStatus, setAiStatus] = useState(null);
-  
+
   // Test panels
-  const [testPanel, setTestPanel] = useState(null); // 'chatbot' | 'fake' | 'description' | 'recovery' | 'whatsapp'
-  
+  const [testPanel, setTestPanel] = useState(null); // app slug or tool slug
+
   // Chatbot test
   const [botMessages, setBotMessages] = useState([]);
   const [botInput, setBotInput] = useState('');
   const [botLoading, setBotLoading] = useState(false);
   const botScrollRef = React.useRef(null);
-  
+
   // Auto-scroll bot messages
   React.useEffect(() => { if(botScrollRef.current) botScrollRef.current.scrollTop = botScrollRef.current.scrollHeight; }, [botMessages, botLoading]);
-  
+
   // Fake detection test
   const [fakeForm, setFakeForm] = useState({customer_name:'Test Customer',customer_phone:'0555123456',total:'5000',payment_method:'cod'});
   const [fakeResult, setFakeResult] = useState(null);
   const [fakeLoading, setFakeLoading] = useState(false);
-  
+
   // Description test
   const [descName, setDescName] = useState('');
   const [descResult, setDescResult] = useState('');
   const [descLoading, setDescLoading] = useState(false);
-  
+
   // Recovery test
   const [recoveryItems, setRecoveryItems] = useState('Shoes, T-Shirt');
   const [recoveryResult, setRecoveryResult] = useState('');
@@ -343,6 +351,416 @@ export default function StoreApps() {
     setEmailSending(false);
   };
 
+  // Badge color helper
+  const badgeColors = {
+    purple: { active: 'bg-purple-100 text-purple-700', ring: 'ring-purple-400' },
+    green: { active: 'bg-green-100 text-green-700', ring: 'ring-green-400' },
+    blue: { active: 'bg-blue-100 text-blue-700', ring: 'ring-blue-400' },
+    brand: { active: 'bg-brand-100 text-brand-700', ring: 'ring-brand-400' },
+    red: { active: 'bg-red-100 text-red-700', ring: 'ring-red-400' },
+    amber: { active: 'bg-amber-100 text-amber-700', ring: 'ring-amber-400' },
+    emerald: { active: 'bg-emerald-100 text-emerald-700', ring: 'ring-emerald-400' },
+  };
+
+  // ═══ MODAL CONTENT RENDERERS ═══
+
+  const renderModalContent = (slug) => {
+    switch (slug) {
+
+      // ── 1. Abandoned Cart Recovery ──
+      case 'abandoned-cart': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="p-6 space-y-5 overflow-y-auto">
+            {/* Enable/Disable Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+              </div>
+              <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+              </button>
+            </div>
+
+            {/* Configuration */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.configuration','Configuration')}</p>
+              <a href="/dashboard/abandoned" className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-100 hover:border-purple-300 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <ShoppingCart size={18} className="text-purple-500"/>
+                  <div>
+                    <p className="text-sm font-bold text-purple-700">{t('storePage.viewAbandonedCarts','View Abandoned Carts')}</p>
+                    <p className="text-xs text-purple-400">{t('storePage.manageRecoverCarts','Manage and recover abandoned carts')}</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-purple-400 group-hover:translate-x-1 transition-transform"/>
+              </a>
+            </div>
+
+            {/* Recovery Message Test */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.testRecoveryMessage','Test Recovery Message')}</p>
+              <div><label className="input-label text-xs">{t('storePage.abandonedItems','Abandoned Items (comma-separated)')}</label><input className="input-field" value={recoveryItems} onChange={e => setRecoveryItems(e.target.value)} placeholder={t('storePage.abandonedItemsPlaceholder','Shoes, T-Shirt, Watch')}/></div>
+              <button onClick={testRecovery} disabled={recoveryLoading} className="w-full py-3 bg-purple-500 text-white rounded-xl font-bold text-sm hover:bg-purple-600 flex items-center justify-center gap-2">
+                {recoveryLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <MessageCircle size={16}/>}{t('storePage.generateRecoveryMessage','Generate Recovery Message')}
+              </button>
+              {recoveryResult && <div className="p-4 bg-gray-50 rounded-xl"><p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{recoveryResult}</p><button onClick={() => {navigator.clipboard.writeText(recoveryResult);toast.success(t('storePage.copied','Copied!'));}} className="mt-3 text-xs text-purple-600 font-bold hover:underline">{t('storePage.copyToClipboard','Copy to clipboard')}</button></div>}
+            </div>
+
+            <p className="text-xs text-gray-400 italic">{t('storePage.recoveryNote','WhatsApp recovery messages can be configured in Settings > AI Messaging')}</p>
+          </div>
+        );
+      }
+
+      // ── 2. WhatsApp Recovery Messages ──
+      case 'whatsapp-recovery': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="p-6 space-y-5 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+              </div>
+              <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-green-500' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+              </button>
+            </div>
+
+            <WhatsAppQR storeId={currentStore?.id}/>
+
+            <p className="text-xs text-gray-400 italic">{t('storePage.whatsappRecoveryNote','Full message templates are configured in Settings > AI Messaging')}</p>
+          </div>
+        );
+      }
+
+      // ── 3. Order Status Notifications ──
+      case 'whatsapp-status': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="p-6 space-y-5 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+              </div>
+              <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.notificationStatuses','Notification Statuses')}</p>
+              {['confirmed','preparing','shipped','delivered','cancelled'].map(status => (
+                <div key={status} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <span className={`w-2.5 h-2.5 rounded-full ${status==='confirmed'?'bg-blue-500':status==='preparing'?'bg-purple-500':status==='shipped'?'bg-cyan-500':status==='delivered'?'bg-emerald-500':'bg-red-500'}`}/>
+                  <span className="text-sm font-medium text-gray-700 capitalize flex-1">{status}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${installed ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>{installed ? t('storePage.active','ACTIVE') : t('storePage.inactive','INACTIVE')}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-gray-400 italic">{t('storePage.statusNote','Configure message templates in Settings > AI Messaging')}</p>
+          </div>
+        );
+      }
+
+      // ── 4. AI Customer Chatbot ──
+      case 'ai-sales-bot': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="flex flex-col h-full">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                  <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+                </div>
+                <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-brand-500' : 'bg-gray-300'}`}>
+                  <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                  {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+                </button>
+              </div>
+
+              {/* Chatbot test area */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.testChatbot','Test Chatbot')}</p>
+                <div ref={botScrollRef} className="bg-gray-50 rounded-xl p-4 space-y-3 min-h-[200px] max-h-[300px] overflow-y-auto">
+                  {botMessages.length === 0 && <p className="text-center text-gray-400 text-sm py-8">{t('storePage.botTryHint','Try: "مرحبا" or "shipping" or "payment"')}</p>}
+                  {botMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-white text-gray-800 rounded-tl-sm shadow-sm'}`}>
+                        {msg.text}
+                        {msg.model && <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-white/50' : 'text-gray-400'}`}>via {msg.model}</p>}
+                        {msg.debug && <p className="text-[9px] mt-1 text-red-400">{msg.debug}</p>}
+                      </div>
+                    </div>
+                  ))}
+                  {botLoading && <div className="flex justify-start"><div className="bg-white rounded-2xl px-4 py-3 shadow-sm"><div className="flex gap-1"><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"/><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}/><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}/></div></div></div>}
+                </div>
+                <div className="flex gap-2">
+                  <input className="input-field flex-1" placeholder={t('storePage.typeMessage','Type a message...')} value={botInput} onChange={e => setBotInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendTestMessage()}/>
+                  <button onClick={sendTestMessage} className="btn-primary px-4"><Send size={16}/></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ── 5. Fake Order Detection ──
+      case 'fake-detection': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="p-6 space-y-5 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+              </div>
+              <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-red-500' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+              </button>
+            </div>
+
+            {/* Fraud test */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.testFraudScoring','Test order fraud scoring')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="input-label text-xs">{t('storePage.customerName','Customer Name')}</label><input className="input-field" value={fakeForm.customer_name} onChange={e => setFakeForm({...fakeForm, customer_name: e.target.value})}/></div>
+                <div><label className="input-label text-xs">{t('storePage.phone','Phone')}</label><input className="input-field" value={fakeForm.customer_phone} onChange={e => setFakeForm({...fakeForm, customer_phone: e.target.value})}/></div>
+                <div><label className="input-label text-xs">{t('storePage.totalDzd','Total (DZD)')}</label><input type="number" className="input-field" value={fakeForm.total} onChange={e => setFakeForm({...fakeForm, total: e.target.value})}/></div>
+                <div><label className="input-label text-xs">{t('storePage.payment','Payment')}</label><select className="input-field" value={fakeForm.payment_method} onChange={e => setFakeForm({...fakeForm, payment_method: e.target.value})}><option value="cod">COD</option><option value="ccp">CCP</option><option value="baridimob">BaridiMob</option></select></div>
+              </div>
+              <button onClick={testFakeDetection} disabled={fakeLoading} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 flex items-center justify-center gap-2">
+                {fakeLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Shield size={16}/>}{t('storePage.analyzeOrder','Analyze Order')}
+              </button>
+              {fakeResult && !fakeResult.error && (
+                <div className={`p-4 rounded-xl ${fakeResult.level === 'high' ? 'bg-red-50 border border-red-200' : fakeResult.level === 'medium' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-lg">{fakeResult.score}/100</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${fakeResult.level === 'high' ? 'bg-red-500 text-white' : fakeResult.level === 'medium' ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'}`}>{fakeResult.level.toUpperCase()} {t('storePage.risk','RISK')}</span>
+                  </div>
+                  {fakeResult.flags?.length > 0 && <div className="space-y-1">{fakeResult.flags.map((f, i) => <p key={i} className="text-xs text-gray-600 flex items-center gap-1"><AlertTriangle size={10}/>{f}</p>)}</div>}
+                </div>
+              )}
+              {fakeResult?.error && <p className="text-sm text-red-500">{fakeResult.error}</p>}
+            </div>
+          </div>
+        );
+      }
+
+      // ── 6. Smart Reviews ──
+      case 'smart-reviews': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="p-6 space-y-5 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+              </div>
+              <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-amber-500' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.moderationSettings','Moderation Settings')}</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Shield size={16} className="text-amber-500"/>
+                    <span className="text-sm font-medium text-gray-700">{t('storePage.autoModerate','Auto-moderate new reviews')}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${installed ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>{installed ? t('storePage.on','ON') : t('storePage.off','OFF')}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle size={16} className="text-amber-500"/>
+                    <span className="text-sm font-medium text-gray-700">{t('storePage.flagSpam','Flag spam and fake reviews')}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${installed ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>{installed ? t('storePage.on','ON') : t('storePage.off','OFF')}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Star size={16} className="text-amber-500"/>
+                    <span className="text-sm font-medium text-gray-700">{t('storePage.sentimentAnalysis','Sentiment analysis')}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${installed ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>{installed ? t('storePage.on','ON') : t('storePage.off','OFF')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ── 7. Google Sheets Sync ──
+      case 'google-sheets': {
+        const app = allApps.find(a => a.slug === slug);
+        const installed = isInstalled(slug);
+        return (
+          <div className="p-6 space-y-5 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <p className="text-sm font-bold text-gray-800">{installed ? t('storePage.appEnabled','App Enabled') : t('storePage.appDisabled','App Disabled')}</p>
+                <p className="text-xs text-gray-400">{installed ? t('storePage.clickToDisable','Click to disable this app') : t('storePage.clickToEnable','Click to enable this app')}</p>
+              </div>
+              <button onClick={() => handleInstall(app)} disabled={installing === slug}
+                className={`relative w-14 h-7 rounded-full transition-colors ${installed ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${installed ? 'left-7' : 'left-0.5'}`}/>
+                {installing === slug && <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/></div>}
+              </button>
+            </div>
+
+            {/* Google Sheets flow (reused) */}
+            {!sheetsStatus?.token ? (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">{t('storePage.connectGoogleDesc','Connect your Google account to sync orders directly to a Google Sheet.')}</p>
+                <button onClick={async()=>{
+                  setSheetsLoading(true);
+                  try{
+                    if(!window.google?.accounts){
+                      await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+                    }
+                    let clientId='';
+                    try{const{data:pi}=await getPlatformInfo();clientId=pi.google_client_id||'';}catch{}
+                    if(!clientId){toast.error(t('storePage.googleClientIdMissing','Google Client ID not set. Ask platform admin.'));setSheetsLoading(false);return;}
+                    const tokenClient=window.google.accounts.oauth2.initTokenClient({
+                      client_id:clientId,
+                      scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+                      callback:(resp)=>{
+                        if(resp.error){toast.error(t('storePage.googleAuthFailed','Google auth failed'));setSheetsLoading(false);return;}
+                        setSheetsStatus({token:resp.access_token,expires:Date.now()+resp.expires_in*1000});
+                        toast.success(t('storePage.googleConnected','Google connected!'));
+                        setSheetsLoading(false);
+                      },
+                    });
+                    tokenClient.requestAccessToken();
+                  }catch(e){toast.error(t('storePage.failedLoadGoogle','Failed to load Google: ')+e.message);setSheetsLoading(false);}
+                }} disabled={sheetsLoading} className="w-full py-3 bg-white border-2 border-gray-300 rounded-xl font-bold text-sm flex items-center justify-center gap-3 hover:bg-gray-50 disabled:opacity-50">
+                  {sheetsLoading?<div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"/>:<><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>{t('storePage.signInWithGoogle','Sign in with Google')}</>}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
+                  <Check size={16} className="text-emerald-500 shrink-0"/>
+                  <p className="text-sm text-emerald-700 font-medium">{t('storePage.googleAccountConnected','Google account connected')}</p>
+                </div>
+
+                <div>
+                  <label className="input-label text-xs">{t('storePage.googleSheetUrl','Google Sheet URL')}</label>
+                  <input className="input-field text-sm" value={sheetUrl} onChange={e=>setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..."/>
+                  <p className="text-[10px] text-gray-400 mt-1">{t('storePage.createSheetHint','Create a sheet in Google Sheets, copy its URL and paste it here')}</p>
+                </div>
+
+                <button onClick={async()=>{
+                  if(!sheetUrl)return toast.error(t('storePage.pasteSheetUrl','Paste your Google Sheet URL'));
+                  const match=sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                  const sheetId=match?match[1]:sheetUrl.trim();
+                  if(!sheetId)return toast.error(t('storePage.invalidSheetUrl','Invalid sheet URL'));
+                  setSheetsLoading(true);setSyncResult(null);
+                  try{
+                    const{data:exp}=await api.get(`/manage/stores/${currentStore.id}/orders-export`);
+                    const values=[exp.header,...exp.rows];
+                    const token=sheetsStatus.token;
+                    const base=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+                    const check=await fetch(base,{headers:{Authorization:`Bearer ${token}`}});
+                    if(check.status===403||check.status===404){toast.error(check.status===403?t('storePage.noSheetAccess','No access to this sheet. Make sure you own it.'):t('storePage.sheetNotFound','Sheet not found.'));setSheetsLoading(false);return;}
+                    await fetch(`${base}/values/Sheet1!A:Z:clear`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});
+                    await fetch(`${base}/values/Sheet1!A1?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({values})});
+                    try{const meta=await(await fetch(base,{headers:{Authorization:`Bearer ${token}`}})).json();const sid=meta.sheets?.[0]?.properties?.sheetId||0;await fetch(`${base}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{repeatCell:{range:{sheetId:sid,startRowIndex:0,endRowIndex:1},cell:{userEnteredFormat:{textFormat:{bold:true},backgroundColor:{red:0.93,green:0.93,blue:0.93}}},fields:'userEnteredFormat(textFormat,backgroundColor)'}}]})});} catch {}
+                    await ownerApi.updateStore(currentStore.id,{google_sheet_id:sheetId});
+                    setSyncResult({synced:exp.rows.length});
+                    toast.success(`${exp.rows.length} ${t('storePage.ordersSynced','orders synced!')}`);
+                  }catch(e){
+                    if(e.message?.includes('401')||sheetsStatus.expires<Date.now()){setSheetsStatus(null);toast.error(t('storePage.sessionExpired','Session expired. Sign in again.'));}
+                    else{setSyncResult({error:e.message});toast.error(t('storePage.syncFailed','Sync failed: ')+e.message);}
+                  }
+                  setSheetsLoading(false);
+                }} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
+                  {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}{t('storePage.syncOrdersToSheet','Sync Orders to Sheet')}
+                </button>
+
+                {syncResult&&!syncResult.error&&<p className="text-sm text-emerald-600 text-center font-medium">{syncResult.synced} {t('storePage.ordersSyncedShort','orders synced')}</p>}
+                {syncResult?.error&&<p className="text-sm text-red-600 text-center">{syncResult.error}</p>}
+
+                <button onClick={()=>{setSheetsStatus(null);toast.success(t('storePage.disconnected','Disconnected'));}} className="w-full py-2 text-red-500 text-xs font-bold hover:underline">{t('storePage.disconnectGoogle','Disconnect Google')}</button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // ── TOOL: AI Product Descriptions ──
+      case 'description':
+        return (
+          <div className="p-6 space-y-4 overflow-y-auto">
+            <div><label className="input-label text-xs">{t('storePage.productName','Product Name')}</label><input className="input-field" value={descName} onChange={e => setDescName(e.target.value)} placeholder={t('storePage.productNamePlaceholder','e.g. Wireless Bluetooth Headphones')}/></div>
+            <button onClick={testDescription} disabled={descLoading} className="w-full py-3 bg-purple-500 text-white rounded-xl font-bold text-sm hover:bg-purple-600 flex items-center justify-center gap-2">
+              {descLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Sparkles size={16}/>}{t('storePage.generateDescription','Generate Description')}
+            </button>
+            {descResult && <div className="p-4 bg-gray-50 rounded-xl"><p className="text-sm text-gray-700 leading-relaxed">{descResult}</p></div>}
+          </div>
+        );
+
+      // ── TOOL: WhatsApp Direct Test ──
+      case 'whatsapp-direct':
+        return (
+          <div className="p-6 space-y-4 overflow-y-auto">
+            <WhatsAppQR storeId={currentStore?.id}/>
+          </div>
+        );
+
+      // ── TOOL: Email Test ──
+      case 'email-test':
+        return (
+          <div className="p-6 space-y-4 overflow-y-auto">
+            <div><label className="input-label text-xs">{t('storePage.recipientEmail','Recipient Email')}</label><input type="email" className="input-field" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="recipient@example.com"/></div>
+            <div><label className="input-label text-xs">{t('storePage.subject','Subject')}</label><input className="input-field" value={emailSubject} onChange={e => setEmailSubject(e.target.value)}/></div>
+            <div><label className="input-label text-xs">{t('storePage.message','Message')}</label><textarea className="input-field" rows={3} value={emailBody} onChange={e => setEmailBody(e.target.value)}/></div>
+            <button onClick={testEmail} disabled={emailSending} className="w-full py-3 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-600 flex items-center justify-center gap-2">
+              {emailSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}{t('storePage.sendTestEmail','Send Test Email')}
+            </button>
+            {emailResult && <div className={`p-4 rounded-xl ${emailResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
+              {emailResult.success ? <p className="text-sm text-emerald-700 font-medium">{t('storePage.emailSent','Email sent!')}</p> : <p className="text-sm text-red-700 font-medium">{emailResult.error}</p>}
+            </div>}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // Find the currently open app/tool info for modal header
+  const getModalInfo = (slug) => {
+    const app = allApps.find(a => a.slug === slug);
+    if (app) return app;
+    const tool = toolCards.find(t => t.slug === slug);
+    if (tool) return tool;
+    return null;
+  };
+
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
@@ -354,265 +772,113 @@ export default function StoreApps() {
         <div className="glass-card-solid p-4 mb-6 flex items-center gap-4 flex-wrap">
           <Activity size={16} className="text-brand-500"/>
           <span className="text-sm font-medium text-gray-700">{t('storePage.services','Services:')}</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${aiStatus.ai ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>{t('storePage.ai','AI')} {aiStatus.ai ? '✓' : '✗'}</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${aiStatus.channels?.whatsapp ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{t('storePage.whatsapp','WhatsApp')} {aiStatus.channels?.whatsapp ? '✓' : '✗'}</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${aiStatus.channels?.email ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{t('storePage.email','Email')} {aiStatus.channels?.email ? '✓' : '✗'}</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${aiStatus.ai ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>{t('storePage.ai','AI')} {aiStatus.ai ? '\u2713' : '\u2717'}</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${aiStatus.channels?.whatsapp ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{t('storePage.whatsapp','WhatsApp')} {aiStatus.channels?.whatsapp ? '\u2713' : '\u2717'}</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${aiStatus.channels?.email ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{t('storePage.email','Email')} {aiStatus.channels?.email ? '\u2713' : '\u2717'}</span>
         </div>
       )}
 
-      {/* Test Buttons Row */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button onClick={() => setTestPanel('chatbot')} className="px-4 py-2 bg-brand-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-brand-600"><Bot size={14}/>{t('storePage.testChatbot','Test Chatbot')}</button>
-        <button onClick={() => setTestPanel('fake')} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-red-600"><Shield size={14}/>{t('storePage.testFraud','Test Fraud Detection')}</button>
-        <button onClick={() => setTestPanel('description')} className="px-4 py-2 bg-purple-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-purple-600"><Sparkles size={14}/>{t('storePage.testAiDesc','Test AI Descriptions')}</button>
-        <button onClick={() => setTestPanel('recovery')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-600"><MessageCircle size={14}/>{t('storePage.testCartRecovery','Test Cart Recovery')}</button>
-        <button onClick={() => setTestPanel('whatsapp')} className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-700"><Smartphone size={14}/>{t('storePage.testWhatsApp','Test WhatsApp')}</button>
-        <button onClick={() => setTestPanel('email')} className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-600"><Mail size={14}/>{t('storePage.testEmail','Test Email')}</button>
-        <button onClick={() => setTestPanel('sheets')} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-700"><FileSpreadsheet size={14}/>{t('storePage.googleSheets','Google Sheets')}</button>
+      {/* Apps Grid */}
+      <div className="mb-8">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">{t('storePage.installedApps','Apps')}</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          {allApps.map(app => {
+            const Icon = app.icon;
+            const installed = isInstalled(app.slug);
+            const colors = badgeColors[app.badge] || badgeColors.brand;
+            return (
+              <button
+                key={app.slug}
+                onClick={() => setTestPanel(app.slug)}
+                className={`glass-card-solid p-5 transition-all text-left w-full cursor-pointer hover:ring-2 ${app.colorHover} hover:shadow-lg ${installed ? 'ring-2 ' + colors.ring + ' bg-white' : ''} ${app.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${app.color} flex items-center justify-center shrink-0`}>
+                    <Icon size={22}/>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-gray-900 text-sm truncate">{app.name}</h3>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-2">{app.desc}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      {installed && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">{t('storePage.active','ACTIVE')}</span>}
+                      {!installed && !app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-500">{t('storePage.inactive','INACTIVE')}</span>}
+                      {app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">{t('storePage.soon','SOON')}</span>}
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300 shrink-0 mt-1"/>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Apps Grid */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {allApps.map(app => {
-          const Icon = app.icon; const installed = isInstalled(app.slug);
-          return (
-            <div key={app.slug} className={`glass-card-solid p-6 transition-all ${installed ? 'ring-2 ring-brand-400 bg-brand-50/30' : ''} ${app.comingSoon ? 'opacity-60' : ''}`}>
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-2xl ${app.color} flex items-center justify-center shrink-0`}><Icon size={22}/></div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-gray-900">{app.name}</h3>
-                    {installed && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">{t('storePage.active','ACTIVE')}</span>}
-                    {app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">{t('storePage.soon','SOON')}</span>}
+      {/* Tool Cards Grid */}
+      <div>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">{t('storePage.tools','Tools')}</p>
+        <div className="grid md:grid-cols-3 gap-4">
+          {toolCards.map(tool => {
+            const Icon = tool.icon;
+            return (
+              <button
+                key={tool.slug}
+                onClick={() => setTestPanel(tool.slug)}
+                className={`glass-card-solid p-5 transition-all text-left w-full cursor-pointer hover:ring-2 ${tool.colorHover} hover:shadow-lg`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl ${tool.color} flex items-center justify-center shrink-0`}>
+                    <Icon size={18}/>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{app.desc}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-sm truncate">{tool.name}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{tool.desc}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-300 shrink-0 mt-1"/>
                 </div>
-                <button onClick={() => handleInstall(app)} disabled={installing === app.slug} className={`px-4 py-2 rounded-xl text-sm font-bold shrink-0 ${installed ? 'bg-red-50 text-red-600 hover:bg-red-100' : app.comingSoon ? 'bg-gray-100 text-gray-400' : 'bg-brand-500 text-white hover:bg-brand-600'}`}>
-                  {installing === app.slug ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : installed ? t('storePage.disable','Disable') : t('storePage.activate','Activate')}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ═══ UNIFIED MODAL ═══ */}
+      {testPanel && (() => {
+        const info = getModalInfo(testPanel);
+        if (!info) return null;
+        const Icon = info.icon;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setTestPanel(null)}>
+            <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+
+              {/* Colored Header */}
+              <div className={`p-4 bg-gradient-to-r ${info.gradient} flex items-center justify-between shrink-0`}>
+                <div className="flex items-center gap-3">
+                  <Icon size={20} className="text-white"/>
+                  <div>
+                    <h3 className="font-bold text-sm text-white">{info.name}</h3>
+                    <p className="text-white/60 text-[10px]">{info.desc}</p>
+                  </div>
+                </div>
+                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto">
+                {renderModalContent(testPanel)}
+              </div>
+
+              {/* Save & Close Footer */}
+              <div className="p-4 border-t shrink-0">
+                <button onClick={() => setTestPanel(null)} className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">
+                  {t('storePage.saveClose','Save & Close')}
                 </button>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* ═══ TEST PANELS ═══ */}
-      {testPanel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setTestPanel(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            
-            {/* ── CHATBOT TEST ── */}
-            {testPanel === 'chatbot' && <>
-              <div className="p-4 bg-gradient-to-r from-brand-500 to-purple-600 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Bot size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.aiChatbotTest','AI Chatbot Test')}</h3><p className="text-white/60 text-[10px]">{t('storePage.testYourChatbot',"Test your store's chatbot")}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div ref={botScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
-                {botMessages.length === 0 && <p className="text-center text-gray-400 text-sm py-8">{t('storePage.botTryHint','Try: "مرحبا" or "shipping" or "payment"')}</p>}
-                {botMessages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-800 rounded-tl-sm'}`}>
-                      {msg.text}
-                      {msg.model && <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-white/50' : 'text-gray-400'}`}>via {msg.model}</p>}
-                      {msg.debug && <p className="text-[9px] mt-1 text-red-400">⚠ {msg.debug}</p>}
-                    </div>
-                  </div>
-                ))}
-                {botLoading && <div className="flex justify-start"><div className="bg-gray-100 rounded-2xl px-4 py-3"><div className="flex gap-1"><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"/><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}/><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}/></div></div></div>}
-              </div>
-              <div className="p-4 border-t flex gap-2">
-                <input className="input-field flex-1" placeholder={t('storePage.typeMessage','Type a message...')} value={botInput} onChange={e => setBotInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendTestMessage()}/>
-                <button onClick={sendTestMessage} className="btn-primary px-4"><Send size={16}/></button>
-              </div>
-            </>}
-
-            {/* ── FAKE ORDER TEST ── */}
-            {testPanel === 'fake' && <>
-              <div className="p-4 bg-gradient-to-r from-red-500 to-orange-500 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Shield size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.fraudDetectionTest','Fraud Detection Test')}</h3><p className="text-white/60 text-[10px]">{t('storePage.testFraudScoring','Test order fraud scoring')}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="input-label text-xs">{t('storePage.customerName','Customer Name')}</label><input className="input-field" value={fakeForm.customer_name} onChange={e => setFakeForm({...fakeForm, customer_name: e.target.value})}/></div>
-                  <div><label className="input-label text-xs">{t('storePage.phone','Phone')}</label><input className="input-field" value={fakeForm.customer_phone} onChange={e => setFakeForm({...fakeForm, customer_phone: e.target.value})}/></div>
-                  <div><label className="input-label text-xs">{t('storePage.totalDzd','Total (DZD)')}</label><input type="number" className="input-field" value={fakeForm.total} onChange={e => setFakeForm({...fakeForm, total: e.target.value})}/></div>
-                  <div><label className="input-label text-xs">{t('storePage.payment','Payment')}</label><select className="input-field" value={fakeForm.payment_method} onChange={e => setFakeForm({...fakeForm, payment_method: e.target.value})}><option value="cod">COD</option><option value="ccp">CCP</option><option value="baridimob">BaridiMob</option></select></div>
-                </div>
-                <button onClick={testFakeDetection} disabled={fakeLoading} className="btn-primary w-full flex items-center justify-center gap-2">
-                  {fakeLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Shield size={16}/>}{t('storePage.analyzeOrder','Analyze Order')}
-                </button>
-                {fakeResult && !fakeResult.error && (
-                  <div className={`p-4 rounded-xl ${fakeResult.level === 'high' ? 'bg-red-50 border border-red-200' : fakeResult.level === 'medium' ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-lg">{fakeResult.score}/100</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${fakeResult.level === 'high' ? 'bg-red-500 text-white' : fakeResult.level === 'medium' ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'}`}>{fakeResult.level.toUpperCase()} {t('storePage.risk','RISK')}</span>
-                    </div>
-                    {fakeResult.flags?.length > 0 && <div className="space-y-1">{fakeResult.flags.map((f, i) => <p key={i} className="text-xs text-gray-600 flex items-center gap-1"><AlertTriangle size={10}/>{f}</p>)}</div>}
-                  </div>
-                )}
-                {fakeResult?.error && <p className="text-sm text-red-500">{fakeResult.error}</p>}
-              </div>
-            </>}
-
-            {/* ── DESCRIPTION TEST ── */}
-            {testPanel === 'description' && <>
-              <div className="p-4 bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Sparkles size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.aiProductDescriptions','AI Product Descriptions')}</h3><p className="text-white/60 text-[10px]">{t('storePage.generateDescriptionsInstantly','Generate descriptions instantly')}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto">
-                <div><label className="input-label text-xs">{t('storePage.productName','Product Name')}</label><input className="input-field" value={descName} onChange={e => setDescName(e.target.value)} placeholder={t('storePage.productNamePlaceholder','e.g. Wireless Bluetooth Headphones')}/></div>
-                <button onClick={testDescription} disabled={descLoading} className="btn-primary w-full flex items-center justify-center gap-2">
-                  {descLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Sparkles size={16}/>}{t('storePage.generateDescription','Generate Description')}
-                </button>
-                {descResult && <div className="p-4 bg-gray-50 rounded-xl"><p className="text-sm text-gray-700 leading-relaxed">{descResult}</p></div>}
-              </div>
-            </>}
-
-            {/* ── CART RECOVERY TEST ── */}
-            {testPanel === 'recovery' && <>
-              <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-between">
-                <div className="flex items-center gap-3"><MessageCircle size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.cartRecoveryMessages','Cart Recovery Messages')}</h3><p className="text-white/60 text-[10px]">{t('storePage.aiGeneratedRecovery','AI-generated recovery messages')}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto">
-                <div><label className="input-label text-xs">{t('storePage.abandonedItems','Abandoned Items (comma-separated)')}</label><input className="input-field" value={recoveryItems} onChange={e => setRecoveryItems(e.target.value)} placeholder={t('storePage.abandonedItemsPlaceholder','Shoes, T-Shirt, Watch')}/></div>
-                <button onClick={testRecovery} disabled={recoveryLoading} className="btn-primary w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600">
-                  {recoveryLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <MessageCircle size={16}/>}{t('storePage.generateRecoveryMessage','Generate Recovery Message')}
-                </button>
-                {recoveryResult && <div className="p-4 bg-gray-50 rounded-xl"><p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{recoveryResult}</p><button onClick={() => {navigator.clipboard.writeText(recoveryResult);toast.success(t('storePage.copied','Copied!'));}} className="mt-3 text-xs text-brand-600 font-bold hover:underline">{t('storePage.copyToClipboard','Copy to clipboard')}</button></div>}
-              </div>
-            </>}
-
-            {testPanel === 'whatsapp' && <>
-              <div className="p-4 bg-gradient-to-r from-green-600 to-green-700 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Smartphone size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.whatsappConnection','WhatsApp Connection')}</h3><p className="text-white/60 text-[10px]">{t('storePage.connectWhatsappDesc','Connect your WhatsApp to send order updates')}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto">
-                <WhatsAppQR storeId={currentStore?.id}/>
-              </div>
-            </>}
-
-            {testPanel === 'email' && <>
-              <div className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-between">
-                <div className="flex items-center gap-3"><Mail size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.testEmail','Test Email')}</h3><p className="text-white/60 text-[10px]">{t('storePage.sendTestEmailDesc','Send a test email')}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto">
-                <div><label className="input-label text-xs">{t('storePage.recipientEmail','Recipient Email')}</label><input type="email" className="input-field" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="recipient@example.com"/></div>
-                <div><label className="input-label text-xs">{t('storePage.subject','Subject')}</label><input className="input-field" value={emailSubject} onChange={e => setEmailSubject(e.target.value)}/></div>
-                <div><label className="input-label text-xs">{t('storePage.message','Message')}</label><textarea className="input-field" rows={3} value={emailBody} onChange={e => setEmailBody(e.target.value)}/></div>
-                <button onClick={testEmail} disabled={emailSending} className="btn-primary w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600">
-                  {emailSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Send size={16}/>}{t('storePage.sendTestEmail','Send Test Email')}
-                </button>
-                {emailResult && <div className={`p-4 rounded-xl ${emailResult.success ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                  {emailResult.success ? <p className="text-sm text-emerald-700 font-medium">{t('storePage.emailSent','Email sent!')}</p> : <p className="text-sm text-red-700 font-medium">{emailResult.error}</p>}
-                </div>}
-              </div>
-            </>}
-
-            {testPanel === 'sheets' && <>
-              <div className="p-4 bg-gradient-to-r from-emerald-600 to-green-700 flex items-center justify-between">
-                <div className="flex items-center gap-3"><FileSpreadsheet size={20} className="text-white"/><div><h3 className="font-bold text-sm text-white">{t('storePage.googleSheets','Google Sheets')}</h3><p className="text-white/60 text-[10px]">{t('storePage.syncOrdersSpreadsheet','Sync orders to your spreadsheet')}</p></div></div>
-                <button onClick={() => setTestPanel(null)} className="text-white/60 hover:text-white"><X size={18}/></button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto">
-                {/* Step 1: Sign in with Google */}
-                {!sheetsStatus?.token ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-600">{t('storePage.connectGoogleDesc','Connect your Google account to sync orders directly to a Google Sheet.')}</p>
-                    <button onClick={async()=>{
-                      setSheetsLoading(true);
-                      try{
-                        // Load Google Identity Services
-                        if(!window.google?.accounts){
-                          await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
-                        }
-                        // Get client ID from platform
-                        let clientId='';
-                        try{const{data:pi}=await getPlatformInfo();clientId=pi.google_client_id||'';}catch{}
-                        if(!clientId){toast.error(t('storePage.googleClientIdMissing','Google Client ID not set. Ask platform admin.'));setSheetsLoading(false);return;}
-                        // Request token
-                        const tokenClient=window.google.accounts.oauth2.initTokenClient({
-                          client_id:clientId,
-                          scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-                          callback:(resp)=>{
-                            if(resp.error){toast.error(t('storePage.googleAuthFailed','Google auth failed'));setSheetsLoading(false);return;}
-                            setSheetsStatus({token:resp.access_token,expires:Date.now()+resp.expires_in*1000});
-                            toast.success(t('storePage.googleConnected','Google connected!'));
-                            setSheetsLoading(false);
-                          },
-                        });
-                        tokenClient.requestAccessToken();
-                      }catch(e){toast.error(t('storePage.failedLoadGoogle','Failed to load Google: ')+e.message);setSheetsLoading(false);}
-                    }} disabled={sheetsLoading} className="w-full py-3 bg-white border-2 border-gray-300 rounded-xl font-bold text-sm flex items-center justify-center gap-3 hover:bg-gray-50 disabled:opacity-50">
-                      {sheetsLoading?<div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"/>:<><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>{t('storePage.signInWithGoogle','Sign in with Google')}</>}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
-                      <Check size={16} className="text-emerald-500 shrink-0"/>
-                      <p className="text-sm text-emerald-700 font-medium">{t('storePage.googleAccountConnected','Google account connected')}</p>
-                    </div>
-
-                    {/* Step 2: Enter sheet URL */}
-                    <div>
-                      <label className="input-label text-xs">{t('storePage.googleSheetUrl','Google Sheet URL')}</label>
-                      <input className="input-field text-sm" value={sheetUrl} onChange={e=>setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..."/>
-                      <p className="text-[10px] text-gray-400 mt-1">{t('storePage.createSheetHint','Create a sheet in Google Sheets, copy its URL and paste it here')}</p>
-                    </div>
-
-                    {/* Sync button */}
-                    <button onClick={async()=>{
-                      if(!sheetUrl)return toast.error(t('storePage.pasteSheetUrl','Paste your Google Sheet URL'));
-                      const match=sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-                      const sheetId=match?match[1]:sheetUrl.trim();
-                      if(!sheetId)return toast.error(t('storePage.invalidSheetUrl','Invalid sheet URL'));
-                      setSheetsLoading(true);setSyncResult(null);
-                      try{
-                        // Fetch orders from backend
-                        const{data:exp}=await api.get(`/manage/stores/${currentStore.id}/orders-export`);
-                        const values=[exp.header,...exp.rows];
-                        // Clear and write via Google Sheets API
-                        const token=sheetsStatus.token;
-                        const base=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
-                        // Check access
-                        const check=await fetch(base,{headers:{Authorization:`Bearer ${token}`}});
-                        if(check.status===403||check.status===404){toast.error(check.status===403?t('storePage.noSheetAccess','No access to this sheet. Make sure you own it.'):t('storePage.sheetNotFound','Sheet not found.'));setSheetsLoading(false);return;}
-                        // Clear Sheet1
-                        await fetch(`${base}/values/Sheet1!A:Z:clear`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});
-                        // Write data
-                        await fetch(`${base}/values/Sheet1!A1?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({values})});
-                        // Bold header
-                        try{const meta=await(await fetch(base,{headers:{Authorization:`Bearer ${token}`}})).json();const sid=meta.sheets?.[0]?.properties?.sheetId||0;await fetch(`${base}:batchUpdate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({requests:[{repeatCell:{range:{sheetId:sid,startRowIndex:0,endRowIndex:1},cell:{userEnteredFormat:{textFormat:{bold:true},backgroundColor:{red:0.93,green:0.93,blue:0.93}}},fields:'userEnteredFormat(textFormat,backgroundColor)'}}]})});} catch {}
-                        // Save sheet ID to store config
-                        await ownerApi.updateStore(currentStore.id,{google_sheet_id:sheetId});
-                        setSyncResult({synced:exp.rows.length});
-                        toast.success(`${exp.rows.length} ${t('storePage.ordersSynced','orders synced!')}`);
-                      }catch(e){
-                        if(e.message?.includes('401')||sheetsStatus.expires<Date.now()){setSheetsStatus(null);toast.error(t('storePage.sessionExpired','Session expired. Sign in again.'));}
-                        else{setSyncResult({error:e.message});toast.error(t('storePage.syncFailed','Sync failed: ')+e.message);}
-                      }
-                      setSheetsLoading(false);
-                    }} disabled={sheetsLoading} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
-                      {sheetsLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}{t('storePage.syncOrdersToSheet','Sync Orders to Sheet')}
-                    </button>
-
-                    {syncResult&&!syncResult.error&&<p className="text-sm text-emerald-600 text-center font-medium">{syncResult.synced} {t('storePage.ordersSyncedShort','orders synced')}</p>}
-                    {syncResult?.error&&<p className="text-sm text-red-600 text-center">{syncResult.error}</p>}
-
-                    <button onClick={()=>{setSheetsStatus(null);toast.success(t('storePage.disconnected','Disconnected'));}} className="w-full py-2 text-red-500 text-xs font-bold hover:underline">{t('storePage.disconnectGoogle','Disconnect Google')}</button>
-                  </div>
-                )}
-              </div>
-            </>}
-
           </div>
-        </div>
-      )}
+        );
+      })()}
     </DashboardLayout>
   );
 }
