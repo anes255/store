@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2 } from 'lucide-react';
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', icon: ShoppingBag, label: 'New Order', labelFr: 'Nouvelle commande', labelAr: 'طلب جديد' },
@@ -96,6 +96,12 @@ export default function StoreOrders() {
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table' | 'grouped'
   const [sortBy, setSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc' | 'total_desc' | 'total_asc' | 'age'
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+
+  const toggleSelect = (id) => setSelectedItems(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const toggleAll = () => setSelectedItems(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
+  const clearSelection = () => setSelectedItems(new Set());
 
   const loadOrders = async () => {
     if (!currentStore?.id) return;
@@ -203,6 +209,10 @@ export default function StoreOrders() {
         <div className="p-3 sm:p-4">
           {/* Row 1: Order identity + Status + Age + Price */}
           <div className="flex items-start gap-3">
+            {/* Selection checkbox */}
+            <button onClick={(e) => { e.stopPropagation(); toggleSelect(o.id); }} className="mt-1 shrink-0">
+              {selectedItems.has(o.id) ? <CheckSquare size={20} className="text-brand-600" /> : <Square size={20} className="text-gray-300 hover:text-gray-400" />}
+            </button>
             {/* Status icon */}
             <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl ${sc.bg} flex items-center justify-center shrink-0 relative`}>
               <StatusIcon size={18} className={sc.text} />
@@ -473,7 +483,12 @@ export default function StoreOrders() {
     const isUrgent = needsUrgentAttention(o);
 
     return (
-      <tr className={`border-b border-gray-50 hover:bg-gray-50/80 transition-colors ${isUrgent ? 'bg-amber-50/30' : ''}`}>
+      <tr className={`border-b border-gray-50 hover:bg-gray-50/80 transition-colors ${isUrgent ? 'bg-amber-50/30' : ''} ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
+        <td className="px-3 py-3">
+          <button onClick={(e) => { e.stopPropagation(); toggleSelect(o.id); }}>
+            {selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600" /> : <Square size={16} className="text-gray-300 hover:text-gray-400" />}
+          </button>
+        </td>
         <td className="px-3 py-3">
           <div className="flex items-center gap-2">
             {isUrgent && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />}
@@ -579,6 +594,11 @@ export default function StoreOrders() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-1">
+          {/* Select All checkbox */}
+          <button onClick={toggleAll} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === orders.length ? 'Deselect All' : 'Select All'}>
+            {selectedItems.size > 0 && selectedItems.size === orders.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
+            <span className="text-xs font-bold text-gray-500 hidden sm:inline">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
+          </button>
           <div className="relative flex-1 sm:max-w-xs">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder={t('storePage.searchOrdersPlaceholder', 'Search by name, phone, or order #...')} value={search} onChange={e => setSearch(e.target.value)} />
@@ -625,6 +645,7 @@ export default function StoreOrders() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="px-3 py-2.5 w-10"><button onClick={toggleAll}>{selectedItems.size > 0 && selectedItems.size === orders.length ? <CheckSquare size={16} className="text-brand-600" /> : <Square size={16} className="text-gray-400" />}</button></th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Age</th>
@@ -674,6 +695,47 @@ export default function StoreOrders() {
         /* ===== CARD VIEW (default) ===== */
         <div className="space-y-2">
           {sortedOrders.map(o => <OrderCard key={o.id} o={o} />)}
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedItems.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-6 py-3 flex items-center gap-4 shadow-2xl z-50">
+          <span className="text-sm font-bold">{selectedItems.size} selected</span>
+          <div className="w-px h-6 bg-gray-600" />
+          {/* Change Status dropdown */}
+          <div className="relative">
+            <button onClick={() => setBulkStatusOpen(!bulkStatusOpen)} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
+              <RefreshCw size={13} />Change Status
+              <ChevronDown size={12} />
+            </button>
+            {bulkStatusOpen && (
+              <div className="absolute bottom-full mb-2 left-0 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 py-1 w-48 max-h-64 overflow-y-auto">
+                {allStatuses.map(st => {
+                  const sc = statusConfig[st];
+                  const StIcon = sc.icon;
+                  return (
+                    <button key={st} onClick={async () => {
+                      for (const id of selectedItems) { await updateStatus(id, st); }
+                      clearSelection(); setBulkStatusOpen(false);
+                    }} className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-gray-50 flex items-center gap-2">
+                      <StIcon size={12} className={sc.text} />
+                      {sc.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <button onClick={() => { const selectedData = orders.filter(o => selectedItems.has(o.id)); const csv = ['Order,Customer,Phone,Status,Total,Date', ...selectedData.map(o => `${o.order_number},${o.customer_name},${o.customer_phone},${o.status},${o.total},${o.created_at}`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'orders-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(`Exported ${selectedItems.size} orders`); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
+            <Download size={13} />Export Selected
+          </button>
+          <button onClick={async () => { if (!confirm(`Delete ${selectedItems.size} selected orders?`)) return; for (const id of selectedItems) { try { await orderApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadOrders(); toast.success('Deleted selected orders'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
+            <Trash2 size={13} />Delete Selected
+          </button>
+          <button onClick={clearSelection} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-700 rounded-lg text-xs transition-colors">
+            <X size={14} />
+          </button>
         </div>
       )}
 

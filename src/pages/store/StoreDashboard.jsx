@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ownerApi } from '../../utils/api';
+import api, { ownerApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -85,6 +85,7 @@ export default function StoreDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     const loadStores = async () => {
@@ -100,6 +101,7 @@ export default function StoreDashboard() {
   useEffect(() => {
     if (currentStore?.id) {
       ownerApi.getDashboard(currentStore.id).then(r => setDashboard(r.data)).catch(() => {});
+      api.get(`/manage/stores/${currentStore.id}/products`).then(r => setProducts(r.data?.products || r.data || [])).catch(() => {});
     }
   }, [currentStore?.id]);
 
@@ -268,6 +270,52 @@ export default function StoreDashboard() {
           ) : <p className="text-sm text-gray-400">{t('storePage.noOrdersYet', 'No orders yet')}</p>}
         </div>
       </div>
+
+      {/* Top Products */}
+      {products.length > 0 && (
+        <div className="mb-8 mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-900 text-lg">{t('dashboard.topProducts', 'Top Products')}</h3>
+            <Link to="/dashboard/products" className="text-sm text-brand-500 hover:text-brand-600 font-medium flex items-center gap-1">
+              {t('dashboard.viewAll', 'View All')} <ArrowUpRight size={14} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.slice(0, 8).map((p) => (
+              <div key={p.id} className="glass-card-solid p-4 group hover:shadow-lg transition-all">
+                <div className="w-full aspect-square rounded-xl bg-gray-100 overflow-hidden mb-3">
+                  {p.image || p.images?.[0] ? (
+                    <img
+                      src={p.image || p.images[0]}
+                      alt={p.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package size={32} className="text-gray-300" />
+                    </div>
+                  )}
+                </div>
+                <h4 className="text-sm font-semibold text-gray-900 truncate">{p.name}</h4>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-sm font-bold text-brand-600">{parseFloat(p.price || 0).toLocaleString()} DZD</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    (p.stock ?? p.quantity ?? 0) > 10
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : (p.stock ?? p.quantity ?? 0) > 0
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-100 text-red-700'
+                  }`}>
+                    {(p.stock ?? p.quantity ?? 0) > 0
+                      ? `${p.stock ?? p.quantity} ${t('dashboard.inStock', 'in stock')}`
+                      : t('dashboard.outOfStock', 'Out of stock')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <CreateStoreModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onCreate={(store) => { setStores([...stores, store]); setCurrentStore(store); }} />
     </DashboardLayout>

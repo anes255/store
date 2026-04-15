@@ -4,7 +4,7 @@ import { productApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download } from 'lucide-react';
 
 export default function StoreProducts() {
   const { t } = useTranslation();
@@ -19,6 +19,12 @@ export default function StoreProducts() {
   const fileInputRef = useRef(null);
   const variantFileRef = useRef(null);
   const [activeVarIdx, setActiveVarIdx] = useState(null);
+
+  const [selectedItems, setSelectedItems] = useState(new Set());
+
+  const toggleSelect = (id) => setSelectedItems(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const toggleAll = () => setSelectedItems(prev => prev.size === products.length ? new Set() : new Set(products.map(p => p.id)));
+  const clearSelection = () => setSelectedItems(new Set());
 
   const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[]};
   const [form, setForm] = useState({...empty});
@@ -117,21 +123,31 @@ export default function StoreProducts() {
         <h1 className="page-header">{t('sidebar.products')}</h1>
         <button onClick={()=>{setEditing(null);setForm({...empty});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('products.addProduct')}</button>
       </div>
-      <div className="relative max-w-sm mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={toggleAll} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === products.length ? 'Deselect All' : 'Select All'}>
+          {selectedItems.size > 0 && selectedItems.size === products.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
+          <span className="text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
+        </button>
+        <div className="relative max-w-sm flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      </div>
 
       {products.length===0?(
         <div className="flex flex-col items-center py-20 glass-card-solid"><Package size={48} className="text-gray-300 mb-4"/><p className="text-gray-500 mb-4">{t('products.noProducts')}</p><button onClick={()=>{setForm({...empty});setShowModal(true);}} className="btn-primary text-sm"><Plus size={16} className="mr-1 inline"/>{t('products.addProduct')}</button></div>
       ):(
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
-            <div key={p.id} className="glass-card-solid rounded-2xl overflow-hidden group hover:shadow-glass-lg transition-all">
+            <div key={p.id} className={`glass-card-solid rounded-2xl overflow-hidden group hover:shadow-glass-lg transition-all ${selectedItems.has(p.id) ? 'ring-2 ring-brand-400' : ''}`}>
               <div className="aspect-square bg-gray-100 relative overflow-hidden">
                 {thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="flex items-center justify-center h-full"><Image size={32} className="text-gray-300"/></div>}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={()=>openEdit(p)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-gray-50"><Edit size={14}/></button>
                   <button onClick={()=>handleDelete(p.id)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-red-50 text-red-500"><Trash2 size={14}/></button>
                 </div>
-                {p.is_featured&&<span className="absolute top-2 left-2 badge bg-brand-500 text-white text-[9px]">{t('storePage.featured','FEATURED')}</span>}
+                {/* Selection checkbox */}
+                <button onClick={(e)=>{e.stopPropagation();toggleSelect(p.id);}} className="absolute top-2 left-2 z-10">
+                  {selectedItems.has(p.id) ? <CheckSquare size={20} className="text-brand-600 bg-white rounded" /> : <Square size={20} className="text-gray-400 bg-white/80 rounded opacity-0 group-hover:opacity-100 transition-opacity" />}
+                </button>
+                {p.is_featured&&<span className="absolute top-9 left-2 badge bg-brand-500 text-white text-[9px]">{t('storePage.featured','FEATURED')}</span>}
               </div>
               <div className="p-3">
                 <h3 className="font-semibold text-sm text-gray-800 truncate">{p.name_en||p.name}</h3>
@@ -143,6 +159,23 @@ export default function StoreProducts() {
               </div>
             </div>
           );})}
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedItems.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-6 py-3 flex items-center gap-4 shadow-2xl z-50">
+          <span className="text-sm font-bold">{selectedItems.size} selected</span>
+          <div className="w-px h-6 bg-gray-600" />
+          <button onClick={() => { const selectedData = products.filter(p => selectedItems.has(p.id)); const csv = ['Name,Price,Stock,SKU', ...selectedData.map(p => `"${p.name_en||p.name}",${p.price},${p.stock_quantity||0},"${p.sku||''}"`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'products-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(`Exported ${selectedItems.size} products`); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
+            <Download size={13} />Export Selected
+          </button>
+          <button onClick={async () => { if(!confirm(`Delete ${selectedItems.size} selected products?`)) return; for (const id of selectedItems) { try { await productApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadProducts(); toast.success('Deleted selected products'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
+            <Trash2 size={13} />Delete Selected
+          </button>
+          <button onClick={clearSelection} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-700 rounded-lg text-xs transition-colors">
+            <X size={14} />
+          </button>
         </div>
       )}
 

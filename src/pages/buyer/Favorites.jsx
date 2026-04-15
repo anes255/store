@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Heart, ArrowLeft, ShoppingCart, Eye, Trash2, CheckSquare, Square, X, Package, Sparkles, ShoppingBag, Search } from 'lucide-react';
 import { useCartStore, useWishlistStore } from '../../hooks/useStore';
 import { storeApi } from '../../utils/api';
+import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
 
 // =============================================================================
 // FAVORITES PAGE
@@ -49,6 +50,7 @@ export default function Favorites() {
   // ----- UI state ------------------------------------------------------------
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
+  const [quickAddProduct, setQuickAddProduct] = useState(null);
 
   // Derived: visible items respect the local search filter.
   const filtered = useMemo(() => {
@@ -89,9 +91,12 @@ export default function Favorites() {
   };
 
   const handleAddToCart = (product) => {
-    addItem(product, 1, product._selectedVariant || null);
-    const label = product._variantLabel ? ` (${product._variantLabel})` : '';
-    toast.success(t('store.addedToCart', 'Added to cart') + label);
+    if (product.variants && product.variants.length > 0) {
+      setQuickAddProduct(product);
+    } else {
+      addItem(product, 1, null);
+      toast.success(t('store.addedToCart', 'Added to cart'));
+    }
   };
 
   const handleBulkAddToCart = () => {
@@ -437,6 +442,14 @@ export default function Favorites() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ProductQuickAdd
+        show={!!quickAddProduct}
+        onClose={()=>setQuickAddProduct(null)}
+        product={quickAddProduct}
+        storeSlug={storeSlug}
+        primaryColor={accent}
+        onAddToCart={({product:p,selectedVariant,quantity})=>{addItem(p,quantity,selectedVariant);toast.success(t('store.addedToCart','Added to cart'));setQuickAddProduct(null);}}
+      />
     </div>
   );
 }

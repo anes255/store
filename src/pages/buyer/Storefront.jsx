@@ -8,6 +8,7 @@ import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package,
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
+import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
 
 // ============ ANIMATION PRESETS ============
 // Two groups:
@@ -154,6 +155,7 @@ export default function Storefront() {
   const [loading, setLoading] = useState(!cachedStore);
   const [contentReady, setContentReady] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [quickAddProduct, setQuickAddProduct] = useState(null);
 
   const [suspended, setSuspended] = useState(false);
 
@@ -236,6 +238,18 @@ export default function Storefront() {
     toast.success(t('store.addedToCart','Added to cart'));
   };
 
+  // Opens the quick-add popup so the buyer can pick variants before adding.
+  const openQuickAdd = (product) => setQuickAddProduct(product);
+
+  // Callback from the ProductQuickAdd modal.
+  const handleQuickAddToCart = ({ product: p, selectedVariant, quantity: qty }) => {
+    addItem(p, qty, selectedVariant);
+    const label = selectedVariant
+      ? (selectedVariant.label || selectedVariant.name || '')
+      : '';
+    toast.success(label ? `Added "${label}" to cart` : t('store.addedToCart','Added to cart'));
+  };
+
   const getThumb = (p) => {
     if (p.thumbnail) return p.thumbnail;
     if (Array.isArray(p.images)&&p.images.length) return typeof p.images[0]==='string'?p.images[0]:null;
@@ -307,7 +321,7 @@ export default function Storefront() {
       </header>
 
       {store.page_builder&&Array.isArray(store.page_builder)&&store.page_builder.length>0?(
-        <BuilderSections sections={store.page_builder} products={products} categories={categories} store={store} storeSlug={storeSlug} pc={pc} getName={getName} getThumb={getThumb} addItem={quickAddToCart} wishlist={wishlist} toggleWishlist={toggleWishlist} search={search} setSearch={setSearch} t={t}/>
+        <BuilderSections sections={store.page_builder} products={products} categories={categories} store={store} storeSlug={storeSlug} pc={pc} getName={getName} getThumb={getThumb} addItem={quickAddToCart} openQuickAdd={openQuickAdd} wishlist={wishlist} toggleWishlist={toggleWishlist} search={search} setSearch={setSearch} t={t}/>
       ):<>
 
       {/* ============ HERO ============ */}
@@ -469,7 +483,7 @@ export default function Storefront() {
 
                   {/* Action buttons — floating, quick add directly from grid */}
                   <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-                    <button onClick={(e)=>{e.preventDefault();e.stopPropagation();quickAddToCart(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>
+                    <button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>
                     <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inWishlist?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inWishlist?'white':'none'}/></button>
                   </div>
 
@@ -515,11 +529,20 @@ export default function Storefront() {
       </div>
 
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
+      <ProductQuickAdd
+        show={!!quickAddProduct}
+        onClose={() => setQuickAddProduct(null)}
+        product={quickAddProduct}
+        storeSlug={storeSlug}
+        primaryColor={pc}
+        currency={store.currency || 'DZD'}
+        onAddToCart={handleQuickAddToCart}
+      />
     </div>
   );
 }
 
-function BuilderSections({sections,products,categories,store,storeSlug,pc,getName,getThumb,addItem,wishlist,toggleWishlist,search,setSearch,t}){
+function BuilderSections({sections,products,categories,store,storeSlug,pc,getName,getThumb,addItem,openQuickAdd,wishlist,toggleWishlist,search,setSearch,t}){
   const renderSection=(sec)=>{
     const s=sec.style||{};const c=sec.content||{};
     const wrap={backgroundColor:s.bg||'#ffffff',color:s.textColor||'#1f2937',padding:`${s.padding||60}px 16px`,fontFamily:s.fontFamily||'Inter',borderRadius:`${s.borderRadius||0}px`};
@@ -555,7 +578,7 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
                 <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
                 {/* Floating quick actions — cart + favorite, no navigation required */}
                 <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-                  {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();addItem(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>}
+                  {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>}
                   <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
                 </div>
                 <div className="p-3.5">{c.showName!==false&&<Link to={`/s/${storeSlug}/product/${product.slug}`}><h3 className="font-semibold text-sm text-gray-800 truncate">{getName(product)}</h3></Link>}{c.showPrice!==false&&<div className="flex items-baseline gap-2 mt-2"><span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span><span className="text-xs text-gray-400">{store.currency||'DZD'}</span>{product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}</div>}</div>

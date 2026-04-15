@@ -103,16 +103,8 @@ export default function CustomerAuth() {
                 </div>
               </div>
 
-              {mode === 'register' && (<>
-                <div>
-                  <label className="input-label">Address</label>
-                  <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder="Your delivery address" value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="input-label">City</label><input className="input-field" placeholder="City" value={form.city} onChange={e => setForm({...form, city: e.target.value})} /></div>
-                  <div><label className="input-label">Wilaya</label><input className="input-field" placeholder="Wilaya" value={form.wilaya} onChange={e => setForm({...form, wilaya: e.target.value})} /></div>
-                </div>
-              </>)}
+
+
 
               <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90 transition-all" style={{backgroundColor:pc}}>
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{mode === 'login' ? 'Log In' : 'Create Account'} <ArrowRight size={18}/></>}

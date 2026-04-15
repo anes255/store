@@ -9,6 +9,7 @@ export default function StoreAnalytics(){
   const{currentStore}=useStoreManagement();
   const[data,setData]=useState(null);
   const[loading,setLoading]=useState(true);
+  const[dateRange,setDateRange]=useState('30d');
 
   const load=()=>{if(!currentStore?.id)return;setLoading(true);api.get(`/owner/stores/${currentStore.id}/dashboard`).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[currentStore?.id]);
@@ -20,24 +21,52 @@ export default function StoreAnalytics(){
     return Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return{date:d.toISOString().split('T')[0],revenue:0,orders:0};});
   },[rawSales]);
 
-  const avgOV=s.totalOrders>0?Math.round(s.totalRevenue/s.totalOrders):0;
+  const dateCutoff=useMemo(()=>{
+    if(dateRange==='all')return null;
+    const now=new Date();
+    if(dateRange==='7d')now.setDate(now.getDate()-7);
+    else if(dateRange==='30d')now.setDate(now.getDate()-30);
+    else if(dateRange==='3m')now.setMonth(now.getMonth()-3);
+    else if(dateRange==='6m')now.setMonth(now.getMonth()-6);
+    else if(dateRange==='1y')now.setFullYear(now.getFullYear()-1);
+    return now.toISOString().split('T')[0];
+  },[dateRange]);
+
+  const filteredSales=useMemo(()=>{
+    if(!dateCutoff)return salesData;
+    return salesData.filter(d=>d.date>=dateCutoff);
+  },[salesData,dateCutoff]);
+
+  const filteredOrders=useMemo(()=>{
+    const orders=data?.recentOrders||[];
+    if(!dateCutoff)return orders;
+    return orders.filter(o=>{const d=(o.created_at||o.date||'').split('T')[0];return d>=dateCutoff;});
+  },[data?.recentOrders,dateCutoff]);
+
+  const filteredStats=useMemo(()=>{
+    const rev=filteredSales.reduce((sum,d)=>sum+(parseFloat(d.revenue)||0),0);
+    const ord=filteredSales.reduce((sum,d)=>sum+(parseInt(d.orders)||0),0);
+    return{totalRevenue:rev,totalOrders:ord};
+  },[filteredSales]);
+
+  const avgOV=filteredStats.totalOrders>0?Math.round(filteredStats.totalRevenue/filteredStats.totalOrders):0;
   const convRate=s.storeVisits>0?((s.totalOrders/s.storeVisits)*100).toFixed(1):0;
 
   // Order status breakdown for pie/bar
   const statusBreakdown=useMemo(()=>{
     const counts={};
-    (data?.recentOrders||[]).forEach(o=>{const st=(o.status||'pending').toLowerCase();counts[st]=(counts[st]||0)+1;});
+    filteredOrders.forEach(o=>{const st=(o.status||'pending').toLowerCase();counts[st]=(counts[st]||0)+1;});
     return Object.entries(counts).map(([name,value])=>({name,value,fill:STATUS_COLORS[name]||'#9ca3af'}));
-  },[data?.recentOrders]);
+  },[filteredOrders]);
 
   // Top products by frequency in orders
   const topProducts=useMemo(()=>{
     const freq={};
-    (data?.recentOrders||[]).forEach(o=>{
+    filteredOrders.forEach(o=>{
       (o.items||[]).forEach(it=>{const n=it.name||it.product_name||'Unknown';freq[n]=(freq[n]||0)+(parseInt(it.quantity)||1);});
     });
     return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([name,qty])=>({name:name.length>18?name.slice(0,18)+'…':name,qty}));
-  },[data?.recentOrders]);
+  },[filteredOrders]);
 
   const fmtDate=(v)=>{try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}};
   const currency=currentStore?.currency||'DZD';
@@ -45,7 +74,17 @@ export default function StoreAnalytics(){
   return(<DashboardLayout>
     <div className="flex items-center justify-between mb-6">
       <div><h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 size={22} className="text-brand-500"/>{t('storePage.analytics','Analytics')}</h1><p className="text-sm text-gray-400 mt-1">{currentStore?.name||t('storePage.store','Store')} {t('storePage.performance','performance')}</p></div>
-      <button onClick={load} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>
+      <div className="flex items-center gap-2">
+        <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 font-medium">
+          <option value="7d">{t('storePage.last7Days','Last 7 Days')}</option>
+          <option value="30d">{t('storePage.last30Days','Last 30 Days')}</option>
+          <option value="3m">{t('storePage.last3Months','Last 3 Months')}</option>
+          <option value="6m">{t('storePage.last6Months','Last 6 Months')}</option>
+          <option value="1y">{t('storePage.lastYear','Last Year')}</option>
+          <option value="all">{t('storePage.allTime','All Time')}</option>
+        </select>
+        <button onClick={load} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>
+      </div>
     </div>
 
     {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>:<>
@@ -53,8 +92,8 @@ export default function StoreAnalytics(){
     {/* Stat cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {[
-        {label:t('storePage.totalRevenue','Total Revenue'),value:`${parseFloat(s.totalRevenue||0).toLocaleString()} ${currency}`,icon:DollarSign,gradient:'from-emerald-500 to-teal-500'},
-        {label:t('storePage.totalOrders','Total Orders'),value:s.totalOrders||0,icon:ShoppingCart,gradient:'from-purple-500 to-pink-500'},
+        {label:t('storePage.totalRevenue','Total Revenue'),value:`${parseFloat(filteredStats.totalRevenue||0).toLocaleString()} ${currency}`,icon:DollarSign,gradient:'from-emerald-500 to-teal-500'},
+        {label:t('storePage.totalOrders','Total Orders'),value:filteredStats.totalOrders||0,icon:ShoppingCart,gradient:'from-purple-500 to-pink-500'},
         {label:t('storePage.customers','Customers'),value:s.totalCustomers||0,icon:Users,gradient:'from-blue-500 to-cyan-500'},
         {label:t('storePage.avgOrder','Avg Order'),value:`${avgOV.toLocaleString()} ${currency}`,icon:TrendingUp,gradient:'from-amber-500 to-orange-500'},
       ].map((c,i)=>{const Icon=c.icon;return(
@@ -78,14 +117,14 @@ export default function StoreAnalytics(){
     {/* Revenue + Orders chart */}
     <div className="glass-card-solid p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-gray-900">{t('storePage.revenueOrdersChart','Revenue & Orders (Last 30 Days)')}</h3>
+        <h3 className="font-bold text-gray-900">{t('storePage.revenueOrdersChart','Revenue & Orders')}</h3>
         <div className="flex items-center gap-4 text-xs">
           <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-full bg-emerald-500"/>{t('storePage.revenue','Revenue')}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-full bg-violet-500"/>{t('storePage.orders','Orders')}</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={salesData}>
+        <AreaChart data={filteredSales}>
           <defs>
             <linearGradient id="aRevenue" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
@@ -150,9 +189,9 @@ export default function StoreAnalytics(){
     {/* Recent orders */}
     <div className="glass-card-solid p-6">
       <h3 className="font-bold text-gray-900 mb-4">{t('storePage.recentOrders','Recent Orders')}</h3>
-      {data?.recentOrders?.length>0?(
+      {filteredOrders.length>0?(
         <div className="space-y-2">
-          {data.recentOrders.slice(0,10).map(o=>(
+          {filteredOrders.slice(0,10).map(o=>(
             <div key={o.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor:STATUS_COLORS[(o.status||'').toLowerCase()]||'#9ca3af'}}/>

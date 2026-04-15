@@ -167,6 +167,7 @@ export const storeApi = {
   loginCustomer: (slug, data) => api.post(`/store/${slug}/customers/login`, data),
   getCustomerProfile: (slug) => api.get(`/store/${slug}/customers/profile`),
   updateCustomerProfile: (slug, data) => api.put(`/store/${slug}/customers/profile`, data),
+  deleteCustomerAccount: (slug) => api.delete(`/store/${slug}/customers/profile`),
   placeOrder: (slug, data) => api.post(`/store/${slug}/orders`, data),
   cancelOrder: (slug, orderId) => api.post(`/store/${slug}/orders/${orderId}/cancel`),
   validateCoupon: (slug, data) => api.post(`/store/${slug}/validate-coupon`, data),

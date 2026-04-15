@@ -304,6 +304,7 @@ export default function DashboardLayout({children}){
       </nav>
       <div className={`border-t p-3 ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400">{t('sidebar.adminRole','Admin')}</p></div>}</div>
+        <button onClick={()=>navigate('/dashboard/settings')} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all ${location.pathname==='/dashboard/settings'?(isDark?'bg-white/10 text-white':'bg-gray-100 text-gray-900'):(isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100')}`}><Settings size={18}/>{sidebarOpen&&<span>{t('sidebar.allSettings','Settings')}</span>}</button>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
