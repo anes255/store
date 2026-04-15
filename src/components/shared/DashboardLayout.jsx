@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target}from'lucide-react';
 
 // Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
 // include the key the sidebar item renders with a lock icon + muted styling,
@@ -87,6 +87,7 @@ function NotifBell(){
 const DEFAULT_ITEMS = [
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
+  {id:'tracking-pixels',type:'link',to:'/dashboard/tracking-pixels',icon:'Target',label:'sidebar.trackingPixels'},
   {id:'page-builder',type:'link',to:'/dashboard/page-builder',icon:'LayoutTemplate',label:'sidebar.pageBuilder'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'}]},
@@ -104,7 +105,7 @@ const DEFAULT_ITEMS = [
   {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'sidebar.billing'},
 ];
 
-const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate};
+const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target};
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();

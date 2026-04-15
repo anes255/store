@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ownerApi, aiApi } from '../../utils/api';
-import { useStoreManagement, useAuthStore } from '../../hooks/useStore';
+import { useStoreManagement, useAuthStore, useAdminTheme } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import WhatsAppConfigModal,{WA_STATUSES,WA_STATUS_LABELS} from '../../components/shared/WhatsAppConfigModal';
 import toast from 'react-hot-toast';
@@ -50,6 +50,281 @@ function SubscriptionSection(){
     <div className="mb-4"><p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('storePage.uploadReceipt','Upload Receipt')}</p>{receipt?<div className="relative"><img src={receipt} className="w-full rounded-xl border"/><button onClick={()=>setReceipt('')} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full"><span className="text-xs">✕</span></button></div>:<div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-brand-400" onClick={()=>fileRef.current?.click()}><Upload size={20} className="mx-auto text-gray-400 mb-1"/><p className="text-xs text-gray-500">{t('storePage.uploadPaymentScreenshot','Upload payment screenshot')}</p></div>}<input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadReceipt}/></div>
     <button onClick={submitPayment} disabled={submitting||!receipt} className="btn-primary w-full py-3 disabled:opacity-50">{submitting?t('storePage.submitting','Submitting...'):t('storePage.submitPayment','Submit Payment')}</button><p className="text-[10px] text-gray-400 text-center mt-2">{t('storePage.reviewed24h','Reviewed within 24 hours')}</p></div></div>}
   </>);
+}
+
+// ============ CHECKOUT PREVIEW ============
+function CheckoutPreview({ s }) {
+  const theme = useAdminTheme();
+  const isDark = theme.mode === 'dark';
+  const pc = s.primary_color || '#7C3AED';
+  const storeName = s.name || s.store_name || 'My Store';
+
+  return (
+    <div className="glass-card-solid p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Eye size={16} className="text-purple-500" />
+        <h3 className="font-bold">Checkout Preview</h3>
+        <span className="text-[10px] text-gray-400 ml-auto">Live preview</span>
+      </div>
+
+      {/* Phone frame */}
+      <div className="mx-auto" style={{ maxWidth: 340 }}>
+        <div
+          className="rounded-[2rem] border-[6px] overflow-hidden shadow-2xl"
+          style={{
+            borderColor: isDark ? '#374151' : '#1f2937',
+            background: isDark ? '#111827' : '#ffffff',
+          }}
+        >
+          {/* Notch */}
+          <div className="flex justify-center pt-2 pb-1" style={{ background: isDark ? '#111827' : '#ffffff' }}>
+            <div className="w-20 h-5 rounded-full" style={{ background: isDark ? '#1f2937' : '#e5e7eb' }} />
+          </div>
+
+          {/* Header */}
+          <div className="px-4 py-3 flex items-center gap-2" style={{ backgroundColor: pc }}>
+            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white text-[10px] font-bold">
+              {storeName[0]}
+            </div>
+            <span className="text-white text-sm font-bold truncate">{storeName}</span>
+            <span className="ml-auto text-white/60 text-[10px]">Checkout</span>
+          </div>
+
+          {/* Scrollable content */}
+          <div
+            className="px-4 py-3 space-y-3 overflow-y-auto"
+            style={{
+              maxHeight: 420,
+              background: isDark ? '#111827' : '#f9fafb',
+            }}
+          >
+            {/* Customer Info */}
+            <div
+              className="rounded-xl p-3 space-y-2"
+              style={{
+                background: isDark ? '#1f2937' : '#ffffff',
+                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+              }}
+            >
+              <p
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: pc }}
+              >
+                Customer Info
+              </p>
+              {/* Full Name - always required */}
+              <div>
+                <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                  Full Name *
+                </p>
+                <div
+                  className="h-7 rounded-lg mt-0.5 flex items-center px-2"
+                  style={{
+                    background: isDark ? '#111827' : '#f3f4f6',
+                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                  }}
+                >
+                  <span className="text-[10px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
+                    Ahmed Ben Ali
+                  </span>
+                </div>
+              </div>
+              {/* Phone - always required */}
+              <div>
+                <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                  Phone *
+                </p>
+                <div
+                  className="h-7 rounded-lg mt-0.5 flex items-center px-2"
+                  style={{
+                    background: isDark ? '#111827' : '#f3f4f6',
+                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                  }}
+                >
+                  <span className="text-[10px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
+                    +213 555 123 456
+                  </span>
+                </div>
+              </div>
+              {/* Email - conditional */}
+              {s.checkout_email && (
+                <div>
+                  <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                    Email
+                  </p>
+                  <div
+                    className="h-7 rounded-lg mt-0.5 flex items-center px-2"
+                    style={{
+                      background: isDark ? '#111827' : '#f3f4f6',
+                      border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                    }}
+                  >
+                    <span className="text-[10px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
+                      customer@email.com
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Method */}
+            <div
+              className="rounded-xl p-3 space-y-2"
+              style={{
+                background: isDark ? '#1f2937' : '#ffffff',
+                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+              }}
+            >
+              <p
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: pc }}
+              >
+                Shipping
+              </p>
+              <label className="flex items-center gap-2 p-2 rounded-lg cursor-default" style={{ background: isDark ? '#111827' : '#f3f4f6' }}>
+                <div
+                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                  style={{ borderColor: pc }}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ background: pc }} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>Home Delivery</p>
+                  <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>2-4 days</p>
+                </div>
+                <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>500 {s.currency || 'DZD'}</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-lg cursor-default" style={{ background: 'transparent' }}>
+                <div
+                  className="w-4 h-4 rounded-full border-2"
+                  style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }}
+                />
+                <div className="flex-1">
+                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Desk Pickup</p>
+                  <p className="text-[9px]" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>1-2 days</p>
+                </div>
+                <span className="text-[10px]" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>300 {s.currency || 'DZD'}</span>
+              </label>
+            </div>
+
+            {/* Order Notes - conditional */}
+            {s.order_notes && (
+              <div
+                className="rounded-xl p-3"
+                style={{
+                  background: isDark ? '#1f2937' : '#ffffff',
+                  border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                }}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: pc }}>
+                  Order Notes
+                </p>
+                <div
+                  className="h-12 rounded-lg mt-1.5 px-2 pt-1"
+                  style={{
+                    background: isDark ? '#111827' : '#f3f4f6',
+                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                  }}
+                >
+                  <span className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
+                    Special instructions...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Order Summary */}
+            <div
+              className="rounded-xl p-3 space-y-1.5"
+              style={{
+                background: isDark ? '#1f2937' : '#ffffff',
+                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+              }}
+            >
+              <p
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{ color: pc }}
+              >
+                Order Summary
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg" style={{ background: isDark ? '#374151' : '#e5e7eb' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold truncate" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>
+                    Sample Product
+                  </p>
+                  <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Qty: 1</p>
+                </div>
+                <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>
+                  2,500 {s.currency || 'DZD'}
+                </span>
+              </div>
+              {s.show_savings && (
+                <div className="flex justify-between text-[9px] px-1 pt-1" style={{ color: '#10b981' }}>
+                  <span>You save</span>
+                  <span className="font-bold">-500 {s.currency || 'DZD'}</span>
+                </div>
+              )}
+              <div
+                className="border-t pt-1.5 mt-1 flex justify-between"
+                style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
+              >
+                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Subtotal</span>
+                <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>2,500 {s.currency || 'DZD'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Shipping</span>
+                <span className="text-[10px]" style={{ color: isDark ? '#d1d5db' : '#374151' }}>500 {s.currency || 'DZD'}</span>
+              </div>
+              <div
+                className="border-t pt-1.5 flex justify-between"
+                style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
+              >
+                <span className="text-xs font-bold" style={{ color: isDark ? '#ffffff' : '#1f2937' }}>Total</span>
+                <span className="text-xs font-black" style={{ color: pc }}>3,000 {s.currency || 'DZD'}</span>
+              </div>
+            </div>
+
+            {/* Trust Signals - conditional */}
+            {s.trust_signals !== false && (
+              <div className="flex items-center justify-center gap-3 py-1">
+                <div className="flex items-center gap-1">
+                  <Lock size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Secure</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Shield size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Protected</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Check size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Verified</span>
+                </div>
+              </div>
+            )}
+
+            {/* Place Order Button */}
+            <button
+              className="w-full py-2.5 rounded-xl text-white text-xs font-bold"
+              style={{ backgroundColor: pc }}
+            >
+              {s.btn_order_now || 'Place Order'} - 3,000 {s.currency || 'DZD'}
+            </button>
+
+            {/* Sticky Checkout indicator */}
+            {s.sticky_checkout && (
+              <p className="text-[8px] text-center" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>
+                Sticky checkout bar enabled
+              </p>
+            )}
+          </div>
+
+          {/* Bottom bar */}
+          <div className="h-1.5 mx-auto w-24 rounded-full my-2" style={{ background: isDark ? '#374151' : '#d1d5db' }} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function StoreSettings(){

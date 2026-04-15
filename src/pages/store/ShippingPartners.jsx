@@ -161,12 +161,15 @@ export default function ShippingPartners(){
         </div>
       </>}
 
-      {/* STEP 2 */}
+      {/* STEP 2: SIMPLIFIED FORM — only essential fields visible */}
       {step==='form'&&<>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold">{editing?t('storePage.edit','Edit'):t('storePage.add','Add')} {form.name||t('storePage.company','Company')}</h2>
           <button onClick={()=>setShowModal(false)}><X size={20}/></button>
         </div>
+
+        {/* Help tip for preset companies */}
+        {PRESETS.filter(p=>p.name===form.name).map(p=>(<div key={p.name} className="p-3 bg-blue-50 border border-blue-200 rounded-xl mb-4 flex items-start gap-2"><HelpCircle size={14} className="text-blue-500 shrink-0 mt-0.5"/><p className="text-xs text-blue-700">{p.help}</p></div>))}
 
         <div className="space-y-4">
           <div><label className="input-label">{t('storePage.companyNameRequired2','Company Name *')}</label><input className="input-field" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder={t('storePage.anyCompanyName','Any company name')}/></div>
@@ -175,101 +178,69 @@ export default function ShippingPartners(){
             <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="0555123456"/></div>
           </div>
 
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <label className="font-bold text-sm text-gray-900">{t('storePage.enableApiTracking','Enable API Tracking')}</label>
-              <button onClick={()=>{setForm({...form,use_api:!form.use_api});setTestResult(null);}} className={`w-11 h-6 rounded-full transition-colors relative ${form.use_api?'bg-brand-500':'bg-gray-300'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.use_api?'translate-x-5':'translate-x-0.5'}`}/></button>
-            </div>
-          </div>
-
-          {!form.use_api&&(
-            <div><label className="input-label">{t('storePage.trackingUrlOptional','Tracking URL (optional)')}</label><input className="input-field text-sm" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://company.com/track/{tracking_number}"/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.useTrackingPlaceholder','Use {tracking_number} as placeholder')}</p></div>
-          )}
-
-          {form.use_api&&(<div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-emerald-800 flex items-center gap-2"><Zap size={14}/>{t('storePage.apiConfiguration','API Configuration')}</p>
-              <button onClick={()=>setShowHelp(!showHelp)} className="text-xs text-emerald-600 flex items-center gap-1 hover:underline"><HelpCircle size={12}/>{t('storePage.help','Help')}</button>
-            </div>
-
-            {showHelp&&<div className="p-3 bg-white rounded-lg text-xs text-gray-600 space-y-2">
-              <p><b>{t('storePage.apiBaseUrlLabel','API Base URL:')}</b> {t('storePage.apiBaseUrlHelp','Root URL of the API. Example:')} <code className="bg-gray-100 px-1 rounded">https://api.company.com/v1</code></p>
-              <p><b>{t('storePage.authTypeLabel','Auth Type:')}</b> {t('storePage.authTypeHelp','"Bearer Token" = one token. "Custom Headers" = key-value pairs like Yalidine uses.')}</p>
-              <p><b>{t('storePage.trackingEndpointLabel','Tracking Endpoint:')}</b> {t('storePage.trackingEndpointHelp','Path to check parcel status. Use')} <code className="bg-gray-100 px-1 rounded">{'{tracking_number}'}</code> {t('storePage.asPlaceholder','as placeholder.')}</p>
-              <p><b>{t('storePage.statusPathLabel','Status Path:')}</b> {t('storePage.statusPathHelp','Dot-path to status in JSON response. Example:')} <code className="bg-gray-100 px-1 rounded">data.0.last_status</code></p>
-              <p>{t('storePage.getFromDocs',"Get these from your delivery company's API documentation.")}</p>
-            </div>}
-
-            {PRESETS.filter(p=>p.name===form.name).map(p=>(<p key={p.name} className="text-xs text-emerald-600">💡 {p.help}</p>))}
-
-            <div><label className="text-xs font-bold text-emerald-700">{t('storePage.apiBaseUrlRequired','API Base URL *')}</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>setForm({...form,api_base_url:e.target.value})} placeholder="https://api.company.com/v1"/></div>
-
-            <div><label className="text-xs font-bold text-emerald-700">{t('storePage.authenticationType','Authentication Type')}</label>
-              <select className="input-field text-sm" value={form.api_auth_type} onChange={e=>setForm({...form,api_auth_type:e.target.value,api_headers:e.target.value==='custom_headers'?form.api_headers:{}})}>
-                <option value="none">{t('storePage.noAuthentication','No Authentication')}</option>
-                <option value="bearer">{t('storePage.bearerToken','Bearer Token')}</option>
-                <option value="custom_headers">{t('storePage.customHeaders','Custom Headers')}</option>
-              </select>
-            </div>
+          {/* API Credentials — simplified view: only show what user needs to paste */}
+          {form.use_api&&(<div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-3">
+            <p className="text-sm font-bold text-emerald-800 flex items-center gap-2"><Zap size={14}/>API Credentials</p>
 
             {form.api_auth_type==='bearer'&&(
-              <div><label className="text-xs font-bold text-emerald-700">{t('storePage.apiTokenRequired','API Token *')}</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder={t('storePage.pasteYourToken','Paste your token')}/></div>
+              <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/></div>
             )}
 
-            {form.api_auth_type==='custom_headers'&&(
-              <div>
-                <div className="flex items-center justify-between mb-1"><label className="text-xs font-bold text-emerald-700">{t('storePage.headers','Headers')}</label><button onClick={addHeader} className="text-xs text-emerald-600 font-bold hover:underline">{t('storePage.plusAdd','+ Add')}</button></div>
-                {Object.entries(form.api_headers).map(([key,val],i)=>(
-                  <div key={i} className="flex gap-2 mb-1">
-                    <input className="input-field text-xs font-mono flex-1 !py-1.5" placeholder={t('storePage.headerName','Header-Name')} value={key} onChange={e=>{const h={...form.api_headers};delete h[key];h[e.target.value]=val;setForm({...form,api_headers:h});}}/>
-                    <input className="input-field text-xs font-mono flex-1 !py-1.5" placeholder={t('storePage.value','value')} value={val} onChange={e=>setForm({...form,api_headers:{...form.api_headers,[key]:e.target.value}})}/>
-                    <button onClick={()=>removeHeader(key)} className="p-1 text-red-400 hover:text-red-600"><X size={14}/></button>
-                  </div>
+            {form.api_auth_type==='custom_headers'&&Object.keys(form.api_headers).length>0&&(
+              <div className="space-y-2">
+                {Object.entries(form.api_headers).map(([key],i)=>(
+                  <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${key}`} value={form.api_headers[key]} onChange={e=>setForm({...form,api_headers:{...form.api_headers,[key]:e.target.value}})}/></div>
                 ))}
-                {Object.keys(form.api_headers).length===0&&<p className="text-xs text-emerald-500">{t('storePage.clickAddHeaders','Click "+ Add" to add headers')}</p>}
               </div>
             )}
 
-            <div><label className="text-xs font-bold text-emerald-700">{t('storePage.trackingEndpointRequired','Tracking Endpoint *')}</label><input className="input-field font-mono text-sm" value={form.api_tracking_endpoint} onChange={e=>setForm({...form,api_tracking_endpoint:e.target.value})} placeholder="/parcels/?tracking={tracking_number}"/><p className="text-[10px] text-emerald-500 mt-1">{t('storePage.useTrackingPlaceholder','Use {tracking_number} as placeholder')}</p></div>
-
-            <div><label className="text-xs font-bold text-emerald-700">{t('storePage.statusFieldPath','Status Field Path')}</label><input className="input-field font-mono text-sm" value={form.api_status_path} onChange={e=>setForm({...form,api_status_path:e.target.value})} placeholder="data.0.last_status"/></div>
-
-            {/* TEST BUTTON */}
-            <button onClick={testFormConfig} disabled={testingForm} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
+            {/* Test connection */}
+            <button onClick={testFormConfig} disabled={testingForm} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
               {testingForm?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}
-              {t('storePage.testConnection','Test Connection')}
+              Test Connection
             </button>
 
-            {/* TEST RESULTS */}
             {testResult&&(
-              <div className={`p-4 rounded-xl ${testResult.ok?'bg-emerald-100 border border-emerald-300':'bg-red-50 border border-red-200'}`}>
-                <p className={`text-sm font-bold mb-3 ${testResult.ok?'text-emerald-800':'text-red-700'}`}>{testResult.ok?t('storePage.allTestsPassed','✅ All tests passed'):'❌ '+testResult.error}</p>
-                <div className="space-y-2">
-                  {testResult.results?.connection&&(
-                    <div className="flex items-center gap-2 text-xs">
-                      <TestIcon ok={testResult.results.connection.ok}/>
-                      <span className="font-bold text-gray-700">{t('storePage.serverConnection','Server Connection:')}</span>
-                      <span className="text-gray-500">{testResult.results.connection.message}</span>
-                    </div>
-                  )}
-                  {testResult.results?.tracking&&(
-                    <div className="flex items-center gap-2 text-xs">
-                      <TestIcon ok={testResult.results.tracking.ok}/>
-                      <span className="font-bold text-gray-700">{t('storePage.trackingEndpointColon','Tracking Endpoint:')}</span>
-                      <span className="text-gray-500">{testResult.results.tracking.message}</span>
-                    </div>
-                  )}
-                  {testResult.results?.status_extraction&&(
-                    <div className="flex items-center gap-2 text-xs">
-                      <TestIcon ok={testResult.results.status_extraction.ok}/>
-                      <span className="font-bold text-gray-700">{t('storePage.statusExtraction','Status Extraction:')}</span>
-                      <span className="text-gray-500">{testResult.results.status_extraction.message}</span>
-                    </div>
-                  )}
-                </div>
+              <div className={`p-3 rounded-xl text-sm font-bold ${testResult.ok?'bg-emerald-100 text-emerald-800 border border-emerald-300':'bg-red-50 text-red-700 border border-red-200'}`}>
+                {testResult.ok?'✅ Connection successful!':'❌ '+(testResult.error||'Connection failed')}
               </div>
             )}
           </div>)}
+
+          {!form.use_api&&(
+            <div><label className="input-label">Tracking URL (optional)</label><input className="input-field text-sm" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://company.com/track/{tracking_number}"/><p className="text-[10px] text-gray-400 mt-1">Use {'{tracking_number}'} as placeholder</p></div>
+          )}
+
+          {/* Advanced toggle — hidden by default */}
+          <details className="border-t pt-3">
+            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 font-medium">Advanced Configuration</summary>
+            <div className="mt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-sm text-gray-900">Enable API Tracking</label>
+                <button onClick={()=>{setForm({...form,use_api:!form.use_api});setTestResult(null);}} className={`w-11 h-6 rounded-full transition-colors relative ${form.use_api?'bg-brand-500':'bg-gray-300'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.use_api?'translate-x-5':'translate-x-0.5'}`}/></button>
+              </div>
+              {form.use_api&&<>
+                <div><label className="text-xs font-bold text-gray-600">API Base URL</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>setForm({...form,api_base_url:e.target.value})} placeholder="https://api.company.com/v1"/></div>
+                <div><label className="text-xs font-bold text-gray-600">Auth Type</label>
+                  <select className="input-field text-sm" value={form.api_auth_type} onChange={e=>setForm({...form,api_auth_type:e.target.value})}>
+                    <option value="none">None</option><option value="bearer">Bearer Token</option><option value="custom_headers">Custom Headers</option>
+                  </select>
+                </div>
+                <div><label className="text-xs font-bold text-gray-600">Tracking Endpoint</label><input className="input-field font-mono text-sm" value={form.api_tracking_endpoint} onChange={e=>setForm({...form,api_tracking_endpoint:e.target.value})} placeholder="/parcels/?tracking={tracking_number}"/></div>
+                <div><label className="text-xs font-bold text-gray-600">Status Path</label><input className="input-field font-mono text-sm" value={form.api_status_path} onChange={e=>setForm({...form,api_status_path:e.target.value})} placeholder="data.0.last_status"/></div>
+                {form.api_auth_type==='custom_headers'&&<div>
+                  <div className="flex items-center justify-between mb-1"><label className="text-xs font-bold text-gray-600">Headers</label><button onClick={addHeader} className="text-xs text-brand-500 font-bold">+ Add</button></div>
+                  {Object.entries(form.api_headers).map(([key,val],i)=>(
+                    <div key={i} className="flex gap-2 mb-1">
+                      <input className="input-field text-xs font-mono flex-1 !py-1.5" placeholder="Header-Name" value={key} onChange={e=>{const h={...form.api_headers};delete h[key];h[e.target.value]=val;setForm({...form,api_headers:h});}}/>
+                      <input className="input-field text-xs font-mono flex-1 !py-1.5" placeholder="value" value={val} onChange={e=>setForm({...form,api_headers:{...form.api_headers,[key]:e.target.value}})}/>
+                      <button onClick={()=>removeHeader(key)} className="p-1 text-red-400"><X size={14}/></button>
+                    </div>
+                  ))}
+                </div>}
+              </>}
+            </div>
+          </details>
         </div>
 
         <div className="flex gap-3 mt-5">

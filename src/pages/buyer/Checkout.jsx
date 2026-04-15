@@ -55,11 +55,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!storeSlug) return;
     storeApi.getShippingWilayas(storeSlug).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
   }, [storeSlug]);
+  // Wilaya code lookup for zip auto-fill (works even when API fails)
+  const WILAYA_CODES={'Adrar':'01','Chlef':'02','Laghouat':'03','Oum El Bouaghi':'04','Batna':'05','Béjaïa':'06','Biskra':'07','Béchar':'08','Blida':'09','Bouira':'10','Tamanrasset':'11','Tébessa':'12','Tlemcen':'13','Tiaret':'14','Tizi Ouzou':'15','Alger':'16','Djelfa':'17','Jijel':'18','Sétif':'19','Saïda':'20','Skikda':'21','Sidi Bel Abbès':'22','Annaba':'23','Guelma':'24','Constantine':'25','Médéa':'26','Mostaganem':'27',"M'Sila":'28','Mascara':'29','Ouargla':'30','Oran':'31','El Bayadh':'32','Illizi':'33','Bordj Bou Arréridj':'34','Boumerdès':'35','El Tarf':'36','Tindouf':'37','Tissemsilt':'38','El Oued':'39','Khenchela':'40','Souk Ahras':'41','Tipaza':'42','Mila':'43','Aïn Defla':'44','Naâma':'45','Aïn Témouchent':'46','Ghardaïa':'47','Relizane':'48'};
   // When wilaya changes, update selected wilaya data and auto-fill zip
   useEffect(() => {
-    if (!form.shipping_wilaya || !shippingWilayas.length) { setSelectedWilayaData(null); return; }
+    if (!form.shipping_wilaya) { setSelectedWilayaData(null); return; }
     const match = shippingWilayas.find(w => w.wilaya_name === form.shipping_wilaya);
     setSelectedWilayaData(match || null);
+    // Auto-fill zip from wilaya code
+    const code = match?.wilaya_code || WILAYA_CODES[form.shipping_wilaya] || '';
+    if (code && !form.shipping_zip) setForm(prev => ({ ...prev, shipping_zip: code.padStart(2,'0') + '000' }));
   }, [form.shipping_wilaya, shippingWilayas]);
 
   // Sync cart to backend for abandoned cart recovery
@@ -330,9 +335,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     <label className="input-label">{t('auth.city','City')} *</label>
                     <select className="input-field" value={form.shipping_city} onChange={e => {
                       const city = e.target.value;
-                      // Auto-fill ZIP from wilaya code
-                      const wCode = selectedWilayaData?.wilaya_code || shippingWilayas.find(w=>w.wilaya_name===form.shipping_wilaya)?.wilaya_code || '';
-                      setForm(prev => ({ ...prev, shipping_city: city, shipping_zip: wCode ? wCode + '000' : '' }));
+                      // Auto-fill ZIP from wilaya code (with fallback to static map)
+                      const wCode = selectedWilayaData?.wilaya_code || shippingWilayas.find(w=>w.wilaya_name===form.shipping_wilaya)?.wilaya_code || WILAYA_CODES[form.shipping_wilaya] || '';
+                      setForm(prev => ({ ...prev, shipping_city: city, shipping_zip: wCode ? wCode.padStart(2,'0') + '000' : '' }));
                     }} disabled={!form.shipping_wilaya}>
                       <option value="">{form.shipping_wilaya ? t('checkout.selectCity','Select city...') : t('checkout.selectWilayaFirst','Select wilaya first')}</option>
                       {form.shipping_wilaya && (WILAYA_CITIES[form.shipping_wilaya] || [form.shipping_wilaya]).map(c => (

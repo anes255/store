@@ -73,6 +73,7 @@ const OrderTracking=lazy(()=>import('./pages/store/OrderTracking'));
 const TrackingOrders=lazy(()=>import('./pages/store/TrackingOrders'));
 const SmartReviews=lazy(()=>import('./pages/store/SmartReviews'));
 const AdvancedBuilder=lazy(()=>import('./pages/store/AdvancedBuilder'));
+const TrackingPixels=lazy(()=>import('./pages/store/TrackingPixels'));
 // Buyer
 const Storefront=lazy(()=>import('./pages/buyer/Storefront'));
 const ProductDetail=lazy(()=>import('./pages/buyer/ProductDetail'));
@@ -122,6 +123,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/dashboard/tracking-orders" element={<P><TrackingOrders/></P>}/>
 <Route path="/dashboard/smart-reviews" element={<P><SmartReviews/></P>}/>
 <Route path="/dashboard/page-builder" element={<P><AdvancedBuilder/></P>}/>
+<Route path="/dashboard/tracking-pixels" element={<P><TrackingPixels/></P>}/>
 <Route path="/dashboard/form-settings" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/logo" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/themes" element={<P><StoreSettings/></P>}/>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag } from 'lucide-react';
+import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag, Zap, Minus, Plus, Check, Star, Truck, Shield } from 'lucide-react';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
@@ -127,6 +127,343 @@ function AIChatbot({ store, slug }) {
   );
 }
 
+// ============ PRODUCT DETAIL MODAL ============
+function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, getThumb, onClose, onAddToCart, onBuyNow, wishlistStore }) {
+  const [selectedVariants, setSelectedVariants] = React.useState({});
+  const [quantity, setQuantity] = React.useState(1);
+  const [selectedImage, setSelectedImage] = React.useState(0);
+
+  if (!product) return null;
+
+  // Parse variants
+  let variants = product.variants || [];
+  if (typeof variants === 'string') try { variants = JSON.parse(variants); } catch { variants = []; }
+  if (!Array.isArray(variants)) variants = [];
+
+  const variantGroups = {};
+  variants.forEach((v, i) => {
+    const t = (v.type || 'option').toLowerCase();
+    if (!variantGroups[t]) variantGroups[t] = [];
+    variantGroups[t].push({ ...v, _idx: i });
+  });
+  const groupTypes = Object.keys(variantGroups);
+
+  const selectedIdxes = Object.values(selectedVariants).filter(v => v !== null && v !== undefined);
+  const primarySelected = selectedIdxes.length > 0 ? variants[selectedIdxes[0]] : null;
+
+  const basePrice = parseFloat(product.price) || 0;
+  const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
+  const finalPrice = basePrice + priceAdj;
+  const stockCount = primarySelected ? (primarySelected.stock ?? product.stock_quantity) : product.stock_quantity;
+
+  const variantLabel = selectedIdxes.map(idx => {
+    const v = variants[idx];
+    return v?.name || v?.value || '';
+  }).filter(Boolean).join(' / ');
+
+  const buildVariantObj = () => {
+    if (selectedIdxes.length === 0) return null;
+    const parts = selectedIdxes.map(idx => {
+      const v = variants[idx];
+      return { name: v.name, type: v.type, value: v.value };
+    });
+    if (parts.length === 1) return parts[0];
+    return { selections: parts, label: variantLabel };
+  };
+
+  const selectVariant = (type, idx) => {
+    setSelectedVariants(prev => ({ ...prev, [type]: prev[type] === idx ? null : idx }));
+    setSelectedImage(0);
+  };
+
+  // Images
+  const allImages = (() => {
+    if (primarySelected?.images?.length > 0) return primarySelected.images;
+    let imgs = product.images;
+    if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
+    if (!Array.isArray(imgs)) imgs = [];
+    if (imgs.length === 0 && product.thumbnail) imgs = [product.thumbnail];
+    return imgs;
+  })();
+
+  const getDesc = () => product.description_en || product.description || product.description_fr || '';
+
+  const isColor = (val) => {
+    if (!val) return false;
+    if (/^#[0-9A-Fa-f]{3,8}$/.test(val)) return true;
+    if (/^(rgb|hsl)a?\(/.test(val)) return true;
+    const names = ['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'];
+    return names.includes(val.toLowerCase());
+  };
+
+  const inWishlist = wishlistStore.has(product.id);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button onClick={onClose} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors">
+          <X size={20} />
+        </button>
+
+        {/* Wishlist */}
+        <button
+          onClick={() => { const added = wishlistStore.toggle(product); if (added) toast.success('Added to favorites'); else toast.success('Removed from favorites'); }}
+          className="absolute top-4 right-16 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+        >
+          <Heart size={18} className={inWishlist ? 'text-red-400' : 'text-white/70'} fill={inWishlist ? 'currentColor' : 'none'} />
+        </button>
+
+        <div className="flex flex-col md:flex-row">
+          {/* Image Section */}
+          <div className="md:w-1/2 shrink-0 p-4 md:p-6">
+            <div className="aspect-square bg-white/5 rounded-2xl overflow-hidden border border-white/10">
+              {allImages[selectedImage]
+                ? <img src={allImages[selectedImage]} className="w-full h-full object-cover" alt={getName(product)} />
+                : <div className="w-full h-full flex items-center justify-center"><Package size={48} className="text-white/20" /></div>}
+            </div>
+            {allImages.length > 1 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                {allImages.map((img, i) => (
+                  <button key={i} onClick={() => setSelectedImage(i)}
+                    className={`w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${selectedImage === i ? 'border-white/60 shadow-lg' : 'border-white/10 hover:border-white/30'}`}>
+                    <img src={img} className="w-full h-full object-cover" alt="" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
+              <span className="inline-block mt-3 px-3 py-1 bg-red-500/20 text-red-300 text-xs font-bold rounded-lg border border-red-500/30">
+                SALE - Save {(parseFloat(product.compare_at_price) - finalPrice).toLocaleString()} {currency}
+              </span>
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 p-5 md:p-6 md:pl-2 flex flex-col">
+            <h2 className="text-2xl font-extrabold text-white pr-20">{getName(product)}</h2>
+
+            {/* Price */}
+            <div className="mt-3 flex items-baseline gap-3 flex-wrap">
+              <span className="text-3xl font-extrabold" style={{ color: pc }}>{finalPrice.toLocaleString()} {currency}</span>
+              {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
+                <span className="text-base text-white/30 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>
+              )}
+            </div>
+
+            {/* Stock */}
+            <div className="mt-2">
+              {stockCount > 0
+                ? <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-semibold"><span className="w-2 h-2 bg-emerald-400 rounded-full" />{store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}</span>
+                : product.allow_oversell
+                  ? <span className="inline-flex items-center gap-1.5 text-amber-400 text-sm font-semibold"><span className="w-2 h-2 bg-amber-400 rounded-full" />Available for order</span>
+                  : <span className="text-red-400 text-sm font-semibold">Out of stock</span>}
+            </div>
+
+            {/* Description */}
+            {getDesc() && <p className="mt-3 text-white/50 text-sm leading-relaxed line-clamp-3">{getDesc()}</p>}
+
+            {/* Selected variant label */}
+            {variantLabel && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-xs text-white/40">Selected:</span>
+                <span className="text-xs font-bold text-white px-2.5 py-1 bg-white/10 rounded-lg">{variantLabel}</span>
+              </div>
+            )}
+
+            {/* Variant Selectors */}
+            {groupTypes.length > 0 && (
+              <div className="mt-4 space-y-4 flex-1">
+                {groupTypes.map(type => {
+                  const group = variantGroups[type];
+                  const typeLabel = type === 'color' ? 'Color' : type === 'size' ? 'Size' : type === 'material' ? 'Material' : type === 'style' ? 'Style' : type.charAt(0).toUpperCase() + type.slice(1);
+                  const selectedInGroup = selectedVariants[type];
+                  const selName = selectedInGroup != null ? variants[selectedInGroup]?.name : null;
+
+                  return (
+                    <div key={type}>
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        {typeLabel}
+                        {selName && <span className="text-white normal-case font-semibold text-sm">-- {selName}</span>}
+                      </p>
+
+                      {type === 'color' ? (
+                        <div className="flex flex-wrap gap-2.5">
+                          {group.map(v => {
+                            const isSel = selectedInGroup === v._idx;
+                            const colorVal = v.value || '#ccc';
+                            const useColor = isColor(colorVal);
+                            const hasImg = v.images && v.images.length > 0;
+                            return (
+                              <button key={v._idx} onClick={() => selectVariant(type, v._idx)} className="relative flex flex-col items-center gap-1 transition-all" title={v.name}>
+                                <div className={`w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center overflow-hidden ${isSel ? 'border-white scale-110 shadow-lg ring-2 ring-white/30' : 'border-white/20 hover:border-white/50 hover:scale-105'}`}
+                                  style={useColor && !hasImg ? { backgroundColor: colorVal } : {}}>
+                                  {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name} />
+                                    : !useColor && <span className="text-[9px] font-bold text-white/50 text-center leading-tight px-0.5">{(v.value || v.name || '?').slice(0, 3)}</span>}
+                                  {isSel && <Check size={14} className="absolute text-white drop-shadow-md" />}
+                                </div>
+                                <span className={`text-[10px] font-medium ${isSel ? 'text-white font-bold' : 'text-white/40'}`}>{v.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : type === 'size' ? (
+                        <div className="flex flex-wrap gap-2">
+                          {group.map(v => {
+                            const isSel = selectedInGroup === v._idx;
+                            return (
+                              <button key={v._idx} onClick={() => selectVariant(type, v._idx)}
+                                className={`min-w-[42px] h-[42px] px-3 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center ${isSel ? 'text-white border-white bg-white/15' : 'border-white/15 text-white/60 hover:border-white/40 bg-white/5'}`}>
+                                {v.name || v.value || 'Opt'}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {group.map(v => {
+                            const isSel = selectedInGroup === v._idx;
+                            return (
+                              <button key={v._idx} onClick={() => selectVariant(type, v._idx)}
+                                className={`px-3.5 py-2 rounded-full text-sm font-bold border transition-all ${isSel ? 'text-white shadow-md border-transparent' : 'border-white/15 text-white/60 hover:border-white/40 bg-white/5'}`}
+                                style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
+                                {v.name || v.value || 'Option'}
+                                {v.price_adjustment && parseFloat(v.price_adjustment) !== 0 && (
+                                  <span className="ml-1.5 opacity-70 text-xs">({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Quantity + Actions */}
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-white/10 rounded-xl border border-white/10">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2.5 hover:bg-white/10 rounded-l-xl transition-colors text-white/60"><Minus size={15} /></button>
+                  <span className="w-10 text-center font-bold text-sm text-white">{quantity}</span>
+                  <button onClick={() => setQuantity(quantity + 1)} className="p-2.5 hover:bg-white/10 rounded-r-xl transition-colors text-white/60"><Plus size={15} /></button>
+                </div>
+              </div>
+              <button
+                onClick={() => { onAddToCart({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose(); }}
+                disabled={stockCount <= 0 && !product.allow_oversell}
+                className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all text-sm"
+                style={{ backgroundColor: pc }}
+              >
+                <ShoppingCart size={16} /> {store.btn_add_cart || 'Add to Cart'}
+              </button>
+              <button
+                onClick={() => { onBuyNow({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose(); }}
+                disabled={stockCount <= 0 && !product.allow_oversell}
+                className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 disabled:opacity-50 transition-all text-sm"
+                style={{ borderColor: pc, color: pc, backgroundColor: pc + '15' }}
+              >
+                <Zap size={16} /> {store.btn_buy_now || 'Buy Now'}
+              </button>
+            </div>
+
+            {/* Trust badges */}
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                { icon: Truck, label: 'Fast Delivery' },
+                { icon: Shield, label: 'Secure' },
+                { icon: Package, label: 'Returns' },
+              ].map((f, i) => {
+                const I = f.icon;
+                return (
+                  <div key={i} className="p-2.5 bg-white/5 rounded-xl text-center border border-white/5">
+                    <I size={14} className="mx-auto text-white/30 mb-1" />
+                    <p className="text-[10px] font-bold text-white/40">{f.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============ DARK PRODUCT CARD ============
+function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow }) {
+  const thumb = getThumb(product);
+  const inWishlist = wishlist.includes(product.id);
+  const price = parseFloat(product.price) || 0;
+  const comparePrice = product.compare_at_price ? parseFloat(product.compare_at_price) : null;
+  const onSale = comparePrice && comparePrice > price;
+  const stockCount = product.stock_quantity;
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group relative"
+      style={{ background: 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)' }}>
+      {/* Product Image */}
+      <div className="relative cursor-pointer" onClick={() => openDetail(product)}>
+        <div className="aspect-square bg-white/5 relative overflow-hidden m-2.5 rounded-xl">
+          {thumb
+            ? <img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+            : <div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-white/15" /></div>}
+          {onSale && <span className="absolute top-2 left-2 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
+        </div>
+
+        {/* Floating action icons on image */}
+        <div className="absolute top-4 right-4 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm border border-white/10"
+            aria-label="Add to cart"><ShoppingCart size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
+            className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inWishlist ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white/70 hover:text-red-400'}`}
+            aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
+        </div>
+      </div>
+
+      {/* Product Info */}
+      <div className="px-3.5 pb-3 pt-1">
+        <div className="cursor-pointer" onClick={() => openDetail(product)}>
+          <h3 className="font-semibold text-sm text-white/90 truncate hover:text-white transition-colors">{getName(product)}</h3>
+        </div>
+
+        {/* Stock badge */}
+        <div className="mt-1.5">
+          {stockCount > 0
+            ? <span className="inline-flex items-center gap-1 text-emerald-400 text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />In Stock</span>
+            : product.allow_oversell
+              ? <span className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />Available</span>
+              : <span className="text-red-400 text-[10px] font-bold">Out of Stock</span>}
+        </div>
+
+        {/* Price */}
+        <div className="flex items-baseline gap-2 mt-1.5">
+          <span className="text-lg font-extrabold" style={{ color: pc }}>{price.toLocaleString()}</span>
+          <span className="text-xs text-white/30">{currency}</span>
+          {onSale && <span className="text-xs text-white/25 line-through">{comparePrice.toLocaleString()}</span>}
+        </div>
+
+        {/* Buy Now button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onBuyNow(product); }}
+          className="w-full mt-2.5 py-2.5 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 shadow-lg transition-all"
+          style={{ backgroundColor: pc }}
+        >
+          <Zap size={13} /> ORDER NOW
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ============ MAIN STOREFRONT ============
 export default function Storefront() {
   const { storeSlug } = useParams();
@@ -156,6 +493,10 @@ export default function Storefront() {
   const [contentReady, setContentReady] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
+  const [detailProduct, setDetailProduct] = useState(null);
+  const [buyNowOpen, setBuyNowOpen] = useState(false);
+  const [buyNowItems, setBuyNowItems] = useState(null);
+  const navigate = useNavigate();
 
   const [suspended, setSuspended] = useState(false);
 
@@ -238,6 +579,15 @@ export default function Storefront() {
     toast.success(t('store.addedToCart','Added to cart'));
   };
 
+  // Opens the full product detail popup.
+  const openDetail = (product) => setDetailProduct(product);
+  // Buy now: add to cart and go to checkout
+  const handleBuyNow = (product, qty = 1, variant = null) => {
+    const p = typeof product.price === 'number' ? product : { ...product, price: parseFloat(product.price) || 0 };
+    const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant }];
+    setBuyNowItems(items);
+    setBuyNowOpen(true);
+  };
   // Opens the quick-add popup so the buyer can pick variants before adding.
   const openQuickAdd = (product) => setQuickAddProduct(product);
 
@@ -467,40 +817,12 @@ export default function Storefront() {
           </div>
         ):(
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-            {filtered.map(product=>{
-              const thumb = getThumb(product);
-              const inWishlist = wishlist.includes(product.id);
-              return (
-                <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all group relative">
-                  {/* Product Image */}
-                  <Link to={`/s/${storeSlug}/product/${product.slug}`} className="block">
-                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                      {thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>
-                        :<div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-gray-300"/></div>}
-                      {product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}
-                    </div>
-                  </Link>
-
-                  {/* Action buttons — floating, quick add directly from grid */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-                    <button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>
-                    <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inWishlist?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inWishlist?'white':'none'}/></button>
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="p-3.5">
-                    <Link to={`/s/${storeSlug}/product/${product.slug}`}>
-                      <h3 className="font-semibold text-sm text-gray-800 truncate hover:text-brand-600 transition-colors">{getName(product)}</h3>
-                    </Link>
-                    <div className="flex items-baseline gap-2 mt-2">
-                      <span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span>
-                      <span className="text-xs text-gray-400">{store.currency||'DZD'}</span>
-                      {product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {filtered.map(product=>(
+              <DarkProductCard key={product.id} product={product} storeSlug={storeSlug} pc={pc}
+                currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
+                openQuickAdd={openQuickAdd} openDetail={openDetail}
+                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow}/>
+            ))}
           </div>
         );})()}
       </div>
@@ -513,6 +835,15 @@ export default function Storefront() {
           <p className="text-xs text-gray-300 mt-1">Powered by KyoMarket</p>
         </div>
       </footer>
+
+      {/* ============ WHATSAPP FLOATING BUTTON ============ */}
+      {store.whatsapp_number && (
+        <a href={`https://wa.me/${store.whatsapp_number.replace(/[^0-9]/g,'')}`} target="_blank" rel="noopener noreferrer"
+          className="fixed z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform animate-pulse"
+          style={{ backgroundColor:'#25D366', bottom:'160px', right:'20px' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+      )}
 
       {/* ============ AI CHATBOT ============ */}
       <AIChatbot store={store} slug={storeSlug}/>
@@ -528,7 +859,20 @@ export default function Storefront() {
         </button>
       </div>
 
+      {/* ============ PRODUCT DETAIL MODAL ============ */}
+      {detailProduct && (
+        <ProductDetailModal
+          product={detailProduct} store={store} storeSlug={storeSlug} pc={pc}
+          currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
+          onClose={() => setDetailProduct(null)}
+          onAddToCart={(p, qty, variant) => { addItem(p, qty, variant); toast.success(t('store.addedToCart','Added to cart')); }}
+          onBuyNow={(p, qty, variant) => handleBuyNow(p, qty, variant)}
+          wishlistStore={wishlistStore}
+        />
+      )}
+
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
+      {buyNowOpen && <Checkout isModal onClose={()=>{setBuyNowOpen(false);setBuyNowItems(null);}} storeSlug={storeSlug} directItems={buyNowItems}/>}
       <ProductQuickAdd
         show={!!quickAddProduct}
         onClose={() => setQuickAddProduct(null)}
