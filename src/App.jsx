@@ -90,7 +90,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/" element={<LandingPage/>}/>
 <Route path="/login" element={<OwnerLogin/>}/>
 <Route path="/register" element={<OwnerRegister/>}/>
-<Route path="/admin/login" element={<PlatformAdminLogin/>}/>
+<Route path="/admin/login" element={<OwnerLogin/>}/>
 <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['platform_admin']}><PlatformAdminDashboard/></ProtectedRoute>}/>
 {/* Store owner dashboard */}
 <Route path="/dashboard" element={<P><StoreDashboard/></P>}/>

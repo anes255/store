@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { ownerApi } from '../../utils/api';
+import { ownerApi, platformApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
@@ -18,28 +18,45 @@ export default function OwnerLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setLoading(true);
+    const identifier = (form.identifier || '').trim();
+    const password = (form.password || '').trim();
+
+    // Try store-owner login first
     try {
-      // Mobile keyboards often add trailing whitespace + autocapitalize.
-      // Trim identifier; password is trimmed too because the input had no
-      // visual indicator of the leading space and most users assume none.
-      const identifier = (form.identifier || '').trim();
-      const password = (form.password || '').trim();
       const { data } = await ownerApi.login({ identifier, password });
-      
-      // If platform admin logged in through owner login
       if (data.redirect === '/admin/dashboard') {
         setAuth(data.owner, data.token, 'platform_admin');
         toast.success('Welcome, Super Admin!');
         window.location.href = '/admin/dashboard';
         return;
       }
-      
       setAuth(data.owner, data.token, 'store_owner');
       setStores(data.stores);
       if (data.stores.length > 0) setCurrentStore(data.stores[0]);
       toast.success(`Welcome back, ${data.owner.name}!`);
       navigate('/dashboard');
-    } catch (err) { toast.error(err.response?.data?.error || 'Login failed'); }
+      setLoading(false);
+      return;
+    } catch (err) {
+      // Fall through to platform-admin login on 401/404; bubble other errors
+      const status = err.response?.status;
+      if (status && status !== 401 && status !== 403 && status !== 404) {
+        toast.error(err.response?.data?.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Try platform-admin login (phone+password)
+    try {
+      const { data } = await platformApi.login({ phone: identifier, password });
+      setAuth(data.admin, data.token, 'platform_admin');
+      toast.success('Welcome, Super Admin!');
+      window.location.href = '/admin/dashboard';
+      return;
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Invalid credentials');
+    }
     setLoading(false);
   };
 
