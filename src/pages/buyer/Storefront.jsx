@@ -682,11 +682,12 @@ export default function Storefront() {
   if (suspended) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center max-w-md"><div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Package size={32} className="text-red-500"/></div><h1 className="text-2xl font-bold text-gray-900 mb-2">Store Temporarily Unavailable</h1><p className="text-gray-500">This store is currently suspended. Please check back later or contact the store owner.</p></div></div>;
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
 
-  const pc = store.primary_color || '#7C3AED';
+  // Buyer-selected theme color (via ThemePanel) overrides the store/template color.
+  const pc = buyerTheme.primaryColor || store.primary_color || '#7C3AED';
   // Match header style to page builder template (first hero/section)
   const tplSec = Array.isArray(store.page_builder)?store.page_builder.find(s=>s.visible!==false):null;
   const tplStyle = tplSec?.style||{};
-  const headerBg = tplStyle.bg || pc;
+  const headerBg = buyerTheme.primaryColor || tplStyle.bg || pc;
   const headerText = tplStyle.textColor || '#ffffff';
   // Owner-controlled font for the store name. Falls back to template font, then Inter.
   const nameFont = store.header_font || tplStyle.fontFamily || 'Inter';
