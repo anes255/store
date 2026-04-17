@@ -534,6 +534,14 @@ export default function Storefront() {
   const wishlistStore = useWishlistStore();
   // Bind the wishlist store to this storefront's slug as soon as we mount.
   useEffect(()=>{ wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
+  // Track a single store visit per browser session (not per page view).
+  useEffect(()=>{
+    if(!storeSlug)return;
+    const k='visited_'+storeSlug;
+    if(sessionStorage.getItem(k))return;
+    sessionStorage.setItem(k,'1');
+    import('../../utils/api').then(({default:api})=>{api.post(`/storefront/${storeSlug}/visit`).catch(()=>{});});
+  },[storeSlug]);
   const wishlist = wishlistStore.items.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
   const [products, setProducts] = useState([]);
