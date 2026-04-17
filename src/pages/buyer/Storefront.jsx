@@ -10,6 +10,7 @@ import ThemePanel from '../../components/shared/ThemePanel';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
+import { initPixels, trackAddToCart, trackViewContent } from '../../utils/trackingPixels';
 
 // ============ ANIMATION PRESETS ============
 // Two groups:
@@ -608,6 +609,7 @@ export default function Storefront() {
         }
         if (cancelled) return;
         setStore(storeData);
+        try { initPixels(storeData?.tracking_pixels); } catch {}
         try { localStorage.setItem('storeCache_' + storeSlug, JSON.stringify(storeData)); } catch {}
         if(storeData.name) document.title = storeData.name;
         if(storeData.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=storeData.favicon;}
@@ -646,11 +648,12 @@ export default function Storefront() {
   // storefront so the feedback is consistent.
   const quickAddToCart = (product) => {
     addItem(product);
+    try { trackAddToCart(store?.tracking_pixels, product, 1); } catch {}
     toast.success(t('store.addedToCart','Added to cart'));
   };
 
   // Opens the full product detail popup.
-  const openDetail = (product) => setDetailProduct(product);
+  const openDetail = (product) => { setDetailProduct(product); try { trackViewContent(store?.tracking_pixels, product); } catch {} };
   // Buy now: show a checkout preview first so the buyer can confirm the
   // product, qty and total before committing to the full checkout flow.
   // The full Checkout modal only opens after they hit "Continue".
@@ -671,6 +674,7 @@ export default function Storefront() {
   // Callback from the ProductQuickAdd modal.
   const handleQuickAddToCart = ({ product: p, selectedVariant, quantity: qty }) => {
     addItem(p, qty, selectedVariant);
+    try { trackAddToCart(store?.tracking_pixels, p, qty); } catch {}
     const label = selectedVariant
       ? (selectedVariant.label || selectedVariant.name || '')
       : '';

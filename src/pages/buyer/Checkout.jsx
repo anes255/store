@@ -6,6 +6,7 @@ import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
 import WILAYA_CITIES from '../../data/wilayaCities';
+import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
 
 // directItems: optional array of items for "Buy Now" flow (skips cart).
 // Each item: { product_id, name, price, image, quantity, variant }
@@ -49,7 +50,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
 
-  useEffect(() => { storeApi.getStore(storeSlug).then(r => setStore(r.data)).catch(() => {}); }, [storeSlug]);
+  useEffect(() => { storeApi.getStore(storeSlug).then(r => { setStore(r.data); try { initPixels(r.data?.tracking_pixels); trackInitiateCheckout(r.data?.tracking_pixels, items, items.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0)); } catch {} }).catch(() => {}); }, [storeSlug]); // eslint-disable-line
   // Load shipping wilayas for real pricing
   useEffect(() => {
     if (!storeSlug) return;
@@ -129,6 +130,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
       const { data } = await storeApi.placeOrder(storeSlug, { ...form, shipping_type: form.shipping_type, customer_id, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
       setOrderSuccess(data);
+      try { trackPurchase(store?.tracking_pixels, { ...data, items, customer_name: form.customer_name, customer_phone: form.customer_phone, customer_email: form.customer_email }); } catch {}
       clearItems();
       // If non-COD method, show payment step
       if (form.payment_method !== 'cod') setPaymentStep(form.payment_method);
