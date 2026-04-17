@@ -47,6 +47,8 @@ export const platformApi = {
   approvePayment: (pid) => api.patch(`/platform/subscriptions/${pid}/approve`),
   rejectPayment: (pid, data) => api.patch(`/platform/subscriptions/${pid}/reject`, data),
   setOwnerSubscription: (ownerId, data) => api.patch(`/platform/store-owners/${ownerId}/subscription`, data),
+  getExpiringSubscriptions: () => api.get('/platform/expiring-subscriptions'),
+  extendSubscription: (ownerId, data) => api.post(`/platform/store-owners/${ownerId}/extend-subscription`, data),
   updateBillingConfig: (data) => api.put('/platform/billing-config', data),
   // Admin profile & co-admins
   getAdminProfile: () => api.get('/platform/profile'),

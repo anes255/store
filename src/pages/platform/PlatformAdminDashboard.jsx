@@ -9,7 +9,76 @@ import PlansEditor from './PlansEditor';
 import RoleTemplatesEditor from './RoleTemplatesEditor';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
-import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu} from 'lucide-react';
+import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu,Bell,Gift,Clock} from 'lucide-react';
+
+function ExpiringSubscriptionsBell({isDark,pc}){
+  const [open,setOpen]=useState(false);
+  const [items,setItems]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [extending,setExtending]=useState(null);
+  const [daysMap,setDaysMap]=useState({});
+  const load=()=>{setLoading(true);platformApi.getExpiringSubscriptions().then(r=>setItems(r.data?.owners||[])).catch(()=>setItems([])).finally(()=>setLoading(false));};
+  useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[]);
+  const extend=async(ownerId)=>{
+    const days=parseInt(daysMap[ownerId]||7,10);
+    if(!days||days<1)return toast.error('Enter days');
+    setExtending(ownerId);
+    try{await platformApi.extendSubscription(ownerId,{days});toast.success(`Granted ${days} free day(s)`);load();}
+    catch(e){toast.error(e?.response?.data?.error||'Failed');}
+    setExtending(null);
+  };
+  const urgentCount=items.filter(i=>i.hours_remaining<=24).length;
+  return(
+    <div className="relative">
+      <button onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Expiring subscriptions">
+        <Bell size={18}/>
+        {urgentCount>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{urgentCount}</span>}
+      </button>
+      {open&&(
+        <>
+          <div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>
+          <div className={`absolute right-0 mt-2 w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+            <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+              <div>
+                <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Expiring Subscriptions</div>
+                <div className="text-[11px] text-gray-400">Owners within 24h of expiry or recently expired</div>
+              </div>
+              <button onClick={load} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={14}/></button>
+            </div>
+            {loading?<div className="p-6 text-center text-xs text-gray-400">Loading...</div>:items.length===0?<div className="p-6 text-center text-xs text-gray-400">No expiring subscriptions</div>:(
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {items.map(o=>{
+                  const hrs=o.hours_remaining;
+                  const expired=hrs<0;
+                  const badge=expired?{bg:'bg-red-100 text-red-700',t:`Expired ${Math.abs(hrs)}h ago`}:hrs<=24?{bg:'bg-amber-100 text-amber-700',t:`${hrs}h left`}:{bg:'bg-blue-100 text-blue-700',t:`${hrs}h left`};
+                  return(
+                    <div key={o.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <div className={`text-sm font-bold truncate ${isDark?'text-gray-100':'text-gray-900'}`}>{o.name||'Owner'}</div>
+                          <div className="text-[11px] text-gray-400 truncate">{o.phone||o.email}</div>
+                          <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1"><Clock size={10}/>{new Date(o.subscription_expires_at).toLocaleString()}</div>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${badge.bg}`}>{badge.t}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="number" min="1" max="365" placeholder="7" value={daysMap[o.id]||''} onChange={e=>setDaysMap(m=>({...m,[o.id]:e.target.value}))} className={`w-16 px-2 py-1.5 rounded-lg border text-xs ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200 text-gray-900'}`}/>
+                        <span className="text-[11px] text-gray-400">days</span>
+                        <button disabled={extending===o.id} onClick={()=>extend(o.id)} className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold disabled:opacity-50" style={{backgroundColor:pc}}>
+                          <Gift size={12}/>{extending===o.id?'...':'Grant Free'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function Sidebar({open,onClose,isDark,pc,pl}){
   const {t}=useTranslation();
@@ -709,6 +778,7 @@ export default function PlatformAdminDashboard(){
             <span className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-700'}`}>{t('admin.platformAdministration','Platform Administration')}</span>
           </div>
           <div className="flex items-center gap-3">
+            <ExpiringSubscriptionsBell isDark={isDark} pc={pc}/>
             <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
             <LanguageSwitcher/>
             <span className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
