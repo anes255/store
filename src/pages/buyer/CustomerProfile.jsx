@@ -334,7 +334,7 @@ export default function CustomerProfile() {
                 onChange={handleAvatarChange}
               />
             </div>
-            <h3 className="font-bold text-white text-base">{profile.name || 'Customer'}</h3>
+            <h3 className="text-xl text-white italic" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600 }}>{profile.name || 'Customer'}</h3>
             <div className="flex items-center gap-1.5 mt-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400">{t('store.activeMember', 'Active Member')}</span>
@@ -403,10 +403,10 @@ export default function CustomerProfile() {
                   <Sparkles size={22} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ letterSpacing: '-0.02em' }}>
+                  <h1 className="text-3xl sm:text-5xl font-extrabold text-white italic" style={{ letterSpacing: '-0.03em', fontFamily: "'Playfair Display', serif" }}>
                     {t('store.welcomeBack', 'Welcome back,')} <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${pc}, #818cf8)` }}>{firstName || 'Customer'}!</span>
                   </h1>
-                  <p className="text-sm text-gray-400 mt-1 font-medium tracking-wide">{t('store.manageProfile', 'Manage your profile and preferences')}</p>
+                  <p className="text-sm text-gray-300/80 mt-2 font-light tracking-[0.2em] uppercase">{t('store.manageProfile', 'Manage your profile and preferences')}</p>
                 </div>
               </div>
 
@@ -417,7 +417,7 @@ export default function CustomerProfile() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400 font-medium">{t('store.yourOrders', 'Your Orders')}</p>
-                      <p className="text-3xl font-extrabold text-white mt-1">{profile.total_orders || profile.orders?.length || 0}</p>
+                      <p className="text-4xl font-bold text-white mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>{profile.total_orders || profile.orders?.length || 0}</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${pc}33, ${pc}11)` }}>
                       <Package size={22} style={{ color: pc }} className="group-hover:scale-110 transition-transform" />
@@ -429,7 +429,7 @@ export default function CustomerProfile() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400 font-medium">{t('store.savedItems', 'Saved Items')}</p>
-                      <p className="text-3xl font-extrabold text-white mt-1">{favItems.length}</p>
+                      <p className="text-4xl font-bold text-white mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>{favItems.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-pink-500/15">
                       <Heart size={22} className="text-pink-400 group-hover:scale-110 transition-transform" />
@@ -441,7 +441,7 @@ export default function CustomerProfile() {
               {/* Profile Details Card */}
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2 italic" style={{ fontFamily: "'Playfair Display', serif" }}>
                     <User size={18} style={{ color: pc }} />
                     {t('store.profileDetails', 'Profile Details')}
                   </h2>
@@ -471,23 +471,23 @@ export default function CustomerProfile() {
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.firstName', 'First Name')}</label>
-                        <p className="text-white font-semibold text-[15px]">{firstName || '-'}</p>
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.firstName', 'First Name')}</label>
+                        <p className="text-white text-xl font-medium" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{firstName || '-'}</p>
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.lastName', 'Last Name')}</label>
-                        <p className="text-white font-semibold text-[15px]">{lastName || '-'}</p>
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.lastName', 'Last Name')}</label>
+                        <p className="text-white text-xl font-medium" style={{ fontFamily: "'Cormorant Garamond', serif" }}>{lastName || '-'}</p>
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.emailAddress', 'Email Address')}</label>
-                        <p className="text-white font-semibold text-[15px] flex items-center gap-2">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.emailAddress', 'Email Address')}</label>
+                        <p className="text-white text-xl font-medium flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                           <Mail size={14} className="text-gray-500 shrink-0" />
                           {profile.email || '-'}
                         </p>
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.phoneNumber', 'Phone Number')}</label>
-                        <p className="text-white font-semibold text-[15px] flex items-center gap-2">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.phoneNumber', 'Phone Number')}</label>
+                        <p className="text-white text-xl font-medium flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                           <Phone size={14} className="text-gray-500 shrink-0" />
                           {profile.phone || '-'}
                         </p>
@@ -495,8 +495,8 @@ export default function CustomerProfile() {
                     </div>
                     {(profile.address || profile.city || profile.wilaya) && (
                       <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.address', 'Address')}</label>
-                        <p className="text-white font-semibold text-[15px] flex items-center gap-2">
+                        <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.address', 'Address')}</label>
+                        <p className="text-white text-xl font-medium flex items-center gap-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                           <MapPin size={14} className="text-gray-500 shrink-0" />
                           {[profile.address, profile.city, profile.wilaya].filter(Boolean).join(', ') || '-'}
                         </p>
@@ -504,7 +504,7 @@ export default function CustomerProfile() {
                     )}
                     {/* Password (decorative) */}
                     <div className="pt-2 border-t border-white/5">
-                      <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.password', 'Password')}</label>
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.password', 'Password')}</label>
                       <div className="flex items-center gap-2">
                         <Lock size={14} className="text-gray-500" />
                         <span className="text-white tracking-widest">{'*'.repeat(10)}</span>
