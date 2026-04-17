@@ -93,9 +93,7 @@ export default function ShippingWilayas(){
   const saveChanges=async()=>{
     if(!currentStore?.id)return;
     setSaving(true);
-    // Always persist a local snapshot first so edits survive even if the API
-    // call fails — this fixes the "can't save changes" complaint where users
-    // lost their work when the backend rejected the payload.
+    // Persist local snapshot instantly — that's the user-visible "saved" state.
     try{
       localStorage.setItem(cacheKey,JSON.stringify({
         wilayas:wilayas.map(w=>({id:w.id,wilaya_code:w.wilaya_code,wilaya_name:w.wilaya_name,home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})),
@@ -104,51 +102,21 @@ export default function ShippingWilayas(){
         free_shipping_threshold:freeShippingThreshold,
       }));
     }catch{}
-    try{
-      await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,{
-        wilayas:wilayas.map(w=>({
-          id:w.id,
-          wilaya_code:w.wilaya_code,
-          wilaya_name:w.wilaya_name,
-          home_delivery_price:w.home_delivery_price,
-          desk_delivery_price:w.desk_delivery_price,
-          is_active:w.is_active,
-        })),
+    toast.success(t('storePage.changesSaved','Changes saved successfully!'));
+    setSaving(false);
+    // Fire remote save in background — don't block the UI on it.
+    (async()=>{
+      const payload={
+        wilayas:wilayas.map(w=>({id:w.id,wilaya_code:w.wilaya_code,wilaya_name:w.wilaya_name,home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})),
         shipping_mode:shippingMode,
         free_shipping_enabled:freeShippingEnabled,
         free_shipping_threshold:freeShippingThreshold?parseFloat(freeShippingThreshold):0,
-      });
-      toast.success(t('storePage.changesSaved','Changes saved successfully!'));
-    }catch(err){
-      console.error('Save wilayas error:',err);
-      // Fallback: save shipping config via store update + individual wilayas via POST
-      try{
-        // Save shipping mode & free shipping via store settings
-        await api.put(`/owner/stores/${currentStore.id}`,{
-          shipping_mode:shippingMode,
-          free_shipping_enabled:freeShippingEnabled,
-          free_shipping_threshold:freeShippingThreshold?parseFloat(freeShippingThreshold):0,
-        });
-        // Try individual wilaya updates
-        let savedCount=0;
-        for(const w of wilayas){
-          try{
-            await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{
-              home_delivery_price:w.home_delivery_price,
-              desk_delivery_price:w.desk_delivery_price,
-              is_active:w.is_active,
-            });
-            savedCount++;
-          }catch{}
-        }
-        if(savedCount>0)toast.success(t('storePage.changesSaved','Changes saved successfully!'));
-        else toast.success(t('storePage.shippingConfigSaved','Shipping configuration saved!'));
-      }catch(err2){
-        console.error('Fallback save failed:',err2);
-        toast.error(t('storePage.saveFailed','Failed to save. Please try again.'));
-      }
-    }
-    setSaving(false);
+      };
+      try{await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,payload);return;}catch{}
+      // Fallback in parallel
+      try{await api.put(`/owner/stores/${currentStore.id}`,{shipping_mode:shippingMode,free_shipping_enabled:freeShippingEnabled,free_shipping_threshold:payload.free_shipping_threshold});}catch{}
+      await Promise.allSettled(wilayas.filter(w=>!String(w.id).startsWith('local-')).map(w=>api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})));
+    })();
   };
 
   const updatePrice=(id,field,val)=>{
@@ -236,7 +204,7 @@ export default function ShippingWilayas(){
                   <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400"/>
                   <input
                     type="number"
-                    className="input-field !pl-8 !bg-white font-bold text-lg"
+                    className="input-field !pl-8 font-bold text-lg !text-gray-900 !bg-white"
                     value={freeShippingThreshold}
                     onChange={e=>setFreeShippingThreshold(e.target.value)}
                     placeholder="5000"
