@@ -261,7 +261,7 @@ export default function CustomerProfile() {
 
   // -- Render -----------------------------------------------------------------
   return (
-    <div className="min-h-screen" style={{ fontFamily: headerFont, background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+    <div className="min-h-screen" style={{ fontFamily: 'Arial, sans-serif', background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
 
       {/* ==================== MOBILE TOP BAR ==================== */}
       <div className="lg:hidden sticky top-0 z-30 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">
