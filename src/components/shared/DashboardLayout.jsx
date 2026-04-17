@@ -87,7 +87,6 @@ function NotifBell(){
 const DEFAULT_ITEMS = [
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
-  {id:'page-builder',type:'link',to:'/dashboard/page-builder',icon:'LayoutTemplate',label:'sidebar.pageBuilder'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
