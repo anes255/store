@@ -67,6 +67,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
 // ═══════ OVERVIEW ═══════
 function Overview(){
   const {t}=useTranslation();
+  const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[data,setData]=useState(null);const[loading,setLoading]=useState(true);
   useEffect(()=>{platformApi.getDashboard().then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));},[]);
   if(loading)return<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>;
@@ -80,26 +81,26 @@ function Overview(){
     {label:t('admin.customers','Customers'),value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:t('admin.registeredBuyers','Registered buyers')},
   ];
   return(<div>
-    <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl font-black text-gray-900">{t('admin.platformOverview','Platform Overview')}</h1><p className="text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-gray-200"><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
+    <div className="flex items-center justify-between mb-6"><div><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.platformOverview','Platform Overview')}</h1><p className="text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className={`px-4 py-2 ${isDark?'bg-gray-800 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200'} rounded-xl text-sm font-medium flex items-center gap-2`}><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">{cards.map((c,i)=>{const I=c.icon;return(
-      <div key={i} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div key={i} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow`}>
         <div className="flex items-center justify-between mb-3"><div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-md`}><I size={18} className="text-white"/></div></div>
-        <p className="text-2xl font-black text-gray-900">{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p><p className="text-[10px] text-emerald-500 font-bold mt-1">{c.sub}</p>
+        <p className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p><p className="text-[10px] text-emerald-500 font-bold mt-1">{c.sub}</p>
       </div>);})}</div>
     <div className="grid lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl p-6 shadow-sm"><h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><ShoppingCart size={16}/>{t('admin.recentOrders','Recent Orders')}</h3>
+      <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-6 shadow-sm`}><h3 className={`font-bold ${isDark?'text-gray-100':'text-gray-900'} mb-4 flex items-center gap-2`}><ShoppingCart size={16}/>{t('admin.recentOrders','Recent Orders')}</h3>
         <div className="space-y-2">{(data?.recentOrders||[]).slice(0,8).map(o=>(
-          <div key={o.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-            <div className="flex items-center gap-3"><span className="font-mono text-xs font-bold text-brand-600">{o.order_number}</span><span className="text-sm text-gray-700">{o.customer_name}</span></div>
+          <div key={o.id} className={`flex items-center justify-between p-3 ${isDark?'bg-gray-900':'bg-gray-50'} rounded-xl`}>
+            <div className="flex items-center gap-3"><span className="font-mono text-xs font-bold text-brand-600">{o.order_number}</span><span className={`text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>{o.customer_name}</span></div>
             <div className="flex items-center gap-3"><span className="text-sm font-bold">{parseFloat(o.total).toLocaleString()}</span><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${o.status==='delivered'?'bg-emerald-100 text-emerald-700':o.status==='pending'?'bg-amber-100 text-amber-700':'bg-blue-100 text-blue-700'}`}>{o.status}</span></div>
           </div>
         ))}</div>
       </div>
-      <div className="bg-white rounded-2xl p-6 shadow-sm"><h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Store size={16}/>{t('admin.recentStores','Recent Stores')}</h3>
+      <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-6 shadow-sm`}><h3 className={`font-bold ${isDark?'text-gray-100':'text-gray-900'} mb-4 flex items-center gap-2`}><Store size={16}/>{t('admin.recentStores','Recent Stores')}</h3>
         <div className="space-y-2">{(data?.recentStores||[]).slice(0,8).map(s=>(
-          <div key={s.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-            <div><p className="text-sm font-bold text-gray-800">{s.name||s.store_name}</p><p className="text-[10px] text-gray-400">{s.owner_name} · {s.product_count||0} products</p></div>
-            <div className="flex items-center gap-2"><span className="text-sm font-bold text-gray-600">{parseFloat(s.revenue||0).toLocaleString()} DZD</span>{s.is_published?<span className="w-2 h-2 rounded-full bg-emerald-400"/>:<span className="w-2 h-2 rounded-full bg-gray-300"/>}</div>
+          <div key={s.id} className={`flex items-center justify-between p-3 ${isDark?'bg-gray-900':'bg-gray-50'} rounded-xl`}>
+            <div><p className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{s.name||s.store_name}</p><p className="text-[10px] text-gray-400">{s.owner_name} · {s.product_count||0} products</p></div>
+            <div className="flex items-center gap-2"><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-600'}`}>{parseFloat(s.revenue||0).toLocaleString()} DZD</span>{s.is_published?<span className="w-2 h-2 rounded-full bg-emerald-400"/>:<span className="w-2 h-2 rounded-full bg-gray-300"/>}</div>
           </div>
         ))}</div>
       </div>
@@ -109,22 +110,36 @@ function Overview(){
 
 // ═══════ STORE OWNERS ═══════
 function StoreOwners(){
+  const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[owners,setOwners]=useState([]);const[search,setSearch]=useState('');const[loading,setLoading]=useState(true);
   const load=()=>{platformApi.getStoreOwners({search}).then(r=>setOwners(r.data.owners||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[search]);
   const toggle=async(id)=>{try{await platformApi.toggleOwner(id);toast.success('Updated');load();}catch{toast.error('Failed');}};
-  const del=async(id)=>{if(!confirm('Delete this owner and deactivate their stores?'))return;try{await api.delete(`/platform/store-owners/${id}`);toast.success('Deleted');load();}catch{toast.error('Failed');}};
+  const del=async(id)=>{
+    if(!confirm('Delete this owner and deactivate their stores?'))return;
+    try{
+      await platformApi.deleteOwner(id);
+      toast.success('Owner deleted');
+      // Optimistically remove from the list so the UI updates even if the
+      // reload race-conditions or returns a cached response.
+      setOwners(prev=>prev.filter(o=>o.id!==id));
+      load();
+    }catch(e){
+      const msg=e?.response?.data?.error||e?.response?.data?.message||e?.message||'Failed to delete owner';
+      toast.error(msg);
+    }
+  };
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Store Owners</h1><span className="text-sm text-gray-400">{owners.length} total</span></div>
-    <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-3 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20" placeholder="Search by name, email, phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+    <div className="flex items-center justify-between mb-6"><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>Store Owners</h1><span className="text-sm text-gray-400">{owners.length} total</span></div>
+    <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-3 ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'} rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20`} placeholder="Search by name, email, phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+    <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-hidden`}><table className="w-full text-sm"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
     <tbody>{owners.map(o=>(
-      <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50">
-        <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs">{o.full_name?.[0]||'U'}</div><div><p className="font-bold text-gray-800">{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
-        <td className="px-5 py-4"><p className="text-gray-700">{o.email}</p><p className="text-xs text-gray-400">{o.phone}</p></td>
+      <tr key={o.id} className={`border-t ${isDark?'border-gray-700 hover:bg-gray-700':'border-gray-100 hover:bg-gray-50'}`}>
+        <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs">{o.full_name?.[0]||'U'}</div><div><p className={`font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
+        <td className="px-5 py-4"><p className={`${isDark?'text-gray-300':'text-gray-700'}`}>{o.email}</p><p className="text-xs text-gray-400">{o.phone}</p></td>
         <td className="px-5 py-4 font-bold text-center">{o.store_count||0}</td>
-        <td className="px-5 py-4 font-bold text-gray-900">{parseFloat(o.total_revenue||0).toLocaleString()} DZD</td>
+        <td className={`px-5 py-4 font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{parseFloat(o.total_revenue||0).toLocaleString()} DZD</td>
         <td className="px-5 py-4"><span className="px-2 py-1 rounded-full text-[10px] font-bold bg-brand-100 text-brand-700 capitalize">{o.subscription_plan||'free'}</span></td>
         <td className="px-5 py-4">{o.subscription_status==='suspended'||o.is_active===false?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Suspended</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Active</span>}</td>
         <td className="px-5 py-4"><div className="flex gap-1">
@@ -141,31 +156,32 @@ function StoreOwners(){
 // ═══════ ALL STORES ═══════
 function AllStores(){
   const {t}=useTranslation();
+  const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[stores,setStores]=useState([]);const[loading,setLoading]=useState(true);const[detail,setDetail]=useState(null);
   const load=()=>{platformApi.getStores().then(r=>setStores(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[]);
   const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success('Toggled');load();}catch{toast.error('Failed');}};
   const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');setDetail(null);load();}catch{toast.error('Failed');}};
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">{t('admin.allStores','All Stores')}</h1><span className="text-sm text-gray-400">{stores.length} {t('admin.total','total')}</span></div>
+    <div className="flex items-center justify-between mb-6"><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-sm text-gray-400">{stores.length} {t('admin.total','total')}</span></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
     <div className="grid gap-4">{stores.map(s=>(
-      <div key={s.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      <div key={s.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden`}>
         <div className="p-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold">{(s.name||s.store_name||'S')[0]}</div>
           <div className="flex-1 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
-            <div className="flex items-center gap-2"><p className="font-bold text-gray-900">{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">{t('admin.offline','OFFLINE')}</span>}</div>
+            <div className="flex items-center gap-2"><p className={`font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark?'bg-gray-700 text-gray-400':'bg-gray-100 text-gray-500'}`}>{t('admin.offline','OFFLINE')}</span>}</div>
             <p className="text-xs text-gray-400">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>
           </div>
           <div className="text-right"><p className="text-sm font-bold">{parseFloat(s.revenue||0).toLocaleString()} DZD</p><p className="text-[10px] text-gray-400">{s.product_count||0} products · {s.order_count||0} orders</p></div>
           <div className="flex gap-2 shrink-0">
-            <button onClick={()=>setDetail(detail?.id===s.id?null:s)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Details"><Eye size={14}/></button>
-            <a href={`/s/${s.slug}`} target="_blank" className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Visit"><ExternalLink size={14}/></a>
-            <button onClick={()=>toggle(s.id)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title={s.is_published?'Take offline':'Put live'}>{s.is_published?<EyeOff size={14}/>:<Eye size={14}/>}</button>
+            <button onClick={()=>setDetail(detail?.id===s.id?null:s)} className={`p-2 ${isDark?'hover:bg-gray-700':'hover:bg-gray-100'} rounded-lg text-gray-400`} title="Details"><Eye size={14}/></button>
+            <a href={`/s/${s.slug}`} target="_blank" className={`p-2 ${isDark?'hover:bg-gray-700':'hover:bg-gray-100'} rounded-lg text-gray-400`} title="Visit"><ExternalLink size={14}/></a>
+            <button onClick={()=>toggle(s.id)} className={`p-2 ${isDark?'hover:bg-gray-700':'hover:bg-gray-100'} rounded-lg text-gray-400`} title={s.is_published?'Take offline':'Put live'}>{s.is_published?<EyeOff size={14}/>:<Eye size={14}/>}</button>
             <button onClick={()=>del(s.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400" title="Delete"><Trash2 size={14}/></button>
           </div>
         </div>
-        {detail?.id===s.id&&<div className="border-t border-gray-100 p-5 bg-gray-50 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {detail?.id===s.id&&<div className={`border-t ${isDark?'border-gray-700 bg-gray-900':'border-gray-100 bg-gray-50'} p-5 grid grid-cols-2 lg:grid-cols-4 gap-4`}>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Slug</p><p className="font-mono text-sm">{s.slug}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Owner Phone</p><p className="text-sm">{s.owner_phone||'N/A'}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Products</p><p className="text-sm font-bold">{s.product_count||0}</p></div>
@@ -589,13 +605,21 @@ function MyProfile(){
 // ═══════ ADMIN MANAGEMENT ═══════
 function AdminManagement(){
   const{user}=useAuthStore();
+  const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[admins,setAdmins]=useState([]);
   const[loading,setLoading]=useState(true);
+  const[loadError,setLoadError]=useState(null);
   const[showAdd,setShowAdd]=useState(false);
   const[form,setForm]=useState({name:'',email:'',phone:'',password:''});
   const[saving,setSaving]=useState(false);
 
-  const load=()=>{setLoading(true);platformApi.getAdmins().then(r=>setAdmins(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
+  const load=()=>{
+    setLoading(true);setLoadError(null);
+    platformApi.getAdmins()
+      .then(r=>setAdmins(Array.isArray(r.data)?r.data:(r.data?.admins||[])))
+      .catch(e=>{setLoadError(e?.response?.data?.error||e?.message||'Failed to load admins');})
+      .finally(()=>setLoading(false));
+  };
   useEffect(()=>{load();},[]);
 
   const add=async()=>{
@@ -605,29 +629,30 @@ function AdminManagement(){
     setSaving(false);
   };
 
-  const remove=async(id)=>{if(!confirm('Remove this admin? They will lose all super admin access.'))return;try{await platformApi.removeAdmin(id);toast.success('Removed');load();}catch{toast.error('Failed');}};
+  const remove=async(id)=>{if(!confirm('Remove this admin? They will lose all super admin access.'))return;try{await platformApi.removeAdmin(id);toast.success('Removed');load();}catch(e){toast.error(e?.response?.data?.error||'Failed');}};
   const toggle=async(id)=>{try{await platformApi.toggleAdmin(id);load();}catch{toast.error('Failed');}};
 
   return(<div>
     <div className="flex items-center justify-between mb-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Shield size={22} className="text-red-500"/>Super Admins</h1>
+        <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark?'text-gray-100':'text-gray-900'}`}><Shield size={22} className="text-red-500"/>Super Admins</h1>
         <p className="text-sm text-gray-400 mt-1">Grant or revoke super admin access to trusted accounts</p>
       </div>
       <button onClick={()=>setShowAdd(true)} className="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-700"><Plus size={14}/>Add Admin</button>
     </div>
 
     {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>:
-    admins.length===0?<div className="bg-white rounded-2xl p-16 shadow-sm text-center"><Shield size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">No other admins yet</p></div>:
+    loadError?<div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-12 shadow-sm text-center`}><AlertTriangle size={40} className="mx-auto text-amber-500 mb-3"/><p className={`${isDark?'text-gray-200':'text-gray-700'} font-bold mb-1`}>Couldn't load admins</p><p className="text-sm text-gray-400 mb-4">{loadError}</p><button onClick={load} className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold">Retry</button></div>:
+    admins.length===0?<div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-16 shadow-sm text-center`}><Shield size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">No other admins yet</p></div>:
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
       {admins.map(a=>(
-        <div key={a.id} className={`bg-white rounded-2xl p-6 shadow-sm relative ${!a.is_active?'opacity-50':''}`}>
+        <div key={a.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-6 shadow-sm relative ${!a.is_active?'opacity-50':''}`}>
           {a.id===user?.id&&<span className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-0.5 bg-red-100 text-red-600 rounded-full">You</span>}
           <div className="text-center mb-3">
             <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-2">
               <span className="text-xl font-bold text-red-500">{(a.name||'?')[0].toUpperCase()}</span>
             </div>
-            <h3 className="font-bold text-gray-900">{a.name}</h3>
+            <h3 className={`font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{a.name}</h3>
             <p className="text-xs text-gray-400">{a.email}</p>
             {a.phone&&<p className="text-xs text-gray-400">{a.phone}</p>}
             <div className="flex items-center justify-center gap-1 mt-1.5">
@@ -647,8 +672,8 @@ function AdminManagement(){
 
     {showAdd&&(
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowAdd(false)}>
-        <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">Add Super Admin</h2><button onClick={()=>setShowAdd(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div>
+        <div className={`${isDark?'bg-gray-900 text-gray-100':'bg-white text-gray-900'} rounded-3xl p-8 w-full max-w-md shadow-2xl`} onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">Add Super Admin</h2><button onClick={()=>setShowAdd(false)} className={`p-2 rounded-lg ${isDark?'hover:bg-gray-800':'hover:bg-gray-100'}`}><X size={18}/></button></div>
           <p className="text-xs text-amber-600 bg-amber-50 p-3 rounded-xl mb-4 flex items-center gap-2"><AlertTriangle size={14}/>Super admins have full access to the entire platform including all stores, owners, and settings.</p>
           <div className="space-y-4">
             <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Name *</label><input className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>

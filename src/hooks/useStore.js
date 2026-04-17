@@ -289,4 +289,33 @@ export const usePlatformTheme = create((set, get) => ({
   },
 }));
 
+// Buyer (storefront) theme — picks light/dark mode for shoppers and an
+// override primary color. Independent from the admin/platform themes so
+// merchants and customers don't share preferences.
+export const useBuyerTheme = create((set, get) => ({
+  mode: localStorage.getItem('buyer_theme_mode') || 'dark',
+  primaryColor: localStorage.getItem('buyer_theme_color') || '#7C3AED',
+  palette: generatePalette(localStorage.getItem('buyer_theme_color') || '#7C3AED'),
+
+  init: () => {
+    const state = get();
+    applyThemeToDOM(state.mode, state.primaryColor, 'buyer');
+  },
+
+  setMode: (mode) => {
+    localStorage.setItem('buyer_theme_mode', mode);
+    const state = get();
+    applyThemeToDOM(mode, state.primaryColor, 'buyer');
+    set({ mode });
+  },
+
+  setPrimaryColor: (color) => {
+    localStorage.setItem('buyer_theme_color', color);
+    const palette = generatePalette(color);
+    const state = get();
+    applyThemeToDOM(state.mode, color, 'buyer');
+    set({ primaryColor: color, palette });
+  },
+}));
+
 export { COLOR_PRESETS, generatePalette };

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
-import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag, Zap, Minus, Plus, Check, Star, Truck, Shield } from 'lucide-react';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
+import ThemePanel from '../../components/shared/ThemePanel';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
@@ -397,6 +398,64 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
   );
 }
 
+// ============ CHECKOUT PREVIEW MODAL ============
+// Lightweight order summary shown after the buyer clicks "Buy Now" but before
+// they commit to the full Checkout flow. Lets them sanity-check the product,
+// quantity, shipping estimate and total. "Continue" advances to the real
+// Checkout, "Cancel" closes the preview without losing the buy-now selection.
+function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfirm, onClose }) {
+  if (!items || items.length === 0) return null;
+  const subtotal = items.reduce((s, i) => s + (parseFloat(i.price) || 0) * (i.quantity || 1), 0);
+  const shipping = shippingEstimate || parseFloat(store.default_shipping_cost) || 400;
+  const total = subtotal + shipping;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full sm:max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+        <div className="p-5 text-white" style={{ background: `linear-gradient(135deg, ${pc}, ${pc}cc)` }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Checkout Preview</p>
+              <h2 className="text-xl font-extrabold mt-0.5">Confirm your order</h2>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"><X size={16}/></button>
+          </div>
+        </div>
+        <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+          {items.map((it, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+                {it.image ? <img src={it.image} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full flex items-center justify-center"><Package size={20} className="text-gray-300"/></div>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">{it.name}</p>
+                {it.variant && <p className="text-[11px] text-gray-400">{it.variant.label || it.variant.value || ''}</p>}
+                <p className="text-[11px] text-gray-500">Qty: {it.quantity}</p>
+              </div>
+              <p className="font-extrabold text-sm" style={{ color: pc }}>
+                {(parseFloat(it.price) * (it.quantity || 1)).toLocaleString()} {currency}
+              </p>
+            </div>
+          ))}
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5 text-sm">
+            <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{subtotal.toLocaleString()} {currency}</span></div>
+            <div className="flex justify-between text-gray-500"><span>Shipping (estimate)</span><span>{shipping.toLocaleString()} {currency}</span></div>
+            <div className="flex justify-between text-base font-extrabold pt-2 border-t border-gray-100 dark:border-gray-800">
+              <span className="text-gray-800 dark:text-gray-100">Total</span>
+              <span style={{ color: pc }}>{total.toLocaleString()} {currency}</span>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex gap-2">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
+          <button onClick={onConfirm} className="flex-[1.4] py-3 rounded-xl text-white text-sm font-extrabold shadow-lg flex items-center justify-center gap-2" style={{ backgroundColor: pc }}>
+            <Check size={14}/> Continue to Checkout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ============ DARK PRODUCT CARD ============
 function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow }) {
   const thumb = getThumb(product);
@@ -496,6 +555,9 @@ export default function Storefront() {
   const [detailProduct, setDetailProduct] = useState(null);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowItems, setBuyNowItems] = useState(null);
+  const [previewItems, setPreviewItems] = useState(null); // checkout preview before full checkout
+  const buyerTheme = useBuyerTheme();
+  useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const navigate = useNavigate();
 
   const [suspended, setSuspended] = useState(false);
@@ -581,11 +643,18 @@ export default function Storefront() {
 
   // Opens the full product detail popup.
   const openDetail = (product) => setDetailProduct(product);
-  // Buy now: add to cart and go to checkout
+  // Buy now: show a checkout preview first so the buyer can confirm the
+  // product, qty and total before committing to the full checkout flow.
+  // The full Checkout modal only opens after they hit "Continue".
   const handleBuyNow = (product, qty = 1, variant = null) => {
     const p = typeof product.price === 'number' ? product : { ...product, price: parseFloat(product.price) || 0 };
     const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant }];
-    setBuyNowItems(items);
+    setPreviewItems(items);
+  };
+  const confirmPreview = () => {
+    if (!previewItems) return;
+    setBuyNowItems(previewItems);
+    setPreviewItems(null);
     setBuyNowOpen(true);
   };
   // Opens the quick-add popup so the buyer can pick variants before adding.
@@ -645,6 +714,7 @@ export default function Storefront() {
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
+            <div className="hidden sm:block"><ThemePanel compact mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
@@ -872,6 +942,16 @@ export default function Storefront() {
       )}
 
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
+      {previewItems && (
+        <CheckoutPreview
+          items={previewItems}
+          store={store}
+          pc={pc}
+          currency={store.currency || 'DZD'}
+          onConfirm={confirmPreview}
+          onClose={() => setPreviewItems(null)}
+        />
+      )}
       {buyNowOpen && <Checkout isModal onClose={()=>{setBuyNowOpen(false);setBuyNowItems(null);}} storeSlug={storeSlug} directItems={buyNowItems}/>}
       <ProductQuickAdd
         show={!!quickAddProduct}

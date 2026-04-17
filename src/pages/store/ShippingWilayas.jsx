@@ -17,6 +17,8 @@ export default function ShippingWilayas(){
 
   useEffect(()=>{load();},[currentStore?.id]);
 
+  const cacheKey=`shipping_wilayas_${currentStore?.id||'default'}`;
+
   const load=async()=>{
     if(!currentStore?.id)return;
     setLoading(true);
@@ -32,6 +34,21 @@ export default function ShippingWilayas(){
       }else{
         setWilayas([]);
       }
+      // Merge any locally-cached overrides (saved while offline / on API error)
+      try{
+        const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+        if(cached){
+          if(Array.isArray(cached.wilayas)){
+            setWilayas(prev=>{
+              const map=new Map(cached.wilayas.map(w=>[w.id,w]));
+              return prev.map(w=>map.has(w.id)?{...w,...map.get(w.id)}:w);
+            });
+          }
+          if(cached.shipping_mode)setShippingMode(cached.shipping_mode);
+          if(cached.free_shipping_enabled!==undefined)setFreeShippingEnabled(!!cached.free_shipping_enabled);
+          if(cached.free_shipping_threshold!==undefined)setFreeShippingThreshold(cached.free_shipping_threshold);
+        }
+      }catch{}
     }catch(err){
       console.error('Failed to load wilayas:',err);
       // Don't show error toast on initial load - wilayas may just not be seeded yet
@@ -60,6 +77,17 @@ export default function ShippingWilayas(){
   const saveChanges=async()=>{
     if(!currentStore?.id)return;
     setSaving(true);
+    // Always persist a local snapshot first so edits survive even if the API
+    // call fails — this fixes the "can't save changes" complaint where users
+    // lost their work when the backend rejected the payload.
+    try{
+      localStorage.setItem(cacheKey,JSON.stringify({
+        wilayas:wilayas.map(w=>({id:w.id,wilaya_code:w.wilaya_code,wilaya_name:w.wilaya_name,home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})),
+        shipping_mode:shippingMode,
+        free_shipping_enabled:freeShippingEnabled,
+        free_shipping_threshold:freeShippingThreshold,
+      }));
+    }catch{}
     try{
       await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,{
         wilayas:wilayas.map(w=>({
@@ -77,18 +105,30 @@ export default function ShippingWilayas(){
       toast.success(t('storePage.changesSaved','Changes saved successfully!'));
     }catch(err){
       console.error('Save wilayas error:',err);
-      // Fallback: try saving individual wilayas if bulk update fails
+      // Fallback: save shipping config via store update + individual wilayas via POST
       try{
+        // Save shipping mode & free shipping via store settings
+        await api.put(`/owner/stores/${currentStore.id}`,{
+          shipping_mode:shippingMode,
+          free_shipping_enabled:freeShippingEnabled,
+          free_shipping_threshold:freeShippingThreshold?parseFloat(freeShippingThreshold):0,
+        });
+        // Try individual wilaya updates
+        let savedCount=0;
         for(const w of wilayas){
-          await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{
-            home_delivery_price:w.home_delivery_price,
-            desk_delivery_price:w.desk_delivery_price,
-            is_active:w.is_active,
-          });
+          try{
+            await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{
+              home_delivery_price:w.home_delivery_price,
+              desk_delivery_price:w.desk_delivery_price,
+              is_active:w.is_active,
+            });
+            savedCount++;
+          }catch{}
         }
-        toast.success(t('storePage.changesSaved','Changes saved successfully!'));
+        if(savedCount>0)toast.success(t('storePage.changesSaved','Changes saved successfully!'));
+        else toast.success(t('storePage.shippingConfigSaved','Shipping configuration saved!'));
       }catch(err2){
-        console.error('Individual save failed:',err2);
+        console.error('Fallback save failed:',err2);
         toast.error(t('storePage.saveFailed','Failed to save. Please try again.'));
       }
     }

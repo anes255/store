@@ -398,15 +398,15 @@ export default function CustomerProfile() {
           {activeTab === 'profile' && (
             <div className="max-w-4xl mx-auto space-y-6">
               {/* Welcome Header */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${pc}44, ${pc}22)` }}>
-                  <Sparkles size={20} style={{ color: pc }} />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${pc}, ${pc}88)` }}>
+                  <Sparkles size={22} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-                    {t('store.welcomeBack', 'Welcome back,')} <span style={{ color: pc }}>{firstName || 'Customer'}!</span>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ letterSpacing: '-0.02em' }}>
+                    {t('store.welcomeBack', 'Welcome back,')} <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${pc}, #818cf8)` }}>{firstName || 'Customer'}!</span>
                   </h1>
-                  <p className="text-sm text-gray-400 mt-0.5">{t('store.manageProfile', 'Manage your profile and preferences')}</p>
+                  <p className="text-sm text-gray-400 mt-1 font-medium tracking-wide">{t('store.manageProfile', 'Manage your profile and preferences')}</p>
                 </div>
               </div>
 
@@ -471,22 +471,22 @@ export default function CustomerProfile() {
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                       <div>
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">{t('store.firstName', 'First Name')}</label>
+                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.firstName', 'First Name')}</label>
                         <p className="text-white font-semibold text-[15px]">{firstName || '-'}</p>
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">{t('store.lastName', 'Last Name')}</label>
+                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.lastName', 'Last Name')}</label>
                         <p className="text-white font-semibold text-[15px]">{lastName || '-'}</p>
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">{t('store.emailAddress', 'Email Address')}</label>
+                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.emailAddress', 'Email Address')}</label>
                         <p className="text-white font-semibold text-[15px] flex items-center gap-2">
                           <Mail size={14} className="text-gray-500 shrink-0" />
                           {profile.email || '-'}
                         </p>
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">{t('store.phoneNumber', 'Phone Number')}</label>
+                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.phoneNumber', 'Phone Number')}</label>
                         <p className="text-white font-semibold text-[15px] flex items-center gap-2">
                           <Phone size={14} className="text-gray-500 shrink-0" />
                           {profile.phone || '-'}
@@ -495,7 +495,7 @@ export default function CustomerProfile() {
                     </div>
                     {(profile.address || profile.city || profile.wilaya) && (
                       <div>
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">{t('store.address', 'Address')}</label>
+                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.address', 'Address')}</label>
                         <p className="text-white font-semibold text-[15px] flex items-center gap-2">
                           <MapPin size={14} className="text-gray-500 shrink-0" />
                           {[profile.address, profile.city, profile.wilaya].filter(Boolean).join(', ') || '-'}
@@ -504,7 +504,7 @@ export default function CustomerProfile() {
                     )}
                     {/* Password (decorative) */}
                     <div className="pt-2 border-t border-white/5">
-                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">{t('store.password', 'Password')}</label>
+                      <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em] block mb-2">{t('store.password', 'Password')}</label>
                       <div className="flex items-center gap-2">
                         <Lock size={14} className="text-gray-500" />
                         <span className="text-white tracking-widest">{'*'.repeat(10)}</span>
