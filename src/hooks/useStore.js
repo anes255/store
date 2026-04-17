@@ -233,6 +233,11 @@ function applyThemeToDOM(mode, color, context) {
     if (platformMode === 'dark') root.classList.add('platform-dark');
     else root.classList.remove('platform-dark');
   }
+  if (context === 'buyer') {
+    const buyerMode = localStorage.getItem('buyer_theme_mode') || 'dark';
+    if (buyerMode === 'dark') root.classList.add('buyer-dark');
+    else root.classList.remove('buyer-dark');
+  }
 }
 
 // Store admin theme

@@ -693,7 +693,7 @@ export default function Storefront() {
   const headerFont = tplStyle.fontFamily || 'Inter';
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className={`min-h-screen ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`}>
       {/* ============ HEADER ============ */}
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">

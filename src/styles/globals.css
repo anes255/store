@@ -74,5 +74,18 @@ html.admin-dark .border-gray-200, html.platform-dark .border-gray-200{border-col
 .page-header{@apply text-2xl font-bold text-gray-900 font-display;}
 .gradient-text{@apply bg-gradient-to-r from-brand-500 via-purple-500 to-brand-400 bg-clip-text text-transparent;}
 }
+/* ═══ Buyer storefront dark mode overrides ═══ */
+.buyer-theme-dark .bg-white{background-color:#1a2140 !important;}
+.buyer-theme-dark .bg-gray-50,.buyer-theme-dark .bg-gray-100{background-color:#141a33 !important;}
+.buyer-theme-dark .bg-gray-200{background-color:#242b4a !important;}
+.buyer-theme-dark .text-gray-900,.buyer-theme-dark .text-gray-800,.buyer-theme-dark .text-gray-700{color:#f3f4f6 !important;}
+.buyer-theme-dark .text-gray-600,.buyer-theme-dark .text-gray-500{color:#cbd5e1 !important;}
+.buyer-theme-dark .text-gray-400{color:#94a3b8 !important;}
+.buyer-theme-dark .border-gray-100,.buyer-theme-dark .border-gray-200,.buyer-theme-dark .border-gray-300{border-color:#2d3566 !important;}
+.buyer-theme-dark .divide-gray-100>*,.buyer-theme-dark .divide-gray-200>*{border-color:#2d3566 !important;}
+.buyer-theme-dark input,.buyer-theme-dark textarea,.buyer-theme-dark select{background-color:#1a2140;color:#f3f4f6;border-color:#2d3566;}
+.buyer-theme-dark .bg-white\/95{background-color:rgba(26,33,64,0.95) !important;}
+.buyer-theme-dark .shadow-md,.buyer-theme-dark .shadow-lg,.buyer-theme-dark .shadow-xl{box-shadow:0 10px 30px rgba(0,0,0,0.5) !important;}
+
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
