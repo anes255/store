@@ -306,6 +306,11 @@ export default function DashboardLayout({children}){
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
+          onClick={()=>navigate('/dashboard/settings')}
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all mb-1 ${isDark?'text-gray-300 hover:bg-white/5':'text-gray-700 hover:bg-gray-100'}`}
+        ><Settings size={18}/>{sidebarOpen&&<span>{t('sidebar.settings','Settings')}</span>}</button>
+        <button
+          type="button"
           onClick={(e)=>{e.preventDefault();e.stopPropagation();try{logout();}catch{}try{localStorage.removeItem('token');}catch{}window.location.href='/login';}}
           className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full text-red-500 cursor-pointer transition-all ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}
         ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
