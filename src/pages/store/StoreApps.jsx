@@ -5,7 +5,7 @@ import { ownerApi, aiApi } from '../../utils/api';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import api, { getPlatformInfo } from '../../utils/api';
-import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut, ChevronRight } from 'lucide-react';
+import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut, ChevronRight, Phone, Calendar, Edit3, Languages } from 'lucide-react';
 import WhatsAppConfigModal from '../../components/shared/WhatsAppConfigModal';
 
 function WhatsAppQR({ storeId }) {
@@ -239,6 +239,25 @@ export default function StoreApps() {
   const [recoveryItems, setRecoveryItems] = useState('Shoes, T-Shirt');
   const [recoveryResult, setRecoveryResult] = useState('');
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+  // Recovery compose (modal in apps page)
+  const [rcMode, setRcMode] = useState('ai'); // 'ai' | 'custom'
+  const [rcLang, setRcLang] = useState('en');
+  const [rcMsg, setRcMsg] = useState('');
+  const [rcSchedule, setRcSchedule] = useState('now');
+  const [rcAt, setRcAt] = useState('');
+  const [rcGen, setRcGen] = useState(false);
+  const generateRcMessage = async (lang) => {
+    setRcGen(true); const useLang = lang || rcLang; setRcLang(useLang);
+    try {
+      const items = recoveryItems.split(',').map(s => s.trim()).filter(Boolean);
+      const { data } = await aiApi.generateRecovery({ store_name: currentStore?.name || 'Store', items, language: useLang });
+      setRcMsg(data.message);
+    } catch {
+      const fallback = { en:`Hi! You left items in your cart at ${currentStore?.name}. Complete your order now!`, fr:`Bonjour! Vous avez laissé des articles dans votre panier chez ${currentStore?.name}. Complétez votre commande!`, ar:`مرحباً! تركت منتجات في سلة التسوق في ${currentStore?.name}. أكمل طلبك الآن!` };
+      setRcMsg(fallback[useLang] || fallback.en);
+    }
+    setRcGen(false);
+  };
   const [waPhone, setWaPhone] = useState('');
   const [waMessage, setWaMessage] = useState(t('storePage.waTestMsg','Hello! This is a test message from your store.'));
   const [waSending, setWaSending] = useState(false);
@@ -373,8 +392,10 @@ export default function StoreApps() {
       case 'abandoned-cart': {
         const app = allApps.find(a => a.slug === slug);
         const installed = isInstalled(slug);
+        const isRtl = rcLang === 'ar';
+        const previewText = rcMsg || 'Configure a message template...';
         return (
-          <div className="p-6 space-y-5 overflow-y-auto">
+          <div className="p-5 space-y-4 overflow-y-auto">
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
               <div>
@@ -388,32 +409,78 @@ export default function StoreApps() {
               </button>
             </div>
 
-            {/* Configuration */}
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.configuration','Configuration')}</p>
-              <a href="/dashboard/abandoned" className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-100 hover:border-purple-300 transition-colors group">
-                <div className="flex items-center gap-3">
-                  <ShoppingCart size={18} className="text-purple-500"/>
-                  <div>
-                    <p className="text-sm font-bold text-purple-700">{t('storePage.viewAbandonedCarts','View Abandoned Carts')}</p>
-                    <p className="text-xs text-purple-400">{t('storePage.manageRecoverCarts','Manage and recover abandoned carts')}</p>
+            {/* WhatsApp Preview */}
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">WhatsApp Preview</p>
+              <div className="bg-[#0b141a] rounded-2xl overflow-hidden shadow-xl max-w-[300px] mx-auto">
+                <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">{(currentStore?.name||'S')[0]?.toUpperCase()}</div>
+                  <div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{currentStore?.name||'My Store'}</p><p className="text-[10px] text-emerald-400">online</p></div>
+                  <Phone size={16} className="text-gray-400"/>
+                </div>
+                <div className="p-3 min-h-[200px] max-h-[260px] overflow-y-auto" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
+                  <div className={`flex ${isRtl?'flex-row-reverse':''} mb-2`}>
+                    <div className="max-w-[85%]">
+                      <div className="bg-[#005c4b] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:isRtl?'rtl':'ltr'}}>
+                        <p className="text-white text-[13px] leading-relaxed whitespace-pre-wrap break-words">{previewText}</p>
+                        <div className={`flex items-center gap-1 mt-1 ${isRtl?'justify-start':'justify-end'}`}>
+                          <span className="text-[10px] text-emerald-200">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                          <span className="text-emerald-300 text-[10px]">✓✓</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-purple-400 group-hover:translate-x-1 transition-transform"/>
-              </a>
+                <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">Type a message</span></div><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div></div>
+              </div>
             </div>
 
-            {/* Recovery Message Test */}
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-gray-400 uppercase">{t('storePage.testRecoveryMessage','Test Recovery Message')}</p>
-              <div><label className="input-label text-xs">{t('storePage.abandonedItems','Abandoned Items (comma-separated)')}</label><input className="input-field" value={recoveryItems} onChange={e => setRecoveryItems(e.target.value)} placeholder={t('storePage.abandonedItemsPlaceholder','Shoes, T-Shirt, Watch')}/></div>
-              <button onClick={testRecovery} disabled={recoveryLoading} className="w-full py-3 bg-purple-500 text-white rounded-xl font-bold text-sm hover:bg-purple-600 flex items-center justify-center gap-2">
-                {recoveryLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <MessageCircle size={16}/>}{t('storePage.generateRecoveryMessage','Generate Recovery Message')}
-              </button>
-              {recoveryResult && <div className="p-4 bg-gray-50 rounded-xl"><p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{recoveryResult}</p><button onClick={() => {navigator.clipboard.writeText(recoveryResult);toast.success(t('storePage.copied','Copied!'));}} className="mt-3 text-xs text-purple-600 font-bold hover:underline">{t('storePage.copyToClipboard','Copy to clipboard')}</button></div>}
+            {/* Mode tabs */}
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message Source</label>
+              <div className="flex gap-2">
+                <button onClick={() => setRcMode('ai')} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${rcMode==='ai'?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Sparkles size={14}/>AI Generated</button>
+                <button onClick={() => setRcMode('custom')} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${rcMode==='custom'?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Edit3 size={14}/>Custom Message</button>
+              </div>
             </div>
 
-            <p className="text-xs text-gray-400 italic">{t('storePage.recoveryNote','WhatsApp recovery messages can be configured in Settings > AI Messaging')}</p>
+            {rcMode==='ai' && (
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex items-center gap-1"><Languages size={12}/>Language</label>
+                <div className="flex gap-2">
+                  {[{c:'en',l:'English',f:'🇬🇧'},{c:'fr',l:'Français',f:'🇫🇷'},{c:'ar',l:'العربية',f:'🇩🇿'}].map(lg => (
+                    <button key={lg.c} onClick={() => generateRcMessage(lg.c)} disabled={rcGen} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 ${rcLang===lg.c?'bg-emerald-500 text-white shadow':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                      <span>{lg.f}</span>{lg.l}
+                    </button>
+                  ))}
+                </div>
+                {rcGen && <p className="text-[11px] text-purple-500 mt-2 flex items-center gap-1"><div className="w-3 h-3 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"/>Generating AI message...</p>}
+                <div className="mt-2"><label className="input-label text-xs">Sample items (for AI context)</label><input className="input-field" value={recoveryItems} onChange={e => setRecoveryItems(e.target.value)} placeholder="Shoes, T-Shirt, Watch"/></div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message</label>
+              <textarea className="input-field" rows={4} value={rcMsg} onChange={e => setRcMsg(e.target.value)} placeholder={rcMode==='ai'?'Click a language above to generate...':'Type your custom recovery message...'} dir={isRtl?'rtl':'ltr'}/>
+            </div>
+
+            {/* Schedule */}
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex items-center gap-1"><Calendar size={12}/>When to Send</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[{k:'now',l:'Send Now'},{k:'in_30m',l:'In 30 min'},{k:'in_6h',l:'In 6 hours'},{k:'in_24h',l:'In 24 hours'},{k:'custom',l:'Pick date & time'}].map(o => (
+                  <button key={o.k} onClick={() => setRcSchedule(o.k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${rcSchedule===o.k?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{o.l}</button>
+                ))}
+              </div>
+              {rcSchedule==='custom' && (
+                <input type="datetime-local" className="input-field mt-2" value={rcAt} onChange={e => setRcAt(e.target.value)} min={new Date().toISOString().slice(0,16)}/>
+              )}
+            </div>
+
+            <a href="/dashboard/abandoned" className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100 hover:border-purple-300 transition-colors group">
+              <div className="flex items-center gap-2"><ShoppingCart size={16} className="text-purple-500"/><p className="text-sm font-bold text-purple-700">{t('storePage.viewAbandonedCarts','View Abandoned Carts')}</p></div>
+              <ChevronRight size={16} className="text-purple-400 group-hover:translate-x-1 transition-transform"/>
+            </a>
           </div>
         );
       }
