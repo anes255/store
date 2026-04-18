@@ -36,14 +36,8 @@ const ALL_PERMISSIONS = [
 
 const PERM_GROUPS = [...new Set(ALL_PERMISSIONS.map(p => p.group))];
 
-// Built-in role presets
-const ROLE_PRESETS = {
-  admin: { label: 'Admin', icon: Shield, color: 'bg-purple-100 text-purple-600', desc: 'Full access to all features', permissions: ALL_PERMISSIONS.map(p => p.key) },
-  preparer: { label: 'Preparer', icon: Package, color: 'bg-blue-100 text-blue-600', desc: 'Can prepare and manage orders', permissions: ['dashboard_view', 'orders_view', 'orders_edit', 'orders_prepare', 'products_view', 'stock_manage'] },
-  confirmer: { label: 'Confirmer', icon: CheckCircle, color: 'bg-emerald-100 text-emerald-600', desc: 'Can confirm incoming orders', permissions: ['dashboard_view', 'orders_view', 'orders_confirm', 'customers_view'] },
-  accountant: { label: 'Accountant', icon: CreditCard, color: 'bg-amber-100 text-amber-600', desc: 'Can view payments and finances', permissions: ['dashboard_view', 'analytics_view', 'orders_view', 'finances_view', 'finances_edit', 'taxes_view'] },
-  viewer: { label: 'Viewer', icon: Eye, color: 'bg-gray-100 text-gray-600', desc: 'Read-only access to dashboard', permissions: ['dashboard_view', 'analytics_view', 'orders_view', 'products_view', 'customers_view'] },
-};
+// Roles come exclusively from platform templates defined by the super admin.
+const ROLE_PRESETS = {};
 
 export default function StoreStaff() {
   const { t } = useTranslation();
@@ -56,7 +50,7 @@ export default function StoreStaff() {
   const [customRoles, setCustomRoles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('custom_roles_' + (currentStore?.id || '')) || '[]'); } catch { return []; }
   });
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'viewer', permissions: [...ROLE_PRESETS.viewer.permissions] });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: '', permissions: [] });
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] });
   const [platformTemplates, setPlatformTemplates] = useState([]);
 
@@ -127,14 +121,14 @@ export default function StoreStaff() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', email: '', phone: '', password: '', role: 'viewer', permissions: [...ROLE_PRESETS.viewer.permissions] });
+    setForm({ name: '', email: '', phone: '', password: '', role: '', permissions: [] });
     setShowModal(true);
   };
 
   const openEdit = (s) => {
     setEditing(s);
     const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : (allRoles[s.role]?.permissions || []);
-    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', role: s.role, permissions: [...perms] });
+    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', role: s.role || '', permissions: [...perms] });
     setShowModal(true);
   };
 
