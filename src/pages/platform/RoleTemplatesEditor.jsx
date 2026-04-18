@@ -246,7 +246,8 @@ function Modal({ title, onClose, isDark, children, footer }) {
 }
 
 export default function RoleTemplatesEditor() {
-  const { isDark } = usePlatformTheme();
+  const theme = usePlatformTheme();
+  const isDark = theme.mode === 'dark';
   const u = ui(isDark);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
