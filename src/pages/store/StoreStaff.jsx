@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ownerApi } from '../../utils/api';
+import { ownerApi, publicRoleTemplatesApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -64,11 +64,21 @@ export default function StoreStaff() {
   // one as the starting point for a new custom role and then tweak its
   // permissions locally without affecting the template.
   useEffect(() => {
-    import('../../utils/api').then(({ publicRoleTemplatesApi }) => {
-      publicRoleTemplatesApi.list()
-        .then(r => setPlatformTemplates(r.data?.templates || []))
-        .catch(err => console.error('[role templates] fetch failed:', err?.response?.status, err?.response?.data || err?.message));
-    });
+    publicRoleTemplatesApi.list()
+      .then(r => {
+        const tpls = r.data?.templates || [];
+        console.log('[role templates] loaded:', tpls.length);
+        setPlatformTemplates(tpls);
+      })
+      .catch(err => {
+        console.error('[role templates] fetch failed:', err?.response?.status, err?.response?.data || err?.message);
+        // Fallback: direct fetch bypassing axios to rule out interceptor issues
+        const base = import.meta.env.VITE_API_URL || 'https://test-fgt7.onrender.com/api';
+        fetch(base + '/platform/role-templates/public')
+          .then(r => r.json())
+          .then(d => { if (d?.templates) { console.log('[role templates] fallback loaded:', d.templates.length); setPlatformTemplates(d.templates); } })
+          .catch(e => console.error('[role templates] fallback failed:', e));
+      });
   }, []);
 
   const cloneTemplate = (tpl) => {

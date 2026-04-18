@@ -36,8 +36,8 @@ function ui(isDark) {
     permOn: isDark ? 'bg-brand-500/15 border-brand-500/40 text-brand-300' : 'bg-brand-50 border-brand-300 text-brand-700',
     permOff: isDark ? 'bg-gray-800/40 border-gray-700 text-gray-400 hover:bg-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50',
     btnGhost: isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-100 border-gray-600' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200',
-    btnDanger: isDark ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30' : 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100',
-    btnEdit: isDark ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
+    btnDanger: isDark ? 'bg-red-600 border-red-500 text-white hover:bg-red-500' : 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100',
+    btnEdit: isDark ? 'bg-gray-600 hover:bg-gray-500 text-white border border-gray-500' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
     modalBg: isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
     modalHeader: isDark ? 'bg-gray-900 border-gray-700' : 'bg-white/95 border-gray-100',
     chip: isDark ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200',
@@ -341,9 +341,9 @@ export default function RoleTemplatesEditor() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className={`relative overflow-hidden rounded-3xl border bg-gradient-to-br ${u.heroGrad} p-6 md:p-8`}>
-        <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl" />
-        <div className="absolute -bottom-12 -left-12 w-56 h-56 rounded-full bg-indigo-500/10 blur-3xl" />
+      <div className={`relative overflow-hidden rounded-3xl border p-6 md:p-8 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-br from-purple-100 via-indigo-50 to-blue-50 border-gray-200'}`}>
+        <div className={`absolute -top-12 -right-12 w-56 h-56 rounded-full blur-3xl ${isDark ? 'bg-purple-600/20' : 'bg-purple-500/10'}`} />
+        <div className={`absolute -bottom-12 -left-12 w-56 h-56 rounded-full blur-3xl ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-500/10'}`} />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 mb-2">
