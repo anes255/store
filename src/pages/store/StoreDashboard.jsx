@@ -261,9 +261,12 @@ export default function StoreDashboard() {
           {dashboard?.recentOrders?.length > 0 ? (
             <div className="space-y-2">
               {dashboard.recentOrders.slice(0, 5).map(o => (
-                <div key={o.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl">
-                  <div><p className="text-sm font-semibold text-gray-800">{o.order_number}</p><p className="text-xs text-gray-400">{o.customer_name}</p></div>
-                  <div className="text-right"><p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} DZD</p><span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
+                <div key={o.id} className="flex items-center justify-between gap-3 p-2.5 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {o.first_image ? <img src={o.first_image} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 flex-shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0"><Package size={16} className="text-gray-400"/></div>}
+                    <div className="min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{o.order_number}</p><p className="text-xs text-gray-400 truncate">{o.customer_name}{o.items?.length>1?` · +${o.items.length-1} more`:''}</p></div>
+                  </div>
+                  <div className="text-right flex-shrink-0"><p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} DZD</p><span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
                 </div>
               ))}
             </div>

@@ -322,51 +322,99 @@ function SiteSettings(){
 
 // ═══════ SYSTEM ═══════
 // ═══════ SUBSCRIPTIONS ═══════
-function Subscriptions(){
+function Subscriptions({isDark}){
   const[data,setData]=useState({payments:[],stats:{}});const[loading,setLoading]=useState(true);const[filter,setFilter]=useState('all');
   const[rejectModal,setRejectModal]=useState(null);const[rejectNotes,setRejectNotes]=useState('');
-  const[viewReceipt,setViewReceipt]=useState(null);  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));};
+  const[viewReceipt,setViewReceipt]=useState(null);
+  const[expiring,setExpiring]=useState([]);const[grantModal,setGrantModal]=useState(null);const[grantDays,setGrantDays]=useState(7);
+  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));
+    platformApi.getExpiringSubscriptions().then(r=>setExpiring(r.data?.owners||[])).catch(()=>setExpiring([]));};
   useEffect(()=>{load();},[filter]);
   const approve=async(pid)=>{try{await platformApi.approvePayment(pid);toast.success('Payment approved! Subscription activated.');load();}catch{toast.error('Failed');}};
   const reject=async()=>{if(!rejectModal)return;try{await platformApi.rejectPayment(rejectModal,{notes:rejectNotes});toast.success('Rejected');setRejectModal(null);setRejectNotes('');load();}catch{toast.error('Failed');}};
   const suspend=async(oid)=>{if(!confirm('Suspend this owner? Their stores will go offline.'))return;try{await platformApi.setOwnerSubscription(oid,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}};
   const activate=async(oid)=>{try{await platformApi.setOwnerSubscription(oid,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}};
+  const grant=async()=>{if(!grantModal)return;const d=parseInt(grantDays,10);if(!d||d<1)return toast.error('Enter valid days');
+    try{await platformApi.extendSubscription(grantModal.id,{days:d});toast.success(`Granted ${d} free day(s) to ${grantModal.name||grantModal.full_name}`);setGrantModal(null);setGrantDays(7);load();}catch{toast.error('Failed');}};
   const stats=data.stats||{};
+  const card=isDark?'bg-gray-900 border border-gray-800':'bg-white';
+  const cardSoft=isDark?'bg-gray-800/50 border border-gray-700':'bg-gray-50';
+  const titleC=isDark?'text-gray-100':'text-gray-900';
+  const textC=isDark?'text-gray-200':'text-gray-800';
+  const mutedC=isDark?'text-gray-400':'text-gray-400';
+  const rowHover=isDark?'hover:bg-white/5':'hover:bg-gray-50';
+  const rowBorder=isDark?'border-gray-800':'border-gray-100';
+  const theadBg=isDark?'bg-gray-800/60':'bg-gray-50';
+  const inputCls=isDark?'bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500':'border border-gray-200 text-gray-900';
   return(<div>
-    <h1 className="text-2xl font-black text-gray-900 mb-6">Subscription Payments</h1>
+    <h1 className={`text-2xl font-black ${titleC} mb-6`}>Subscription Payments</h1>
+
+    {/* Expiring subscriptions — grant free extra days */}
+    <div className={`${card} rounded-2xl shadow-sm mb-6 overflow-hidden`}>
+      <div className={`px-5 py-4 border-b ${rowBorder} flex items-center justify-between`}>
+        <div className="flex items-center gap-2"><Clock size={16} className={titleC}/><h3 className={`font-bold ${titleC}`}>Expiring / Recently Expired</h3></div>
+        <span className={`text-xs ${mutedC}`}>{expiring.length} owner(s)</span>
+      </div>
+      {expiring.length===0?<p className={`text-center py-8 text-xs ${mutedC}`}>No expiring subscriptions in the next 24h</p>:(
+        <div className="divide-y" style={{borderColor:isDark?'#1f2937':'#f3f4f6'}}>
+          {expiring.map(o=>(
+            <div key={o.id} className={`flex items-center justify-between px-5 py-3 ${rowHover}`}>
+              <div>
+                <p className={`text-sm font-bold ${textC}`}>{o.name||o.full_name}</p>
+                <p className={`text-[11px] ${mutedC}`}>{o.email||o.phone} · <span className="capitalize">{o.subscription_plan||'free'}</span> · expires {new Date(o.subscription_expires_at).toLocaleString()} {o.hours_remaining!=null&&<span className={o.hours_remaining<0?'text-red-500 font-bold':'text-amber-500 font-bold'}> ({o.hours_remaining}h)</span>}</p>
+              </div>
+              <button onClick={()=>{setGrantModal(o);setGrantDays(7);}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 flex items-center gap-1"><Gift size={12}/>Grant free days</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
     <div className="grid grid-cols-4 gap-4 mb-6">
-      <div className="bg-white rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400" onClick={()=>setFilter('all')}><p className="text-xs text-gray-400">Total</p><p className="text-2xl font-black">{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
-      <div className="bg-amber-50 rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400" onClick={()=>setFilter('pending')}><p className="text-xs text-amber-600">Pending</p><p className="text-2xl font-black text-amber-700">{stats.pending||0}</p></div>
-      <div className="bg-emerald-50 rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400" onClick={()=>setFilter('approved')}><p className="text-xs text-emerald-600">Approved</p><p className="text-2xl font-black text-emerald-700">{stats.approved||0}</p></div>
-      <div className="bg-red-50 rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400" onClick={()=>setFilter('rejected')}><p className="text-xs text-red-600">Rejected</p><p className="text-2xl font-black text-red-700">{stats.rejected||0}</p></div>
+      <div className={`${card} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('all')}><p className={`text-xs ${mutedC}`}>Total</p><p className={`text-2xl font-black ${titleC}`}>{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
+      <div className={`${isDark?'bg-amber-900/30 border border-amber-800':'bg-amber-50'} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400`} onClick={()=>setFilter('pending')}><p className={`text-xs ${isDark?'text-amber-300':'text-amber-600'}`}>Pending</p><p className={`text-2xl font-black ${isDark?'text-amber-200':'text-amber-700'}`}>{stats.pending||0}</p></div>
+      <div className={`${isDark?'bg-emerald-900/30 border border-emerald-800':'bg-emerald-50'} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400`} onClick={()=>setFilter('approved')}><p className={`text-xs ${isDark?'text-emerald-300':'text-emerald-600'}`}>Approved</p><p className={`text-2xl font-black ${isDark?'text-emerald-200':'text-emerald-700'}`}>{stats.approved||0}</p></div>
+      <div className={`${isDark?'bg-red-900/30 border border-red-800':'bg-red-50'} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('rejected')}><p className={`text-xs ${isDark?'text-red-300':'text-red-600'}`}>Rejected</p><p className={`text-2xl font-black ${isDark?'text-red-200':'text-red-700'}`}>{stats.rejected||0}</p></div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      {data.payments.length===0?<p className="text-center py-12 text-gray-400">No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:
-      <table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+    <div className={`${card} rounded-2xl shadow-sm overflow-hidden`}>
+      {data.payments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:
+      <table className="w-full text-sm"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
       <tbody>{data.payments.map(p=>(
-        <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50">
-          <td className="px-5 py-4"><div><p className="font-bold text-gray-800">{p.owner_name||'N/A'}</p><p className="text-[10px] text-gray-400">{p.owner_phone}</p></div></td>
-          <td className="px-5 py-4"><span className="font-bold capitalize">{p.plan}</span><br/><span className="text-[10px] text-gray-400 capitalize">{p.period}</span></td>
-          <td className="px-5 py-4 font-bold">{parseFloat(p.amount).toLocaleString()} DZD</td>
-          <td className="px-5 py-4 uppercase text-xs">{p.payment_method}</td>
+        <tr key={p.id} className={`border-t ${rowBorder} ${rowHover}`}>
+          <td className="px-5 py-4"><div><p className={`font-bold ${textC}`}>{p.owner_name||'N/A'}</p><p className={`text-[10px] ${mutedC}`}>{p.owner_phone}</p></div></td>
+          <td className={`px-5 py-4 ${textC}`}><span className="font-bold capitalize">{p.plan}</span><br/><span className={`text-[10px] ${mutedC} capitalize`}>{p.period}</span></td>
+          <td className={`px-5 py-4 font-bold ${textC}`}>{parseFloat(p.amount).toLocaleString()} DZD</td>
+          <td className={`px-5 py-4 uppercase text-xs ${textC}`}>{p.payment_method}</td>
           <td className="px-5 py-4">{p.receipt_image?<button onClick={()=>setViewReceipt(p)} className="text-brand-600 text-xs font-bold hover:underline flex items-center gap-1"><Eye size={12}/>View</button>:'-'}</td>
           <td className="px-5 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{p.status?.toUpperCase()}</span></td>
-          <td className="px-5 py-4">{p.status==='pending'?<div className="flex gap-1"><button onClick={()=>approve(p.id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600">Reject</button></div>:p.status==='approved'?<button onClick={()=>suspend(p.owner_id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Suspend</button>:'-'}</td>
+          <td className="px-5 py-4"><div className="flex gap-1 flex-wrap">
+            {p.status==='pending'&&<><button onClick={()=>approve(p.id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600">Reject</button></>}
+            {p.status==='approved'&&<button onClick={()=>suspend(p.owner_id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Suspend</button>}
+            {p.owner_id&&<button onClick={()=>{setGrantModal({id:p.owner_id,name:p.owner_name});setGrantDays(7);}} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-100 flex items-center gap-1" title="Grant extra free days"><Gift size={12}/>Grant days</button>}
+          </div></td>
         </tr>
       ))}</tbody></table>}
     </div>}
-    {rejectModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setRejectModal(null)}><div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={e=>e.stopPropagation()}><h3 className="font-bold text-lg mb-4">Reject Payment</h3><textarea className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm" rows={3} placeholder="Reason for rejection..." value={rejectNotes} onChange={e=>setRejectNotes(e.target.value)}/><div className="flex gap-3 mt-4"><button onClick={()=>setRejectModal(null)} className="flex-1 py-2 bg-gray-100 rounded-xl text-sm font-bold">Cancel</button><button onClick={reject} className="flex-1 py-2 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div></div></div>}
-    {viewReceipt&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setViewReceipt(null)}><div className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-      <div className="flex items-center justify-between mb-4"><h3 className="font-bold text-lg">Payment Receipt</h3><button onClick={()=>setViewReceipt(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div>
+    {rejectModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setRejectModal(null)}><div className={`${card} rounded-3xl p-6 w-full max-w-sm shadow-2xl`} onClick={e=>e.stopPropagation()}><h3 className={`font-bold text-lg mb-4 ${titleC}`}>Reject Payment</h3><textarea className={`w-full px-4 py-3 rounded-xl text-sm ${inputCls}`} rows={3} placeholder="Reason for rejection..." value={rejectNotes} onChange={e=>setRejectNotes(e.target.value)}/><div className="flex gap-3 mt-4"><button onClick={()=>setRejectModal(null)} className={`flex-1 py-2 rounded-xl text-sm font-bold ${isDark?'bg-gray-800 text-gray-200':'bg-gray-100'}`}>Cancel</button><button onClick={reject} className="flex-1 py-2 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div></div></div>}
+    {grantModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setGrantModal(null)}><div className={`${card} rounded-3xl p-6 w-full max-w-sm shadow-2xl`} onClick={e=>e.stopPropagation()}>
+      <h3 className={`font-bold text-lg mb-2 ${titleC} flex items-center gap-2`}><Gift size={18} className="text-emerald-500"/>Grant Free Days</h3>
+      <p className={`text-xs ${mutedC} mb-4`}>Extend subscription for <strong className={textC}>{grantModal.name||grantModal.full_name}</strong></p>
+      <label className={`text-xs font-bold uppercase ${mutedC}`}>Days</label>
+      <input type="number" min="1" max="3650" className={`w-full px-4 py-3 rounded-xl text-sm mt-1 ${inputCls}`} value={grantDays} onChange={e=>setGrantDays(e.target.value)}/>
+      <div className="flex gap-2 mt-2 flex-wrap">{[3,7,14,30,90].map(d=>(<button key={d} onClick={()=>setGrantDays(d)} className={`px-2 py-1 rounded-lg text-[11px] font-bold ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>+{d}d</button>))}</div>
+      <div className="flex gap-3 mt-4"><button onClick={()=>setGrantModal(null)} className={`flex-1 py-2 rounded-xl text-sm font-bold ${isDark?'bg-gray-800 text-gray-200':'bg-gray-100'}`}>Cancel</button><button onClick={grant} className="flex-1 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold">Grant</button></div>
+    </div></div>}
+    {viewReceipt&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setViewReceipt(null)}><div className={`${card} rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto`} onClick={e=>e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-4"><h3 className={`font-bold text-lg ${titleC}`}>Payment Receipt</h3><button onClick={()=>setViewReceipt(null)} className={`p-1 rounded-lg ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100'}`}><X size={18}/></button></div>
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Owner</p><p className="font-bold text-sm">{viewReceipt.owner_name}</p><p className="text-xs text-gray-400">{viewReceipt.owner_phone}</p></div>
-        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Plan</p><p className="font-bold text-sm capitalize">{viewReceipt.plan} — {viewReceipt.period}</p></div>
-        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Amount</p><p className="font-bold text-sm">{parseFloat(viewReceipt.amount).toLocaleString()} DZD</p></div>
-        <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] text-gray-400 uppercase">Method</p><p className="font-bold text-sm uppercase">{viewReceipt.payment_method}</p></div>
+        <div className={`p-3 ${cardSoft} rounded-xl`}><p className={`text-[10px] uppercase ${mutedC}`}>Owner</p><p className={`font-bold text-sm ${textC}`}>{viewReceipt.owner_name}</p><p className={`text-xs ${mutedC}`}>{viewReceipt.owner_phone}</p></div>
+        <div className={`p-3 ${cardSoft} rounded-xl`}><p className={`text-[10px] uppercase ${mutedC}`}>Plan</p><p className={`font-bold text-sm capitalize ${textC}`}>{viewReceipt.plan} — {viewReceipt.period}</p></div>
+        <div className={`p-3 ${cardSoft} rounded-xl`}><p className={`text-[10px] uppercase ${mutedC}`}>Amount</p><p className={`font-bold text-sm ${textC}`}>{parseFloat(viewReceipt.amount).toLocaleString()} DZD</p></div>
+        <div className={`p-3 ${cardSoft} rounded-xl`}><p className={`text-[10px] uppercase ${mutedC}`}>Method</p><p className={`font-bold text-sm uppercase ${textC}`}>{viewReceipt.payment_method}</p></div>
       </div>
       {viewReceipt.receipt_image&&<img src={viewReceipt.receipt_image} className="w-full rounded-xl border" alt="Receipt"/>}
-      <p className="text-xs text-gray-400 mt-3 text-center">Submitted {new Date(viewReceipt.created_at).toLocaleString()}</p>
+      <p className={`text-xs ${mutedC} mt-3 text-center`}>Submitted {new Date(viewReceipt.created_at).toLocaleString()}</p>
       {viewReceipt.status==='pending'&&<div className="flex gap-3 mt-4"><button onClick={()=>{approve(viewReceipt.id);setViewReceipt(null);}} className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold">Approve</button><button onClick={()=>{setRejectModal(viewReceipt.id);setRejectNotes('');setViewReceipt(null);}} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div>}
     </div></div>}
   </div>);
@@ -791,7 +839,7 @@ export default function PlatformAdminDashboard(){
             <Route path="stores" element={<AllStores/>}/>
             <Route path="orders" element={<AllOrders/>}/>
             <Route path="site-settings" element={<SiteSettings/>}/>
-            <Route path="subscriptions" element={<Subscriptions/>}/>
+            <Route path="subscriptions" element={<Subscriptions isDark={isDark}/>}/>
             <Route path="plans" element={<PlansEditor/>}/>
             <Route path="role-templates" element={<RoleTemplatesEditor/>}/>
             <Route path="billing-config" element={<BillingConfig/>}/>

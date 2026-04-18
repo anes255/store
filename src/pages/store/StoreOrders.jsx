@@ -213,9 +213,12 @@ export default function StoreOrders() {
             <button onClick={(e) => { e.stopPropagation(); toggleSelect(o.id); }} className="mt-1 shrink-0">
               {selectedItems.has(o.id) ? <CheckSquare size={20} className="text-brand-600" /> : <Square size={20} className="text-gray-300 hover:text-gray-400" />}
             </button>
-            {/* Status icon */}
-            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl ${sc.bg} flex items-center justify-center shrink-0 relative`}>
-              <StatusIcon size={18} className={sc.text} />
+            {/* Product image (falls back to status icon) */}
+            <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden shrink-0 relative border border-gray-200 ${o.first_image?'bg-gray-100':sc.bg} flex items-center justify-center`}>
+              {o.first_image
+                ? <img src={o.first_image} alt="" className="w-full h-full object-cover"/>
+                : <StatusIcon size={18} className={sc.text} />}
+              {o.items && o.items.length>1 && <span className="absolute -bottom-1 -left-1 px-1 min-w-[16px] h-4 rounded-full text-[9px] font-bold bg-gray-900 text-white flex items-center justify-center ring-2 ring-white">+{o.items.length-1}</span>}
               <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${age.dot} ring-2 ring-white`} />
             </div>
 
