@@ -4,7 +4,7 @@ import { productApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList } from 'lucide-react';
 
 export default function StoreProducts() {
   const { t } = useTranslation();
@@ -13,6 +13,8 @@ export default function StoreProducts() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState(() => { try { return localStorage.getItem('products_view') || 'grid'; } catch { return 'grid'; } });
+  useEffect(() => { try { localStorage.setItem('products_view', viewMode); } catch {} }, [viewMode]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -129,10 +131,34 @@ export default function StoreProducts() {
           <span className="text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
         </button>
         <div className="relative max-w-sm flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
+          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title="Grid view"><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title="List view"><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
+        </div>
       </div>
 
       {products.length===0?(
         <div className="flex flex-col items-center py-20 glass-card-solid"><Package size={48} className="text-gray-300 mb-4"/><p className="text-gray-500 mb-4">{t('products.noProducts')}</p><button onClick={()=>{setForm({...empty});setShowModal(true);}} className="btn-primary text-sm"><Plus size={16} className="mr-1 inline"/>{t('products.addProduct')}</button></div>
+      ):viewMode==='list'?(
+        <div className="glass-card-solid rounded-2xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+              <tr><th className="p-3 w-8"></th><th className="p-3 text-left">Product</th><th className="p-3 text-left">Price</th><th className="p-3 text-left">Stock</th><th className="p-3 text-left">Variants</th><th className="p-3 text-right">Actions</th></tr>
+            </thead>
+            <tbody>
+              {products.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
+                <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''}`}>
+                  <td className="p-3"><button onClick={()=>toggleSelect(p.id)}>{selectedItems.has(p.id)?<CheckSquare size={16} className="text-brand-600"/>:<Square size={16} className="text-gray-400"/>}</button></td>
+                  <td className="p-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">{thumb?<img src={thumb} className="w-full h-full object-cover"/>:<div className="flex items-center justify-center h-full"><Image size={14} className="text-gray-300"/></div>}</div><div className="min-w-0"><p className="font-semibold text-gray-800 truncate">{p.name_en||p.name}</p>{p.is_featured&&<span className="text-[9px] font-bold text-brand-600">FEATURED</span>}</div></div></td>
+                  <td className="p-3 font-bold text-brand-600">{parseFloat(p.price).toLocaleString()} DZD</td>
+                  <td className="p-3 text-gray-600">{p.stock_quantity||0}</td>
+                  <td className="p-3"><span className="text-xs text-gray-400">{vc}</span></td>
+                  <td className="p-3"><div className="flex justify-end gap-1"><button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button><button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button></div></td>
+                </tr>
+              );})}
+            </tbody>
+          </table>
+        </div>
       ):(
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(

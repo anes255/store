@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList}from'lucide-react';
 
 const PRESETS=[
   {name:'Yalidine',logo:'Y',color:'from-yellow-500 to-orange-500',api_base_url:'https://api.yalidine.app/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/parcels/?tracking={tracking_number}',api_status_path:'data.0.last_status',headers:['X-API-ID','X-API-TOKEN'],help:'yalidine.app → Dashboard → API → copy API ID and API Token'},
@@ -35,6 +35,8 @@ export default function ShippingPartners(){
   const[step,setStep]=useState('pick');
   const[showHelp,setShowHelp]=useState(false);
   const[testResult,setTestResult]=useState(null);const[testingForm,setTestingForm]=useState(false);
+  const[viewMode,setViewMode]=useState(()=>{try{return localStorage.getItem('partners_view')||'list';}catch{return'list';}});
+  useEffect(()=>{try{localStorage.setItem('partners_view',viewMode);}catch{}},[viewMode]);
 
   const load=()=>{if(!currentStore?.id)return;api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r=>setCompanies(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[currentStore?.id]);
@@ -97,7 +99,13 @@ export default function ShippingPartners(){
   return(<DashboardLayout>
     <div className="flex items-center justify-between mb-6">
       <div><h1 className="text-2xl font-bold">{t('storePage.shippingPartners','Shipping Partners')}</h1><p className="text-sm text-gray-400 mt-1">{t('storePage.addYourDeliveryCompanies','Add your delivery companies')}</p></div>
-      <button onClick={()=>{setEditing(null);setForm({...EMPTY});setStep('pick');setTestResult(null);setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('storePage.addCompany','Add Company')}</button>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title="List view"><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title="Grid view"><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
+        </div>
+        <button onClick={()=>{setEditing(null);setForm({...EMPTY});setStep('pick');setTestResult(null);setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('storePage.addCompany','Add Company')}</button>
+      </div>
     </div>
 
     <div className="grid grid-cols-3 gap-4 mb-6">
@@ -108,6 +116,27 @@ export default function ShippingPartners(){
 
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>:filtered.length===0?(
       <div className="glass-card-solid p-16 text-center"><Truck size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">{t('storePage.noDeliveryCompaniesYet','No delivery companies yet')}</p></div>
+    ):viewMode==='grid'?(
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map(c=>(
+          <div key={c.id} className="glass-card-solid p-5 hover:shadow-lg transition-all flex flex-col">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
+              {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">{t('storePage.manual','MANUAL')}</span>}
+            </div>
+            <p className="font-bold text-gray-900 text-lg">{c.name}</p>
+            <div className="flex flex-col gap-1 mt-1 text-sm text-gray-500 flex-1">
+              {parseFloat(c.base_rate)>0&&<span><Package size={12} className="inline mr-1"/>{c.base_rate} DZD</span>}
+              {c.phone&&<span>{c.phone}</span>}
+            </div>
+            <div className="flex gap-1 mt-3 pt-3 border-t border-gray-100">
+              {c.api_base_url&&<button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={14}/>}</button>}
+              <button onClick={()=>openEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-brand-500"><Edit size={14}/></button>
+              <button onClick={()=>del(c.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
+            </div>
+          </div>
+        ))}
+      </div>
     ):(
       <div className="space-y-3">
         {filtered.map(c=>(
