@@ -155,6 +155,7 @@ export default function StoreOrders() {
     { key: 'pending', label: t('storePage.statusPending', 'Pending') },
     { key: 'confirmed', label: t('storePage.statusConfirmed', 'Confirmed') },
     { key: 'under_preparation', label: 'Preparing' },
+    { key: 'archive', label: 'Archive' },
     { key: 'shipped', label: t('storePage.statusShipped', 'Shipped') },
     { key: 'delivered', label: t('storePage.statusDelivered', 'Delivered') },
     { key: 'cancelled', label: t('storePage.statusCancelled', 'Cancelled') },
@@ -620,9 +621,10 @@ export default function StoreOrders() {
               const sc = statusConfig[f.key];
               const count = f.key === 'all' ? total : orders.filter(o => f.key === 'failed_call_1' ? o.status?.startsWith('failed_call') : o.status === f.key).length;
               return (
-                <button key={f.key} onClick={() => setFilter(f.key)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${filter === f.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                <button key={f.key} onClick={() => { if (f.key === 'archive') { setFilter('all'); setArchivedView('vault'); } else { setFilter(f.key); if (archivedView === 'vault') setArchivedView('active'); } }}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${(f.key === 'archive' ? archivedView === 'vault' : (filter === f.key && archivedView !== 'vault')) ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'} ${f.key === 'archive' ? 'border border-purple-200' : ''}`}>
                   {sc && <span className={`w-2 h-2 rounded-full ${sc.color}`} />}
+                  {f.key === 'archive' && <Archive size={11} className="text-purple-500"/>}
                   {f.label}
                   {count > 0 && <span className="text-[9px] text-gray-400">({count})</span>}
                 </button>
