@@ -107,7 +107,7 @@ export default function StoreOrders() {
   const loadOrders = async () => {
     if (!currentStore?.id) return;
     try {
-      const archivedParam = archivedView==='archived'?'only':(archivedView==='all'?'all':undefined);
+      const archivedParam = archivedView==='archived'?'only':(archivedView==='all'?'all':(archivedView==='vault'?'vault':undefined));
       const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' ? undefined : filter, search, archived: archivedParam });
       setOrders(data.orders); setTotal(data.total);
     } catch {} finally { setLoading(false); }
@@ -327,13 +327,21 @@ export default function StoreOrders() {
                 >
                   <Eye size={13} className="text-brand-600" />
                 </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); archiveOne(o.id, !o.is_archived); }}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${o.is_archived?'bg-amber-100 hover:bg-amber-200':'bg-gray-100 hover:bg-gray-200'}`}
-                  title={o.is_archived?'Unarchive':'Archive'}
-                >
-                  {o.is_archived?<ArchiveRestore size={13} className="text-amber-600"/>:<Archive size={13} className="text-gray-500"/>}
-                </button>
+                {o.is_deleted ? (
+                  <button
+                    onClick={async (e) => { e.stopPropagation(); try { await orderApi.restore(currentStore.id, o.id); toast.success('Restored from vault'); loadOrders(); } catch { toast.error('Restore failed'); } }}
+                    className="w-7 h-7 rounded-lg bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors"
+                    title="Restore from vault"
+                  ><ArchiveRestore size={13} className="text-purple-600"/></button>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); archiveOne(o.id, !o.is_archived); }}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${o.is_archived?'bg-amber-100 hover:bg-amber-200':'bg-gray-100 hover:bg-gray-200'}`}
+                    title={o.is_archived?'Unarchive':'Archive'}
+                  >
+                    {o.is_archived?<ArchiveRestore size={13} className="text-amber-600"/>:<Archive size={13} className="text-gray-500"/>}
+                  </button>
+                )}
                 <button
                   onClick={() => toggleExpand(o.id)}
                   className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${isExpanded ? 'bg-brand-100' : 'bg-gray-100 hover:bg-gray-200'}`}
@@ -585,6 +593,7 @@ export default function StoreOrders() {
             <button onClick={()=>setArchivedView('active')} className={`px-2 py-1 rounded-md text-[11px] font-bold ${archivedView==='active'?'bg-white shadow-sm text-gray-900':'text-gray-500 hover:text-gray-700'}`}>Active</button>
             <button onClick={()=>setArchivedView('archived')} className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 ${archivedView==='archived'?'bg-white shadow-sm text-amber-700':'text-gray-500 hover:text-gray-700'}`}><Archive size={11}/>Archived</button>
             <button onClick={()=>setArchivedView('all')} className={`px-2 py-1 rounded-md text-[11px] font-bold ${archivedView==='all'?'bg-white shadow-sm text-gray-900':'text-gray-500 hover:text-gray-700'}`}>All</button>
+            <button onClick={()=>setArchivedView('vault')} className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 ${archivedView==='vault'?'bg-white shadow-sm text-purple-700':'text-gray-500 hover:text-gray-700'}`} title="All-time archive — includes orders deleted by admins"><Archive size={11}/>Vault</button>
           </div>
           <button onClick={loadOrders} className="btn-ghost text-xs sm:text-sm flex items-center gap-2 shrink-0">
             <RefreshCw size={14} /><span className="hidden sm:inline">{t('storePage.refresh', 'Refresh')}</span>
@@ -761,7 +770,7 @@ export default function StoreOrders() {
           <button onClick={()=>bulkArchive(archivedView!=='archived')} className="flex items-center gap-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors">
             {archivedView==='archived'?<><ArchiveRestore size={13}/>Restore</>:<><Archive size={13}/>Archive</>}
           </button>
-          <button onClick={async () => { if (!confirm(`Delete ${selectedItems.size} selected orders?`)) return; for (const id of selectedItems) { try { await orderApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadOrders(); toast.success('Deleted selected orders'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
+          <button onClick={async () => { if (!confirm(`Delete ${selectedItems.size} selected orders? They will remain available in the Vault archive.`)) return; try { await orderApi.bulkDelete(currentStore.id, Array.from(selectedItems)); } catch {} clearSelection(); loadOrders(); toast.success('Moved to vault archive'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
             <Trash2 size={13} />Delete Selected
           </button>
           <button onClick={clearSelection} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-700 rounded-lg text-xs transition-colors">

@@ -141,6 +141,11 @@ export const orderApi = {
   updatePayment: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/payment`, data),
   archive: (storeId, orderId, archived=true) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/archive`, { archived }),
   bulkArchive: (storeId, ids, archived=true) => api.patch(`/manage/stores/${storeId}/orders/bulk-archive`, { ids, archived }),
+  // Soft-delete (still kept in vault archive)
+  delete: (storeId, orderId) => api.delete(`/manage/stores/${storeId}/orders/${orderId}`),
+  bulkDelete: (storeId, ids) => api.post(`/manage/stores/${storeId}/orders/bulk-delete`, { ids }),
+  restore: (storeId, orderId) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/restore`),
+  purge: (storeId, orderId) => api.delete(`/manage/stores/${storeId}/orders/${orderId}/purge`),
   getAbandoned: (storeId) => api.get(`/manage/stores/${storeId}/abandoned-carts`),
   getCustomers: (storeId, params) => api.get(`/manage/stores/${storeId}/customers`, { params }),
   getShippingWilayas: (storeId) => api.get(`/manage/stores/${storeId}/shipping-wilayas`),
