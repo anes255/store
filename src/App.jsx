@@ -97,6 +97,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/dashboard/orders" element={<P><StoreOrders/></P>}/>
 <Route path="/dashboard/abandoned" element={<P><CartRecovery/></P>}/>
 <Route path="/dashboard/preparing" element={<P><StoreOrders/></P>}/>
+<Route path="/dashboard/orders-archive" element={<P><StoreOrders/></P>}/>
 <Route path="/dashboard/products" element={<P><StoreProducts/></P>}/>
 <Route path="/dashboard/stock" element={<P><StockManager/></P>}/>
 <Route path="/dashboard/settings" element={<P><StoreSettings/></P>}/>

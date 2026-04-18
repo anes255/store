@@ -88,7 +88,7 @@ const DEFAULT_ITEMS = [
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
-    {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'}]},
+    {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'},{to:'/dashboard/orders-archive',label:'sidebar.ordersArchive'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
     {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'},{to:'/dashboard/ai-intelligence',label:'sidebar.aiIntelligence'}]},
   {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
