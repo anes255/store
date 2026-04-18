@@ -374,6 +374,34 @@ function SiteSettings(){
         <div><label className="text-xs font-bold text-gray-400 uppercase">Google OAuth Client ID</label><input className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm font-mono" value={s.google_client_id||''} onChange={e=>setS({...s,google_client_id:e.target.value})} placeholder="xxxx.apps.googleusercontent.com"/><p className="text-[10px] text-gray-400 mt-1">For Google Sheets integration. Get from console.cloud.google.com → Credentials → OAuth Client ID</p></div>
         <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer"><div><p className="font-medium text-sm text-gray-800">Maintenance Mode</p><p className="text-xs text-gray-400">Temporarily disable the platform</p></div><div className={`w-11 h-6 rounded-full transition-colors ${s.maintenance_mode?'bg-red-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${s.maintenance_mode?'translate-x-5':'translate-x-0.5'}`}/></div><input type="checkbox" className="sr-only" checked={s.maintenance_mode||false} onChange={e=>setS({...s,maintenance_mode:e.target.checked})}/></label>
       </div>
+      {/* Free Trial for new users */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 lg:col-span-2">
+        <div className="flex items-center justify-between"><h3 className="font-bold text-gray-900 flex items-center gap-2"><Gift size={16} className="text-emerald-500"/>Free Trial (new users)</h3>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <span className="text-xs font-bold text-gray-500 uppercase">{s.trial_enabled!==false?'Enabled':'Disabled'}</span>
+            <div className={`w-11 h-6 rounded-full transition-colors ${s.trial_enabled!==false?'bg-emerald-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${s.trial_enabled!==false?'translate-x-5':'translate-x-0.5'}`}/></div>
+            <input type="checkbox" className="sr-only" checked={s.trial_enabled!==false} onChange={e=>setS({...s,trial_enabled:e.target.checked})}/>
+          </label>
+        </div>
+        <p className="text-xs text-gray-400">When enabled, every newly-registered store owner gets the selected plan free for the specified number of days.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="text-xs font-bold text-gray-400 uppercase">Trial Duration (days)</label>
+            <input type="number" min="0" max="3650" className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20" value={s.trial_days??''} onChange={e=>setS({...s,trial_days:e.target.value===''?'':parseInt(e.target.value,10)})} placeholder="14"/>
+            <div className="flex gap-1.5 mt-2 flex-wrap">{[3,7,14,30,60,90].map(d=>(<button key={d} type="button" onClick={()=>setS({...s,trial_days:d})} className={`px-2 py-1 rounded-lg text-[11px] font-bold ${s.trial_days===d?'bg-emerald-500 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{d}d</button>))}</div>
+          </div>
+          <div><label className="text-xs font-bold text-gray-400 uppercase">Trial Plan</label>
+            <select className="w-full mt-1 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 text-sm" value={s.trial_plan||'basic'} onChange={e=>setS({...s,trial_plan:e.target.value})}>
+              <option value="basic">Basic</option>
+              <option value="standard">Standard</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+            <p className="text-[10px] text-gray-400 mt-1">Plan granted during the trial period. Use any plan slug defined in your Subscriptions Plans page.</p>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
         <h3 className="font-bold text-gray-900">Colors & Branding</h3>
         <div className="grid grid-cols-3 gap-3">{[{k:'primary_color',l:'Primary',d:'#7C3AED'},{k:'secondary_color',l:'Secondary',d:'#06B6D4'},{k:'accent_color',l:'Accent',d:'#F59E0B'}].map(c=>(
@@ -892,7 +920,6 @@ export default function PlatformAdminDashboard(){
           </div>
           <div className="flex items-center gap-3">
             <NotificationsBell isDark={isDark} pc={pc}/>
-            <ExpiringSubscriptionsBell isDark={isDark} pc={pc}/>
             <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
             <LanguageSwitcher/>
             <span className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
