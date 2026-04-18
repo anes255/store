@@ -271,7 +271,13 @@ export default function DashboardLayout({children}){
         {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
       </div>}
       <nav className={`flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
-        {sidebarOpen&&<p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>{t('sidebar.mainMenu','Main Menu')}</p>}
+        {sidebarOpen&&<div className="px-3 pt-2 pb-1 flex items-center justify-between">
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>{t('sidebar.mainMenu','Main Menu')}</p>
+          {(()=>{const groupIds=items.filter(it=>it.type!=='link'&&it.children).map(it=>it.id);const allOpen=groupIds.length>0&&groupIds.every(id=>openMenus[id]);return(
+            <button type="button" onClick={()=>{const next={};groupIds.forEach(id=>{next[id]=!allOpen;});setOpenMenus({...openMenus,...next});}} className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded transition-all ${isDark?'text-gray-400 hover:text-gray-200 hover:bg-white/5':'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title={allOpen?t('sidebar.hideAll','Hide all'):t('sidebar.showAll','Show all')}>
+              {allOpen?t('sidebar.hideAll','Hide all'):t('sidebar.showAll','Show all')}
+            </button>);})()}
+        </div>}
         {(()=>{
           const q=sideQuery.trim().toLowerCase();
           if(!q)return items.map((item,idx)=>renderItem(item,idx));
