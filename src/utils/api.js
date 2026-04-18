@@ -49,6 +49,12 @@ export const platformApi = {
   setOwnerSubscription: (ownerId, data) => api.patch(`/platform/store-owners/${ownerId}/subscription`, data),
   getExpiringSubscriptions: () => api.get('/platform/expiring-subscriptions'),
   extendSubscription: (ownerId, data) => api.post(`/platform/store-owners/${ownerId}/extend-subscription`, data),
+  // Admin notifications
+  getNotifications: () => api.get('/platform/notifications'),
+  markNotificationRead: (id) => api.patch(`/platform/notifications/${id}/read`),
+  markAllNotificationsRead: () => api.patch('/platform/notifications/read-all'),
+  deleteNotification: (id) => api.delete(`/platform/notifications/${id}`),
+  clearNotifications: () => api.delete('/platform/notifications'),
   updateBillingConfig: (data) => api.put('/platform/billing-config', data),
   // Admin profile & co-admins
   getAdminProfile: () => api.get('/platform/profile'),
@@ -133,6 +139,8 @@ export const orderApi = {
   getOne: (storeId, orderId) => api.get(`/manage/stores/${storeId}/orders/${orderId}`),
   updateStatus: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/status`, data),
   updatePayment: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/payment`, data),
+  archive: (storeId, orderId, archived=true) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/archive`, { archived }),
+  bulkArchive: (storeId, ids, archived=true) => api.patch(`/manage/stores/${storeId}/orders/bulk-archive`, { ids, archived }),
   getAbandoned: (storeId) => api.get(`/manage/stores/${storeId}/abandoned-carts`),
   getCustomers: (storeId, params) => api.get(`/manage/stores/${storeId}/customers`, { params }),
   getShippingWilayas: (storeId) => api.get(`/manage/stores/${storeId}/shipping-wilayas`),

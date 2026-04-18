@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2, Archive, ArchiveRestore } from 'lucide-react';
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', icon: ShoppingBag, label: 'New Order', labelFr: 'Nouvelle commande', labelAr: 'طلب جديد' },
@@ -87,6 +87,7 @@ export default function StoreOrders() {
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [archivedView, setArchivedView] = useState('active'); // 'active' | 'archived' | 'all'
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,12 +107,23 @@ export default function StoreOrders() {
   const loadOrders = async () => {
     if (!currentStore?.id) return;
     try {
-      const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' ? undefined : filter, search });
+      const archivedParam = archivedView==='archived'?'only':(archivedView==='all'?'all':undefined);
+      const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' ? undefined : filter, search, archived: archivedParam });
       setOrders(data.orders); setTotal(data.total);
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(() => { loadOrders(); }, [currentStore?.id, filter, search]);
+  const archiveOne = async (id, archived=true) => {
+    try { await orderApi.archive(currentStore.id, id, archived); toast.success(archived?'Archived':'Restored'); loadOrders(); }
+    catch { toast.error('Failed'); }
+  };
+  const bulkArchive = async (archived=true) => {
+    if (!selectedItems.size) return;
+    try { await orderApi.bulkArchive(currentStore.id, Array.from(selectedItems), archived); toast.success(`${archived?'Archived':'Restored'} ${selectedItems.size} orders`); clearSelection(); loadOrders(); }
+    catch { toast.error('Failed'); }
+  };
+
+  useEffect(() => { loadOrders(); }, [currentStore?.id, filter, search, archivedView]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
 
   const updateStatus = async (orderId, status) => {
@@ -314,6 +326,13 @@ export default function StoreOrders() {
                   title="Full Details"
                 >
                   <Eye size={13} className="text-brand-600" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); archiveOne(o.id, !o.is_archived); }}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${o.is_archived?'bg-amber-100 hover:bg-amber-200':'bg-gray-100 hover:bg-gray-200'}`}
+                  title={o.is_archived?'Unarchive':'Archive'}
+                >
+                  {o.is_archived?<ArchiveRestore size={13} className="text-amber-600"/>:<Archive size={13} className="text-gray-500"/>}
                 </button>
                 <button
                   onClick={() => toggleExpand(o.id)}
@@ -561,6 +580,12 @@ export default function StoreOrders() {
               <Filter size={14} className={viewMode === 'grouped' ? 'text-brand-600' : 'text-gray-400'} />
             </button>
           </div>
+          {/* Archive view toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0" title="Archive view">
+            <button onClick={()=>setArchivedView('active')} className={`px-2 py-1 rounded-md text-[11px] font-bold ${archivedView==='active'?'bg-white shadow-sm text-gray-900':'text-gray-500 hover:text-gray-700'}`}>Active</button>
+            <button onClick={()=>setArchivedView('archived')} className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 ${archivedView==='archived'?'bg-white shadow-sm text-amber-700':'text-gray-500 hover:text-gray-700'}`}><Archive size={11}/>Archived</button>
+            <button onClick={()=>setArchivedView('all')} className={`px-2 py-1 rounded-md text-[11px] font-bold ${archivedView==='all'?'bg-white shadow-sm text-gray-900':'text-gray-500 hover:text-gray-700'}`}>All</button>
+          </div>
           <button onClick={loadOrders} className="btn-ghost text-xs sm:text-sm flex items-center gap-2 shrink-0">
             <RefreshCw size={14} /><span className="hidden sm:inline">{t('storePage.refresh', 'Refresh')}</span>
           </button>
@@ -732,6 +757,9 @@ export default function StoreOrders() {
           </div>
           <button onClick={() => { const selectedData = orders.filter(o => selectedItems.has(o.id)); const csv = ['Order,Customer,Phone,Status,Total,Date', ...selectedData.map(o => `${o.order_number},${o.customer_name},${o.customer_phone},${o.status},${o.total},${o.created_at}`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'orders-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(`Exported ${selectedItems.size} orders`); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
             <Download size={13} />Export Selected
+          </button>
+          <button onClick={()=>bulkArchive(archivedView!=='archived')} className="flex items-center gap-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors">
+            {archivedView==='archived'?<><ArchiveRestore size={13}/>Restore</>:<><Archive size={13}/>Archive</>}
           </button>
           <button onClick={async () => { if (!confirm(`Delete ${selectedItems.size} selected orders?`)) return; for (const id of selectedItems) { try { await orderApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadOrders(); toast.success('Deleted selected orders'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
             <Trash2 size={13} />Delete Selected

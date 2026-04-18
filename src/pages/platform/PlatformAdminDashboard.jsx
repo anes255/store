@@ -11,6 +11,71 @@ import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu,Bell,Gift,Clock} from 'lucide-react';
 
+function NotificationsBell({isDark,pc}){
+  const nav=useNavigate();
+  const[open,setOpen]=useState(false);
+  const[items,setItems]=useState([]);
+  const[unread,setUnread]=useState(0);
+  const[loading,setLoading]=useState(false);
+  const load=()=>{setLoading(true);platformApi.getNotifications().then(r=>{setItems(r.data?.notifications||[]);setUnread(r.data?.unread||0);}).catch(()=>{}).finally(()=>setLoading(false));};
+  useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[]);
+  const markRead=async(id)=>{try{await platformApi.markNotificationRead(id);load();}catch{}};
+  const markAll=async()=>{try{await platformApi.markAllNotificationsRead();load();}catch{}};
+  const clearAll=async()=>{if(!confirm('Clear all notifications?'))return;try{await platformApi.clearNotifications();load();}catch{}};
+  const del=async(id,e)=>{e.stopPropagation();try{await platformApi.deleteNotification(id);load();}catch{}};
+  const iconFor=(t)=>{
+    if(t==='subscription_payment')return{I:CreditCard,c:'text-amber-500',bg:'bg-amber-100'};
+    if(t==='subscription_approved')return{I:CheckCircle,c:'text-emerald-500',bg:'bg-emerald-100'};
+    if(t==='subscription_expiring')return{I:Clock,c:'text-amber-500',bg:'bg-amber-100'};
+    if(t==='subscription_expired')return{I:AlertTriangle,c:'text-red-500',bg:'bg-red-100'};
+    if(t==='account_deleted')return{I:Trash2,c:'text-red-500',bg:'bg-red-100'};
+    return{I:Bell,c:'text-gray-500',bg:'bg-gray-100'};
+  };
+  const click=(n)=>{if(!n.is_read)markRead(n.id);if(n.link){setOpen(false);nav(n.link);}};
+  return(
+    <div className="relative">
+      <button onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Notifications">
+        <Bell size={18}/>
+        {unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unread>99?'99+':unread}</span>}
+      </button>
+      {open&&(<>
+        <div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>
+        <div className={`absolute right-0 mt-2 w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+          <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+            <div>
+              <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Notifications</div>
+              <div className="text-[11px] text-gray-400">{unread} unread · {items.length} total</div>
+            </div>
+            <div className="flex items-center gap-1">
+              {unread>0&&<button onClick={markAll} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-600'}`} title="Mark all read">Mark all</button>}
+              <button onClick={load} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={14}/></button>
+              {items.length>0&&<button onClick={clearAll} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-red-400':'hover:bg-red-50 text-red-500'}`} title="Clear all"><Trash2 size={14}/></button>}
+            </div>
+          </div>
+          {loading?<div className="p-6 text-center text-xs text-gray-400">Loading...</div>:items.length===0?<div className="p-8 text-center text-xs text-gray-400">No notifications</div>:(
+            <div className={isDark?'divide-y divide-gray-800':'divide-y divide-gray-100'}>
+              {items.map(n=>{const ic=iconFor(n.type);const I=ic.I;return(
+                <div key={n.id} onClick={()=>click(n)} className={`p-3 cursor-pointer flex items-start gap-3 ${n.is_read?'':(isDark?'bg-blue-950/30':'bg-blue-50/50')} ${isDark?'hover:bg-white/5':'hover:bg-gray-50'}`}>
+                  <div className={`w-9 h-9 rounded-xl ${ic.bg} flex items-center justify-center shrink-0`}><I size={16} className={ic.c}/></div>
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'} flex items-center gap-2`}>
+                      {!n.is_read&&<span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"/>}
+                      <span className="truncate">{n.title}</span>
+                    </div>
+                    {n.body&&<div className={`text-[11px] mt-0.5 ${isDark?'text-gray-400':'text-gray-500'}`}>{n.body}</div>}
+                    <div className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                  </div>
+                  <button onClick={(e)=>del(n.id,e)} className={`p-1 rounded-lg shrink-0 ${isDark?'hover:bg-white/10 text-gray-500':'hover:bg-gray-100 text-gray-400'}`}><X size={12}/></button>
+                </div>
+              );})}
+            </div>
+          )}
+        </div>
+      </>)}
+    </div>
+  );
+}
+
 function ExpiringSubscriptionsBell({isDark,pc}){
   const [open,setOpen]=useState(false);
   const [items,setItems]=useState([]);
@@ -826,6 +891,7 @@ export default function PlatformAdminDashboard(){
             <span className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-700'}`}>{t('admin.platformAdministration','Platform Administration')}</span>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationsBell isDark={isDark} pc={pc}/>
             <ExpiringSubscriptionsBell isDark={isDark} pc={pc}/>
             <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
             <LanguageSwitcher/>
