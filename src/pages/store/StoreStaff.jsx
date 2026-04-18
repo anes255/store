@@ -67,7 +67,7 @@ export default function StoreStaff() {
     import('../../utils/api').then(({ publicRoleTemplatesApi }) => {
       publicRoleTemplatesApi.list()
         .then(r => setPlatformTemplates(r.data?.templates || []))
-        .catch(() => {});
+        .catch(err => console.error('[role templates] fetch failed:', err?.response?.status, err?.response?.data || err?.message));
     });
   }, []);
 
