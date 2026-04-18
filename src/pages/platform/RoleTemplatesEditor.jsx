@@ -21,34 +21,34 @@ const LANGS = [
 
 function ui(isDark) {
   return {
-    card: isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200',
-    cardSoft: isDark ? 'bg-gray-800/60 border-gray-700' : 'bg-gray-50 border-gray-200',
+    card: isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
+    cardSoft: isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200',
     input: isDark
       ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500 focus:border-brand-500'
       : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-brand-400',
     title: isDark ? 'text-gray-100' : 'text-gray-900',
     text: isDark ? 'text-gray-200' : 'text-gray-800',
-    muted: isDark ? 'text-gray-400' : 'text-gray-500',
-    subtle: isDark ? 'text-gray-500' : 'text-gray-400',
+    muted: isDark ? 'text-gray-300' : 'text-gray-500',
+    subtle: isDark ? 'text-gray-400' : 'text-gray-400',
     divider: isDark ? 'border-gray-800' : 'border-gray-100',
     tabActive: isDark ? 'bg-brand-500/20 text-brand-300 ring-1 ring-brand-500/40' : 'bg-brand-50 text-brand-600 ring-1 ring-brand-100',
     tabIdle: isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-white/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
     permOn: isDark ? 'bg-brand-500/15 border-brand-500/40 text-brand-300' : 'bg-brand-50 border-brand-300 text-brand-700',
     permOff: isDark ? 'bg-gray-800/40 border-gray-700 text-gray-400 hover:bg-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50',
-    btnGhost: isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-100 border-gray-600' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200',
-    btnDanger: isDark ? 'bg-red-500/15 border-red-500/40 text-red-300 hover:bg-red-500/25' : 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100',
-    btnEdit: isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-100 border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-    modalBg: isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200',
-    modalHeader: isDark ? 'bg-gray-900/95 border-gray-800' : 'bg-white/95 border-gray-100',
-    chip: isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-gray-100 text-gray-600 border-gray-200',
-    chipActive: isDark ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    chipInactive: isDark ? 'bg-gray-800 text-gray-400 border-gray-700' : 'bg-gray-100 text-gray-500 border-gray-200',
-    groupHead: isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50 border-gray-200',
+    btnGhost: isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-100 border-gray-600' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200',
+    btnDanger: isDark ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30' : 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100',
+    btnEdit: isDark ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
+    modalBg: isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200',
+    modalHeader: isDark ? 'bg-gray-900 border-gray-700' : 'bg-white/95 border-gray-100',
+    chip: isDark ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200',
+    chipActive: isDark ? 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50' : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    chipInactive: isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-gray-100 text-gray-500 border-gray-200',
+    groupHead: isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200',
     checkbox: isDark ? 'accent-brand-500' : 'accent-brand-500',
     heroGrad: isDark
-      ? 'from-purple-900/60 via-indigo-900/50 to-gray-900 border-purple-800/40'
+      ? 'from-purple-800 via-indigo-800 to-gray-800 border-purple-700'
       : 'from-purple-100 via-indigo-50 to-blue-50 border-gray-200',
-    statBox: isDark ? 'bg-gray-900/80 border-gray-700' : 'bg-white border-gray-200',
+    statBox: isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200',
   };
 }
 
