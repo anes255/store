@@ -74,6 +74,11 @@ export const platformApi = {
   createRoleTemplate: (data) => api.post('/platform/role-templates', data),
   updateRoleTemplate: (id, data) => api.put(`/platform/role-templates/${id}`, data),
   deleteRoleTemplate: (id) => api.delete(`/platform/role-templates/${id}`),
+  // Platform WhatsApp (registration OTP sender)
+  waStart: () => api.post('/platform/whatsapp/start'),
+  waStatus: () => api.get('/platform/whatsapp/status'),
+  waDisconnect: () => api.post('/platform/whatsapp/disconnect'),
+  waTestSend: (data) => api.post('/platform/whatsapp/test-send', data),
 };
 
 // Store-owner access to the public role templates list

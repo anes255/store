@@ -7,6 +7,7 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import PlansEditor from './PlansEditor';
 import RoleTemplatesEditor from './RoleTemplatesEditor';
+import AdminWhatsApp from './AdminWhatsApp';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu,Bell,Gift,Clock} from 'lucide-react';
@@ -159,6 +160,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
     {path:'/admin/billing-config',icon:DollarSign,label:t('admin.billingConfig','Billing Config')},
     {path:'/admin/site-settings',icon:Globe,label:t('admin.siteBranding','Site & Branding')},
     {path:'/admin/page-builder',icon:Layers,label:t('admin.pageBuilder','Page Builder')},
+    {path:'/admin/whatsapp',icon:Smartphone,label:t('admin.platformWhatsapp','Platform WhatsApp')},
     {path:'/admin/system',icon:Server,label:t('admin.systemHealth','System Health')},
     {path:'/admin/profile',icon:Settings,label:t('admin.myProfile','My Profile')},
     {path:'/admin/admins',icon:Shield,label:t('admin.superAdmins','Super Admins')},
@@ -937,6 +939,7 @@ export default function PlatformAdminDashboard(){
             <Route path="role-templates" element={<RoleTemplatesEditor/>}/>
             <Route path="billing-config" element={<BillingConfig/>}/>
             <Route path="page-builder" element={<PageBuilder/>}/>
+            <Route path="whatsapp" element={<AdminWhatsApp/>}/>
             <Route path="system" element={<SystemHealth/>}/>
             <Route path="profile" element={<MyProfile/>}/>
             <Route path="admins" element={<AdminManagement/>}/>
