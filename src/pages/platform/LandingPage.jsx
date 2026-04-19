@@ -221,7 +221,7 @@ export default function LandingPage() {
             </div>
             <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
               <span className="flex items-center gap-1.5"><Check size={16} className="text-emerald-500" /> {t('landing.noCreditCard','No credit card required')}</span>
-              <span className="flex items-center gap-1.5"><Check size={16} className="text-emerald-500" /> {t('landing.freeTrial','14-day free trial')}</span>
+              {info.trial_enabled!==false&&<span className="flex items-center gap-1.5"><Check size={16} className="text-emerald-500" /> {t('landing.freeTrialDays','{{count}}-day free trial',{count:info.trial_days||14})}</span>}
               <span className="flex items-center gap-1.5"><Check size={16} className="text-emerald-500" /> {t('landing.cancelAnytime','Cancel anytime')}</span>
             </div>
           </div>
@@ -271,11 +271,11 @@ export default function LandingPage() {
               ? apiPlans.map(p => ({
                   name: pick(p.name, 'Plan'),
                   price: p.price_monthly > 0 ? `${Number(p.price_monthly).toLocaleString()} ${p.currency || 'DZD'}` : t('landing.free','Free'),
-                  period: p.price_monthly > 0 ? t('landing.perMonth','/month') : t('landing.days14','14 days'),
+                  period: p.price_monthly > 0 ? t('landing.perMonth','/month') : t('landing.daysN','{{count}} days',{count:info.trial_days||14}),
                   popular: !!p.is_popular,
                   features: (p.features && (p.features[lang] && p.features[lang].length ? p.features[lang] : p.features.en)) || [],
                 }))
-              : [{ name: t('landing.starter','Starter'), price: t('landing.free','Free'), period: t('landing.days14','14 days'), features: [t('landing.p1a','1 Store'), t('landing.p1b','50 Products'), t('landing.p1c','Basic Analytics'), t('landing.p1d','COD Payment')] }, { name: t('landing.pro','Pro'), price: '2,900 DZD', period: t('landing.perMonth','/month'), popular: true, features: [t('landing.p2a','3 Stores'), t('landing.p2b','Unlimited Products'), t('landing.p2c','AI Chatbot'), t('landing.p2d','All Payments'), t('landing.p2e','Cart Recovery'), t('landing.p2f','Custom Domain')] }]
+              : [{ name: t('landing.starter','Starter'), price: t('landing.free','Free'), period: t('landing.daysN','{{count}} days',{count:info.trial_days||14}), features: [t('landing.p1a','1 Store'), t('landing.p1b','50 Products'), t('landing.p1c','Basic Analytics'), t('landing.p1d','COD Payment')] }, { name: t('landing.pro','Pro'), price: '2,900 DZD', period: t('landing.perMonth','/month'), popular: true, features: [t('landing.p2a','3 Stores'), t('landing.p2b','Unlimited Products'), t('landing.p2c','AI Chatbot'), t('landing.p2d','All Payments'), t('landing.p2e','Cart Recovery'), t('landing.p2f','Custom Domain')] }]
             ).map((plan, i) => (
               <div key={i} className={`relative rounded-3xl p-8 ${plan.popular ? 'bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-2xl shadow-brand-500/30 scale-105' : 'bg-gray-50 border border-gray-200'}`}>
                 {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
