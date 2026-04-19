@@ -1,66 +1,209 @@
-// English/French name pairs for Algerian wilayas and cities.
-// Only names that differ in English vs French are listed here. Any name not
-// found in the map is assumed to be identical in both languages, so the
-// display helper returns a single label instead of duplicating it.
-//
-// Used by the checkout page so buyers see wilaya/city names in both languages
-// (e.g. "Algiers / Alger", "Constantine / Constantine").
+// English/Arabic name pairs for Algerian wilayas and their major cities.
+// The checkout dropdowns render labels as "English / العربية" so buyers in
+// either language can pick their shipping destination with confidence.
+// Any name missing from this map falls back to showing the raw value once.
 
-const WILAYA_EN_FR = {
-  // Wilayas with distinct English spellings
-  'Alger': { en: 'Algiers', fr: 'Alger' },
-  'Béjaïa': { en: 'Bejaia', fr: 'Béjaïa' },
-  'Bejaia': { en: 'Bejaia', fr: 'Béjaïa' },
-  'Sétif': { en: 'Setif', fr: 'Sétif' },
-  'Setif': { en: 'Setif', fr: 'Sétif' },
-  'Tébessa': { en: 'Tebessa', fr: 'Tébessa' },
-  'Tebessa': { en: 'Tebessa', fr: 'Tébessa' },
-  'Saïda': { en: 'Saida', fr: 'Saïda' },
-  'Saida': { en: 'Saida', fr: 'Saïda' },
-  'Médéa': { en: 'Medea', fr: 'Médéa' },
-  'Medea': { en: 'Medea', fr: 'Médéa' },
-  'El Taref': { en: 'El Tarf', fr: 'El Taref' },
-  'El Tarf': { en: 'El Tarf', fr: 'El Taref' },
-  'Bordj Bou Arréridj': { en: 'Bordj Bou Arreridj', fr: 'Bordj Bou Arréridj' },
-  'Bordj Bou Arreridj': { en: 'Bordj Bou Arreridj', fr: 'Bordj Bou Arréridj' },
-  'Aïn Defla': { en: 'Ain Defla', fr: 'Aïn Defla' },
-  'Ain Defla': { en: 'Ain Defla', fr: 'Aïn Defla' },
-  'Aïn Témouchent': { en: 'Ain Temouchent', fr: 'Aïn Témouchent' },
-  'Ain Temouchent': { en: 'Ain Temouchent', fr: 'Aïn Témouchent' },
-  'M\'Sila': { en: "M'Sila", fr: "M'Sila" },
-  'El Méniaa': { en: 'El Meniaa', fr: 'El Méniaa' },
-  'El Meniaa': { en: 'El Meniaa', fr: 'El Méniaa' },
-  'El M\'Ghair': { en: "El M'Ghair", fr: "El M'Ghair" },
+const WILAYA_EN_AR = {
+  'Adrar': 'أدرار',
+  'Chlef': 'الشلف',
+  'Laghouat': 'الأغواط',
+  'Oum El Bouaghi': 'أم البواقي',
+  'Batna': 'باتنة',
+  'Béjaïa': 'بجاية',
+  'Bejaia': 'بجاية',
+  'Biskra': 'بسكرة',
+  'Béchar': 'بشار',
+  'Bechar': 'بشار',
+  'Blida': 'البليدة',
+  'Bouira': 'البويرة',
+  'Tamanrasset': 'تمنراست',
+  'Tébessa': 'تبسة',
+  'Tebessa': 'تبسة',
+  'Tlemcen': 'تلمسان',
+  'Tiaret': 'تيارت',
+  'Tizi Ouzou': 'تيزي وزو',
+  'Alger': 'الجزائر',
+  'Algiers': 'الجزائر',
+  'Djelfa': 'الجلفة',
+  'Jijel': 'جيجل',
+  'Sétif': 'سطيف',
+  'Setif': 'سطيف',
+  'Saïda': 'سعيدة',
+  'Saida': 'سعيدة',
+  'Skikda': 'سكيكدة',
+  'Sidi Bel Abbès': 'سيدي بلعباس',
+  'Sidi Bel Abbes': 'سيدي بلعباس',
+  'Annaba': 'عنابة',
+  'Guelma': 'قالمة',
+  'Constantine': 'قسنطينة',
+  'Médéa': 'المدية',
+  'Medea': 'المدية',
+  'Mostaganem': 'مستغانم',
+  "M'Sila": 'المسيلة',
+  'Mascara': 'معسكر',
+  'Ouargla': 'ورقلة',
+  'Oran': 'وهران',
+  'El Bayadh': 'البيض',
+  'Illizi': 'إليزي',
+  'Bordj Bou Arréridj': 'برج بوعريريج',
+  'Bordj Bou Arreridj': 'برج بوعريريج',
+  'Boumerdès': 'بومرداس',
+  'Boumerdes': 'بومرداس',
+  'El Tarf': 'الطارف',
+  'El Taref': 'الطارف',
+  'Tindouf': 'تندوف',
+  'Tissemsilt': 'تيسمسيلت',
+  'El Oued': 'الوادي',
+  'Khenchela': 'خنشلة',
+  'Souk Ahras': 'سوق أهراس',
+  'Tipaza': 'تيبازة',
+  'Mila': 'ميلة',
+  'Aïn Defla': 'عين الدفلى',
+  'Ain Defla': 'عين الدفلى',
+  'Naâma': 'النعامة',
+  'Naama': 'النعامة',
+  'Aïn Témouchent': 'عين تموشنت',
+  'Ain Temouchent': 'عين تموشنت',
+  'Ghardaïa': 'غرداية',
+  'Ghardaia': 'غرداية',
+  'Relizane': 'غليزان',
+  'Timimoun': 'تيميمون',
+  'Bordj Badji Mokhtar': 'برج باجي مختار',
+  'Ouled Djellal': 'أولاد جلال',
+  'Béni Abbès': 'بني عباس',
+  'Beni Abbes': 'بني عباس',
+  'In Salah': 'عين صالح',
+  'In Guezzam': 'عين قزام',
+  'Touggourt': 'تقرت',
+  'Djanet': 'جانت',
+  'El M\'Ghair': 'المغير',
+  'El Méniaa': 'المنيعة',
+  'El Meniaa': 'المنيعة',
 
-  // Common city spellings that differ
-  'Alger Centre': { en: 'Algiers Center', fr: 'Alger Centre' },
-  'Ténès': { en: 'Tenes', fr: 'Ténès' },
-  'Tenes': { en: 'Tenes', fr: 'Ténès' },
-  'Hassi R\'Mel': { en: "Hassi R'Mel", fr: "Hassi R'Mel" },
-  'N\'Gaous': { en: "N'Gaous", fr: "N'Gaous" },
-  'Chréa': { en: 'Chrea', fr: 'Chréa' },
-  'Chrea': { en: 'Chrea', fr: 'Chréa' },
-  'M\'Chedallah': { en: "M'Chedallah", fr: "M'Chedallah" },
-  'Séraïdi': { en: 'Seraidi', fr: 'Séraïdi' },
-  'Seraidi': { en: 'Seraidi', fr: 'Séraïdi' },
+  // Common city translations (major communes).
+  'Alger Centre': 'الجزائر الوسطى',
+  'Bab El Oued': 'باب الواد',
+  'Hussein Dey': 'حسين داي',
+  'El Harrach': 'الحراش',
+  'Bir Mourad Rais': 'بير مراد رايس',
+  'Bouzareah': 'بوزريعة',
+  'Dar El Beida': 'الدار البيضاء',
+  'Bab Ezzouar': 'باب الزوار',
+  'Ain Benian': 'عين البنيان',
+  'Bordj El Kiffan': 'برج الكيفان',
+  'Dely Ibrahim': 'دالي إبراهيم',
+  'Draria': 'درارية',
+  'El Biar': 'الأبيار',
+  'Kouba': 'القبة',
+  'Mohammadia': 'المحمدية',
+  'Rouiba': 'الرويبة',
+  'Reghaia': 'الرغاية',
+  'Zeralda': 'زرالدة',
+  'Cheraga': 'الشراقة',
+  'Ain Taya': 'عين طاية',
+  'Staoueli': 'سطاوالي',
+  "Sidi M'Hamed": 'سيدي محمد',
+  'Oued Smar': 'وادي السمار',
+  'Baraki': 'براقي',
+  'Les Eucalyptus': 'الكاليتوس',
+  'Birtouta': 'بئر توتة',
+  'Ténès': 'تنس',
+  'Tenes': 'تنس',
+  'Akbou': 'أقبو',
+  'El Kseur': 'القصر',
+  'Kherrata': 'خراطة',
+  'Tichy': 'تيشي',
+  'Tolga': 'طولقة',
+  'Maghnia': 'مغنية',
+  'El Eulma': 'العلمة',
+  'Bir El Ater': 'بئر العاتر',
+  'Ain Beida': 'عين البيضاء',
+  "Ain M'Lila": 'عين مليلة',
+  'Aflou': 'الأغواط - أفلو',
+  'Bou Saada': 'بوسعادة',
+  'Messaad': 'مسعد',
+  'Ain Oussera': 'عين وسارة',
+  'Hassi Bahbah': 'حاسي بحبح',
+  'El Milia': 'الميلية',
+  'Taher': 'الطاهير',
+  'Ain Oulmene': 'عين ولمان',
+  'Bougaa': 'بوقاعة',
+  'Arzew': 'أرزيو',
+  'Bethioua': 'بطيوة',
+  'Es Senia': 'السانيا',
+  'Bir El Djir': 'بئر الجير',
+  'Ain El Turk': 'عين الترك',
+  'El Kerma': 'الكرمة',
+  'Mers El Kebir': 'المرسى الكبير',
+  'Hassi Bounif': 'حاسي بونيف',
+  'Gdyel': 'قديل',
+  'Sig': 'سيق',
+  'Tighennif': 'تيغنيف',
+  'Mohammadia (Mascara)': 'المحمدية',
+  'Sidi Aissa': 'سيدي عيسى',
+  'Boufarik': 'بوفاريك',
+  'Mouzaia': 'موزاية',
+  'Bougara': 'بوقرة',
+  'El Affroun': 'العفرون',
+  'Larbaa': 'الأربعاء',
+  'Lakhdaria': 'الأخضرية',
+  'Sour El Ghozlane': 'سور الغزلان',
+  "M'Chedallah": 'مشدالة',
+  'Ain Bessem': 'عين بسام',
+  'Hassi R\'Mel': 'حاسي الرمل',
+  'Ain Madhi': 'عين ماضي',
+  'Azazga': 'عزازقة',
+  'Draa Ben Khedda': 'ذراع بن خدة',
+  'Tigzirt': 'تيقزيرت',
+  'Boghni': 'بوغني',
+  'Draa El Mizan': 'ذراع الميزان',
+  'Azeffoun': 'أزفون',
+  'Collo': 'القل',
+  'Azzaba': 'عزابة',
+  'El Harrouch': 'الحروش',
+  'Tamalous': 'تمالوس',
+  'El Kala': 'القالة',
+  'Drean': 'الذرعان',
+  'Bouchegouf': 'بوشقوف',
+  'Hammam Debagh': 'حمام دباغ',
+  'El Khroub': 'الخروب',
+  'Ain Smara': 'عين سمارة',
+  'Didouche Mourad': 'ديدوش مراد',
+  'Hamma Bouziane': 'حامة بوزيان',
+  'Ali Mendjeli': 'علي منجلي',
+  'Berrouaghia': 'برواقية',
+  'Ksar El Boukhari': 'قصر البخاري',
+  'Tablat': 'تابلاط',
+  'Ain Tedeles': 'عين تادلس',
+  'Hassi Mameche': 'حاسي ماماش',
+  'Sidi Ali': 'سيدي علي',
+  'Mazagran': 'مازاغران',
+  'Achaacha': 'عشعاشة',
+  'Remchi': 'الرمشي',
+  'Ghazaouet': 'الغزوات',
+  'Nedroma': 'ندرومة',
+  'Sebdou': 'سبدو',
+  'Honaine': 'هنين',
+  'Mansourah': 'المنصورة',
+  'Chetouane': 'شتوان',
 };
 
-// Returns { en, fr } for the given wilaya/city name. Falls back to the same
-// value for both languages when no explicit translation is registered.
-export function getEnFr(name) {
-  if (!name) return { en: '', fr: '' };
-  const hit = WILAYA_EN_FR[name];
-  if (hit) return hit;
-  return { en: name, fr: name };
+// Returns { en, ar } for a raw wilaya/city name. Missing entries collapse to
+// the same English value in both fields so the caller can render just once.
+export function getEnAr(name) {
+  if (!name) return { en: '', ar: '' };
+  const ar = WILAYA_EN_AR[name];
+  return { en: name, ar: ar || name };
 }
 
-// Build a display label. If the English and French names match the label is
-// rendered once; otherwise both are joined with " / ".
+// Build the bilingual label shown in checkout dropdowns. If we don't have an
+// Arabic translation we return the English name alone so the option stays
+// clean instead of duplicating the Latin spelling.
 export function bilingualLabel(name) {
-  const { en, fr } = getEnFr(name);
-  if (!en && !fr) return name || '';
-  if (en === fr) return en;
-  return `${en} / ${fr}`;
+  const { en, ar } = getEnAr(name);
+  if (!en) return ar || '';
+  if (!ar || ar === en) return en;
+  return `${en} / ${ar}`;
 }
 
-export default WILAYA_EN_FR;
+export default WILAYA_EN_AR;
