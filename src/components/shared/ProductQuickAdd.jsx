@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Minus, Plus, ShoppingCart, Package, Check } from 'lucide-react';
+import { X, Minus, Plus, ShoppingCart, Package, Check, Heart } from 'lucide-react';
 
 // =============================================================================
 // PRODUCT QUICK-ADD POPUP
@@ -16,7 +16,7 @@ import { X, Minus, Plus, ShoppingCart, Package, Check } from 'lucide-react';
 //   currency      – currency code (e.g. 'DZD')
 //   onAddToCart   – ({ product, selectedVariant, quantity }) => void
 // =============================================================================
-export default function ProductQuickAdd({ show, onClose, product, storeSlug, primaryColor, currency = 'DZD', onAddToCart }) {
+export default function ProductQuickAdd({ show, onClose, product, storeSlug, primaryColor, currency = 'DZD', onAddToCart, mode = 'cart' }) {
   const pc = primaryColor || '#7C3AED';
 
   // ---- local state ----
@@ -256,9 +256,11 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
               <button
                 onClick={handleAdd}
                 className="flex-1 py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg transition-all text-sm"
-                style={{ backgroundColor: pc }}
+                style={{ backgroundColor: mode === 'favorite' ? '#ef4444' : pc }}
               >
-                <ShoppingCart size={16} /> Add to Cart
+                {mode === 'favorite'
+                  ? (<><Heart size={16} fill="white" /> Add to Favorites</>)
+                  : (<><ShoppingCart size={16} /> Add to Cart</>)}
               </button>
             </div>
           </div>

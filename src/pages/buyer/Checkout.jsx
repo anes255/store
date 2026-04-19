@@ -6,6 +6,7 @@ import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
 import WILAYA_CITIES from '../../data/wilayaCities';
+import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
 
 // directItems: optional array of items for "Buy Now" flow (skips cart).
@@ -329,7 +330,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     }}>
                       <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
                       {(shippingWilayas.length ? shippingWilayas.filter(w=>w.is_active!==false) :[{wilaya_name:'Adrar',wilaya_code:'01'},{wilaya_name:'Chlef',wilaya_code:'02'},{wilaya_name:'Laghouat',wilaya_code:'03'},{wilaya_name:'Oum El Bouaghi',wilaya_code:'04'},{wilaya_name:'Batna',wilaya_code:'05'},{wilaya_name:'Béjaïa',wilaya_code:'06'},{wilaya_name:'Biskra',wilaya_code:'07'},{wilaya_name:'Béchar',wilaya_code:'08'},{wilaya_name:'Blida',wilaya_code:'09'},{wilaya_name:'Bouira',wilaya_code:'10'},{wilaya_name:'Tamanrasset',wilaya_code:'11'},{wilaya_name:'Tébessa',wilaya_code:'12'},{wilaya_name:'Tlemcen',wilaya_code:'13'},{wilaya_name:'Tiaret',wilaya_code:'14'},{wilaya_name:'Tizi Ouzou',wilaya_code:'15'},{wilaya_name:'Alger',wilaya_code:'16'},{wilaya_name:'Djelfa',wilaya_code:'17'},{wilaya_name:'Jijel',wilaya_code:'18'},{wilaya_name:'Sétif',wilaya_code:'19'},{wilaya_name:'Saïda',wilaya_code:'20'},{wilaya_name:'Skikda',wilaya_code:'21'},{wilaya_name:'Sidi Bel Abbès',wilaya_code:'22'},{wilaya_name:'Annaba',wilaya_code:'23'},{wilaya_name:'Guelma',wilaya_code:'24'},{wilaya_name:'Constantine',wilaya_code:'25'},{wilaya_name:'Médéa',wilaya_code:'26'},{wilaya_name:'Mostaganem',wilaya_code:'27'},{wilaya_name:"M'Sila",wilaya_code:'28'},{wilaya_name:'Mascara',wilaya_code:'29'},{wilaya_name:'Ouargla',wilaya_code:'30'},{wilaya_name:'Oran',wilaya_code:'31'},{wilaya_name:'El Bayadh',wilaya_code:'32'},{wilaya_name:'Illizi',wilaya_code:'33'},{wilaya_name:'Bordj Bou Arréridj',wilaya_code:'34'},{wilaya_name:'Boumerdès',wilaya_code:'35'},{wilaya_name:'El Tarf',wilaya_code:'36'},{wilaya_name:'Tindouf',wilaya_code:'37'},{wilaya_name:'Tissemsilt',wilaya_code:'38'},{wilaya_name:'El Oued',wilaya_code:'39'},{wilaya_name:'Khenchela',wilaya_code:'40'},{wilaya_name:'Souk Ahras',wilaya_code:'41'},{wilaya_name:'Tipaza',wilaya_code:'42'},{wilaya_name:'Mila',wilaya_code:'43'},{wilaya_name:'Aïn Defla',wilaya_code:'44'},{wilaya_name:'Naâma',wilaya_code:'45'},{wilaya_name:'Aïn Témouchent',wilaya_code:'46'},{wilaya_name:'Ghardaïa',wilaya_code:'47'},{wilaya_name:'Relizane',wilaya_code:'48'}]).map(w => (
-                        <option key={w.wilaya_code} value={w.wilaya_name} disabled={w.is_active===false}>{w.is_active===false?'(Inactive) ':''}{w.wilaya_code} - {w.wilaya_name}</option>
+                        <option key={w.wilaya_code} value={w.wilaya_name} disabled={w.is_active===false}>{w.is_active===false?'(Inactive) ':''}{w.wilaya_code} - {bilingualLabel(w.wilaya_name)}</option>
                       ))}
                     </select>
                   </div>
@@ -346,7 +347,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     }} disabled={!form.shipping_wilaya}>
                       <option value="">{form.shipping_wilaya ? t('checkout.selectCity','Select city...') : t('checkout.selectWilayaFirst','Select wilaya first')}</option>
                       {form.shipping_wilaya && (WILAYA_CITIES[form.shipping_wilaya] || [form.shipping_wilaya]).map(c => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{bilingualLabel(c)}</option>
                       ))}
                     </select>
                   </div>

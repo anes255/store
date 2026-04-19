@@ -478,8 +478,9 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           {onSale && <span className="absolute top-2 left-2 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
         </div>
 
-        {/* Floating action icons on image */}
-        <div className="absolute top-4 right-4 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Floating action icons on image — always visible so mobile/touch
+            users don't need to hover to add to cart or favorites. */}
+        <div className="absolute top-4 right-4 flex flex-col gap-1.5">
           <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
             className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm border border-white/10"
             aria-label="Add to cart"><ShoppingCart size={14} /></button>
@@ -561,6 +562,7 @@ export default function Storefront() {
   const [contentReady, setContentReady] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
+  const [favAddProduct, setFavAddProduct] = useState(null);
   const [detailProduct, setDetailProduct] = useState(null);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowItems, setBuyNowItems] = useState(null);
@@ -636,12 +638,35 @@ export default function Storefront() {
 
   // Toggle a product in/out of the wishlist. Toasts confirm both actions so
   // shoppers always get feedback even from a quick-add button.
+  // If the product has variants and isn't already in the wishlist, open the
+  // same variant-picker modal used for cart so buyers can save a specific
+  // color/size combo.
   const toggleWishlist = (productOrId) => {
     const product = typeof productOrId === 'object' ? productOrId : products.find(p=>p.id===productOrId);
     if (!product) return;
+    const already = wishlistStore.has(product.id);
+    let variants = product.variants || [];
+    if (typeof variants === 'string') { try { variants = JSON.parse(variants); } catch { variants = []; } }
+    const hasVariants = Array.isArray(variants) && variants.length > 0;
+    if (!already && hasVariants) {
+      setFavAddProduct(product);
+      return;
+    }
     const added = wishlistStore.toggle(product);
     if (added) toast.success(t('store.addedToFavorites','Added to favorites'));
     else toast.success(t('store.removedFromFavorites','Removed from favorites'));
+  };
+
+  // Callback from the ProductQuickAdd modal when used in favorite mode.
+  const handleFavAdd = ({ product: p, selectedVariant, quantity: qty }) => {
+    const label = selectedVariant
+      ? (selectedVariant.label || selectedVariant.name || '')
+      : '';
+    // Attach the chosen variant to the product object so Favorites.jsx can
+    // display it and pre-fill it when the buyer adds it to the cart.
+    const saved = { ...p, _selectedVariant: selectedVariant || null, _variantLabel: label || null };
+    wishlistStore.toggle(saved);
+    toast.success(label ? `Saved "${label}" to favorites` : t('store.addedToFavorites','Added to favorites'));
   };
 
   // Wrapper around the cart store that fires a toast — used everywhere on the
@@ -971,6 +996,16 @@ export default function Storefront() {
         primaryColor={pc}
         currency={store.currency || 'DZD'}
         onAddToCart={handleQuickAddToCart}
+      />
+      <ProductQuickAdd
+        show={!!favAddProduct}
+        onClose={() => setFavAddProduct(null)}
+        product={favAddProduct}
+        storeSlug={storeSlug}
+        primaryColor={pc}
+        currency={store.currency || 'DZD'}
+        mode="favorite"
+        onAddToCart={handleFavAdd}
       />
     </div>
   );

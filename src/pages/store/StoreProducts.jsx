@@ -15,6 +15,15 @@ export default function StoreProducts() {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState(() => { try { return localStorage.getItem('products_view') || 'grid'; } catch { return 'grid'; } });
   useEffect(() => { try { localStorage.setItem('products_view', viewMode); } catch {} }, [viewMode]);
+  const [categories, setCategories] = useState([]);
+  const [filterCategory, setFilterCategory] = useState('');
+  const loadCategories = () => { if (!currentStore?.id) return; productApi.getCategories(currentStore.id).then(r => setCategories(r.data || [])).catch(() => {}); };
+  useEffect(() => { loadCategories(); }, [currentStore?.id]);
+  const addCategory = async () => {
+    const name = prompt('New category name:'); if (!name) return;
+    try { await productApi.createCategory(currentStore.id, { name_en: name }); toast.success('Category added'); loadCategories(); }
+    catch { toast.error('Failed'); }
+  };
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -131,13 +140,20 @@ export default function StoreProducts() {
           <span className="text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
         </button>
         <div className="relative max-w-sm flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <select className="input-field !py-2 text-sm !w-44 shrink-0" value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}>
+          <option value="">{t('storePage.allCategories','All Categories')}</option>
+          {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name} ({c.product_count||0})</option>))}
+        </select>
+        <button onClick={addCategory} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title="Add category"><Plus size={12}/>Category</button>
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
           <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title="Grid view"><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
           <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title="List view"><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
         </div>
       </div>
 
-      {products.length===0?(
+      {(()=>{const displayProducts = filterCategory ? products.filter(p => String(p.category_id||'') === String(filterCategory)) : products; return (
+      <>
+      {displayProducts.length===0?(
         <div className="flex flex-col items-center py-20 glass-card-solid"><Package size={48} className="text-gray-300 mb-4"/><p className="text-gray-500 mb-4">{t('products.noProducts')}</p><button onClick={()=>{setForm({...empty});setShowModal(true);}} className="btn-primary text-sm"><Plus size={16} className="mr-1 inline"/>{t('products.addProduct')}</button></div>
       ):viewMode==='list'?(
         <div className="glass-card-solid rounded-2xl overflow-hidden">
@@ -146,7 +162,7 @@ export default function StoreProducts() {
               <tr><th className="p-3 w-8"></th><th className="p-3 text-left">Product</th><th className="p-3 text-left">Price</th><th className="p-3 text-left">Stock</th><th className="p-3 text-left">Variants</th><th className="p-3 text-right">Actions</th></tr>
             </thead>
             <tbody>
-              {products.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
+              {displayProducts.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
                 <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''}`}>
                   <td className="p-3"><button onClick={()=>toggleSelect(p.id)}>{selectedItems.has(p.id)?<CheckSquare size={16} className="text-brand-600"/>:<Square size={16} className="text-gray-400"/>}</button></td>
                   <td className="p-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">{thumb?<img src={thumb} className="w-full h-full object-cover"/>:<div className="flex items-center justify-center h-full"><Image size={14} className="text-gray-300"/></div>}</div><div className="min-w-0"><p className="font-semibold text-gray-800 truncate">{p.name_en||p.name}</p>{p.is_featured&&<span className="text-[9px] font-bold text-brand-600">FEATURED</span>}</div></div></td>
@@ -161,7 +177,7 @@ export default function StoreProducts() {
         </div>
       ):(
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
+          {displayProducts.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;const cat=categories.find(c=>String(c.id)===String(p.category_id));return(
             <div key={p.id} className={`glass-card-solid rounded-2xl overflow-hidden group hover:shadow-glass-lg transition-all ${selectedItems.has(p.id) ? 'ring-2 ring-brand-400' : ''}`}>
               <div className="aspect-square bg-gray-100 relative overflow-hidden">
                 {thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="flex items-center justify-center h-full"><Image size={32} className="text-gray-300"/></div>}
@@ -177,6 +193,7 @@ export default function StoreProducts() {
               </div>
               <div className="p-3">
                 <h3 className="font-semibold text-sm text-gray-800 truncate">{p.name_en||p.name}</h3>
+                {cat&&<span className="inline-block px-1.5 py-0.5 mt-0.5 bg-purple-100 text-purple-600 rounded text-[9px] font-bold">{cat.name_en||cat.name}</span>}
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-brand-600 font-bold text-sm">{parseFloat(p.price).toLocaleString()} DZD</span>
                   <span className="text-xs text-gray-400">{t('storePage.stock','Stock')}: {p.stock_quantity||0}</span>
@@ -187,6 +204,8 @@ export default function StoreProducts() {
           );})}
         </div>
       )}
+      </>
+      );})()}
 
       {/* Floating Bulk Action Bar */}
       {selectedItems.size > 0 && (
@@ -236,6 +255,14 @@ export default function StoreProducts() {
                 <div><label className="input-label text-xs">{t('storePage.comparePrice','Compare Price')}</label><input type="number" className="input-field" value={form.compare_at_price} onChange={set('compare_at_price')}/></div>
                 <div><label className="input-label text-xs">{t('storePage.stock','Stock')}</label><input type="number" className="input-field" value={form.stock_quantity} onChange={set('stock_quantity')}/></div>
                 <div><label className="input-label text-xs">{t('storePage.sku','SKU')}</label><input className="input-field" value={form.sku} onChange={set('sku')}/></div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('storePage.category','Category')}</label><button type="button" onClick={addCategory} className="text-xs text-brand-600 font-bold hover:underline flex items-center gap-1"><Plus size={10}/>New</button></div>
+                <select className="input-field" value={form.category_id||''} onChange={set('category_id')}>
+                  <option value="">— {t('storePage.uncategorized','Uncategorized')} —</option>
+                  {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name}</option>))}
+                </select>
               </div>
 
               {/* Allow Oversell Toggle */}
