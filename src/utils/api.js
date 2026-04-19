@@ -89,6 +89,8 @@ export const publicPlansApi = {
 // Store Owner
 export const ownerApi = {
   register: (data) => api.post('/owner/register', data),
+  requestOtp: (data) => api.post('/owner/register/request-otp', data),
+  verifyOtp: (data) => api.post('/owner/register/verify-otp', data),
   login: (data) => api.post('/owner/login', data),
   getProfile: () => api.get('/owner/profile'),
   updateProfile: (data) => api.put('/owner/profile', data),

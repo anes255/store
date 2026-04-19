@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { ownerApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff, MessageCircle, ArrowLeft } from 'lucide-react';
 
 export default function OwnerRegister() {
   const { t } = useTranslation();
@@ -14,6 +14,17 @@ export default function OwnerRegister() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1=form, 2=otp
+  const [otpToken, setOtpToken] = useState('');
+  const [phoneMasked, setPhoneMasked] = useState('');
+  const [code, setCode] = useState('');
+  const [resendIn, setResendIn] = useState(0);
+
+  React.useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,13 +34,41 @@ export default function OwnerRegister() {
     }
     setLoading(true);
     try {
-      const { data } = await ownerApi.register(form);
+      const { data } = await ownerApi.requestOtp(form);
+      setOtpToken(data.otp_token);
+      setPhoneMasked(data.phone_masked || form.phone);
+      setStep(2);
+      setResendIn(60);
+      toast.success('Verification code sent to your WhatsApp');
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed to send code'); }
+    setLoading(false);
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (!code || code.length < 6) { toast.error('Enter the 6-digit code'); return; }
+    setLoading(true);
+    try {
+      const { data } = await ownerApi.verifyOtp({ otp_token: otpToken, code });
       setAuth(data.owner, data.token, 'store_owner');
       toast.success('Account created! Welcome aboard!');
       navigate('/dashboard');
-    } catch (err) { toast.error(err.response?.data?.error || 'Registration failed'); }
+    } catch (err) { toast.error(err.response?.data?.error || 'Invalid code'); }
     setLoading(false);
   };
+
+  const handleResend = async () => {
+    if (resendIn > 0) return;
+    setLoading(true);
+    try {
+      const { data } = await ownerApi.requestOtp(form);
+      setOtpToken(data.otp_token);
+      setResendIn(60);
+      toast.success('Code resent');
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed to resend'); }
+    setLoading(false);
+  };
+
   const set = (k) => (e) => setForm({...form, [k]: e.target.value});
 
   return (
@@ -47,6 +86,7 @@ export default function OwnerRegister() {
             <LanguageSwitcher />
           </div>
 
+          {step === 1 ? (<>
           <h1 className="text-3xl font-extrabold font-display text-gray-900 mb-2">{t('auth.register')}</h1>
           <p className="text-gray-500 mb-8">{t('auth.registerSubtitle')}</p>
 
@@ -95,7 +135,7 @@ export default function OwnerRegister() {
               <div><label className="input-label">{t('auth.wilaya')}</label><input className="input-field" placeholder="Wilaya" value={form.wilaya} onChange={set('wilaya')} /></div>
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5 mt-2">
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{t('auth.register')} <ArrowRight size={18}/></>}
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Send code <ArrowRight size={18}/></>}
             </button>
           </form>
 
@@ -103,6 +143,42 @@ export default function OwnerRegister() {
             {t('auth.hasAccount')}{' '}
             <Link to="/login" className="text-brand-600 font-semibold hover:underline">{t('auth.login')}</Link>
           </p>
+          </>) : (<>
+            <button type="button" onClick={() => { setStep(1); setCode(''); }} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
+              <ArrowLeft size={16}/> Back
+            </button>
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 mb-4">
+              <MessageCircle size={26} className="text-white"/>
+            </div>
+            <h1 className="text-3xl font-extrabold font-display text-gray-900 mb-2">Verify WhatsApp</h1>
+            <p className="text-gray-500 mb-8">We sent a 6-digit code to <strong>{phoneMasked}</strong>. Enter it below to finish creating your account.</p>
+
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div>
+                <label className="input-label">Verification code</label>
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoFocus
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="input-field text-center text-3xl tracking-[0.6em] font-mono"
+                  placeholder="------"
+                  required
+                />
+              </div>
+              <button type="submit" disabled={loading || code.length !== 6} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5 mt-2">
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Verify & Create Account <ArrowRight size={18}/></>}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center text-sm">
+              <button type="button" onClick={handleResend} disabled={resendIn > 0 || loading} className="text-brand-600 font-semibold hover:underline disabled:text-gray-400 disabled:no-underline disabled:cursor-not-allowed">
+                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+              </button>
+            </div>
+          </>)}
         </div>
       </div>
     </div>
