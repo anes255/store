@@ -419,6 +419,31 @@ export default function StoreOrders() {
                 </div>
               </div>
 
+              {/* Products list */}
+              {Array.isArray(o.items) && o.items.length > 0 && (
+                <div className="p-3 bg-white rounded-xl border border-gray-100">
+                  <p className="text-[9px] font-bold text-gray-400 uppercase mb-2">Products ({o.items.length})</p>
+                  <div className="space-y-2">
+                    {o.items.map((it, idx) => {
+                      const v = it.variant_info;
+                      let vLabel = '';
+                      try { const vv = typeof v === 'string' ? JSON.parse(v) : v; if (vv) vLabel = vv.label || vv.name || (Array.isArray(vv.selections) ? vv.selections.map(s=>s.name).filter(Boolean).join(' / ') : ''); } catch {}
+                      return (
+                        <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                          {it.image ? <img src={it.image} alt="" className="w-10 h-10 rounded-md object-cover shrink-0 border border-gray-200"/> : <div className="w-10 h-10 rounded-md bg-gray-200 shrink-0"/>}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">{it.product_name}</p>
+                            {vLabel && <p className="text-[10px] text-gray-500 truncate">{vLabel}</p>}
+                            <p className="text-[10px] text-gray-400 mt-0.5">{parseFloat(it.price || 0).toLocaleString()} × {it.quantity}</p>
+                          </div>
+                          <p className="text-xs font-bold text-gray-900 shrink-0">{parseFloat(it.total_price || (it.price*it.quantity) || 0).toLocaleString()} DZD</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Notes full */}
               {o.notes && (
                 <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">

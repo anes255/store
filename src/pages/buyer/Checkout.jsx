@@ -257,6 +257,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>
             <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{t('store.orderSuccess')}</h2>
             <p className="text-gray-500 mb-4">Order #{orderSuccess.order_number}</p>
+            {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
+              <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-1.5 max-h-48 overflow-y-auto">
+                {orderSuccess.items.map((it, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-sm">
+                    <span className="text-gray-700 truncate mr-2">{it.product_name} × {it.quantity}</span>
+                    <span className="font-semibold text-gray-900 shrink-0">{parseFloat(it.total_price || (it.unit_price * it.quantity) || 0).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <p className="text-3xl font-extrabold mb-2" style={{ color: pc }}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency || 'DZD'}</p>
             <p className="text-sm text-gray-400 mb-6">Cash on Delivery — Pay when you receive your order</p>
             {isModal

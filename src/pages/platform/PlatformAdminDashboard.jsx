@@ -336,8 +336,10 @@ function AllStores(){
 // ═══════ ALL ORDERS ═══════
 function AllOrders(){
   const[orders,setOrders]=useState([]);const[total,setTotal]=useState(0);const[filter,setFilter]=useState('all');const[search,setSearch]=useState('');const[loading,setLoading]=useState(true);
+  const[expanded,setExpanded]=useState(null);
   const load=()=>{api.get('/platform/orders',{params:{status:filter,search}}).then(r=>{setOrders(r.data.orders||[]);setTotal(r.data.total||0);}).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[filter,search]);
+  const variantLabel=(v)=>{try{const vv=typeof v==='string'?JSON.parse(v):v;if(!vv)return'';return vv.label||vv.name||(Array.isArray(vv.selections)?vv.selections.map(s=>s.name).filter(Boolean).join(' / '):'');}catch{return'';}};
   return(<div>
     <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">All Orders</h1><span className="text-sm text-gray-400">{total} total</span></div>
     <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -345,17 +347,27 @@ function AllOrders(){
       <div className="relative flex-1 max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
-    <tbody>{orders.map(o=>(
-      <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50">
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3 w-8"></th><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Items</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
+    <tbody>{orders.map(o=>{const isOpen=expanded===o.id;return(<React.Fragment key={o.id}>
+      <tr onClick={()=>setExpanded(isOpen?null:o.id)} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer">
+        <td className="px-5 py-3 text-gray-400"><ChevronRight size={16} className={`transition-transform ${isOpen?'rotate-90':''}`}/></td>
         <td className="px-5 py-3 font-mono font-bold text-xs text-brand-600">{o.order_number}</td>
         <td className="px-5 py-3"><p className="text-gray-800">{o.customer_name}</p><p className="text-[10px] text-gray-400">{o.customer_phone}</p></td>
         <td className="px-5 py-3 text-gray-500 text-xs">{o.store_name}</td>
+        <td className="px-5 py-3 text-gray-700 text-xs font-semibold">{(o.items||[]).reduce((s,i)=>s+(parseInt(i.quantity)||0),0)} ({(o.items||[]).length})</td>
         <td className="px-5 py-3 font-bold">{parseFloat(o.total).toLocaleString()} DZD</td>
         <td className="px-5 py-3"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${o.status==='delivered'?'bg-emerald-100 text-emerald-700':o.status==='pending'?'bg-amber-100 text-amber-700':o.status==='cancelled'?'bg-red-100 text-red-700':'bg-blue-100 text-blue-700'}`}>{o.status}</span></td>
         <td className="px-5 py-3 text-gray-400 text-xs">{new Date(o.created_at).toLocaleDateString()}</td>
       </tr>
-    ))}</tbody></table>{orders.length===0&&<p className="text-center py-12 text-gray-400">No orders found</p>}</div>}
+      {isOpen&&(<tr className="bg-gray-50/50"><td colSpan={8} className="px-5 py-4"><div className="space-y-2">
+        {(!o.items||!o.items.length)?<p className="text-xs text-gray-400">No items recorded for this order.</p>:o.items.map((it,idx)=>{const vl=variantLabel(it.variant_info);return(
+          <div key={idx} className="flex items-center gap-3 p-2.5 bg-white rounded-lg border border-gray-100">
+            {it.image?<img src={it.image} alt="" className="w-11 h-11 rounded-md object-cover shrink-0 border border-gray-200"/>:<div className="w-11 h-11 rounded-md bg-gray-200 shrink-0"/>}
+            <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{it.product_name}</p>{vl&&<p className="text-[11px] text-gray-500 truncate">{vl}</p>}<p className="text-[11px] text-gray-400 mt-0.5">{parseFloat(it.price||0).toLocaleString()} × {it.quantity}</p></div>
+            <p className="text-sm font-bold text-gray-900 shrink-0">{parseFloat(it.total_price||(it.price*it.quantity)||0).toLocaleString()} DZD</p>
+          </div>);})}
+      </div></td></tr>)}
+    </React.Fragment>);})}</tbody></table>{orders.length===0&&<p className="text-center py-12 text-gray-400">No orders found</p>}</div>}
   </div>);
 }
 
