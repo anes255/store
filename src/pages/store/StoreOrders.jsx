@@ -395,12 +395,7 @@ export default function StoreOrders() {
                       {o.shipping_type === 'home' ? 'Home Delivery' : 'Desk/Office Delivery'}
                     </p>
                   )}
-                  {o.tracking_number && (
-                    <p className="text-xs text-cyan-600 mt-1.5 flex items-center gap-1.5 font-mono font-medium">
-                      <Hash size={12} />
-                      {o.tracking_number}
-                    </p>
-                  )}
+                  {/* Tracking number moved out of the list row — shown only in the order detail modal. */}
                 </div>
 
                 {/* Full Payment Card */}

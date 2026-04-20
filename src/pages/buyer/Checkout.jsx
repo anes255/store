@@ -9,6 +9,17 @@ import WILAYA_CITIES from '../../data/wilayaCities';
 import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
 
+// Stable wrapper component defined at module level so it doesn't unmount on every parent re-render.
+function ShellWrapper({ isModal, onClose, children }) {
+  return isModal
+    ? (<div className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
+         <div className="w-full max-w-3xl bg-gray-50 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
+           {children}
+         </div>
+       </div>)
+    : (<div className="min-h-screen bg-gray-50">{children}</div>);
+}
+
 // directItems: optional array of items for "Buy Now" flow (skips cart).
 // Each item: { product_id, name, price, image, quantity, variant }
 export default function Checkout({ isModal = false, onClose, storeSlug: storeSlugProp, directItems = null }) {
@@ -142,22 +153,19 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Copied!'); };
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
-  // Wrapper that renders as full page or modal depending on isModal
-  const Shell = ({ children }) => isModal
-    ? (<div className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-         <div className="w-full max-w-3xl bg-gray-50 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
-           {children}
-         </div>
-       </div>)
-    : (<div className="min-h-screen bg-gray-50">{children}</div>);
+  // Wrapper that renders as full page or modal depending on isModal.
+  // IMPORTANT: must be a stable function reference (not re-created on every render)
+  // so React doesn't unmount its children on each keystroke, which would blur inputs.
+  const Shell = ShellWrapper;
+  const shellProps = { isModal, onClose };
 
-  if (!store) return <Shell><div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div></Shell>;
+  if (!store) return <Shell {...shellProps}><div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div></Shell>;
 
   // ═══════ PAYMENT INSTRUCTION PAGES ═══════
   if (orderSuccess && paymentStep) {
     const orderNum = orderSuccess.order_number;
     return (
-      <Shell>
+      <Shell {...shellProps}>
         <header className="bg-white border-b sticky top-0 z-30 px-4 py-3">
           <div className="max-w-lg mx-auto flex items-center justify-between">
             <span className="font-bold text-sm text-gray-700">Complete Payment</span>
@@ -251,7 +259,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   // ═══════ SUCCESS PAGE (COD) ═══════
   if (orderSuccess) {
     return (
-      <Shell>
+      <Shell {...shellProps}>
         <div className="min-h-[80vh] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-xl">
             <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>
@@ -288,7 +296,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   ].filter(Boolean);
 
   return (
-    <Shell>
+    <Shell {...shellProps}>
       <header className="bg-white shadow-sm sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           {isModal ? (
@@ -404,14 +412,14 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   const Icon = pm.icon;
                   const selected = form.payment_method === pm.key;
                   return (
-                    <label key={pm.key} className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border-2 transition-all ${pm.disabled ? 'opacity-50 cursor-not-allowed border-gray-100' : selected ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} onClick={pm.disabled ? (e) => e.preventDefault() : undefined}>
+                    <label key={pm.key} className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border-2 transition-all ${pm.disabled ? 'opacity-50 cursor-not-allowed border-gray-100 bg-white' : selected ? 'shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`} style={selected && !pm.disabled ? {borderColor: pc, backgroundColor: pc + '1A'} : undefined} onClick={pm.disabled ? (e) => e.preventDefault() : undefined}>
                       <input type="radio" name="payment" value={pm.key} checked={selected} onChange={() => !pm.disabled && setForm({ ...form, payment_method: pm.key })} className="sr-only" disabled={pm.disabled}/>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selected ? 'text-white' : 'bg-gray-100 text-gray-500'}`} style={selected ? {backgroundColor: pc} : {}}>
                         <Icon size={18}/>
                       </div>
                       <div className="flex-1">
-                        <p className="font-bold text-sm text-gray-800">{pm.label}</p>
-                        <p className="text-xs text-gray-400">{pm.desc}</p>
+                        <p className="font-bold text-sm text-gray-900">{pm.label}</p>
+                        <p className="text-xs text-gray-600">{pm.desc}</p>
                       </div>
                       {pm.disabled && <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">COMING SOON</span>}
                       {selected && !pm.disabled && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
