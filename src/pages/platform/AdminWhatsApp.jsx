@@ -49,19 +49,19 @@ export default function AdminWhatsApp() {
   const qr = status.qr;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-          <MessageCircle size={24} className="text-white"/>
+    <div className="max-w-4xl mx-auto">
+      <div className="flex items-start gap-3 mb-6">
+        <div className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 shrink-0">
+          <MessageCircle size={22} className="text-white"/>
         </div>
-        <div>
-          <h1 className="text-2xl font-extrabold">Platform WhatsApp</h1>
-          <p className="text-sm text-gray-500">This is the number used to send registration verification codes to new store owners.</p>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-extrabold">Platform WhatsApp</h1>
+          <p className="text-xs md:text-sm text-gray-500">This is the number used to send registration verification codes to new store owners.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-3">
             {connected ? (
               <><CheckCircle2 size={22} className="text-emerald-600"/><span className="font-semibold text-emerald-700">Connected</span></>
@@ -81,8 +81,8 @@ export default function AdminWhatsApp() {
           </button>
         ) : qr ? (
           <div className="flex flex-col items-center gap-3 py-4">
-            <div className="p-4 bg-white border-2 border-gray-200 rounded-2xl">
-              <img src={qr} alt="WhatsApp QR" className="w-64 h-64"/>
+            <div className="p-3 md:p-4 bg-white border-2 border-gray-200 rounded-2xl">
+              <img src={qr} alt="WhatsApp QR" className="w-56 h-56 md:w-64 md:h-64"/>
             </div>
             <p className="text-sm text-gray-600 text-center max-w-sm">Open WhatsApp on your phone → Settings → Linked Devices → Link a Device, then scan this code.</p>
           </div>
@@ -97,9 +97,9 @@ export default function AdminWhatsApp() {
       </div>
 
       {connected && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
           <h2 className="font-bold mb-3">Send a test message</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="tel"
               value={testPhone}

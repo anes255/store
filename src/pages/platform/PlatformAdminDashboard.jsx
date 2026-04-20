@@ -41,7 +41,7 @@ function NotificationsBell({isDark,pc}){
       </button>
       {open&&(<>
         <div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>
-        <div className={`absolute right-0 mt-2 w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+        <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
           <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div>
               <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Notifications</div>
@@ -103,7 +103,7 @@ function ExpiringSubscriptionsBell({isDark,pc}){
       {open&&(
         <>
           <div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>
-          <div className={`absolute right-0 mt-2 w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+          <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
               <div>
                 <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Expiring Subscriptions</div>
@@ -217,11 +217,11 @@ function Overview(){
     {label:t('admin.customers','Customers'),value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:t('admin.registeredBuyers','Registered buyers'),to:'/admin/store-owners'},
   ];
   return(<div>
-    <div className="flex items-center justify-between mb-6"><div><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.platformOverview','Platform Overview')}</h1><p className="text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className={`px-4 py-2 ${isDark?'bg-gray-800 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200'} rounded-xl text-sm font-medium flex items-center gap-2`}><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">{cards.map((c,i)=>{const I=c.icon;return(
-      <Link key={i} to={c.to} className={`${isDark?'bg-gray-800 hover:bg-gray-750':'bg-white hover:bg-gray-50'} rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer block group`}>
-        <div className="flex items-center justify-between mb-3"><div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-md`}><I size={18} className="text-white"/></div><ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors"/></div>
-        <p className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p><p className="text-[10px] text-emerald-500 font-bold mt-1">{c.sub}</p>
+    <div className="flex flex-wrap items-start justify-between gap-3 mb-6"><div className="min-w-0"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.platformOverview','Platform Overview')}</h1><p className="text-xs md:text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className={`px-3 md:px-4 py-2 ${isDark?'bg-gray-800 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200'} rounded-xl text-xs md:text-sm font-medium flex items-center gap-2 shrink-0`}><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 md:gap-4 mb-8">{cards.map((c,i)=>{const I=c.icon;return(
+      <Link key={i} to={c.to} className={`${isDark?'bg-gray-800 hover:bg-gray-750':'bg-white hover:bg-gray-50'} rounded-2xl p-4 md:p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer block group`}>
+        <div className="flex items-center justify-between mb-3"><div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-md`}><I size={16} className="text-white"/></div><ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors"/></div>
+        <p className={`text-lg md:text-2xl font-black break-words ${isDark?'text-gray-100':'text-gray-900'}`}>{c.value}</p><p className="text-[11px] md:text-xs text-gray-400 mt-1">{c.label}</p><p className="text-[10px] text-emerald-500 font-bold mt-1 truncate">{c.sub}</p>
       </Link>);})}</div>
     <div className="grid lg:grid-cols-2 gap-6">
       <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-6 shadow-sm`}><h3 className={`font-bold ${isDark?'text-gray-100':'text-gray-900'} mb-4 flex items-center gap-2`}><ShoppingCart size={16}/>{t('admin.recentOrders','Recent Orders')}</h3>
@@ -266,10 +266,10 @@ function StoreOwners(){
     }
   };
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>Store Owners</h1><span className="text-sm text-gray-400">{owners.length} total</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>Store Owners</h1><span className="text-xs md:text-sm text-gray-400">{owners.length} total</span></div>
     <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-3 ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'} rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20`} placeholder="Search by name, email, phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-hidden`}><table className="w-full text-sm"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+    <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-x-auto`}><table className="w-full text-sm min-w-[720px]"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
     <tbody>{owners.map(o=>(
       <tr key={o.id} className={`border-t ${isDark?'border-gray-700 hover:bg-gray-700':'border-gray-100 hover:bg-gray-50'}`}>
         <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs">{o.full_name?.[0]||'U'}</div><div><p className={`font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
@@ -299,25 +299,25 @@ function AllStores(){
   const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success('Toggled');load();}catch{toast.error('Failed');}};
   const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');setDetail(null);load();}catch{toast.error('Failed');}};
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-sm text-gray-400">{stores.length} {t('admin.total','total')}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-xs md:text-sm text-gray-400">{stores.length} {t('admin.total','total')}</span></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
     <div className="grid gap-4">{stores.map(s=>(
       <div key={s.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden`}>
-        <div className="p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold">{(s.name||s.store_name||'S')[0]}</div>
-          <div className="flex-1 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
-            <div className="flex items-center gap-2"><p className={`font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark?'bg-gray-700 text-gray-400':'bg-gray-100 text-gray-500'}`}>{t('admin.offline','OFFLINE')}</span>}</div>
-            <p className="text-xs text-gray-400">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>
+        <div className="p-4 md:p-5 flex flex-wrap items-center gap-3 md:gap-4">
+          <div className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
+            <div className="flex flex-wrap items-center gap-2"><p className={`font-bold truncate ${isDark?'text-gray-100':'text-gray-900'}`}>{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark?'bg-gray-700 text-gray-400':'bg-gray-100 text-gray-500'}`}>{t('admin.offline','OFFLINE')}</span>}</div>
+            <p className="text-xs text-gray-400 truncate">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>
           </div>
-          <div className="text-right"><p className="text-sm font-bold">{parseFloat(s.revenue||0).toLocaleString()} DZD</p><p className="text-[10px] text-gray-400">{s.product_count||0} products · {s.order_count||0} orders</p></div>
-          <div className="flex gap-2 shrink-0">
+          <div className="text-right ml-auto"><p className="text-sm font-bold whitespace-nowrap">{parseFloat(s.revenue||0).toLocaleString()} DZD</p><p className="text-[10px] text-gray-400 whitespace-nowrap">{s.product_count||0} products · {s.order_count||0} orders</p></div>
+          <div className="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
             <button onClick={()=>setDetail(detail?.id===s.id?null:s)} className={`p-2 ${isDark?'hover:bg-gray-700':'hover:bg-gray-100'} rounded-lg text-gray-400`} title="Details"><Eye size={14}/></button>
             <a href={`/s/${s.slug}`} target="_blank" className={`p-2 ${isDark?'hover:bg-gray-700':'hover:bg-gray-100'} rounded-lg text-gray-400`} title="Visit"><ExternalLink size={14}/></a>
             <button onClick={()=>toggle(s.id)} className={`p-2 ${isDark?'hover:bg-gray-700':'hover:bg-gray-100'} rounded-lg text-gray-400`} title={s.is_published?'Take offline':'Put live'}>{s.is_published?<EyeOff size={14}/>:<Eye size={14}/>}</button>
             <button onClick={()=>del(s.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400" title="Delete"><Trash2 size={14}/></button>
           </div>
         </div>
-        {detail?.id===s.id&&<div className={`border-t ${isDark?'border-gray-700 bg-gray-900':'border-gray-100 bg-gray-50'} p-5 grid grid-cols-2 lg:grid-cols-4 gap-4`}>
+        {detail?.id===s.id&&<div className={`border-t ${isDark?'border-gray-700 bg-gray-900':'border-gray-100 bg-gray-50'} p-4 md:p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4`}>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Slug</p><p className="font-mono text-sm">{s.slug}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Owner Phone</p><p className="text-sm">{s.owner_phone||'N/A'}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Products</p><p className="text-sm font-bold">{s.product_count||0}</p></div>
@@ -341,13 +341,13 @@ function AllOrders(){
   useEffect(()=>{load();},[filter,search]);
   const variantLabel=(v)=>{try{const vv=typeof v==='string'?JSON.parse(v):v;if(!vv)return'';return vv.label||vv.name||(Array.isArray(vv.selections)?vv.selections.map(s=>s.name).filter(Boolean).join(' / '):'');}catch{return'';}};
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">All Orders</h1><span className="text-sm text-gray-400">{total} total</span></div>
-    <div className="flex flex-wrap items-center gap-3 mb-6">
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">{['all','pending','confirmed','shipped','delivered','cancelled'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f}</button>)}</div>
-      <div className="relative flex-1 max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">All Orders</h1><span className="text-xs md:text-sm text-gray-400">{total} total</span></div>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','pending','confirmed','shipped','delivered','cancelled'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f}</button>)}</div>
+      <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3 w-8"></th><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Items</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
+    <div className="bg-white rounded-2xl shadow-sm overflow-x-auto"><table className="w-full text-sm min-w-[820px]"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3 w-8"></th><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Items</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
     <tbody>{orders.map(o=>{const isOpen=expanded===o.id;return(<React.Fragment key={o.id}>
       <tr onClick={()=>setExpanded(isOpen?null:o.id)} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer">
         <td className="px-5 py-3 text-gray-400"><ChevronRight size={16} className={`transition-transform ${isOpen?'rotate-90':''}`}/></td>
@@ -378,7 +378,7 @@ function SiteSettings(){
   const save=async()=>{setLoading(true);try{const{data}=await platformApi.updateSettings(s);setS(data);toast.success('Saved!');}catch{toast.error('Failed');}setLoading(false);};
   const imgUp=(field)=>(e)=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');const max=field==='favicon'?128:400;const ratio=Math.min(max/img.width,max/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const compressed=c.toDataURL('image/png',0.9);setS({...s,[field]:compressed});toast.success('Uploaded!');};img.src=reader.result;};reader.readAsDataURL(f);};
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Site & Branding</h1><button onClick={save} disabled={loading} className="px-6 py-2.5 bg-red-500 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-600 disabled:opacity-50"><Save size={16}/>Save Changes</button></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Site & Branding</h1><button onClick={save} disabled={loading} className="px-4 md:px-6 py-2.5 bg-red-500 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-600 disabled:opacity-50"><Save size={16}/>Save Changes</button></div>
     <div className="grid lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
         <h3 className="font-bold text-gray-900">Platform Identity</h3>
@@ -454,7 +454,7 @@ function Subscriptions({isDark}){
   const theadBg=isDark?'bg-gray-800/60':'bg-gray-50';
   const inputCls=isDark?'bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500':'border border-gray-200 text-gray-900';
   return(<div>
-    <h1 className={`text-2xl font-black ${titleC} mb-6`}>Subscription Payments</h1>
+    <h1 className={`text-xl md:text-2xl font-black ${titleC} mb-6`}>Subscription Payments</h1>
 
     {/* Expiring subscriptions — grant free extra days */}
     <div className={`${card} rounded-2xl shadow-sm mb-6 overflow-hidden`}>
@@ -465,28 +465,28 @@ function Subscriptions({isDark}){
       {expiring.length===0?<p className={`text-center py-8 text-xs ${mutedC}`}>No expiring subscriptions in the next 24h</p>:(
         <div className="divide-y" style={{borderColor:isDark?'#1f2937':'#f3f4f6'}}>
           {expiring.map(o=>(
-            <div key={o.id} className={`flex items-center justify-between px-5 py-3 ${rowHover}`}>
-              <div>
-                <p className={`text-sm font-bold ${textC}`}>{o.name||o.full_name}</p>
+            <div key={o.id} className={`flex flex-wrap items-center justify-between gap-2 px-4 md:px-5 py-3 ${rowHover}`}>
+              <div className="min-w-0">
+                <p className={`text-sm font-bold truncate ${textC}`}>{o.name||o.full_name}</p>
                 <p className={`text-[11px] ${mutedC}`}>{o.email||o.phone} · <span className="capitalize">{o.subscription_plan||'free'}</span> · expires {new Date(o.subscription_expires_at).toLocaleString()} {o.hours_remaining!=null&&<span className={o.hours_remaining<0?'text-red-500 font-bold':'text-amber-500 font-bold'}> ({o.hours_remaining}h)</span>}</p>
               </div>
-              <button onClick={()=>{setGrantModal(o);setGrantDays(7);}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 flex items-center gap-1"><Gift size={12}/>Grant free days</button>
+              <button onClick={()=>{setGrantModal(o);setGrantDays(7);}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 flex items-center gap-1 shrink-0 ml-auto"><Gift size={12}/>Grant free days</button>
             </div>
           ))}
         </div>
       )}
     </div>
 
-    <div className="grid grid-cols-4 gap-4 mb-6">
-      <div className={`${card} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('all')}><p className={`text-xs ${mutedC}`}>Total</p><p className={`text-2xl font-black ${titleC}`}>{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
-      <div className={`${isDark?'bg-amber-900/30 border border-amber-800':'bg-amber-50'} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400`} onClick={()=>setFilter('pending')}><p className={`text-xs ${isDark?'text-amber-300':'text-amber-600'}`}>Pending</p><p className={`text-2xl font-black ${isDark?'text-amber-200':'text-amber-700'}`}>{stats.pending||0}</p></div>
-      <div className={`${isDark?'bg-emerald-900/30 border border-emerald-800':'bg-emerald-50'} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400`} onClick={()=>setFilter('approved')}><p className={`text-xs ${isDark?'text-emerald-300':'text-emerald-600'}`}>Approved</p><p className={`text-2xl font-black ${isDark?'text-emerald-200':'text-emerald-700'}`}>{stats.approved||0}</p></div>
-      <div className={`${isDark?'bg-red-900/30 border border-red-800':'bg-red-50'} rounded-2xl p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('rejected')}><p className={`text-xs ${isDark?'text-red-300':'text-red-600'}`}>Rejected</p><p className={`text-2xl font-black ${isDark?'text-red-200':'text-red-700'}`}>{stats.rejected||0}</p></div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+      <div className={`${card} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('all')}><p className={`text-xs ${mutedC}`}>Total</p><p className={`text-xl md:text-2xl font-black ${titleC}`}>{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
+      <div className={`${isDark?'bg-amber-900/30 border border-amber-800':'bg-amber-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400`} onClick={()=>setFilter('pending')}><p className={`text-xs ${isDark?'text-amber-300':'text-amber-600'}`}>Pending</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-amber-200':'text-amber-700'}`}>{stats.pending||0}</p></div>
+      <div className={`${isDark?'bg-emerald-900/30 border border-emerald-800':'bg-emerald-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400`} onClick={()=>setFilter('approved')}><p className={`text-xs ${isDark?'text-emerald-300':'text-emerald-600'}`}>Approved</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-emerald-200':'text-emerald-700'}`}>{stats.approved||0}</p></div>
+      <div className={`${isDark?'bg-red-900/30 border border-red-800':'bg-red-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('rejected')}><p className={`text-xs ${isDark?'text-red-300':'text-red-600'}`}>Rejected</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-red-200':'text-red-700'}`}>{stats.rejected||0}</p></div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className={`${card} rounded-2xl shadow-sm overflow-hidden`}>
+    <div className={`${card} rounded-2xl shadow-sm overflow-x-auto`}>
       {data.payments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:
-      <table className="w-full text-sm"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+      <table className="w-full text-sm min-w-[780px]"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
       <tbody>{data.payments.map(p=>(
         <tr key={p.id} className={`border-t ${rowBorder} ${rowHover}`}>
           <td className="px-5 py-4"><div><p className={`font-bold ${textC}`}>{p.owner_name||'N/A'}</p><p className={`text-[10px] ${mutedC}`}>{p.owner_phone}</p></div></td>
@@ -539,7 +539,7 @@ function BillingConfig(){
   const save=async()=>{setSaving(true);try{await platformApi.updateBillingConfig(config);toast.success('Billing config saved!');}catch{toast.error('Failed');}setSaving(false);};
   const uploadQR=(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setConfig({...config,billing_baridimob_qr:r.result});r.readAsDataURL(f);};
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} className="px-4 md:px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
 
     {/* Active subscription plans summary */}
     <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
@@ -670,9 +670,9 @@ function PageBuilder(){
   };
 
   return(<div>
-    <div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-black text-gray-900">Page Builder</h1><div className="flex gap-2"><button onClick={()=>{if(confirm('Reset to original landing page? All custom blocks will be removed.')){setBlocks([]);save([]);}}} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/>Reset to Original</button><a href="/" target="_blank" className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={()=>save()} disabled={saving} className="px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save Page'}</button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Page Builder</h1><div className="flex flex-wrap gap-2"><button onClick={()=>{if(confirm('Reset to original landing page? All custom blocks will be removed.')){setBlocks([]);save([]);}}} className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/><span className="hidden sm:inline">Reset to Original</span><span className="sm:hidden">Reset</span></button><a href="/" target="_blank" className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={()=>save()} disabled={saving} className="px-4 md:px-6 py-2.5 bg-red-500 text-white rounded-xl text-xs md:text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div></div>
 
-    <div className="grid lg:grid-cols-[1fr,280px] gap-6">
+    <div className="grid lg:grid-cols-[1fr,280px] gap-4 md:gap-6">
       <div className="space-y-3">
         {blocks.length===0&&<div className="bg-white rounded-2xl p-12 text-center shadow-sm"><Layers size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">No custom blocks</p><p className="text-sm text-gray-400 mt-1">The default landing page is showing. Add blocks to customize it.</p></div>}
         {blocks.map((block,idx)=>{const BT=BLOCK_TYPES.find(b=>b.type===block.type);const Icon=BT?.icon||Layers;const isEditing=editIdx===idx;return(
@@ -732,7 +732,7 @@ function SystemHealth(){
     {name:'Payments',ok:sys.services?.payments,icon:CreditCard,desc:'Chargily Pay'},
   ];
   return(<div>
-    <h1 className="text-2xl font-black text-gray-900 mb-6">System Health</h1>
+    <h1 className="text-xl md:text-2xl font-black text-gray-900 mb-6">System Health</h1>
     <div className="grid lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm">
         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Server size={16}/>Server Info</h3>
@@ -797,7 +797,7 @@ function MyProfile(){
   };
 
   return(<div>
-    <h1 className="text-2xl font-bold mb-1 flex items-center gap-2"><Settings size={22} className="text-red-500"/>{t('admin.myProfile','My Profile')}</h1>
+    <h1 className="text-xl md:text-2xl font-bold mb-1 flex items-center gap-2"><Settings size={22} className="text-red-500"/>{t('admin.myProfile','My Profile')}</h1>
     <p className="text-sm text-gray-400 mb-6">{t('admin.updateLoginInfo','Update your login information')}</p>
 
     <div className="grid lg:grid-cols-2 gap-6">
@@ -857,12 +857,12 @@ function AdminManagement(){
   const toggle=async(id)=>{try{await platformApi.toggleAdmin(id);load();}catch{toast.error('Failed');}};
 
   return(<div>
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark?'text-gray-100':'text-gray-900'}`}><Shield size={22} className="text-red-500"/>Super Admins</h1>
-        <p className="text-sm text-gray-400 mt-1">Grant or revoke super admin access to trusted accounts</p>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="min-w-0">
+        <h1 className={`text-xl md:text-2xl font-bold flex items-center gap-2 ${isDark?'text-gray-100':'text-gray-900'}`}><Shield size={22} className="text-red-500"/>Super Admins</h1>
+        <p className="text-xs md:text-sm text-gray-400 mt-1">Grant or revoke super admin access to trusted accounts</p>
       </div>
-      <button onClick={()=>setShowAdd(true)} className="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-700"><Plus size={14}/>Add Admin</button>
+      <button onClick={()=>setShowAdd(true)} className="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-700 shrink-0"><Plus size={14}/>Add Admin</button>
     </div>
 
     {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>:
@@ -927,19 +927,19 @@ export default function PlatformAdminDashboard(){
     <div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/80'}`}>
       <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} isDark={isDark} pc={pc} pl={generatePalette(pc)}/>
       <main className="flex-1 lg:ml-56 min-w-0">
-        <header className={`sticky top-0 z-10 backdrop-blur-xl border-b px-4 md:px-8 py-3 flex items-center justify-between ${isDark?'bg-gray-900/90 border-gray-800':'bg-white border-gray-100'}`}>
-          <div className="flex items-center gap-3">
+        <header className={`sticky top-0 z-10 backdrop-blur-xl border-b px-3 md:px-8 py-3 flex items-center justify-between gap-2 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white border-gray-100'}`}>
+          <div className="flex items-center gap-2 min-w-0">
             <button onClick={()=>setSidebarOpen(true)} className={`lg:hidden p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>
-            <span className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-700'}`}>{t('admin.platformAdministration','Platform Administration')}</span>
+            <span className={`text-sm font-bold truncate ${isDark?'text-gray-200':'text-gray-700'}`}><span className="hidden sm:inline">{t('admin.platformAdministration','Platform Administration')}</span><span className="sm:hidden">{t('admin.superAdmin','Super Admin')}</span></span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
             <NotificationsBell isDark={isDark} pc={pc}/>
             <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
             <LanguageSwitcher/>
-            <span className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
+            <span className="hidden md:flex px-3 py-1 rounded-full text-[10px] font-bold items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
           </div>
         </header>
-        <div className="p-4 md:p-8">
+        <div className="p-3 sm:p-4 md:p-8">
           <Routes>
             <Route path="dashboard" element={<Overview/>}/>
             <Route path="store-owners" element={<StoreOwners/>}/>

@@ -409,7 +409,7 @@ export default function PlansEditor() {
                 <Sparkles size={20} className="text-white" />
               </div>
               <div>
-                <h1 className={`text-2xl font-black ${u.title}`}>Subscription Plans</h1>
+                <h1 className={`text-xl md:text-2xl font-black ${u.title}`}>Subscription Plans</h1>
                 <p className={`text-xs ${u.muted}`}>Design tiers, set prices, and gate features. Changes apply instantly to store owners.</p>
               </div>
             </div>
