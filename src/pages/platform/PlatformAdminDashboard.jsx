@@ -209,20 +209,20 @@ function Overview(){
   if(loading)return<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>;
   const s=data?.stats||{};
   const cards=[
-    {label:t('admin.storeOwners','Store Owners'),value:s.totalOwners,icon:Users,color:'from-blue-500 to-blue-600',sub:`+${s.weekOwners||0} ${t('admin.thisWeek','this week')}`},
-    {label:t('admin.activeStores','Active Stores'),value:s.totalStores,icon:Store,color:'from-purple-500 to-purple-600',sub:t('admin.totalStores','Total stores')},
-    {label:t('admin.totalOrders','Total Orders'),value:s.totalOrders,icon:ShoppingCart,color:'from-emerald-500 to-emerald-600',sub:`${s.todayOrders||0} ${t('admin.today','today')}`},
-    {label:t('admin.revenue','Revenue'),value:`${(s.totalRevenue||0).toLocaleString()} DZD`,icon:DollarSign,color:'from-amber-500 to-orange-500',sub:`${(s.todayRevenue||0).toLocaleString()} DZD ${t('admin.today','today')}`},
-    {label:t('admin.products','Products'),value:s.totalProducts,icon:Package,color:'from-cyan-500 to-cyan-600',sub:t('admin.acrossStores','Across all stores')},
-    {label:t('admin.customers','Customers'),value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:t('admin.registeredBuyers','Registered buyers')},
+    {label:t('admin.storeOwners','Store Owners'),value:s.totalOwners,icon:Users,color:'from-blue-500 to-blue-600',sub:`+${s.weekOwners||0} ${t('admin.thisWeek','this week')}`,to:'/admin/store-owners'},
+    {label:t('admin.activeStores','Active Stores'),value:s.totalStores,icon:Store,color:'from-purple-500 to-purple-600',sub:t('admin.totalStores','Total stores'),to:'/admin/stores'},
+    {label:t('admin.totalOrders','Total Orders'),value:s.totalOrders,icon:ShoppingCart,color:'from-emerald-500 to-emerald-600',sub:`${s.todayOrders||0} ${t('admin.today','today')}`,to:'/admin/orders'},
+    {label:t('admin.revenue','Revenue'),value:`${(s.totalRevenue||0).toLocaleString()} DZD`,icon:DollarSign,color:'from-amber-500 to-orange-500',sub:`${(s.todayRevenue||0).toLocaleString()} DZD ${t('admin.today','today')}`,to:'/admin/subscriptions'},
+    {label:t('admin.products','Products'),value:s.totalProducts,icon:Package,color:'from-cyan-500 to-cyan-600',sub:t('admin.acrossStores','Across all stores'),to:'/admin/stores'},
+    {label:t('admin.customers','Customers'),value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:t('admin.registeredBuyers','Registered buyers'),to:'/admin/store-owners'},
   ];
   return(<div>
     <div className="flex items-center justify-between mb-6"><div><h1 className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.platformOverview','Platform Overview')}</h1><p className="text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className={`px-4 py-2 ${isDark?'bg-gray-800 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200'} rounded-xl text-sm font-medium flex items-center gap-2`}><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">{cards.map((c,i)=>{const I=c.icon;return(
-      <div key={i} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow`}>
-        <div className="flex items-center justify-between mb-3"><div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-md`}><I size={18} className="text-white"/></div></div>
+      <Link key={i} to={c.to} className={`${isDark?'bg-gray-800 hover:bg-gray-750':'bg-white hover:bg-gray-50'} rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer block group`}>
+        <div className="flex items-center justify-between mb-3"><div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.color} flex items-center justify-center shadow-md`}><I size={18} className="text-white"/></div><ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors"/></div>
         <p className={`text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{c.value}</p><p className="text-xs text-gray-400 mt-1">{c.label}</p><p className="text-[10px] text-emerald-500 font-bold mt-1">{c.sub}</p>
-      </div>);})}</div>
+      </Link>);})}</div>
     <div className="grid lg:grid-cols-2 gap-6">
       <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-6 shadow-sm`}><h3 className={`font-bold ${isDark?'text-gray-100':'text-gray-900'} mb-4 flex items-center gap-2`}><ShoppingCart size={16}/>{t('admin.recentOrders','Recent Orders')}</h3>
         <div className="space-y-2">{(data?.recentOrders||[]).slice(0,8).map(o=>(
