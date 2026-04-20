@@ -23,8 +23,9 @@ export default function LandingPage() {
   // Brand name is hard-locked to "KyoMarket" — never overridden by the API
   // even if the platform_settings table still says "MultiStorePlatform".
   const BRAND='KyoMarket';
-  const [info, setInfo] = useState({ site_name: BRAND });
-  const [infoLoaded, setInfoLoaded] = useState(false);
+  const cachedInfo = (() => { try { const c = JSON.parse(localStorage.getItem('platform_info_cache') || 'null'); return c && typeof c === 'object' ? c : null; } catch { return null; } })();
+  const [info, setInfo] = useState(cachedInfo ? { ...cachedInfo, site_name: BRAND } : { site_name: BRAND });
+  const [infoLoaded, setInfoLoaded] = useState(!!cachedInfo);
   const [blocks, setBlocks] = useState([]);
   const [hasCustom, setHasCustom] = useState(false);
   const [apiPlans, setApiPlans] = useState(null); // null = still loading / unavailable
@@ -40,6 +41,7 @@ export default function LandingPage() {
     getPlatformInfo().then(r => {
       // Force the brand name regardless of what the API returns.
       setInfo({ ...r.data, site_name: BRAND });
+      try { localStorage.setItem('platform_info_cache', JSON.stringify(r.data)); } catch {}
       document.title=BRAND;
       if(r.data.favicon){
         let link=document.querySelector("link[rel~='icon']");
