@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   en: { translation: {
     nav: { home:'Home', features:'Features', pricing:'Pricing', login:'Login', signup:'Start Free Trial', dashboard:'Dashboard' },
-    hero: { title:'Build Your Online Platform', subtitle:'Create a stunning store in minutes. Sell across all 58 wilayas with powerful tools, AI features, and zero coding.', cta:'Start Free — 14 Days Trial', cta2:'See How It Works' },
+    hero: { title:'Build Your Online Platform', subtitle:'Create a stunning store in minutes. Sell across all 58 wilayas with powerful tools, AI features, and zero coding.', cta:'Start Free — 14 Days Trial', ctaDays:'Start Free — {{count}} Days Trial', ctaNoTrial:'Get Started', cta2:'See How It Works' },
     features: { title:'Everything You Need to Sell Online', subtitle:'Powerful tools built for Algerian e-commerce' },
     pricing: { title:'Simple, Transparent Pricing', start:'Start Free Trial' },
     auth: { login:'Login', register:'Create Account', loginSubtitle:'Sign in to your store owner account', registerSubtitle:'Create your store owner account', registerHeroTitle:'Start your business today', registerHeroSubtitle:'14-day free trial. No credit card needed.', email:'Email', password:'Password', name:'Full Name', phone:'Phone Number', emailOrPhone:'Email or Phone Number', emailOrPhonePlaceholder:'you@email.com or phone number', namePlaceholder:'Your full name', phonePlaceholder:'Your phone number', addressPlaceholder:'Your address', address:'Address', city:'City', wilaya:'Wilaya', allFieldsRequired:'Name, email, phone and password are required', forgotPassword:'Forgot password?', noAccount:"Don't have an account?", hasAccount:'Already have an account?' },
@@ -33,7 +33,7 @@ const resources = {
   }},
   fr: { translation: {
     nav: { home:'Accueil', features:'Fonctionnalités', pricing:'Tarifs', login:'Connexion', signup:'Essai Gratuit', dashboard:'Tableau de bord' },
-    hero: { title:'Créez Votre Plateforme en Ligne', subtitle:"Créez une boutique en quelques minutes. Vendez dans les 58 wilayas avec des outils puissants, l'IA et sans code.", cta:'Essai Gratuit — 14 Jours', cta2:'Voir Comment Ça Marche' },
+    hero: { title:'Créez Votre Plateforme en Ligne', subtitle:"Créez une boutique en quelques minutes. Vendez dans les 58 wilayas avec des outils puissants, l'IA et sans code.", cta:'Essai Gratuit — 14 Jours', ctaDays:'Essai Gratuit — {{count}} Jours', ctaNoTrial:'Commencer', cta2:'Voir Comment Ça Marche' },
     features: { title:'Tout ce dont vous avez besoin pour vendre en ligne', subtitle:'Des outils puissants pour le e-commerce algérien' },
     pricing: { title:'Tarifs Simples et Transparents', start:'Essai Gratuit' },
     auth: { login:'Connexion', register:'Créer un Compte', loginSubtitle:'Connectez-vous à votre compte', registerSubtitle:'Créez votre compte propriétaire', registerHeroTitle:"Lancez votre business aujourd'hui", registerHeroSubtitle:'Essai gratuit de 14 jours. Sans carte bancaire.', email:'Email', password:'Mot de passe', name:'Nom Complet', phone:'Téléphone', emailOrPhone:'Email ou Téléphone', emailOrPhonePlaceholder:'email@exemple.com ou téléphone', namePlaceholder:'Votre nom complet', phonePlaceholder:'Votre numéro de téléphone', addressPlaceholder:'Votre adresse', address:'Adresse', city:'Ville', wilaya:'Wilaya', allFieldsRequired:'Nom, email, téléphone et mot de passe sont obligatoires', forgotPassword:'Mot de passe oublié ?', noAccount:'Pas de compte ?', hasAccount:'Déjà un compte ?' },
@@ -62,7 +62,7 @@ const resources = {
   }},
   ar: { translation: {
     nav: { home:'الرئيسية', features:'المميزات', pricing:'الأسعار', login:'تسجيل الدخول', signup:'ابدأ مجاناً', dashboard:'لوحة التحكم' },
-    hero: { title:'أنشئ منصتك الرقمية', subtitle:'أنشئ متجرك الإلكتروني في دقائق. بع في كل 58 ولاية بأدوات قوية وذكاء اصطناعي بدون برمجة.', cta:'ابدأ مجاناً — 14 يوم', cta2:'شاهد كيف يعمل' },
+    hero: { title:'أنشئ منصتك الرقمية', subtitle:'أنشئ متجرك الإلكتروني في دقائق. بع في كل 58 ولاية بأدوات قوية وذكاء اصطناعي بدون برمجة.', cta:'ابدأ مجاناً — 14 يوم', ctaDays:'ابدأ مجاناً — {{count}} يوم', ctaNoTrial:'ابدأ الآن', cta2:'شاهد كيف يعمل' },
     features: { title:'كل ما تحتاجه للبيع عبر الإنترنت', subtitle:'أدوات قوية للتجارة الإلكترونية الجزائرية' },
     pricing: { title:'أسعار بسيطة وشفافة', start:'ابدأ مجاناً' },
     auth: { login:'تسجيل الدخول', register:'إنشاء حساب', loginSubtitle:'سجّل الدخول إلى حسابك', registerSubtitle:'أنشئ حساب صاحب متجر', registerHeroTitle:'ابدأ عملك اليوم', registerHeroSubtitle:'تجربة مجانية 14 يوماً. بدون بطاقة ائتمان.', email:'البريد الإلكتروني', password:'كلمة المرور', name:'الاسم الكامل', phone:'رقم الهاتف', emailOrPhone:'البريد الإلكتروني أو رقم الهاتف', emailOrPhonePlaceholder:'بريدك أو رقم هاتفك', namePlaceholder:'اسمك الكامل', phonePlaceholder:'رقم هاتفك', addressPlaceholder:'عنوانك', address:'العنوان', city:'المدينة', wilaya:'الولاية', allFieldsRequired:'الاسم والبريد ورقم الهاتف وكلمة المرور مطلوبة', forgotPassword:'نسيت كلمة المرور؟', noAccount:'ليس لديك حساب؟', hasAccount:'لديك حساب بالفعل؟' },

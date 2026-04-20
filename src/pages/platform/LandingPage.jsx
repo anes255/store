@@ -216,7 +216,7 @@ export default function LandingPage() {
             <h1 className="text-5xl md:text-7xl font-extrabold leading-tight"><span className="text-gray-900">{t('hero.title').split(' ').slice(0, 2).join(' ')}</span><br /><span className="gradient-text">{t('hero.title').split(' ').slice(2).join(' ')}</span></h1>
             <p className="mt-6 text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">{t('hero.subtitle')}</p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register" className="btn-primary text-base !py-4 !px-8 flex items-center gap-2 group">{t('hero.cta')}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
+              <Link to="/register" className="btn-primary text-base !py-4 !px-8 flex items-center gap-2 group">{info.trial_enabled!==false?t('hero.ctaDays','Start Free — {{count}} Days Trial',{count:info.trial_days||14}):t('hero.ctaNoTrial','Get Started')}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
               <a href="#features" className="btn-secondary text-base !py-4 !px-8 flex items-center gap-2"><Play size={16} />{t('hero.cta2')}</a>
             </div>
             <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
