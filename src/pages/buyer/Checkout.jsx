@@ -134,7 +134,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   };
 
   const placeOrder = async () => {
-    if (!form.customer_name || !form.customer_phone || !form.customer_email || !form.shipping_address || !form.shipping_wilaya) return toast.error('Please fill all required fields including email');
+    const emailRequired = store?.checkout_email === true;
+    if (!form.customer_name || !form.customer_phone || !form.shipping_address || !form.shipping_wilaya) return toast.error('Please fill all required fields');
+    if (emailRequired && !form.customer_email) return toast.error('Email is required');
     setLoading(true);
     try {
       const authUser = useAuthStore.getState().user;
@@ -263,7 +265,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
         <div className="min-h-[80vh] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-xl">
             <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{t('store.orderSuccess')}</h2>
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{store.success_message || t('store.orderSuccess')}</h2>
             <p className="text-gray-500 mb-4">Order #{orderSuccess.order_number}</p>
             {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
               <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-1.5 max-h-48 overflow-y-auto">
@@ -335,7 +337,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
                   <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/></div>
                 </div>
-                <div><label className="input-label">{t('auth.email')} *</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required/></div>
+                {store?.checkout_email!==false && <div><label className="input-label">{t('auth.email')}{store?.checkout_email===true?' *':''}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required={store?.checkout_email===true}/></div>}
                 <div><label className="input-label">{t('auth.address')} *</label><input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
 
                 {/* Wilaya → City → ZIP */}
@@ -497,10 +499,20 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 <div className="flex justify-between text-sm"><span className="text-gray-500">Shipping</span><span className="font-semibold">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">Discount</span><span className="text-emerald-600 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t"><span>Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
+                {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
               </div>
-              <button onClick={placeOrder} disabled={loading || items.length === 0} className="w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all" style={{backgroundColor: pc}}>
-                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <>{t('store.placeOrder')}</>}
+              {store?.order_notes && <div className="mt-4"><label className="input-label text-xs">Order Notes</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder="Special instructions..."/></div>}
+              <button onClick={placeOrder} disabled={loading || items.length === 0} className={`w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all ${store?.sticky_checkout?'sm:sticky sm:bottom-4':''}`} style={{backgroundColor: pc}}>
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <>{store?.btn_order_now || t('store.placeOrder')}</>}
               </button>
+              {store?.trust_signals!==false && (
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[10px] text-gray-400">
+                  <span className="flex items-center gap-1"><Lock size={12}/> Secure checkout</span>
+                  <span className="flex items-center gap-1"><Check size={12}/> Money-back</span>
+                  <span className="flex items-center gap-1"><Wifi size={12}/> Verified store</span>
+                </div>
+              )}
+              {store?.post_script && <div dangerouslySetInnerHTML={{__html:store.post_script}}/>}
             </div>
           </div>
         </div>

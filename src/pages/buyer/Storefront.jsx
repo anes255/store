@@ -12,6 +12,40 @@ import Checkout from './Checkout';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
 import { initPixels, trackAddToCart, trackViewContent } from '../../utils/trackingPixels';
 
+// Ending-soon offer banner with live countdown. Merchants configure it in
+// Settings → Customization → Offer & Sale Branding (offer_enabled + fields).
+function OfferBanner({ store }) {
+  const hours = parseInt(store.offer_hours) || 0;
+  const minutes = parseInt(store.offer_minutes) || 0;
+  const key = `offer_deadline_${store.id}_${hours}_${minutes}`;
+  const [deadline] = useState(() => {
+    try {
+      const cached = parseInt(localStorage.getItem(key));
+      if (cached && cached > Date.now()) return cached;
+    } catch {}
+    const d = Date.now() + (hours * 3600 + minutes * 60) * 1000;
+    try { localStorage.setItem(key, String(d)); } catch {}
+    return d;
+  });
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const iv = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(iv); }, []);
+  const diff = Math.max(0, deadline - now);
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  if (diff <= 0) return null;
+  const bg = store.offer_bg || 'linear-gradient(90deg,#ef4444,#f97316)';
+  const tc = store.offer_tc || '#ffffff';
+  return (
+    <div className="w-full text-center py-2 px-3 text-sm font-bold flex flex-wrap items-center justify-center gap-x-3 gap-y-1" style={{ background: bg, color: tc }}>
+      <span className="inline-flex items-center gap-1.5"><Tag size={14}/>{store.offer_title || 'Limited Offer'} — {store.offer_discount || '40% OFF'}</span>
+      <span className="opacity-80 text-xs">{store.offer_label || 'Ends in:'}</span>
+      <span className="font-mono tabular-nums bg-white/20 rounded px-2 py-0.5 text-xs">{pad(h)}:{pad(m)}:{pad(s)}</span>
+    </div>
+  );
+}
+
 // ============ ANIMATION PRESETS ============
 // Two groups:
 // 1. Per-template motion keys stamped by the AdvancedBuilder templates
@@ -724,11 +758,14 @@ export default function Storefront() {
   const tplStyle = {};
   const headerBg = pc;
   const headerText = '#ffffff';
-  const nameFont = 'Arial, sans-serif';
-  const headerFont = 'Arial, sans-serif';
+  const nameFont = store.header_font || 'Arial, sans-serif';
+  const headerFont = store.header_font || 'Arial, sans-serif';
+  const bodyTextColor = store.text_color || undefined;
 
   return (
-    <div className={`min-h-screen ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`}>
+    <div className={`min-h-screen ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={bodyTextColor?{color:bodyTextColor}:undefined}>
+      {/* ============ OFFER BANNER ============ */}
+      {store.offer_enabled && <OfferBanner store={store}/>}
       {/* ============ HEADER ============ */}
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
@@ -783,7 +820,7 @@ export default function Storefront() {
       <section className="relative py-16 px-4 text-center overflow-hidden" style={{background:store.cover_image?'none':'#f0f0f0'}}>
         {store.cover_image&&<div className="absolute inset-0"><img src={store.cover_image} className="w-full h-full object-cover" alt=""/><div className="absolute inset-0 bg-black/40"/></div>}
         <div className="relative z-10">
-          <h1 className={`text-5xl md:text-6xl font-black italic tracking-tight ${store.cover_image?'text-white':'text-gray-900'}`} style={{fontFamily:'"Georgia","Times New Roman",serif'}}>{store.hero_title || store.name}</h1>
+          <h1 className={`text-5xl md:text-6xl font-black italic tracking-tight ${store.cover_image?'text-white':'text-gray-900'}`} style={{fontFamily:store.header_font||'"Georgia","Times New Roman",serif'}}>{store.hero_title || store.welcome_message || store.name}</h1>
           <p className={`mt-3 max-w-xl mx-auto text-sm leading-relaxed ${store.cover_image?'text-white/80':'text-gray-500'}`}>
             {store.hero_subtitle || store.description || 'See why this product stands out from the rest. Every detail is meticulously designed for your satisfaction.'}
           </p>

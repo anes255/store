@@ -247,13 +247,33 @@ export default function StoreDashboard() {
         </div>
       </div>
 
-      {/* Products count + Recent Orders */}
+      {/* Products + Recent Orders */}
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="glass-card-solid p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center"><Package size={20} className="text-orange-500" /></div>
-            <div><p className="text-xs text-gray-400 uppercase tracking-wider">{t('storePage.products', 'Products')}</p><p className="text-2xl font-extrabold text-gray-900">{stats.totalProducts || 0}</p></div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center"><Package size={20} className="text-orange-500" /></div>
+              <div><p className="text-xs text-gray-400 uppercase tracking-wider">{t('storePage.products', 'Products')}</p><p className="text-xl font-extrabold text-gray-900">{stats.totalProducts || products.length || 0}</p></div>
+            </div>
+            <Link to="/dashboard/products" className="text-xs text-brand-500 hover:text-brand-600 font-medium flex items-center gap-1">{t('dashboard.viewAll','View All')} <ArrowUpRight size={12}/></Link>
           </div>
+          {products.length > 0 ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {products.slice(0, 8).map(p => {
+                const img = p.image || p.thumbnail || (Array.isArray(p.images) ? p.images[0] : null);
+                return (
+                  <Link key={p.id} to="/dashboard/products" className="group">
+                    <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden mb-1">
+                      {img ? <img src={img} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform"/> : <div className="w-full h-full flex items-center justify-center"><Package size={18} className="text-gray-300"/></div>}
+                    </div>
+                    <p className="text-[11px] font-medium text-gray-700 truncate">{p.name}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">{t('dashboard.noProducts','No products yet')}</p>
+          )}
         </div>
 
         <div className="glass-card-solid p-6">

@@ -156,7 +156,7 @@ export default function StoreOrders() {
     { key: 'new_order', label: 'New' },
     { key: 'pending', label: t('storePage.statusPending', 'Pending') },
     { key: 'confirmed', label: t('storePage.statusConfirmed', 'Confirmed') },
-    { key: 'under_preparation', label: 'Preparing' },
+    { key: 'preparing', label: 'Preparing' },
     { key: 'shipped', label: t('storePage.statusShipped', 'Shipped') },
     { key: 'delivered', label: t('storePage.statusDelivered', 'Delivered') },
     { key: 'cancelled', label: t('storePage.statusCancelled', 'Cancelled') },
@@ -640,7 +640,7 @@ export default function StoreOrders() {
           <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-max sm:w-auto">
             {filters.map(f => {
               const sc = statusConfig[f.key];
-              const count = f.key === 'all' ? total : orders.filter(o => f.key === 'failed_call_1' ? o.status?.startsWith('failed_call') : o.status === f.key).length;
+              const count = f.key === 'all' ? total : orders.filter(o => f.key === 'failed_call_1' ? o.status?.startsWith('failed_call') : f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
               return (
                 <button key={f.key} onClick={() => setFilter(f.key)}
                   className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${filter === f.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>

@@ -350,7 +350,7 @@ export default function StoreSettings(){
 
   useEffect(()=>{if(currentStore){setS({...currentStore,theme:currentStore.theme||'classic'});loadData();}},[currentStore?.id]);
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);
-  const loadData=()=>{if(!currentStore?.id)return;api.get(`/owner/stores/${currentStore.id}/staff`).then(r=>setStaff(r.data)).catch(()=>{});api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>setWilayas(r.data)).catch(()=>{});};
+  const loadData=()=>{if(!currentStore?.id)return;api.get(`/owner/stores/${currentStore.id}/staff`).then(r=>setStaff(r.data)).catch(()=>{});api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>setWilayas(Array.isArray(r.data)?r.data:(r.data?.wilayas||[]))).catch(()=>setWilayas([]));};
   const loadProfile=async()=>{try{const{data}=await ownerApi.getProfile();setProfile(data);setNewUsername(data.username||'');setNewEmail(data.email||'');}catch(e){}};
   const save=async()=>{setLoading(true);try{const{data}=await ownerApi.updateStore(currentStore.id,s);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch{toast.error(t('storePage.failed','Failed'));}setLoading(false);};
   const set=(k)=>(e)=>setS({...s,[k]:e.target.type==='checkbox'?e.target.checked:e.target.value});
