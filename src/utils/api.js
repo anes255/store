@@ -110,6 +110,13 @@ export const ownerApi = {
   updateStore: (storeId, data) => api.put(`/owner/stores/${storeId}`, data),
   getStaff: (storeId) => api.get(`/owner/stores/${storeId}/staff`),
   addStaff: (storeId, data) => api.post(`/owner/stores/${storeId}/staff`, data),
+  updateStaff: (storeId, staffId, data) => api.patch(`/owner/stores/${storeId}/staff/${staffId}`, data),
+  deleteStaff: (storeId, staffId) => api.delete(`/owner/stores/${storeId}/staff/${staffId}`),
+  // Store-scoped role templates (owner-defined roles affecting only this store)
+  getRoleTemplates: (storeId) => api.get(`/owner/stores/${storeId}/role-templates`),
+  createRoleTemplate: (storeId, data) => api.post(`/owner/stores/${storeId}/role-templates`, data),
+  updateRoleTemplate: (storeId, tid, data) => api.put(`/owner/stores/${storeId}/role-templates/${tid}`, data),
+  deleteRoleTemplate: (storeId, tid) => api.delete(`/owner/stores/${storeId}/role-templates/${tid}`),
   getDomains: (storeId) => api.get(`/owner/stores/${storeId}/domains`),
   requestDomain: (storeId, data) => api.post(`/owner/stores/${storeId}/domains`, data),
   verifyDomain: (storeId, domainId) => api.post(`/owner/stores/${storeId}/domains/${domainId}/verify`),
