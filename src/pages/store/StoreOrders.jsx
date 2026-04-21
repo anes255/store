@@ -6,7 +6,7 @@ import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2, Archive, ArchiveRestore, Columns, GripVertical, Info } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2, Archive, ArchiveRestore, Columns, GripVertical, Info, BarChart3, Plus } from 'lucide-react';
 
 // All possible columns the admin can toggle / reorder for the table view.
 const ALL_COLUMNS = [
@@ -778,95 +778,104 @@ export default function StoreOrders() {
         <div className={`glass-card-solid p-3 ${urgentCount > 0 ? 'ring-1 ring-amber-300' : ''}`}><p className="text-[10px] font-bold text-gray-400 uppercase">Urgent</p><p className={`text-xl font-black mt-1 ${urgentCount > 0 ? 'text-amber-600' : 'text-gray-300'}`}>{urgentCount}</p></div>
       </div>
 
-      {/* Search + Sort + Date range + Page size + Column customizer */}
-      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 flex-1">
-          {/* Select All checkbox */}
-          <button onClick={toggleAll} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === orders.length ? 'Deselect All' : 'Select All'}>
-            {selectedItems.size > 0 && selectedItems.size === orders.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
-            <span className="text-xs font-bold text-gray-500 hidden sm:inline">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
-          </button>
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder={t('storePage.searchOrdersPlaceholder', 'Search by name, phone, or order #...')} value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-          {/* Sort selector */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="appearance-none bg-gray-100 rounded-lg px-3 py-2 pr-8 text-[11px] font-bold text-gray-600 cursor-pointer hover:bg-gray-200 transition-colors"
-            >
-              <option value="date_desc">Newest First</option>
-              <option value="date_asc">Oldest First</option>
-              <option value="total_desc">Highest Total</option>
-              <option value="total_asc">Lowest Total</option>
-              <option value="age">By Urgency</option>
+      {/* All-statuses filter panel — labeled controls: Status / Date Oldest / Date Newest / Search / Results */}
+      <div className="glass-card-solid p-4 sm:p-5 mb-4 sm:mb-6">
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">{filters.find(f => f.key === filter)?.label || 'All statuses'}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Status</label>
+            <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field !py-2 text-sm w-full">
+              {filters.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
             </select>
-            <ArrowUpDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
-          {/* Date range filter */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
-            <Calendar size={12} className="text-gray-400" />
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-transparent text-[11px] font-bold text-gray-600 outline-none cursor-pointer" title="From date (oldest)" />
-            <span className="text-[11px] text-gray-400">→</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-transparent text-[11px] font-bold text-gray-600 outline-none cursor-pointer" title="To date (newest)" />
-            {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-gray-400 hover:text-gray-700"><X size={12} /></button>}
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Date: Oldest</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field !py-2 text-sm w-full" />
           </div>
-          {/* Page size */}
-          <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="bg-gray-100 rounded-lg px-2 py-2 text-[11px] font-bold text-gray-600 hover:bg-gray-200 cursor-pointer" title="Orders per page">
-            {[10,20,25,50,100].map(n => <option key={n} value={n}>{n}/page</option>)}
-            <option value={0}>All</option>
-          </select>
-          {/* Column customizer */}
-          <div className="relative">
-            <button onClick={() => setColumnPickerOpen(v => !v)} className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2 text-[11px] font-bold text-gray-600 flex items-center gap-1.5" title="Customize visible columns">
-              <Columns size={12} />Columns
-            </button>
-            {columnPickerOpen && (
-              <div className="absolute right-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-2xl border border-gray-200 w-80 max-h-[70vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white p-3 border-b flex items-center justify-between">
-                  <p className="text-xs font-bold text-gray-700">Customize columns</p>
-                  <button onClick={() => setColumnPickerOpen(false)} className="text-gray-400 hover:text-gray-700"><X size={14} /></button>
-                </div>
-                <div className="p-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase px-2 py-1">Active (drag arrows to reorder)</p>
-                  {activeColumns.map((key, idx) => {
-                    const col = ALL_COLUMNS.find(c => c.key === key);
-                    if (!col) return null;
-                    return (
-                      <div key={key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg">
-                        <GripVertical size={12} className="text-gray-300" />
-                        <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-5 h-5 rounded bg-gray-100 disabled:opacity-30 flex items-center justify-center"><ChevronUp size={10} /></button>
-                        <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-5 h-5 rounded bg-gray-100 disabled:opacity-30 flex items-center justify-center"><ChevronDown size={10} /></button>
-                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{col.label}</span>
-                        <button onClick={() => toggleColumn(key)} className="text-red-400 hover:text-red-600"><X size={12} /></button>
-                      </div>
-                    );
-                  })}
-                  <p className="text-[10px] font-bold text-gray-400 uppercase px-2 py-1 mt-2">Available</p>
-                  {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
-                    <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg text-left">
-                      <Square size={12} className="text-gray-300" />
-                      <span className="text-xs text-gray-600 flex-1 truncate">{col.label}</span>
-                      <span className="text-[10px] text-gray-400 truncate max-w-[140px]">{col.desc}</span>
-                    </button>
-                  ))}
-                </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Date: Newest</label>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field !py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Search</label>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder="Search orders..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Rows per page</label>
+            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="input-field !py-2 text-sm w-full">
+              {[10,20,25,50,100].map(n => <option key={n} value={n}>{n} results</option>)}
+              <option value={0}>All</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Action bar: Select All / Export / Admin Stats / Columns / +Create Order */}
+      <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6">
+        <button onClick={toggleAll} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === orders.length ? 'Deselect All' : 'Select All'}>
+          {selectedItems.size > 0 && selectedItems.size === orders.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
+          <span className="text-xs font-bold text-gray-500 hidden sm:inline">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
+        </button>
+        <div className="flex-1" />
+        <button onClick={() => { const csv = ['Order,Customer,Phone,Status,Total,Date', ...sortedOrders.map(o => `${o.order_number},${o.customer_name},${o.customer_phone},${o.status},${o.total},${o.created_at}`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'orders-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success('Exported'); }} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+          <Download size={13} />Export
+        </button>
+        <button onClick={() => setFilter(filter === 'all' ? 'confirmed' : 'all')} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+          <BarChart3 size={13} />Admin Stats
+        </button>
+        <div className="relative">
+          <button onClick={() => setColumnPickerOpen(v => !v)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-[11px] font-bold text-gray-600 uppercase tracking-wider" title="Customize visible columns">
+            <Columns size={13} />Columns<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700">{activeColumns.length}</span>
+          </button>
+          {columnPickerOpen && (
+            <div className="absolute right-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-2xl border border-gray-200 w-80 max-h-[70vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white p-3 border-b flex items-center justify-between">
+                <p className="text-xs font-bold text-gray-700">Customize Columns</p>
+                <button onClick={() => setColumnPickerOpen(false)} className="text-gray-400 hover:text-gray-700"><X size={14} /></button>
               </div>
-            )}
-          </div>
-          {/* Mobile view toggle */}
-          <div className="flex sm:hidden items-center bg-gray-100 rounded-lg p-0.5">
-            <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md ${viewMode === 'cards' ? 'bg-white shadow-sm' : ''}`}>
-              <LayoutGrid size={14} className={viewMode === 'cards' ? 'text-brand-600' : 'text-gray-400'} />
-            </button>
-            <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md ${viewMode === 'table' ? 'bg-white shadow-sm' : ''}`}>
-              <LayoutList size={14} className={viewMode === 'table' ? 'text-brand-600' : 'text-gray-400'} />
-            </button>
-            <button onClick={() => setViewMode('grouped')} className={`p-1.5 rounded-md ${viewMode === 'grouped' ? 'bg-white shadow-sm' : ''}`}>
-              <Filter size={14} className={viewMode === 'grouped' ? 'text-brand-600' : 'text-gray-400'} />
-            </button>
+              <div className="p-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase px-2 py-1">Active (drag arrows to reorder)</p>
+                {activeColumns.map((key, idx) => {
+                  const col = ALL_COLUMNS.find(c => c.key === key);
+                  if (!col) return null;
+                  return (
+                    <div key={key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg">
+                      <GripVertical size={12} className="text-gray-300" />
+                      <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-5 h-5 rounded bg-gray-100 disabled:opacity-30 flex items-center justify-center"><ChevronUp size={10} /></button>
+                      <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-5 h-5 rounded bg-gray-100 disabled:opacity-30 flex items-center justify-center"><ChevronDown size={10} /></button>
+                      <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{col.label}</span>
+                      <button onClick={() => toggleColumn(key)} className="text-red-400 hover:text-red-600"><X size={12} /></button>
+                    </div>
+                  );
+                })}
+                <p className="text-[10px] font-bold text-gray-400 uppercase px-2 py-1 mt-2">Available</p>
+                {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
+                  <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg text-left">
+                    <Square size={12} className="text-gray-300" />
+                    <span className="text-xs text-gray-600 flex-1 truncate">{col.label}</span>
+                    <span className="text-[10px] text-gray-400 truncate max-w-[140px]">{col.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <button onClick={() => { const ev = new CustomEvent('open-create-order'); window.dispatchEvent(ev); setViewMode('table'); toast('Use Create Order button to add manually', { icon: '➕' }); }} className="flex items-center gap-1.5 px-3 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider">
+          <Plus size={13} />Create Order
+        </button>
+        <div className="flex sm:hidden items-center bg-gray-100 rounded-lg p-0.5">
+          <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md ${viewMode === 'cards' ? 'bg-white shadow-sm' : ''}`}>
+            <LayoutGrid size={14} className={viewMode === 'cards' ? 'text-brand-600' : 'text-gray-400'} />
+          </button>
+          <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md ${viewMode === 'table' ? 'bg-white shadow-sm' : ''}`}>
+            <LayoutList size={14} className={viewMode === 'table' ? 'text-brand-600' : 'text-gray-400'} />
+          </button>
+          <button onClick={() => setViewMode('grouped')} className={`p-1.5 rounded-md ${viewMode === 'grouped' ? 'bg-white shadow-sm' : ''}`}>
+            <Filter size={14} className={viewMode === 'grouped' ? 'text-brand-600' : 'text-gray-400'} />
+          </button>
           </div>
         </div>
       </div>
@@ -879,6 +888,11 @@ export default function StoreOrders() {
       ) : viewMode === 'table' ? (
         /* ===== TABLE VIEW (customizable columns) ===== */
         <div className="glass-card-solid overflow-hidden">
+          <div className="px-4 py-2 flex items-center justify-end gap-2 border-b border-gray-100 text-[11px] font-bold text-gray-500">
+            <span>1-{sortedOrders.length}/{total}</span>
+            <button className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center"><ChevronLeft size={12}/></button>
+            <button className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center"><ChevronRight size={12}/></button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
