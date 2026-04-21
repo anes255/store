@@ -876,7 +876,6 @@ export default function StoreOrders() {
           <button onClick={() => setViewMode('grouped')} className={`p-1.5 rounded-md ${viewMode === 'grouped' ? 'bg-white shadow-sm' : ''}`}>
             <Filter size={14} className={viewMode === 'grouped' ? 'text-brand-600' : 'text-gray-400'} />
           </button>
-          </div>
         </div>
       </div>
 
