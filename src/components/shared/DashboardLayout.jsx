@@ -135,7 +135,10 @@ export default function DashboardLayout({children}){
   useEffect(() => { theme.init(); }, []); // eslint-disable-line
   const[isMobile,setIsMobile]=useState(()=>typeof window!=='undefined'&&window.innerWidth<1024);
   const[sidebarOpen,setSidebarOpen]=useState(()=>typeof window!=='undefined'?window.innerWidth>=1024:true);
-  const[openMenus,setOpenMenus]=useState({});
+  // Persist expanded sidebar groups across navigation so "Show all" (or any
+  // opened group) stays open after clicking a link and loading a new page.
+  const[openMenus,setOpenMenus]=useState(()=>{try{return JSON.parse(localStorage.getItem('sidebarOpenMenus')||'{}');}catch{return{};}});
+  useEffect(()=>{try{localStorage.setItem('sidebarOpenMenus',JSON.stringify(openMenus));}catch{}},[openMenus]);
   const[sideQuery,setSideQuery]=useState('');
   const[topQuery,setTopQuery]=useState('');
   const[topFocus,setTopFocus]=useState(false);
