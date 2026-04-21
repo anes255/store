@@ -79,6 +79,7 @@ const Checkout=lazy(()=>import('./pages/buyer/Checkout'));
 import CustomerAuth from'./pages/buyer/CustomerAuth';
 const CustomerProfile=lazy(()=>import('./pages/buyer/CustomerProfile'));
 const Favorites=lazy(()=>import('./pages/buyer/Favorites'));
+const TrackOrder=lazy(()=>import('./pages/buyer/TrackOrder'));
 
 const Loading=()=>(<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>);
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();const isAdminArea=(allowedRoles&&allowedRoles.includes('platform_admin'))||(typeof window!=='undefined'&&window.location.pathname.startsWith('/admin'));const loginPath=isAdminArea?'/admin/login':'/login';if(!token)return<Navigate to={loginPath} replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to={loginPath} replace/>;return children;};
@@ -133,6 +134,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/s/:storeSlug/auth" element={<CustomerAuth/>}/>
 <Route path="/s/:storeSlug/profile" element={<CustomerProfile/>}/>
 <Route path="/s/:storeSlug/favorites" element={<Favorites/>}/>
+<Route path="/s/:storeSlug/track" element={<TrackOrder/>}/>
 {/* Buyer - clean slug homepage only. Subpages use /s/:storeSlug/... to
     avoid conflicting with reserved top-level paths like /admin/profile. */}
 <Route path="/:storeSlug" element={<SlugGuard><Storefront/></SlugGuard>}/>

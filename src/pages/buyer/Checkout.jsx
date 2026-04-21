@@ -3,8 +3,16 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
+import i18n from '../../i18n';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe } from 'lucide-react';
+
+// Algerian phone validator: accepts 0[567]xxxxxxxx or +213[567]xxxxxxxx
+export function isValidAlgerianPhone(p) {
+  if (!p) return false;
+  const cleaned = String(p).replace(/[\s.-]/g, '');
+  return /^(0[567]\d{8}|\+?213[567]\d{8})$/.test(cleaned);
+}
 import WILAYA_CITIES from '../../data/wilayaCities';
 import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
@@ -58,6 +66,15 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     payment_method: 'cod', notes: '', coupon_code: '',
     notification_preference: 'whatsapp',
   });
+  const [saveInfo, setSaveInfo] = useState(() => localStorage.getItem('checkout.saveInfo') === '1');
+
+  // Auto-load saved info on first mount
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('checkout.savedInfo') || 'null');
+      if (saved && typeof saved === 'object') setForm(prev => ({ ...prev, ...saved }));
+    } catch {}
+  }, []);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
@@ -135,8 +152,24 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
   const placeOrder = async () => {
     const emailRequired = store?.checkout_email === true;
-    if (!form.customer_name || !form.customer_phone || !form.shipping_address || !form.shipping_wilaya) return toast.error('Please fill all required fields');
-    if (emailRequired && !form.customer_email) return toast.error('Email is required');
+    // Field-specific errors so the message matches the actual missing field.
+    if (!form.customer_name) return toast.error(t('checkout.errName', 'Please enter your name'));
+    if (!form.customer_phone) return toast.error(t('checkout.errPhone', 'Please enter your phone number'));
+    if (!isValidAlgerianPhone(form.customer_phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
+    if (emailRequired && !form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
+    if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
+    if (!form.shipping_address) return toast.error(t('checkout.errAddress', 'Please enter your shipping address'));
+    if (!form.shipping_wilaya) return toast.error(t('checkout.errWilaya', 'Please choose your wilaya'));
+    if (saveInfo) {
+      try {
+        const { coupon_code, notes, ...persist } = form;
+        localStorage.setItem('checkout.savedInfo', JSON.stringify(persist));
+        localStorage.setItem('checkout.saveInfo', '1');
+      } catch {}
+    } else {
+      localStorage.removeItem('checkout.savedInfo');
+      localStorage.removeItem('checkout.saveInfo');
+    }
     setLoading(true);
     try {
       const authUser = useAuthStore.getState().user;
@@ -314,6 +347,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </Link>
           )}
           <div className="flex items-center gap-2">
+            {/* Language switcher (visible on the checkout page) */}
+            <div className="flex items-center bg-gray-100 rounded-full p-0.5 mr-1">
+              <Globe size={14} className="text-gray-500 ml-2" />
+              {[{c:'en',l:'EN'},{c:'fr',l:'FR'},{c:'ar',l:'AR'}].map(L => (
+                <button key={L.c} onClick={() => i18n.changeLanguage(L.c)}
+                  className={`px-2 py-1 rounded-full text-[10px] font-bold ${i18n.language?.startsWith(L.c) ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  {L.l}
+                </button>
+              ))}
+            </div>
             {isModal ? (
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20}/></button>
             ) : (<>
@@ -326,12 +369,13 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3 space-y-6">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Stacked layout: shipping → payment → updates → summary, one under the other */}
+        <div className="space-y-6">
+          <div className="space-y-6">
             {/* Shipping */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full text-xs font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>1</span>{t('checkout.shippingInfo','Shipping Information')}</h3>
+              <h3 className="font-bold text-gray-900 mb-4">{t('checkout.shippingInfo','Shipping Information')}</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
@@ -408,7 +452,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
             {/* Payment */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full text-xs font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>2</span>Payment Method</h3>
+              <h3 className="font-bold text-gray-900 mb-4">{t('checkout.paymentMethod','Payment Method')}</h3>
               <div className="space-y-2">
                 {paymentMethods.map(pm => {
                   const Icon = pm.icon;
@@ -433,7 +477,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
             {/* Notification Preference */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="w-6 h-6 rounded-full text-xs font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>3</span>Order Updates</h3>
+              <h3 className="font-bold text-gray-900 mb-4">{t('checkout.orderUpdates','Order Updates')}</h3>
               <p className="text-xs text-gray-400 mb-3">How would you like to receive order updates?</p>
               <div className="grid grid-cols-2 gap-2">
                 {[{key:'whatsapp',label:'WhatsApp',icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785c-1.784 0-3.532-.48-5.063-1.39l-.363-.215-3.764.988.999-3.648-.236-.375A9.731 9.731 0 012.27 12.05c0-5.384 4.383-9.767 9.78-9.767a9.714 9.714 0 016.922 2.868 9.714 9.714 0 012.868 6.919c-.004 5.384-4.387 9.765-9.79 9.765zM20.52 3.449A11.917 11.917 0 0012.05 0C5.495 0 .16 5.335.157 11.892a11.852 11.852 0 001.588 5.946L0 24l6.305-1.654a11.881 11.881 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 00-3.48-8.452z"/></svg>},{key:'email',label:'Email',icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>}].map(ch=>{
@@ -448,9 +492,20 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-20">
+          {/* Save info option (sits between forms and summary) */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={saveInfo} onChange={e => setSaveInfo(e.target.checked)} className="w-4 h-4 accent-current" style={{accentColor: pc}} />
+              <div>
+                <p className="text-sm font-bold text-gray-800">{t('checkout.saveInfo','Save my information for next time')}</p>
+                <p className="text-[11px] text-gray-400">{t('checkout.saveInfoDesc','Your name, phone, address and wilaya will be remembered on this device.')}</p>
+              </div>
+            </label>
+          </div>
+
+          {/* Summary (now stacked under the shipping info, not side-by-side) */}
+          <div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-900 mb-4">{t('store.orderSummary')}</h3>
               <div className="space-y-3 mb-4">
                 {items.map((item, i) => {

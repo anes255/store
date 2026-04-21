@@ -492,17 +492,18 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
 }
 
 // ============ DARK PRODUCT CARD ============
-function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow }) {
+function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow, themeMode }) {
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
   const price = parseFloat(product.price) || 0;
   const comparePrice = product.compare_at_price ? parseFloat(product.compare_at_price) : null;
   const onSale = comparePrice && comparePrice > price;
   const stockCount = product.stock_quantity;
+  const isLight = themeMode === 'light';
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group relative"
-      style={{ background: 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)' }}>
+      style={{ background: isLight ? '#ffffff' : 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)', border: isLight ? '1px solid #e5e7eb' : 'none' }}>
       {/* Product Image */}
       <div className="relative cursor-pointer" onClick={() => openDetail(product)}>
         <div className="aspect-square bg-white/5 relative overflow-hidden m-2.5 rounded-xl">
@@ -527,7 +528,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
       {/* Product Info */}
       <div className="px-3.5 pb-3 pt-1">
         <div className="cursor-pointer" onClick={() => openDetail(product)}>
-          <h3 className="font-semibold text-sm text-white/90 truncate hover:text-white transition-colors">{getName(product)}</h3>
+          <h3 className={`font-semibold text-sm truncate transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
         </div>
 
         {/* Stock badge */}
@@ -542,8 +543,8 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         {/* Price */}
         <div className="flex items-baseline gap-2 mt-1.5">
           <span className="text-lg font-extrabold" style={{ color: pc }}>{price.toLocaleString()}</span>
-          <span className="text-xs text-white/30">{currency}</span>
-          {onSale && <span className="text-xs text-white/25 line-through">{comparePrice.toLocaleString()}</span>}
+          <span className={`text-xs ${isLight ? 'text-gray-500' : 'text-white/30'}`}>{currency}</span>
+          {onSale && <span className={`text-xs line-through ${isLight ? 'text-gray-400' : 'text-white/25'}`}>{comparePrice.toLocaleString()}</span>}
         </div>
 
         {/* Buy Now button */}
@@ -584,7 +585,7 @@ export default function Storefront() {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [sortBy, setSortBy] = useState('newest'); // newest, price_asc, price_desc
+  const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, name_asc, name_desc, price_asc, price_desc
   const [priceRange, setPriceRange] = useState([0, 0]); // [min, max] — 0 means no filter
   const [onlyOnSale, setOnlyOnSale] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -769,10 +770,17 @@ export default function Storefront() {
       {/* ============ HEADER ============ */}
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
-            {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
-            <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Favorites lives on the LEFT side, cart on the right (different sides) */}
+            <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative" title="Favorites">
+              <Heart size={18} className="sm:w-5 sm:h-5"/>
+              {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
+            </Link>
+            <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
+              {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
+              <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
+            </Link>
+          </div>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
             <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
               <Search size={20} className="ml-5 text-gray-400"/>
@@ -788,10 +796,7 @@ export default function Storefront() {
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <div className="hidden sm:block"><ThemePanel compact mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
-              <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px]">{wishlist.length}</span>}
-            </Link>
+            <Link to={`/s/${storeSlug}/track`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full" title="Track your order"><Truck size={18} className="sm:w-5 sm:h-5"/></Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
@@ -873,12 +878,15 @@ export default function Storefront() {
           <div className="relative group">
             <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:border-gray-300 transition-all">
               <ArrowUpDown size={14}/>
-              {sortBy === 'price_asc' ? t('store.sortPriceLow','Price: Low to High') : sortBy === 'price_desc' ? t('store.sortPriceHigh','Price: High to Low') : t('store.sortNewest','Newest')}
+              {sortBy === 'price_asc' ? t('store.sortPriceLow','Price: Low to High') : sortBy === 'price_desc' ? t('store.sortPriceHigh','Price: High to Low') : sortBy === 'date_asc' ? t('store.sortDateOldest','Date: Oldest first') : sortBy === 'name_asc' ? t('store.sortNameAZ','Name: A → Z') : sortBy === 'name_desc' ? t('store.sortNameZA','Name: Z → A') : t('store.sortDateNewest','Date: Newest first')}
               <ChevronDown size={13} className="text-gray-400"/>
             </button>
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
               {[
-                { key: 'newest', label: t('store.sortNewest','Newest'), icon: Sparkles },
+                { key: 'date_desc', label: t('store.sortDateNewest','Date: Newest first'), icon: Sparkles },
+                { key: 'date_asc', label: t('store.sortDateOldest','Date: Oldest first'), icon: ArrowUpDown },
+                { key: 'name_asc', label: t('store.sortNameAZ','Name: A → Z'), icon: ArrowUpDown },
+                { key: 'name_desc', label: t('store.sortNameZA','Name: Z → A'), icon: ArrowUpDown },
                 { key: 'price_asc', label: t('store.sortPriceLow','Price: Low to High'), icon: ArrowUpDown },
                 { key: 'price_desc', label: t('store.sortPriceHigh','Price: High to Low'), icon: ArrowUpDown },
               ].map(s => (
@@ -949,6 +957,12 @@ export default function Storefront() {
           if (priceRange[0] > 0) filtered = filtered.filter(p => parseFloat(p.price) >= priceRange[0]);
           if (priceRange[1] > 0) filtered = filtered.filter(p => parseFloat(p.price) <= priceRange[1]);
           if (onlyOnSale) filtered = filtered.filter(p => p.compare_at_price && parseFloat(p.compare_at_price) > parseFloat(p.price));
+          // Client-side sort: by date or by name (price sort already handled server-side)
+          const nameOf = (p) => (getName(p) || p.name || '').toLowerCase();
+          if (sortBy === 'date_asc') filtered = [...filtered].sort((a,b) => new Date(a.created_at||0) - new Date(b.created_at||0));
+          else if (sortBy === 'date_desc') filtered = [...filtered].sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+          else if (sortBy === 'name_asc') filtered = [...filtered].sort((a,b) => nameOf(a).localeCompare(nameOf(b)));
+          else if (sortBy === 'name_desc') filtered = [...filtered].sort((a,b) => nameOf(b).localeCompare(nameOf(a)));
           return filtered.length===0 ? (
           <div className="text-center py-20">
             <Package size={48} className="mx-auto text-gray-300 mb-4"/>
@@ -963,7 +977,7 @@ export default function Storefront() {
               <DarkProductCard key={product.id} product={product} storeSlug={storeSlug} pc={pc}
                 currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
                 openQuickAdd={openQuickAdd} openDetail={openDetail}
-                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow}/>
+                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow} themeMode={buyerTheme.mode}/>
             ))}
           </div>
         );})()}

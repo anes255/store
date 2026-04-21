@@ -16,6 +16,24 @@ function NotifBell(){
   const[unread,setUnread]=React.useState(0);
   const[pushOk,setPushOk]=React.useState(false);
   const{currentStore}=useStoreManagement();
+  const navigate=useNavigate();
+  const wrapRef=React.useRef(null);
+  // Close popup when clicking outside the bell wrapper
+  React.useEffect(()=>{
+    if(!open)return;
+    const onDown=(e)=>{if(wrapRef.current&&!wrapRef.current.contains(e.target))setOpen(false);};
+    document.addEventListener('mousedown',onDown);
+    return()=>document.removeEventListener('mousedown',onDown);
+  },[open]);
+  // Map a notification to its destination + highlight target id
+  const routeFor=(n)=>{
+    const t=n.type,r=n.ref_id||n.order_id||n.product_id||n.customer_id;
+    if(t==='order')return r?`/dashboard/orders?highlight=${r}`:'/dashboard/orders';
+    if(t==='stock')return r?`/dashboard/stock?highlight=${r}`:'/dashboard/stock';
+    if(t==='customer')return r?`/dashboard/customers?highlight=${r}`:'/dashboard/customers';
+    return n.url||'/dashboard';
+  };
+  const openNotif=(n)=>{if(!n.is_read)markRead(n.id);setOpen(false);navigate(routeFor(n));};
 
   const enablePush=async()=>{
     try{
@@ -68,13 +86,13 @@ function NotifBell(){
   const timeAgo=(d)=>{const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';};
   const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
   
-  return(<div className="relative flex items-center gap-1">
+  return(<div ref={wrapRef} className="relative flex items-center gap-1">
     {!pushOk&&<button onClick={enablePush} className="px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔 Enable</button>}
     <button onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
     {open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
       <div className="max-h-72 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,20).map(n=>(
-        <div key={n.id} onClick={()=>{if(!n.is_read)markRead(n.id);}} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${!n.is_read?'bg-brand-50/30':''}`}>
+        <div key={n.id} onClick={()=>openNotif(n)} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${!n.is_read?'bg-brand-50/30':''}`}>
           <div className="flex items-start gap-2"><span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span><div className="flex-1 min-w-0"><p className="text-sm text-gray-800 font-medium truncate">{n.title}</p>{n.message&&<p className="text-xs text-gray-400 truncate">{n.message}</p>}<p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(n.created_at)}</p></div>{!n.is_read&&<span className="w-2 h-2 bg-brand-500 rounded-full mt-1.5 shrink-0"/>}</div>
         </div>
       ))}</div>
@@ -137,12 +155,10 @@ export default function DashboardLayout({children}){
     return()=>window.removeEventListener('resize',onResize);
   },[]);
 
-  // Auto-close sidebar when the user navigates on mobile, otherwise the
-  // overlay covers the page after every link click.
-  useEffect(()=>{
-    if(isMobile)setSidebarOpen(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[location.pathname]);
+  // The sidebar stays open across navigation — admins explicitly asked that
+  // clicking a sidebar item should NOT auto-close the sidebar; only the close
+  // button should do that. (Previously the sidebar collapsed on mobile after
+  // every link click.)
 
   // Hide header when scrolling down on mobile, show when scrolling up.
   useEffect(()=>{

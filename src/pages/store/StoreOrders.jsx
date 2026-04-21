@@ -1,11 +1,51 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { orderApi } from '../../utils/api';
 import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, Hash, ChevronRight, ChevronDown, ChevronUp, User, Mail, FileText, RefreshCw, Download, MessageSquare, Bell, PhoneOff, PhoneMissed, RotateCcw, Hourglass, AlertTriangle, ShoppingBag, Loader2, ArrowUpDown, LayoutGrid, LayoutList, Zap, Timer, TrendingUp, Filter, CheckSquare, Square, Trash2, Archive, ArchiveRestore, Columns, GripVertical, Info } from 'lucide-react';
+
+// All possible columns the admin can toggle / reorder for the table view.
+const ALL_COLUMNS = [
+  { key: 'photo', label: 'Photo', desc: 'Product image (first item in the order).' },
+  { key: 'order', label: 'Order', desc: 'Internal order number used for support.' },
+  { key: 'products', label: 'Products', desc: 'Items the customer purchased.' },
+  { key: 'wilaya', label: 'Wilaya', desc: 'Algerian province for shipping.' },
+  { key: 'wilaya_number', label: 'Wilaya #', desc: 'Numeric wilaya code (1–58).' },
+  { key: 'commune', label: 'Commune', desc: 'Local commune within the wilaya.' },
+  { key: 'customer_name', label: 'Customer', desc: 'Customer full name.' },
+  { key: 'phone', label: 'Phone', desc: 'Algerian phone number for the order.' },
+  { key: 'transfer_status', label: 'Transfer Status', desc: 'Transfer / wallet payment state.' },
+  { key: 'shipping_method', label: 'Shipping Method', desc: 'Home or desk delivery.' },
+  { key: 'shipping_cost', label: 'Shipping Cost', desc: 'Delivery fee billed to the customer.' },
+  { key: 'total', label: 'Total', desc: 'Final amount the customer pays.' },
+  { key: 'process_at', label: 'Processed At', desc: 'When the order entered processing.' },
+  { key: 'financial_status', label: 'Financial Status', desc: 'Paid / unpaid / refunded.' },
+  { key: 'currency', label: 'Currency', desc: 'Currency the order was billed in.' },
+  { key: 'whatsapp', label: 'WhatsApp', desc: 'Open a WhatsApp chat with the customer.' },
+  { key: 'subtotal', label: 'Subtotal', desc: 'Sum of items before tax / shipping.' },
+  { key: 'taxes', label: 'Taxes', desc: 'Tax amount on the order.' },
+  { key: 'discount_code', label: 'Discount Code', desc: 'Promo code the customer used.' },
+  { key: 'created_via', label: 'Created Via', desc: 'Channel the order came from.' },
+  { key: 'email', label: 'Email', desc: 'Customer email address.' },
+  { key: 'billing_name', label: 'Billing Name', desc: 'Name on the billing address.' },
+  { key: 'billing_street', label: 'Billing Street', desc: 'Billing street address.' },
+  { key: 'billing_zip', label: 'Billing ZIP', desc: 'Billing postal code.' },
+  { key: 'billing_country', label: 'Billing Country', desc: 'Billing country.' },
+  { key: 'shipping_street', label: 'Shipping Street', desc: 'Shipping street address.' },
+  { key: 'shipping_city', label: 'Shipping City', desc: 'Shipping city.' },
+  { key: 'shipping_zip', label: 'Shipping ZIP', desc: 'Shipping postal code.' },
+  { key: 'tracking_number', label: 'Tracking #', desc: 'Tracking number from the carrier.' },
+  { key: 'company_name', label: 'Company', desc: 'Delivery company assigned.' },
+  { key: 'notes', label: 'Notes', desc: 'Customer notes left at checkout.' },
+  { key: 'status', label: 'Status', desc: 'Current order status.' },
+  { key: 'date', label: 'Date', desc: 'When the order was created.' },
+  { key: 'actions', label: 'Actions', desc: 'View / edit the order.' },
+];
+const DEFAULT_COLUMNS = ['order','status','customer_name','phone','wilaya','total','date','actions'];
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', icon: ShoppingBag, label: 'New Order', labelFr: 'Nouvelle commande', labelAr: 'طلب جديد' },
@@ -83,6 +123,23 @@ function formatDateTime(date) {
 export default function StoreOrders() {
   const { t } = useTranslation();
   const { currentStore } = useStoreManagement();
+  const location = useLocation();
+  // Highlight target order id when arriving via a notification link (?highlight=<id>).
+  const highlightId = useMemo(() => {
+    const p = new URLSearchParams(location.search);
+    const v = p.get('highlight');
+    return v ? String(v) : null;
+  }, [location.search]);
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = document.querySelector(`[data-order-id="${highlightId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-4', 'ring-amber-400');
+      const tm = setTimeout(() => el.classList.remove('ring-4', 'ring-amber-400'), 3500);
+      return () => clearTimeout(tm);
+    }
+  }, [highlightId, orders]);
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState('all');
@@ -101,6 +158,23 @@ export default function StoreOrders() {
   const [sortBy, setSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc' | 'total_desc' | 'total_asc' | 'age'
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(() => Number(localStorage.getItem('orders.pageSize') || 25));
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
+  const [activeColumns, setActiveColumns] = useState(() => {
+    try { const saved = JSON.parse(localStorage.getItem('orders.columns') || 'null'); return Array.isArray(saved) && saved.length ? saved : DEFAULT_COLUMNS; }
+    catch { return DEFAULT_COLUMNS; }
+  });
+  const [colTooltip, setColTooltip] = useState(null);
+  useEffect(() => { localStorage.setItem('orders.columns', JSON.stringify(activeColumns)); }, [activeColumns]);
+  useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
+  const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  const moveColumn = (key, dir) => setActiveColumns(prev => {
+    const i = prev.indexOf(key); if (i < 0) return prev;
+    const j = i + dir; if (j < 0 || j >= prev.length) return prev;
+    const next = [...prev]; [next[i], next[j]] = [next[j], next[i]]; return next;
+  });
 
   const toggleSelect = (id) => setSelectedItems(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const toggleAll = () => setSelectedItems(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
@@ -174,9 +248,11 @@ export default function StoreOrders() {
   const failedCallsCount = orders.filter(o => o.status?.startsWith('failed_call')).length;
   const urgentCount = orders.filter(o => needsUrgentAttention(o)).length;
 
-  // Sorted orders
+  // Sorted orders (with date filter + page size)
   const sortedOrders = useMemo(() => {
-    const sorted = [...orders];
+    let sorted = [...orders];
+    if (dateFrom) { const f = new Date(dateFrom).getTime(); sorted = sorted.filter(o => new Date(o.created_at).getTime() >= f); }
+    if (dateTo) { const tEnd = new Date(dateTo).getTime() + 24*60*60*1000; sorted = sorted.filter(o => new Date(o.created_at).getTime() <= tEnd); }
     switch (sortBy) {
       case 'date_asc': sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); break;
       case 'date_desc': sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); break;
@@ -185,8 +261,8 @@ export default function StoreOrders() {
       case 'age': sorted.sort((a, b) => getOrderAge(b.created_at).urgency - getOrderAge(a.created_at).urgency || new Date(a.created_at) - new Date(b.created_at)); break;
       default: break;
     }
-    return sorted;
-  }, [orders, sortBy]);
+    return pageSize === 0 ? sorted : sorted.slice(0, pageSize);
+  }, [orders, sortBy, dateFrom, dateTo, pageSize]);
 
   // Grouped orders by status category
   const groupedOrders = useMemo(() => {
@@ -210,7 +286,7 @@ export default function StoreOrders() {
     const lastChange = o.updated_at && o.updated_at !== o.created_at ? o.updated_at : o.created_at;
 
     return (
-      <div className={`glass-card-solid overflow-hidden transition-all ${isExpanded ? 'ring-2 ring-brand-200' : ''} ${isUrgent ? 'ring-1 ring-amber-300 shadow-amber-100' : ''}`}>
+      <div data-order-id={o.id} className={`glass-card-solid overflow-hidden transition-all ${isExpanded ? 'ring-2 ring-brand-200' : ''} ${isUrgent ? 'ring-1 ring-amber-300 shadow-amber-100' : ''}`}>
         {/* Urgency bar */}
         {isUrgent && (
           <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 flex items-center gap-2">
@@ -527,6 +603,51 @@ export default function StoreOrders() {
     );
   };
 
+  // ---- Dynamic table cell renderer (controlled by activeColumns) ----
+  const DynamicCell = ({ colKey, o }) => {
+    const sc = statusConfig[o.status] || statusConfig.pending;
+    const StatusIcon = sc.icon;
+    const waPhone = (o.customer_phone || '').replace(/[^0-9]/g, '').replace(/^0/, '213');
+    const cellClass = "px-3 py-3 text-xs text-gray-700";
+    switch (colKey) {
+      case 'photo': return <td className={cellClass}>{o.first_image ? <img src={o.first_image} className="w-9 h-9 rounded-lg object-cover border" /> : <div className={`w-9 h-9 rounded-lg ${sc.bg} flex items-center justify-center`}><StatusIcon size={14} className={sc.text} /></div>}</td>;
+      case 'order': return <td className={cellClass}><span className="font-mono font-bold text-brand-600">{o.order_number}</span></td>;
+      case 'products': return <td className={cellClass}>{(o.items || []).slice(0, 2).map(i => i.product_name).join(', ')}{(o.items || []).length > 2 ? ` +${o.items.length - 2}` : ''}</td>;
+      case 'wilaya': return <td className={cellClass}>{o.shipping_wilaya || '—'}</td>;
+      case 'wilaya_number': return <td className={cellClass}>{o.shipping_wilaya_code || o.wilaya_number || '—'}</td>;
+      case 'commune': return <td className={cellClass}>{o.shipping_commune || o.shipping_city || '—'}</td>;
+      case 'customer_name': return <td className={cellClass}><span className="font-semibold">{o.customer_name}</span></td>;
+      case 'phone': return <td className={cellClass}><span className="font-mono">{o.customer_phone}</span></td>;
+      case 'transfer_status': return <td className={cellClass}>{o.transfer_status || (o.payment_method === 'bank_transfer' ? (o.payment_status || 'pending') : '—')}</td>;
+      case 'shipping_method': return <td className={cellClass}>{o.shipping_type === 'home' ? 'Home' : o.shipping_type === 'desk' ? 'Desk' : '—'}</td>;
+      case 'shipping_cost': return <td className={cellClass}>{parseFloat(o.shipping_cost || 0).toLocaleString()} DZD</td>;
+      case 'total': return <td className={cellClass}><span className="font-black">{parseFloat(o.total).toLocaleString()}</span> <span className="text-[9px] text-gray-400">DZD</span></td>;
+      case 'process_at': return <td className={cellClass}>{o.processed_at ? formatDateTime(o.processed_at) : '—'}</td>;
+      case 'financial_status': return <td className={cellClass}><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${o.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{o.payment_status || 'unpaid'}</span></td>;
+      case 'currency': return <td className={cellClass}>{o.currency || 'DZD'}</td>;
+      case 'whatsapp': return <td className={cellClass}>{waPhone ? <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500 text-white text-[10px] font-bold hover:bg-green-600"><MessageSquare size={10} />WA</a> : '—'}</td>;
+      case 'subtotal': return <td className={cellClass}>{parseFloat(o.subtotal || 0).toLocaleString()} DZD</td>;
+      case 'taxes': return <td className={cellClass}>{parseFloat(o.tax_amount || 0).toLocaleString()} DZD</td>;
+      case 'discount_code': return <td className={cellClass}>{o.discount_code || '—'}</td>;
+      case 'created_via': return <td className={cellClass}>{o.created_via || o.source || 'Web'}</td>;
+      case 'email': return <td className={cellClass}>{o.customer_email || '—'}</td>;
+      case 'billing_name': return <td className={cellClass}>{o.billing_name || o.customer_name}</td>;
+      case 'billing_street': return <td className={cellClass}>{o.billing_address || '—'}</td>;
+      case 'billing_zip': return <td className={cellClass}>{o.billing_zip || '—'}</td>;
+      case 'billing_country': return <td className={cellClass}>{o.billing_country || 'DZ'}</td>;
+      case 'shipping_street': return <td className={cellClass}>{o.shipping_address || '—'}</td>;
+      case 'shipping_city': return <td className={cellClass}>{o.shipping_city || '—'}</td>;
+      case 'shipping_zip': return <td className={cellClass}>{o.shipping_zip || '—'}</td>;
+      case 'tracking_number': return <td className={cellClass}><span className="font-mono">{o.tracking_number || '—'}</span></td>;
+      case 'company_name': return <td className={cellClass}>{o.delivery_company_name || '—'}</td>;
+      case 'notes': return <td className={cellClass + ' max-w-[160px] truncate'} title={o.notes}>{o.notes || '—'}</td>;
+      case 'status': return <td className={cellClass}><span className={`px-2 py-1 rounded-full text-[10px] font-bold ${sc.bg} ${sc.text}`}>{getStatusLabel(o.status, t)}</span></td>;
+      case 'date': return <td className={cellClass}>{formatDateTime(o.created_at)}</td>;
+      case 'actions': return <td className={cellClass}><button onClick={() => viewOrder(o.id)} className="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 flex items-center justify-center"><Eye size={12} className="text-brand-600" /></button></td>;
+      default: return <td className={cellClass}>—</td>;
+    }
+  };
+
   // ---- Table View Row ----
   const TableRow = ({ o }) => {
     const sc = statusConfig[o.status] || statusConfig.pending;
@@ -535,7 +656,7 @@ export default function StoreOrders() {
     const isUrgent = needsUrgentAttention(o);
 
     return (
-      <tr className={`border-b border-gray-50 hover:bg-gray-50/80 transition-colors ${isUrgent ? 'bg-amber-50/30' : ''} ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
+      <tr data-order-id={o.id} className={`border-b border-gray-50 hover:bg-gray-50/80 transition-colors ${isUrgent ? 'bg-amber-50/30' : ''} ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
         <td className="px-3 py-3">
           <button onClick={(e) => { e.stopPropagation(); toggleSelect(o.id); }}>
             {selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600" /> : <Square size={16} className="text-gray-300 hover:text-gray-400" />}
@@ -623,6 +744,29 @@ export default function StoreOrders() {
         </div>
       </div>
 
+      {/* Status filter buttons (placed ABOVE the stat boxes, each in its own color) */}
+      <div className="mb-3 sm:mb-4 overflow-x-auto -mx-1 px-1">
+        <div className="flex items-center gap-2 w-max sm:w-auto sm:flex-wrap">
+          {filters.map(f => {
+            const sc = statusConfig[f.key];
+            const isActive = filter === f.key;
+            const count = f.key === 'all' ? total : orders.filter(o => f.key === 'failed_call_1' ? o.status?.startsWith('failed_call') : f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
+            const colorBg = sc ? sc.color : 'bg-gray-700';
+            const softBg = sc ? sc.bg : 'bg-gray-100';
+            const softText = sc ? sc.text : 'text-gray-700';
+            const softBorder = sc ? sc.border : 'border-gray-200';
+            return (
+              <button key={f.key} onClick={() => setFilter(f.key)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 border ${isActive ? `${colorBg} text-white border-transparent shadow-md scale-105` : `${softBg} ${softText} ${softBorder} hover:shadow-sm`}`}>
+                {sc?.icon ? <sc.icon size={12} /> : null}
+                {f.label}
+                {count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-white/70'}`}>{count}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="glass-card-solid p-3"><p className="text-[10px] font-bold text-gray-400 uppercase">Today</p><p className="text-xl font-black text-gray-900 mt-1">{todayOrders}</p></div>
@@ -634,24 +778,8 @@ export default function StoreOrders() {
         <div className={`glass-card-solid p-3 ${urgentCount > 0 ? 'ring-1 ring-amber-300' : ''}`}><p className="text-[10px] font-bold text-gray-400 uppercase">Urgent</p><p className={`text-xl font-black mt-1 ${urgentCount > 0 ? 'text-amber-600' : 'text-gray-300'}`}>{urgentCount}</p></div>
       </div>
 
-      {/* Filters + Search + Sort */}
+      {/* Search + Sort + Date range + Page size + Column customizer */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
-        <div className="overflow-x-auto -mx-1 px-1 sm:overflow-visible">
-          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-max sm:w-auto">
-            {filters.map(f => {
-              const sc = statusConfig[f.key];
-              const count = f.key === 'all' ? total : orders.filter(o => f.key === 'failed_call_1' ? o.status?.startsWith('failed_call') : f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
-              return (
-                <button key={f.key} onClick={() => setFilter(f.key)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${filter === f.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {sc && <span className={`w-2 h-2 rounded-full ${sc.color}`} />}
-                  {f.label}
-                  {count > 0 && <span className="text-[9px] text-gray-400">({count})</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
         <div className="flex items-center gap-2 flex-1">
           {/* Select All checkbox */}
           <button onClick={toggleAll} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === orders.length ? 'Deselect All' : 'Select All'}>
@@ -677,6 +805,57 @@ export default function StoreOrders() {
             </select>
             <ArrowUpDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
+          {/* Date range filter */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+            <Calendar size={12} className="text-gray-400" />
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-transparent text-[11px] font-bold text-gray-600 outline-none cursor-pointer" title="From date (oldest)" />
+            <span className="text-[11px] text-gray-400">→</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-transparent text-[11px] font-bold text-gray-600 outline-none cursor-pointer" title="To date (newest)" />
+            {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-gray-400 hover:text-gray-700"><X size={12} /></button>}
+          </div>
+          {/* Page size */}
+          <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="bg-gray-100 rounded-lg px-2 py-2 text-[11px] font-bold text-gray-600 hover:bg-gray-200 cursor-pointer" title="Orders per page">
+            {[10,20,25,50,100].map(n => <option key={n} value={n}>{n}/page</option>)}
+            <option value={0}>All</option>
+          </select>
+          {/* Column customizer */}
+          <div className="relative">
+            <button onClick={() => setColumnPickerOpen(v => !v)} className="bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2 text-[11px] font-bold text-gray-600 flex items-center gap-1.5" title="Customize visible columns">
+              <Columns size={12} />Columns
+            </button>
+            {columnPickerOpen && (
+              <div className="absolute right-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-2xl border border-gray-200 w-80 max-h-[70vh] overflow-y-auto">
+                <div className="sticky top-0 bg-white p-3 border-b flex items-center justify-between">
+                  <p className="text-xs font-bold text-gray-700">Customize columns</p>
+                  <button onClick={() => setColumnPickerOpen(false)} className="text-gray-400 hover:text-gray-700"><X size={14} /></button>
+                </div>
+                <div className="p-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase px-2 py-1">Active (drag arrows to reorder)</p>
+                  {activeColumns.map((key, idx) => {
+                    const col = ALL_COLUMNS.find(c => c.key === key);
+                    if (!col) return null;
+                    return (
+                      <div key={key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg">
+                        <GripVertical size={12} className="text-gray-300" />
+                        <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-5 h-5 rounded bg-gray-100 disabled:opacity-30 flex items-center justify-center"><ChevronUp size={10} /></button>
+                        <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-5 h-5 rounded bg-gray-100 disabled:opacity-30 flex items-center justify-center"><ChevronDown size={10} /></button>
+                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{col.label}</span>
+                        <button onClick={() => toggleColumn(key)} className="text-red-400 hover:text-red-600"><X size={12} /></button>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[10px] font-bold text-gray-400 uppercase px-2 py-1 mt-2">Available</p>
+                  {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
+                    <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg text-left">
+                      <Square size={12} className="text-gray-300" />
+                      <span className="text-xs text-gray-600 flex-1 truncate">{col.label}</span>
+                      <span className="text-[10px] text-gray-400 truncate max-w-[140px]">{col.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           {/* Mobile view toggle */}
           <div className="flex sm:hidden items-center bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md ${viewMode === 'cards' ? 'bg-white shadow-sm' : ''}`}>
@@ -698,26 +877,35 @@ export default function StoreOrders() {
       ) : orders.length === 0 ? (
         <div className="glass-card-solid p-16 text-center"><Package size={48} className="mx-auto text-gray-300 mb-4" /><p className="text-gray-500 font-semibold">{t('storePage.noOrdersFound', 'No orders found')}</p></div>
       ) : viewMode === 'table' ? (
-        /* ===== TABLE VIEW ===== */
+        /* ===== TABLE VIEW (customizable columns) ===== */
         <div className="glass-card-solid overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-3 py-2.5 w-10"><button onClick={toggleAll}>{selectedItems.size > 0 && selectedItems.size === orders.length ? <CheckSquare size={16} className="text-brand-600" /> : <Square size={16} className="text-gray-400" />}</button></th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Age</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Customer</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Wilaya</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden md:table-cell">Payment</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Date</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider">Actions</th>
+                  {activeColumns.map(key => {
+                    const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
+                    return (
+                      <th key={key} className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider relative cursor-help" onClick={() => setColTooltip(colTooltip === key ? null : key)}>
+                        <span className="inline-flex items-center gap-1">{col.label} <Info size={9} className="opacity-50" /></span>
+                        {colTooltip === key && (
+                          <div className="absolute left-0 top-full mt-1 z-20 bg-gray-900 text-white text-[10px] font-medium px-2 py-1 rounded-md shadow-lg normal-case tracking-normal whitespace-normal w-48">
+                            {col.desc}
+                          </div>
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {sortedOrders.map(o => <TableRow key={o.id} o={o} />)}
+                {sortedOrders.map(o => (
+                  <tr key={o.id} data-order-id={o.id} className={`border-b border-gray-50 hover:bg-gray-50/80 ${needsUrgentAttention(o) ? 'bg-amber-50/30' : ''} ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
+                    <td className="px-3 py-3"><button onClick={(e) => { e.stopPropagation(); toggleSelect(o.id); }}>{selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600" /> : <Square size={16} className="text-gray-300" />}</button></td>
+                    {activeColumns.map(key => <DynamicCell key={key} colKey={key} o={o} />)}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

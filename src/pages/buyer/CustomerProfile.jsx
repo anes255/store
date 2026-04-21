@@ -766,6 +766,34 @@ export default function CustomerProfile() {
                                 <span>-{parseFloat(order.discount).toLocaleString()} {currency}</span>
                               </div>
                             )}
+                            {/* Extra order details: shipping address, contact, payment, notes */}
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 px-1">
+                              <div className="rounded-xl bg-white/5 border border-white/5 p-3">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5">{t('store.shippingAddress','Shipping Address')}</p>
+                                <p className="text-xs text-white/90">{order.shipping_address || '—'}</p>
+                                <p className="text-[11px] text-gray-400 mt-0.5">{[order.shipping_city, order.shipping_wilaya].filter(Boolean).join(', ')}{order.shipping_zip ? ` · ${order.shipping_zip}` : ''}</p>
+                                {order.shipping_type && (
+                                  <p className="text-[11px] text-gray-400 mt-0.5">{order.shipping_type === 'home' ? t('store.homeDelivery','Home delivery') : t('store.deskDelivery','Desk delivery')}</p>
+                                )}
+                              </div>
+                              <div className="rounded-xl bg-white/5 border border-white/5 p-3">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5">{t('store.paymentContact','Payment & Contact')}</p>
+                                <p className="text-xs text-white/90 uppercase">{(order.payment_method || 'cod').replace('_',' ')} · <span className={order.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}>{order.payment_status || 'unpaid'}</span></p>
+                                <p className="text-[11px] text-gray-400 mt-1 font-mono">{order.customer_phone || ''}</p>
+                                {order.customer_email && <p className="text-[11px] text-gray-400">{order.customer_email}</p>}
+                                {order.tracking_number && <p className="text-[11px] text-cyan-300 mt-1 font-mono">#{order.tracking_number}</p>}
+                              </div>
+                              {order.notes && (
+                                <div className="sm:col-span-2 rounded-xl bg-blue-500/10 border border-blue-500/20 p-3">
+                                  <p className="text-[10px] font-bold text-blue-300 uppercase mb-1">{t('store.orderNotes','Order Notes')}</p>
+                                  <p className="text-xs text-blue-100">{order.notes}</p>
+                                </div>
+                              )}
+                              <div className="sm:col-span-2 flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 p-3">
+                                <span className="text-[11px] text-gray-400">{t('store.subtotal','Subtotal')}</span>
+                                <span className="text-xs font-bold text-white">{parseFloat(order.subtotal || order.total).toLocaleString()} {currency}</span>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
