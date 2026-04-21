@@ -124,6 +124,7 @@ export default function StoreOrders() {
   const { t } = useTranslation();
   const { currentStore } = useStoreManagement();
   const location = useLocation();
+  const [orders, setOrders] = useState([]);
   // Highlight target order id when arriving via a notification link (?highlight=<id>).
   const highlightId = useMemo(() => {
     const p = new URLSearchParams(location.search);
@@ -140,7 +141,6 @@ export default function StoreOrders() {
       return () => clearTimeout(tm);
     }
   }, [highlightId, orders]);
-  const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
