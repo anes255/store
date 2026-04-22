@@ -702,15 +702,6 @@ export default function CustomerProfile() {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {orderItems.length > 0 && (
-                                <button
-                                  onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 text-[11px] font-bold transition-colors border border-white/5"
-                                >
-                                  {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                  {isExpanded ? t('store.hideDetails', 'Hide') : t('store.showDetails', 'Details')}
-                                </button>
-                              )}
                               {isActive && (
                                 <button onClick={() => setTrackOrder(order)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-[11px] font-bold transition-all hover:shadow-md" style={{ backgroundColor: pc }}>
                                   <Truck size={12} />{t('store.track', 'Track')}
@@ -725,8 +716,8 @@ export default function CustomerProfile() {
                           </div>
                         </div>
 
-                        {/* Expanded Order Items */}
-                        {isExpanded && orderItems.length > 0 && (
+                        {/* Order Items — always visible so buyers see the products, variants, and quantities they ordered */}
+                        {orderItems.length > 0 && (
                           <div className="border-t border-white/5 bg-white/[0.02] p-4 space-y-2">
                             {orderItems.map((item, idx) => {
                               const img = getProductImage(item);
