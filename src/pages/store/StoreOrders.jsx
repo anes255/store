@@ -375,7 +375,7 @@ export default function StoreOrders() {
       </div>
 
       {/* Orders table */}
-      <div className="glass-card-solid">
+      <div className="glass-card-solid w-full max-w-full overflow-hidden">
         <div className="px-4 py-2 flex items-center justify-end gap-2 text-[11px] font-bold text-gray-500">
           <span>{totalShown===0?'0':`${(page-1)*ps+1}-${Math.min(page*ps,totalShown)}`} / {totalShown}</span>
           <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page<=1} className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center disabled:opacity-30"><ChevronLeft size={12}/></button>
