@@ -102,6 +102,9 @@ export default function StoreOrders() {
   const [createOpen, setCreateOpen] = useState(false);
   // Quick action drawer: { type: string, order: {...} } — null when closed.
   const [quickAction, setQuickAction] = useState(null);
+  // Horizontal scroll container ref — used by the on-screen scroll buttons.
+  const hscrollRef = React.useRef(null);
+  const scrollTableBy = (dx) => { const el = hscrollRef.current; if (el) el.scrollBy({ left: dx, behavior: 'smooth' }); };
   const [activeColumns, setActiveColumns] = useState(() => {
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v3') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
@@ -531,7 +534,23 @@ export default function StoreOrders() {
             <p className="text-xs text-gray-400 mt-1">When your customers place orders, they will appear here.</p>
           </div>
         ) : (
+          <div className="relative">
+          {/* Floating scroll buttons — always visible so you can pan the wide table on PC. */}
+          <button type="button" aria-label="Scroll left" onClick={() => scrollTableBy(-400)}
+            className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-gray-900/85 hover:bg-gray-900 text-white items-center justify-center shadow-xl ring-2 ring-white/40">
+            <ChevronLeft size={18}/>
+          </button>
+          <button type="button" aria-label="Scroll right" onClick={() => scrollTableBy(400)}
+            className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-gray-900/85 hover:bg-gray-900 text-white items-center justify-center shadow-xl ring-2 ring-white/40">
+            <ChevronRight size={18}/>
+          </button>
+          {/* Mobile fallback — inline pair below the table. */}
+          <div className="md:hidden flex items-center justify-between gap-2 px-3 pt-2">
+            <button type="button" onClick={() => scrollTableBy(-300)} className="flex-1 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1"><ChevronLeft size={14}/>Scroll Left</button>
+            <button type="button" onClick={() => scrollTableBy(300)} className="flex-1 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1">Scroll Right<ChevronRight size={14}/></button>
+          </div>
           <div
+            ref={hscrollRef}
             className="orders-hscroll scroll-smooth"
             style={{
               overflowX: 'auto',
@@ -543,7 +562,6 @@ export default function StoreOrders() {
               scrollbarColor: '#9ca3af #f3f4f6',
             }}
             onWheel={(e) => {
-              // On PC: vertical wheel scrolls the table horizontally when hovering it.
               if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
                 const el = e.currentTarget;
                 if (el.scrollWidth > el.clientWidth) {
@@ -574,6 +592,7 @@ export default function StoreOrders() {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>
