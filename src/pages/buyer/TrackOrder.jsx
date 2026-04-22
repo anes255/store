@@ -1,19 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban } from 'lucide-react';
+import { useBuyerTheme } from '../../hooks/useStore';
+import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash } from 'lucide-react';
 import { isValidAlgerianPhone } from './Checkout';
 
-// Public order-lookup page so unregistered customers can track an order by
-// the Algerian phone number they used at checkout.
+const statusColors = {
+  new_order: 'bg-indigo-500/20 text-indigo-300',
+  pending: 'bg-amber-500/20 text-amber-300',
+  confirmed: 'bg-blue-500/20 text-blue-300',
+  preparing: 'bg-purple-500/20 text-purple-300',
+  under_preparation: 'bg-purple-500/20 text-purple-300',
+  ready: 'bg-teal-500/20 text-teal-300',
+  shipped: 'bg-cyan-500/20 text-cyan-300',
+  delivered: 'bg-emerald-500/20 text-emerald-300',
+  cancelled: 'bg-red-500/20 text-red-300',
+  returned: 'bg-gray-600/40 text-gray-300',
+};
+
+// Public order-lookup page — dark glass style matching the buyer profile page.
 export default function TrackOrder() {
   const { storeSlug } = useParams();
   const { t } = useTranslation();
+  const buyerTheme = useBuyerTheme();
+  const pc = buyerTheme.primaryColor || '#7c3aed';
+  const [store, setStore] = useState({ name: '', currency: 'DZD', logo: '' });
   const [phone, setPhone] = useState('');
   const [orders, setOrders] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    storeApi.getStore(storeSlug).then(r => setStore({ name: r.data.name || '', currency: r.data.currency || 'DZD', logo: r.data.logo || '' })).catch(() => {});
+  }, [storeSlug]);
+
+  const currency = store.currency || 'DZD';
 
   const lookup = async () => {
     if (!isValidAlgerianPhone(phone)) {
@@ -31,74 +53,173 @@ export default function TrackOrder() {
   };
 
   const statusIcon = (s) => {
-    if (s === 'delivered') return <Check className="text-emerald-600" size={16} />;
-    if (s === 'shipped') return <Truck className="text-cyan-600" size={16} />;
-    if (s === 'cancelled' || s === 'returned') return <Ban className="text-red-500" size={16} />;
-    return <Clock className="text-amber-500" size={16} />;
+    if (s === 'delivered') return <Check size={12} />;
+    if (s === 'shipped') return <Truck size={12} />;
+    if (s === 'cancelled' || s === 'returned') return <Ban size={12} />;
+    return <Clock size={12} />;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to={`/s/${storeSlug}`} className="p-2 rounded-full hover:bg-gray-100"><ArrowLeft size={18} /></Link>
-          <h1 className="text-lg font-extrabold text-gray-900">{t('track.title', 'Track your order')}</h1>
+    <div className="min-h-screen text-white relative overflow-hidden" style={{ background: 'radial-gradient(circle at 20% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%)' }}>
+      {/* Decorative blobs */}
+      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${pc}66 0%, transparent 70%)` }} />
+      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
+
+      {/* Sticky header */}
+      <header className="relative z-10 sticky top-0 bg-gray-900/70 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
+          <Link to={`/s/${storeSlug}`} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors"><ArrowLeft size={16} /></Link>
+          {store.logo
+            ? <img src={store.logo} alt="" className="w-9 h-9 rounded-xl object-cover border border-white/10" />
+            : <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base font-extrabold truncate">{t('track.title', 'Track your order')}</h1>
+            <p className="text-[11px] text-gray-400 truncate">{store.name}</p>
+          </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <p className="text-sm text-gray-500 mb-4">
-            {t('track.desc', 'Enter the Algerian phone number you used at checkout to see your orders.')}
-          </p>
-          <div className="flex gap-2">
+      <div className="relative z-10 max-w-3xl mx-auto px-4 py-8">
+        {/* Lookup card */}
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${pc}, ${pc}88)` }}>
+              <Truck size={22} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold">{t('track.findOrder', 'Find your order')}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">{t('track.desc', 'Enter the Algerian phone number you used at checkout.')}</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Phone size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && lookup()}
                 placeholder="0555 12 34 56"
-                className="w-full pl-9 pr-3 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:outline-none focus:border-gray-300"
+                className="w-full pl-11 pr-3 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-white/20"
                 inputMode="tel"
               />
             </div>
-            <button onClick={lookup} disabled={loading} className="px-5 py-3 rounded-xl bg-gray-900 text-white text-sm font-bold disabled:opacity-50">
-              {loading ? '…' : t('track.lookup', 'Track')}
+            <button onClick={lookup} disabled={loading} className="px-6 py-3.5 rounded-2xl text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2 transition-all hover:shadow-lg" style={{ backgroundColor: pc, boxShadow: `0 4px 20px ${pc}44` }}>
+              {loading
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />{t('track.searching', 'Searching…')}</>
+                : <><Search size={14} />{t('track.lookup', 'Track')}</>}
             </button>
           </div>
         </div>
 
+        {/* No results */}
         {orders && orders.length === 0 && (
-          <div className="mt-6 text-center text-gray-500 text-sm">{t('track.noResults', 'No orders found for that phone number.')}</div>
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-10 text-center">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+              <Package size={24} className="text-gray-500" />
+            </div>
+            <p className="font-bold text-white">{t('track.noResultsTitle', 'No orders found')}</p>
+            <p className="text-xs text-gray-500 mt-1">{t('track.noResults', 'No orders for that phone number yet.')}</p>
+          </div>
         )}
 
+        {/* Orders list */}
         {orders && orders.length > 0 && (
           <div className="mt-6 space-y-3">
-            {orders.map(o => (
-              <div key={o.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-mono font-bold text-gray-900">{o.order_number}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{new Date(o.created_at).toLocaleDateString()}</p>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">{orders.length} {orders.length === 1 ? t('track.orderFound', 'order found') : t('track.ordersFound', 'orders found')}</p>
+            {orders.map(o => {
+              const items = o.items || [];
+              return (
+                <div key={o.id} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden hover:bg-white/[0.07] transition-all">
+                  {/* Header */}
+                  <div className="p-5">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="min-w-0">
+                        <p className="font-mono font-bold text-white text-sm truncate">{o.order_number}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1"><Clock size={10} />{new Date(o.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${statusColors[o.status] || 'bg-gray-700/40 text-gray-300'} capitalize`}>
+                          {statusIcon(o.status)}{o.status?.replace(/_/g, ' ')}
+                        </span>
+                        <p className="text-lg font-extrabold text-white mt-1">{parseFloat(o.total || 0).toLocaleString()} {currency}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
+                      <span className="uppercase flex items-center gap-1"><CreditCard size={10} />{(o.payment_method || 'cod').replace('_', ' ')}</span>
+                      {items.length > 0 && <span className="flex items-center gap-1"><Package size={10} />{items.length} {items.length === 1 ? t('track.item', 'item') : t('track.items', 'items')}</span>}
+                      {o.tracking_number && <span className="font-mono text-cyan-300 flex items-center gap-1"><Hash size={10} />{o.tracking_number}</span>}
+                    </div>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-xs font-bold text-gray-700">
-                    {statusIcon(o.status)}{o.status?.replace(/_/g, ' ')}
-                  </span>
+
+                  {/* Items */}
+                  {items.length > 0 && (
+                    <div className="border-t border-white/5 bg-white/[0.02] p-4 space-y-2">
+                      {items.map((item, idx) => {
+                        const img = item.product_image;
+                        return (
+                          <div key={idx} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                            {img
+                              ? <img src={img} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-800 shrink-0" />
+                              : <div className="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center shrink-0"><Package size={16} className="text-gray-600" /></div>}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">{item.product_name || item.name}</p>
+                              {item.variant_label && <p className="text-[10px] text-gray-500">{item.variant_label}</p>}
+                              <p className="text-xs text-gray-400">{t('store.qty', 'Qty')}: {item.quantity}<span className="mx-1.5 text-gray-600">|</span>{parseFloat(item.price || item.unit_price || 0).toLocaleString()} {currency}</p>
+                            </div>
+                            <p className="text-sm font-bold text-white shrink-0">{(parseFloat(item.price || item.unit_price || 0) * (item.quantity || 1)).toLocaleString()} {currency}</p>
+                          </div>
+                        );
+                      })}
+
+                      {/* Totals */}
+                      {(o.shipping_cost != null && parseFloat(o.shipping_cost) > 0) && (
+                        <div className="flex items-center justify-between px-3 pt-2 text-xs text-gray-500"><span>{t('store.shipping', 'Shipping')}</span><span>{parseFloat(o.shipping_cost).toLocaleString()} {currency}</span></div>
+                      )}
+                      {(o.discount != null && parseFloat(o.discount) > 0) && (
+                        <div className="flex items-center justify-between px-3 text-xs text-emerald-400"><span>{t('store.discount', 'Discount')}</span><span>-{parseFloat(o.discount).toLocaleString()} {currency}</span></div>
+                      )}
+
+                      {/* Delivery / contact */}
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 px-1">
+                        <div className="rounded-xl bg-white/5 border border-white/5 p-3">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1"><MapPin size={10} />{t('store.shippingAddress', 'Shipping Address')}</p>
+                          <p className="text-xs text-white/90">{o.shipping_address || '—'}</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{[o.shipping_city, o.shipping_wilaya].filter(Boolean).join(', ')}</p>
+                          {o.shipping_type && <p className="text-[11px] text-gray-400 mt-0.5">{o.shipping_type === 'home' ? t('store.homeDelivery', 'Home delivery') : t('store.deskDelivery', 'Desk delivery')}</p>}
+                          {o.delivery_company && <p className="text-[11px] text-cyan-300 mt-1">{o.delivery_company}</p>}
+                        </div>
+                        <div className="rounded-xl bg-white/5 border border-white/5 p-3">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1"><Phone size={10} />{t('store.paymentContact', 'Payment & Contact')}</p>
+                          <p className="text-xs text-white/90 uppercase">{(o.payment_method || 'cod').replace('_', ' ')} · <span className={o.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}>{o.payment_status || 'unpaid'}</span></p>
+                          <p className="text-[11px] text-gray-400 mt-1 font-mono">{o.customer_phone || ''}</p>
+                          {o.customer_email && <p className="text-[11px] text-gray-400">{o.customer_email}</p>}
+                        </div>
+                        {o.notes && (
+                          <div className="sm:col-span-2 rounded-xl bg-blue-500/10 border border-blue-500/20 p-3">
+                            <p className="text-[10px] font-bold text-blue-300 uppercase mb-1">{t('store.orderNotes', 'Order Notes')}</p>
+                            <p className="text-xs text-blue-100">{o.notes}</p>
+                          </div>
+                        )}
+                        <div className="sm:col-span-2 flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 p-3">
+                          <span className="text-[11px] text-gray-400">{t('store.subtotal', 'Subtotal')}</span>
+                          <span className="text-xs font-bold text-white">{parseFloat(o.subtotal || o.total || 0).toLocaleString()} {currency}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{t('track.total', 'Total')}</span>
-                  <span className="font-extrabold text-gray-900">{parseFloat(o.total).toLocaleString()} DZD</span>
-                </div>
-                {o.tracking_number && (
-                  <div className="mt-2 flex items-center gap-2 text-xs">
-                    <Package size={12} className="text-cyan-600" />
-                    <span className="text-gray-500">{t('track.tracking', 'Tracking')}:</span>
-                    <span className="font-mono font-bold text-gray-800">{o.tracking_number}</span>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        )}
+
+        {/* Initial empty state */}
+        {!orders && !loading && (
+          <div className="mt-8 flex flex-col items-center text-center opacity-70">
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4 border border-white/10 bg-white/5">
+              <ShoppingBag size={30} style={{ color: pc }} />
+            </div>
+            <p className="text-sm text-gray-400 max-w-sm">{t('track.hint', 'Type the phone number you used when placing the order to see your delivery status and items.')}</p>
           </div>
         )}
       </div>
