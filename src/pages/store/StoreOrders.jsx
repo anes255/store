@@ -7,24 +7,45 @@ import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon } from 'lucide-react';
 
-// Columns the admin can toggle / reorder — mirrors the design in the screenshots.
+// All columns available to toggle / reorder.
 const ALL_COLUMNS = [
-  { key: 'photo', label: 'Photo' },
-  { key: 'order', label: 'Order N' },
-  { key: 'products', label: 'Products' },
-  { key: 'wilaya', label: 'Wilaya' },
-  { key: 'wilaya_number', label: 'N° Wilaya' },
-  { key: 'commune', label: 'Commune' },
-  { key: 'customer_name', label: 'Customer Name' },
-  { key: 'phone', label: 'Phone N' },
-  { key: 'transfer', label: 'Transfer' },
-  { key: 'status', label: 'Status' },
-  { key: 'shipping_method', label: 'Shipping Method' },
-  { key: 'total', label: 'Total' },
+  { key: 'photo',            label: 'Photo' },
+  { key: 'order',            label: 'Order N' },
+  { key: 'products',         label: 'Products' },
+  { key: 'wilaya',           label: 'Wilaya' },
+  { key: 'wilaya_number',    label: 'N° Wilaya' },
+  { key: 'commune',          label: 'Commune' },
+  { key: 'customer_name',    label: 'Customer Name' },
+  { key: 'phone',            label: 'Phone N' },
+  { key: 'transfer',         label: 'Transfer Status' },
+  { key: 'status',           label: 'Status' },
+  { key: 'shipping_method',  label: 'Shipping Method' },
+  { key: 'shipping_cost',    label: 'Shipping Cost' },
+  { key: 'total',            label: 'Total' },
+  { key: 'processed_at',     label: 'Processed At' },
+  { key: 'financial_status', label: 'Financial Status' },
+  { key: 'currency',         label: 'Currency' },
+  { key: 'whatsapp',         label: 'WhatsApp' },
+  { key: 'subtotal',         label: 'Sub Total' },
+  { key: 'taxes',            label: 'Taxes' },
+  { key: 'discount_code',    label: 'Discount Code' },
+  { key: 'created_via',      label: 'Created Via' },
+  { key: 'email',            label: 'Email' },
+  { key: 'billing_name',     label: 'Billing Name' },
+  { key: 'billing_street',   label: 'Billing Street' },
+  { key: 'billing_city',     label: 'Billing City' },
+  { key: 'billing_zip',      label: 'Billing Zip' },
+  { key: 'billing_country',  label: 'Billing Country' },
+  { key: 'shipping_street',  label: 'Shipping Street' },
+  { key: 'shipping_city',    label: 'Shipping City' },
+  { key: 'shipping_zip',     label: 'Shipping Zip' },
+  { key: 'tracking_number',  label: 'Tracking Number' },
+  { key: 'company_name',     label: 'Company Name' },
+  { key: 'notes',            label: 'Notes' },
 ];
-const DEFAULT_COLUMNS = ['order','photo','products','wilaya','commune','customer_name','phone','transfer','status','shipping_method','total'];
+const DEFAULT_COLUMNS = ['order','photo','products','wilaya','commune','customer_name','phone','whatsapp','transfer','status','shipping_method','shipping_cost','total','financial_status','tracking_number','notes'];
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
@@ -43,16 +64,6 @@ const statusConfig = {
 };
 const allStatuses = ['new_order','pending','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned'];
 
-function formatDateTime(date) {
-  const d = new Date(date);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (isToday) return `Today ${time}`;
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` ${time}`;
-}
-
-// Small helper: pretty delivery-company label based on company name.
 function transferBadge(o) {
   const name = (o.delivery_company_name || '').toLowerCase();
   if (name.includes('noest')) return { label: 'NOEST Express', className: 'bg-blue-500 text-white' };
@@ -61,6 +72,10 @@ function transferBadge(o) {
   if (o.delivery_company_name) return { label: o.delivery_company_name, className: 'bg-indigo-500 text-white' };
   return null;
 }
+
+function fmtMoney(v, cur) { return `${parseFloat(v||0).toLocaleString()} ${cur||'DZD'}`; }
+function waLink(phone) { if (!phone) return null; const clean = String(phone).replace(/[^\d+]/g,''); return `https://wa.me/${clean.replace(/^\+/,'')}`; }
+function copy(text) { try { navigator.clipboard.writeText(text); toast.success('Copied'); } catch { toast.error('Copy failed'); } }
 
 export default function StoreOrders() {
   const { t } = useTranslation();
@@ -85,11 +100,13 @@ export default function StoreOrders() {
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
   const [adminStatsOpen, setAdminStatsOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  // Quick action drawer: { type: string, order: {...} } — null when closed.
+  const [quickAction, setQuickAction] = useState(null);
   const [activeColumns, setActiveColumns] = useState(() => {
-    try { const s = JSON.parse(localStorage.getItem('orders.columns.v2') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
+    try { const s = JSON.parse(localStorage.getItem('orders.columns.v3') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
-  useEffect(() => { localStorage.setItem('orders.columns.v2', JSON.stringify(activeColumns)); }, [activeColumns]);
+  useEffect(() => { localStorage.setItem('orders.columns.v3', JSON.stringify(activeColumns)); }, [activeColumns]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
 
   const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -114,7 +131,6 @@ export default function StoreOrders() {
   useEffect(() => { loadOrders(); }, [currentStore?.id, filter, search]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
 
-  // Highlight target order via ?highlight=<id>
   const highlightId = useMemo(() => { const p = new URLSearchParams(location.search); return p.get('highlight') || null; }, [location.search]);
   useEffect(() => {
     if (!highlightId) return;
@@ -138,6 +154,16 @@ export default function StoreOrders() {
     catch { toast.error('Failed'); }
   };
 
+  // Save any field of an order via PATCH.
+  const saveOrderField = async (orderId, patch) => {
+    try {
+      await api.patch(`/manage/stores/${currentStore.id}/orders/${orderId}`, patch);
+      toast.success('Saved');
+      loadOrders();
+      if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
+    } catch { toast.error('Failed to save'); }
+  };
+
   const filters = [
     { key: 'all',           label: 'All' },
     { key: 'new_order',     label: 'New' },
@@ -151,7 +177,6 @@ export default function StoreOrders() {
     { key: 'shipped',       label: 'Shipped' },
   ];
 
-  // Client-side filtered list (date range) + pagination
   const filteredOrders = useMemo(() => {
     let rows = [...orders];
     if (dateFrom) { const f = new Date(dateFrom).getTime(); rows = rows.filter(o => new Date(o.created_at).getTime() >= f); }
@@ -182,86 +207,203 @@ export default function StoreOrders() {
     return { total: orders.length, revenue, delivered, shipped, cancelled, pending };
   }, [orders]);
 
-  // ---- Dynamic cell renderer for the orders table ----
+  // Helper for clickable cells. `act` opens a quick-action drawer; falls back to opening full order detail.
+  const cellBtn = (o, act, children, className = '') => (
+    <button type="button" onClick={e => { e.stopPropagation(); setQuickAction({ type: act, order: o }); }}
+      className={`text-left w-full hover:bg-brand-50/60 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors ${className}`}>
+      {children}
+    </button>
+  );
+
+  // ---- Cell renderer ----
   const renderCell = (key, o) => {
     const sc = statusConfig[o.status] || statusConfig.pending;
     const wilayaBi = getEnAr(o.shipping_wilaya || '');
     const communeBi = getEnAr(o.shipping_city || '');
     const transfer = transferBadge(o);
+
     switch (key) {
       case 'photo':
-        return <td className="px-3 py-3">{o.first_image ? <img src={o.first_image} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200" /> : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><Package size={14} className="text-gray-400"/></div>}</td>;
+        return <td className="px-3 py-3">{cellBtn(o, 'photo', o.first_image ? <img src={o.first_image} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200" /> : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><Package size={14} className="text-gray-400"/></div>)}</td>;
+
       case 'order':
         return (
-          <td className="px-3 py-3">
-            <p className="font-mono font-bold text-sm text-emerald-400">{o.order_number}</p>
-            {o.delivery_company_name && <p className="text-[10px] font-bold text-emerald-300/80 uppercase mt-0.5">{o.delivery_company_name}</p>}
-            {o.tracking_number ? <p className="text-[9px] text-gray-400 font-mono mt-0.5">{o.tracking_number}</p> : <p className="text-[9px] text-gray-400 mt-0.5">N/A</p>}
-          </td>
+          <td className="px-3 py-3">{cellBtn(o, 'order',
+            <>
+              <p className="font-mono font-bold text-sm text-emerald-600">{o.order_number}</p>
+              {o.delivery_company_name && <p className="text-[10px] font-bold text-emerald-500 uppercase mt-0.5">{o.delivery_company_name}</p>}
+              {o.tracking_number ? <p className="text-[9px] text-gray-400 font-mono mt-0.5">{o.tracking_number}</p> : <p className="text-[9px] text-gray-400 mt-0.5">N/A</p>}
+            </>
+          )}</td>
         );
+
       case 'products': {
         const items = o.items || [];
         const first = items[0];
         return (
-          <td className="px-3 py-3">
-            {first ? (
-              <div className="flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">{first.quantity}x</span>
-                <span className="text-xs font-semibold truncate max-w-[120px]">{first.product_name}</span>
-                <span className="text-[10px] text-gray-400">{parseFloat(first.price||first.unit_price||0).toLocaleString()}DZD</span>
-              </div>
-            ) : '—'}
-            {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">+{items.length-1} more</p>}
+          <td className="px-3 py-3">{cellBtn(o, 'products',
+            first ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">{first.quantity}x</span>
+                  <span className="text-xs font-semibold truncate max-w-[120px]">{first.product_name || first.name}</span>
+                </div>
+                {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">+{items.length-1} more</p>}
+              </>
+            ) : <span className="text-xs text-gray-400">—</span>
+          )}</td>
+        );
+      }
+
+      case 'wilaya':
+        return <td className="px-3 py-3">{cellBtn(o, 'address',
+          <><p className="text-xs font-semibold">{wilayaBi.en || '—'}</p>{wilayaBi.ar && wilayaBi.ar !== wilayaBi.en && <p className="text-[10px] text-gray-400" dir="rtl">{wilayaBi.ar}</p>}</>
+        )}</td>;
+
+      case 'wilaya_number':
+        return <td className="px-3 py-3">{cellBtn(o, 'address', <span className="font-mono text-xs text-gray-500">{o.shipping_wilaya_code || o.shipping_zip?.slice(0,2) || '—'}</span>)}</td>;
+
+      case 'commune':
+        return <td className="px-3 py-3">{cellBtn(o, 'address',
+          <><p className="text-xs">{communeBi.en || '—'}</p>{communeBi.ar && communeBi.ar !== communeBi.en && <p className="text-[10px] text-gray-400" dir="rtl">{communeBi.ar}</p>}</>
+        )}</td>;
+
+      case 'customer_name':
+        return <td className="px-3 py-3">{cellBtn(o, 'customer', <span className="text-xs font-semibold">{o.customer_name || '—'}</span>)}</td>;
+
+      case 'phone':
+        return <td className="px-3 py-3">{cellBtn(o, 'phone', <span className="font-mono text-xs">{o.customer_phone || '—'}</span>)}</td>;
+
+      case 'transfer':
+        return (
+          <td className="px-3 py-3">{cellBtn(o, 'transfer',
+            transfer ? (
+              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold leading-tight ${transfer.className}`}>{transfer.label}</span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600"><Send size={10}/>Assign</span>
+            )
+          )}</td>
+        );
+
+      case 'status':
+        return <td className="px-3 py-3">{cellBtn(o, 'status',
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold ${sc.bg} ${sc.text}`}>{sc.label} <ChevronDown size={10} className="ml-1 opacity-60"/></span>
+        )}</td>;
+
+      case 'shipping_method':
+        return <td className="px-3 py-3">{cellBtn(o, 'shipping_method',
+          o.shipping_type === 'home'
+            ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><Home size={10}/> HOME</span>
+            : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Package size={10}/> STOP DESK</span>
+        )}</td>;
+
+      case 'shipping_cost':
+        return <td className="px-3 py-3 text-right whitespace-nowrap">{cellBtn(o, 'totals', <span className="text-xs font-bold">{fmtMoney(o.shipping_cost, o.currency)}</span>)}</td>;
+
+      case 'total':
+        return <td className="px-3 py-3 text-right whitespace-nowrap">{cellBtn(o, 'totals',
+          <>
+            <p className="text-xs font-black">{fmtMoney(o.total, o.currency)}</p>
+            {o.shipping_cost ? <p className="text-[9px] text-gray-400">+ {fmtMoney(o.shipping_cost, o.currency)} shipping</p> : null}
+          </>
+        )}</td>;
+
+      case 'processed_at': {
+        const d = o.processed_at || o.updated_at;
+        return <td className="px-3 py-3 whitespace-nowrap">{cellBtn(o, 'processed_at',
+          <span className="text-xs text-gray-600">{d ? new Date(d).toLocaleString() : 'Not processed'}</span>
+        )}</td>;
+      }
+
+      case 'financial_status': {
+        const ps = (o.payment_status || 'pending').toLowerCase();
+        const cls = ps === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : ps === 'refunded' ? 'bg-orange-50 text-orange-700 border-orange-200'
+                  : ps === 'failed' ? 'bg-red-50 text-red-700 border-red-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200';
+        return <td className="px-3 py-3">{cellBtn(o, 'financial',
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase ${cls}`}>{ps}</span>
+        )}</td>;
+      }
+
+      case 'currency':
+        return <td className="px-3 py-3">{cellBtn(o, 'currency', <span className="text-xs font-bold text-gray-600">{o.currency || 'DZD'}</span>)}</td>;
+
+      case 'whatsapp': {
+        const link = waLink(o.customer_phone);
+        return (
+          <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+            {link ? (
+              <a href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-green-500 hover:bg-green-600 text-white">
+                <MessageCircle size={11}/>WhatsApp
+              </a>
+            ) : <span className="text-[10px] text-gray-400">No phone</span>}
           </td>
         );
       }
-      case 'wilaya':
+
+      case 'subtotal':
+        return <td className="px-3 py-3 text-right whitespace-nowrap">{cellBtn(o, 'totals', <span className="text-xs text-gray-700">{fmtMoney(o.subtotal, o.currency)}</span>)}</td>;
+
+      case 'taxes':
+        return <td className="px-3 py-3 text-right whitespace-nowrap">{cellBtn(o, 'totals', <span className="text-xs text-gray-700">{fmtMoney(o.tax_total || o.taxes || 0, o.currency)}</span>)}</td>;
+
+      case 'discount_code':
+        return <td className="px-3 py-3">{cellBtn(o, 'discount',
+          o.discount_code
+            ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-pink-50 text-pink-700 border border-pink-200"><Tag size={10}/>{o.discount_code}</span>
+            : <span className="text-[10px] text-gray-400">None</span>
+        )}</td>;
+
+      case 'created_via':
+        return <td className="px-3 py-3">{cellBtn(o, 'source', <span className="text-[10px] uppercase font-bold text-gray-600">{o.source || o.created_via || 'Storefront'}</span>)}</td>;
+
+      case 'email':
         return (
-          <td className="px-3 py-3">
-            <p className="text-xs font-semibold">{wilayaBi.en || '—'}</p>
-            {wilayaBi.ar && wilayaBi.ar !== wilayaBi.en && <p className="text-[10px] text-gray-400" dir="rtl">{wilayaBi.ar}</p>}
+          <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+            {o.customer_email ? <a href={`mailto:${o.customer_email}`} className="text-xs text-blue-600 hover:underline truncate block max-w-[180px]">{o.customer_email}</a> : <span className="text-[10px] text-gray-400">—</span>}
           </td>
         );
-      case 'wilaya_number':
-        return <td className="px-3 py-3"><span className="font-mono text-xs text-gray-500">{o.shipping_wilaya_code || o.shipping_zip?.slice(0,2) || '—'}</span></td>;
-      case 'commune':
-        return (
-          <td className="px-3 py-3">
-            <p className="text-xs">{communeBi.en || '—'}</p>
-            {communeBi.ar && communeBi.ar !== communeBi.en && <p className="text-[10px] text-gray-400" dir="rtl">{communeBi.ar}</p>}
-          </td>
-        );
-      case 'customer_name':
-        return <td className="px-3 py-3"><span className="text-xs">{o.customer_name}</span></td>;
-      case 'phone':
-        return <td className="px-3 py-3"><span className="font-mono text-xs">{o.customer_phone}</span></td>;
-      case 'transfer':
-        return (
-          <td className="px-3 py-3">
-            {transfer ? (
-              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold leading-tight ${transfer.className}`}>{transfer.label}</span>
-            ) : (
-              <button onClick={() => viewOrder(o.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><Send size={10}/>Transfer</button>
-            )}
-          </td>
-        );
-      case 'status':
-        return <td className="px-3 py-3"><span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold ${sc.bg} ${sc.text}`}>{sc.label} <ChevronDown size={10} className="ml-1 opacity-60"/></span></td>;
-      case 'shipping_method':
-        return (
-          <td className="px-3 py-3">
-            {o.shipping_type === 'home'
-              ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><Home size={10}/> HOME</span>
-              : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Package size={10}/> STOP DESK</span>}
-          </td>
-        );
-      case 'total':
-        return (
-          <td className="px-3 py-3 text-right whitespace-nowrap">
-            <p className="text-xs font-black">{parseFloat(o.total).toLocaleString()}{o.currency||'DZD'}</p>
-            {o.shipping_cost ? <p className="text-[9px] text-gray-400">+ {parseFloat(o.shipping_cost).toLocaleString()}DZD Livrai..</p> : null}
-          </td>
-        );
+
+      case 'billing_name':
+        return <td className="px-3 py-3">{cellBtn(o, 'billing', <span className="text-xs">{o.billing_name || o.customer_name || '—'}</span>)}</td>;
+      case 'billing_street':
+        return <td className="px-3 py-3">{cellBtn(o, 'billing', <span className="text-xs truncate block max-w-[160px]">{o.billing_street || o.billing_address || '—'}</span>)}</td>;
+      case 'billing_city':
+        return <td className="px-3 py-3">{cellBtn(o, 'billing', <span className="text-xs">{o.billing_city || '—'}</span>)}</td>;
+      case 'billing_zip':
+        return <td className="px-3 py-3">{cellBtn(o, 'billing', <span className="text-xs font-mono">{o.billing_zip || '—'}</span>)}</td>;
+      case 'billing_country':
+        return <td className="px-3 py-3">{cellBtn(o, 'billing', <span className="text-xs">{o.billing_country || 'DZ'}</span>)}</td>;
+
+      case 'shipping_street':
+        return <td className="px-3 py-3">{cellBtn(o, 'address', <span className="text-xs truncate block max-w-[160px]">{o.shipping_address || o.shipping_street || '—'}</span>)}</td>;
+      case 'shipping_city':
+        return <td className="px-3 py-3">{cellBtn(o, 'address', <span className="text-xs">{communeBi.en || o.shipping_city || '—'}</span>)}</td>;
+      case 'shipping_zip':
+        return <td className="px-3 py-3">{cellBtn(o, 'address', <span className="text-xs font-mono">{o.shipping_zip || '—'}</span>)}</td>;
+
+      case 'tracking_number':
+        return <td className="px-3 py-3">{cellBtn(o, 'tracking',
+          o.tracking_number
+            ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200 font-mono"><Truck size={10}/>{o.tracking_number}</span>
+            : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>Add</span>
+        )}</td>;
+
+      case 'company_name':
+        return <td className="px-3 py-3">{cellBtn(o, 'transfer',
+          o.delivery_company_name
+            ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"><Building2 size={10}/>{o.delivery_company_name}</span>
+            : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>Set</span>
+        )}</td>;
+
+      case 'notes':
+        return <td className="px-3 py-3">{cellBtn(o, 'notes',
+          o.notes
+            ? <span className="text-xs text-gray-700 truncate block max-w-[180px]">{o.notes}</span>
+            : <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><FileText size={10}/>Add note</span>
+        )}</td>;
+
       default: return <td className="px-3 py-3">—</td>;
     }
   };
@@ -352,7 +494,6 @@ export default function StoreOrders() {
                         <button onClick={() => moveColumn(key,-1)} disabled={idx===0} className="w-5 h-5 rounded bg-white disabled:opacity-30 flex items-center justify-center border border-gray-200"><ChevronUp size={10}/></button>
                         <button onClick={() => moveColumn(key, 1)} disabled={idx===activeColumns.length-1} className="w-5 h-5 rounded bg-white disabled:opacity-30 flex items-center justify-center border border-gray-200"><ChevronDown size={10}/></button>
                         <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{col.label}</span>
-                        <span className="text-[9px] text-gray-400">{col.key === 'products' ? '112px' : col.key === 'customer_name' ? '60px' : col.key === 'wilaya_number' ? '40px' : '40px'}</span>
                         <button onClick={() => toggleColumn(key)} className="text-emerald-500 hover:text-emerald-700"><Eye size={12}/></button>
                       </div>
                     );
@@ -374,7 +515,7 @@ export default function StoreOrders() {
         </div>
       </div>
 
-      {/* Orders table */}
+      {/* Orders table with horizontal scroll */}
       <div className="glass-card-solid w-full max-w-full overflow-hidden">
         <div className="px-4 py-2 flex items-center justify-end gap-2 text-[11px] font-bold text-gray-500">
           <span>{totalShown===0?'0':`${(page-1)*ps+1}-${Math.min(page*ps,totalShown)}`} / {totalShown}</span>
@@ -403,8 +544,8 @@ export default function StoreOrders() {
               </thead>
               <tbody>
                 {pageOrders.map(o => (
-                  <tr key={o.id} data-order-id={o.id} onClick={() => viewOrder(o.id)} className={`border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
-                    <td className="px-3 py-3 sticky left-0 bg-white z-10" onClick={e => e.stopPropagation()}>
+                  <tr key={o.id} data-order-id={o.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
+                    <td className="px-3 py-3 sticky left-0 bg-white z-10">
                       <button onClick={() => toggleSelect(o.id)}>{selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-300"/>}</button>
                     </td>
                     {activeColumns.map(key => <React.Fragment key={key}>{renderCell(key, o)}</React.Fragment>)}
@@ -444,7 +585,7 @@ export default function StoreOrders() {
         </div>
       )}
 
-      {/* Create Order modal (simple) */}
+      {/* Create Order modal */}
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setCreateOpen(false)}>
           <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -455,7 +596,21 @@ export default function StoreOrders() {
         </div>
       )}
 
-      {/* Order detail modal */}
+      {/* Quick action drawer — dispatches by column type */}
+      {quickAction && (
+        <QuickActionDrawer
+          action={quickAction}
+          onClose={() => setQuickAction(null)}
+          onOpenFullDetail={() => { const id = quickAction.order.id; setQuickAction(null); viewOrder(id); }}
+          onUpdateStatus={(status) => updateStatus(quickAction.order.id, status)}
+          onSaveField={(patch) => saveOrderField(quickAction.order.id, patch)}
+          companies={companies}
+          statusConfig={statusConfig}
+          allStatuses={allStatuses}
+        />
+      )}
+
+      {/* Full Order detail modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -495,7 +650,7 @@ export default function StoreOrders() {
                   {selectedOrder.items?.map((it,i) => (
                     <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                       {it.product_image ? <img src={it.product_image} className="w-14 h-14 rounded-xl object-cover" alt=""/> : <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center"><Package size={20} className="text-gray-400"/></div>}
-                      <div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate">{it.product_name}</p><p className="text-xs text-gray-400">{it.quantity} x {parseFloat(it.unit_price||it.price||0).toLocaleString()} DZD</p></div>
+                      <div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate">{it.product_name || it.name}</p><p className="text-xs text-gray-400">{it.quantity} x {parseFloat(it.unit_price||it.price||0).toLocaleString()} DZD</p></div>
                       <p className="font-bold text-sm">{parseFloat(it.total_price||0).toLocaleString()} DZD</p>
                     </div>
                   ))}
@@ -551,5 +706,338 @@ export default function StoreOrders() {
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+// ==========================================================================
+// Quick Action Drawer — one modal that switches on column type.
+// ==========================================================================
+function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, companies, statusConfig, allStatuses }) {
+  const { type, order: o } = action;
+  const [localPatch, setLocalPatch] = useState({});
+  const cur = o.currency || 'DZD';
+
+  const set = (k) => (e) => setLocalPatch(prev => ({ ...prev, [k]: e.target.value }));
+  const save = () => { if (Object.keys(localPatch).length) onSaveField(localPatch); onClose(); };
+
+  const title = {
+    photo: 'Order Photo',
+    order: 'Order #' + o.order_number,
+    products: `Products (${(o.items||[]).length})`,
+    address: 'Shipping Address',
+    customer: 'Customer',
+    phone: 'Phone',
+    transfer: 'Transfer / Delivery Company',
+    status: 'Order Status',
+    shipping_method: 'Shipping Method',
+    totals: 'Totals Breakdown',
+    processed_at: 'Processed At',
+    financial: 'Financial Status',
+    currency: 'Currency',
+    discount: 'Discount Code',
+    source: 'Created Via',
+    billing: 'Billing Address',
+    tracking: 'Tracking Number',
+    notes: 'Notes',
+  }[type] || 'Details';
+
+  const wrap = (body) => (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b flex items-start justify-between gap-3 sticky top-0 bg-white z-10">
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order {o.order_number}</p>
+            <h3 className="text-lg font-black text-gray-900">{title}</h3>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0"><X size={16}/></button>
+        </div>
+        <div className="p-5 space-y-4">
+          {body}
+          <div className="pt-3 border-t">
+            <button onClick={onOpenFullDetail} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 flex items-center justify-center gap-1.5">
+              <ExternalLink size={12}/>Open full order detail
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const row = (k, v) => (
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-gray-100 last:border-0">
+      <span className="text-[11px] font-bold text-gray-400 uppercase">{k}</span>
+      <span className="text-sm text-gray-800 text-right break-all">{v || '—'}</span>
+    </div>
+  );
+
+  // ---- body by type ----
+  if (type === 'photo') {
+    return wrap(
+      <div className="space-y-3">
+        {o.first_image ? <img src={o.first_image} alt="" className="w-full rounded-2xl object-cover max-h-80 border border-gray-200"/> : <div className="w-full h-64 rounded-2xl bg-gray-100 flex items-center justify-center"><ImgIcon size={48} className="text-gray-300"/></div>}
+        <p className="text-xs text-gray-500 text-center">First product image for this order.</p>
+      </div>
+    );
+  }
+
+  if (type === 'products') {
+    const items = o.items || [];
+    return wrap(
+      <div className="space-y-2">
+        {items.length === 0 && <p className="text-sm text-gray-500 text-center py-6">No items.</p>}
+        {items.map((it,i) => (
+          <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+            {it.product_image ? <img src={it.product_image} className="w-12 h-12 rounded-xl object-cover" alt=""/> : <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center"><Package size={18} className="text-gray-400"/></div>}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{it.product_name || it.name}</p>
+              {it.variant_label && <p className="text-[10px] text-purple-600">{it.variant_label}</p>}
+              <p className="text-[11px] text-gray-400">{it.quantity} × {fmtMoney(it.unit_price || it.price, cur)}</p>
+            </div>
+            <p className="font-bold text-sm whitespace-nowrap">{fmtMoney(it.total_price || (it.quantity * (it.unit_price || it.price || 0)), cur)}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === 'status') {
+    return wrap(
+      <div className="grid grid-cols-2 gap-2">
+        {allStatuses.map(s => {
+          const sc = statusConfig[s];
+          const active = o.status === s;
+          return (
+            <button key={s} onClick={() => { onUpdateStatus(s); onClose(); }}
+              className={`py-2.5 rounded-xl text-xs font-bold ${active ? `${sc.color} text-white ring-2 ring-offset-2 ring-gray-300` : `${sc.bg} ${sc.text} hover:opacity-80`}`}>
+              {sc.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (type === 'transfer') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Delivery Company</label>
+        <select defaultValue={o.delivery_company_id || ''} onChange={set('delivery_company_id')} className="input-field w-full">
+          <option value="">— None —</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">Save</button>
+      </div>
+    );
+  }
+
+  if (type === 'tracking') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Tracking Number</label>
+        <input defaultValue={o.tracking_number || ''} onChange={set('tracking_number')} className="input-field w-full font-mono" placeholder="Enter tracking number"/>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Delivery Company</label>
+        <select defaultValue={o.delivery_company_id || ''} onChange={set('delivery_company_id')} className="input-field w-full">
+          <option value="">— None —</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm">Save</button>
+      </div>
+    );
+  }
+
+  if (type === 'notes') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Order Notes</label>
+        <textarea defaultValue={o.notes || ''} onChange={set('notes')} rows={6} className="input-field w-full" placeholder="Private note about this order..."/>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm">Save Note</button>
+      </div>
+    );
+  }
+
+  if (type === 'customer') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Customer Name</label>
+        <input defaultValue={o.customer_name || ''} onChange={set('customer_name')} className="input-field w-full"/>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Phone</label>
+        <input defaultValue={o.customer_phone || ''} onChange={set('customer_phone')} className="input-field w-full font-mono"/>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Email</label>
+        <input defaultValue={o.customer_email || ''} onChange={set('customer_email')} className="input-field w-full"/>
+        <div className="flex gap-2 pt-2">
+          {o.customer_phone && <a href={`tel:${o.customer_phone}`} className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><Phone size={12}/>Call</a>}
+          {waLink(o.customer_phone) && <a href={waLink(o.customer_phone)} target="_blank" rel="noreferrer" className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><MessageCircle size={12}/>WhatsApp</a>}
+        </div>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">Save</button>
+      </div>
+    );
+  }
+
+  if (type === 'phone') {
+    const link = waLink(o.customer_phone);
+    return wrap(
+      <div className="space-y-3">
+        <div className="p-4 rounded-2xl bg-gray-50 text-center">
+          <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Customer Phone</p>
+          <p className="font-mono text-2xl font-black">{o.customer_phone || '—'}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <a href={`tel:${o.customer_phone}`} className="py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex flex-col items-center gap-1"><Phone size={14}/>Call</a>
+          {link && <a href={link} target="_blank" rel="noreferrer" className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex flex-col items-center gap-1"><MessageCircle size={14}/>WhatsApp</a>}
+          <button onClick={() => copy(o.customer_phone || '')} className="py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex flex-col items-center gap-1"><Copy size={14}/>Copy</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'address') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Street</label>
+        <input defaultValue={o.shipping_address || ''} onChange={set('shipping_address')} className="input-field w-full"/>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">City (Commune)</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className="input-field w-full"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">Wilaya</label><input defaultValue={o.shipping_wilaya || ''} onChange={set('shipping_wilaya')} className="input-field w-full"/></div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">Zip</label><input defaultValue={o.shipping_zip || ''} onChange={set('shipping_zip')} className="input-field w-full font-mono"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">N° Wilaya</label><input defaultValue={o.shipping_wilaya_code || ''} onChange={set('shipping_wilaya_code')} className="input-field w-full font-mono"/></div>
+        </div>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">Save Address</button>
+      </div>
+    );
+  }
+
+  if (type === 'billing') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Billing Name</label>
+        <input defaultValue={o.billing_name || o.customer_name || ''} onChange={set('billing_name')} className="input-field w-full"/>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Street</label>
+        <input defaultValue={o.billing_street || o.billing_address || ''} onChange={set('billing_street')} className="input-field w-full"/>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">City</label><input defaultValue={o.billing_city || ''} onChange={set('billing_city')} className="input-field w-full"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">Zip</label><input defaultValue={o.billing_zip || ''} onChange={set('billing_zip')} className="input-field w-full font-mono"/></div>
+        </div>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Country</label>
+        <input defaultValue={o.billing_country || 'DZ'} onChange={set('billing_country')} className="input-field w-full"/>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm">Save Billing</button>
+      </div>
+    );
+  }
+
+  if (type === 'shipping_method') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Shipping Method</label>
+        <div className="grid grid-cols-2 gap-2">
+          {['home','stop_desk'].map(m => {
+            const active = (o.shipping_type || 'home') === m;
+            return (
+              <button key={m} onClick={() => { onSaveField({ shipping_type: m }); onClose(); }}
+                className={`py-4 rounded-xl font-bold text-xs flex flex-col items-center gap-1 ${active ? 'bg-emerald-500 text-white ring-2 ring-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                {m === 'home' ? <Home size={18}/> : <Package size={18}/>}
+                {m === 'home' ? 'Home Delivery' : 'Stop Desk'}
+              </button>
+            );
+          })}
+        </div>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Shipping Cost ({cur})</label>
+        <input type="number" defaultValue={o.shipping_cost || 0} onChange={set('shipping_cost')} className="input-field w-full"/>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">Save</button>
+      </div>
+    );
+  }
+
+  if (type === 'totals') {
+    return wrap(
+      <div className="space-y-1">
+        {row('Subtotal', fmtMoney(o.subtotal, cur))}
+        {row('Taxes', fmtMoney(o.tax_total || o.taxes || 0, cur))}
+        {row('Shipping Cost', fmtMoney(o.shipping_cost, cur))}
+        {row('Discount', fmtMoney(o.discount_total || 0, cur))}
+        {row('Total', <span className="font-black text-lg text-emerald-600">{fmtMoney(o.total, cur)}</span>)}
+        {row('Currency', o.currency || 'DZD')}
+      </div>
+    );
+  }
+
+  if (type === 'processed_at') {
+    const d = o.processed_at || o.updated_at;
+    return wrap(
+      <div className="space-y-3">
+        {row('Created', new Date(o.created_at).toLocaleString())}
+        {row('Last Updated', o.updated_at ? new Date(o.updated_at).toLocaleString() : '—')}
+        {row('Processed', d ? new Date(d).toLocaleString() : 'Not processed')}
+        {!o.processed_at && <button onClick={() => { onSaveField({ processed_at: new Date().toISOString() }); onClose(); }} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">Mark as Processed Now</button>}
+      </div>
+    );
+  }
+
+  if (type === 'financial') {
+    const opts = ['pending','paid','refunded','failed','partially_refunded'];
+    return wrap(
+      <div className="grid grid-cols-2 gap-2">
+        {opts.map(s => {
+          const active = (o.payment_status || 'pending') === s;
+          const cls = s === 'paid' ? 'bg-emerald-500' : s === 'refunded' ? 'bg-orange-500' : s === 'failed' ? 'bg-red-500' : s === 'partially_refunded' ? 'bg-purple-500' : 'bg-amber-500';
+          return (
+            <button key={s} onClick={() => { onSaveField({ payment_status: s }); onClose(); }}
+              className={`py-3 rounded-xl text-xs font-bold uppercase ${active ? `${cls} text-white ring-2 ring-offset-2 ring-gray-300` : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{s.replace('_',' ')}</button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (type === 'currency') {
+    return wrap(
+      <div className="grid grid-cols-3 gap-2">
+        {['DZD','USD','EUR','MAD','TND','GBP'].map(c => {
+          const active = (o.currency || 'DZD') === c;
+          return (
+            <button key={c} onClick={() => { onSaveField({ currency: c }); onClose(); }}
+              className={`py-3 rounded-xl font-bold text-sm ${active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{c}</button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (type === 'discount') {
+    return wrap(
+      <div className="space-y-3">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Discount Code</label>
+        <input defaultValue={o.discount_code || ''} onChange={set('discount_code')} className="input-field w-full uppercase font-mono" placeholder="SUMMER10"/>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">Discount Amount ({cur})</label>
+        <input type="number" defaultValue={o.discount_total || 0} onChange={set('discount_total')} className="input-field w-full"/>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-sm">Save Discount</button>
+      </div>
+    );
+  }
+
+  if (type === 'source') {
+    const opts = ['storefront','manual','whatsapp','instagram','facebook','tiktok','pos','api'];
+    return wrap(
+      <div className="grid grid-cols-2 gap-2">
+        {opts.map(s => {
+          const active = (o.source || o.created_via || 'storefront') === s;
+          return (
+            <button key={s} onClick={() => { onSaveField({ source: s }); onClose(); }}
+              className={`py-3 rounded-xl text-xs font-bold uppercase ${active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{s}</button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Default: generic order summary fallback.
+  return wrap(
+    <div>
+      {row('Order N', o.order_number)}
+      {row('Customer', o.customer_name)}
+      {row('Phone', o.customer_phone)}
+      {row('Total', fmtMoney(o.total, cur))}
+    </div>
   );
 }
