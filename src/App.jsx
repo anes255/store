@@ -34,16 +34,19 @@ function PlatformMeta(){
       document.head.appendChild(l);
     };
     if(isStoreRoute(location.pathname))return; // store pages manage their own favicon
-    // Apply the default/cached platform icon IMMEDIATELY so the previous
-    // store favicon is cleared the instant the user leaves a store page
-    // (e.g. after logout). The async fetch below can then upgrade to the
-    // super-admin's configured favicon once it resolves.
-    apply(cached.current||'/favicon.ico');
-    if(cached.current!==null&&cached.current!==undefined)return;
+    // Apply the cached platform icon IMMEDIATELY so the previous store
+    // favicon is cleared the instant the user leaves a store page (e.g.
+    // after logout). Then always fetch fresh platform info so the
+    // super-admin's configured favicon (or logo fallback) shows even if
+    // the cache was empty from a previous page load.
+    apply(cached.current||'');
     getPlatformInfo().then(r=>{
       const d=r.data||{};
-      cached.current=d.favicon||'';
-      apply(cached.current);
+      // Prefer favicon, fall back to site logo so the login/register pages
+      // always have some brand image when super-admin has uploaded either.
+      const fav=d.favicon||d.site_logo||'';
+      cached.current=fav;
+      apply(fav);
     }).catch(()=>{document.title='KyoMarket';});
   },[location.pathname]);
   return null;
