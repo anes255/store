@@ -97,11 +97,13 @@ function TrackingModal({ order, onClose, pc }) {
 // Helpers
 // ---------------------------------------------------------------------------
 function getProductImage(item) {
+  // order_items table stores the snapshot under product_image
+  if (item.product_image) return item.product_image;
   if (item.thumbnail) return item.thumbnail;
   if (item.image) return item.image;
   let imgs = item.images;
   if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
-  if (Array.isArray(imgs) && imgs.length) return typeof imgs[0] === 'string' ? imgs[0] : null;
+  if (Array.isArray(imgs) && imgs.length) return typeof imgs[0] === 'string' ? imgs[0] : (imgs[0]?.url || null);
   return null;
 }
 
