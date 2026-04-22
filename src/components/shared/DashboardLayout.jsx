@@ -133,6 +133,17 @@ export default function DashboardLayout({children}){
   const pl = theme.palette;
   // Initialize theme CSS vars on mount
   useEffect(() => { theme.init(); }, []); // eslint-disable-line
+  // Apply the store's favicon + tab title to the admin dashboard (mirrors the
+  // storefront behavior so admins see the same identity in their browser tab)
+  useEffect(()=>{
+    if(!currentStore)return;
+    if(currentStore.favicon){
+      let l=document.querySelector("link[rel~='icon']");
+      if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}
+      l.href=currentStore.favicon;
+    }
+    if(currentStore.name)document.title=currentStore.name+' — Admin';
+  },[currentStore?.favicon,currentStore?.name]);
   const[isMobile,setIsMobile]=useState(()=>typeof window!=='undefined'&&window.innerWidth<1024);
   const[sidebarOpen,setSidebarOpen]=useState(()=>typeof window!=='undefined'?window.innerWidth>=1024:true);
   // Persist expanded sidebar groups across navigation so "Show all" (or any
