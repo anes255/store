@@ -375,7 +375,7 @@ export default function StoreOrders() {
       </div>
 
       {/* Orders table */}
-      <div className="glass-card-solid overflow-hidden">
+      <div className="glass-card-solid">
         <div className="px-4 py-2 flex items-center justify-end gap-2 text-[11px] font-bold text-gray-500">
           <span>{totalShown===0?'0':`${(page-1)*ps+1}-${Math.min(page*ps,totalShown)}`} / {totalShown}</span>
           <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page<=1} className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center disabled:opacity-30"><ChevronLeft size={12}/></button>
@@ -390,11 +390,11 @@ export default function StoreOrders() {
             <p className="text-xs text-gray-400 mt-1">When your customers place orders, they will appear here.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto overflow-y-hidden scroll-smooth" style={{WebkitOverflowScrolling:'touch'}}>
+            <table className="min-w-max w-full">
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
-                  <th className="px-3 py-3 w-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
+                  <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
                   {activeColumns.map(key => {
                     const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
                     return <th key={key} className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{col.label}</th>;
@@ -404,7 +404,7 @@ export default function StoreOrders() {
               <tbody>
                 {pageOrders.map(o => (
                   <tr key={o.id} data-order-id={o.id} onClick={() => viewOrder(o.id)} className={`border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
-                    <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+                    <td className="px-3 py-3 sticky left-0 bg-white z-10" onClick={e => e.stopPropagation()}>
                       <button onClick={() => toggleSelect(o.id)}>{selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-300"/>}</button>
                     </td>
                     {activeColumns.map(key => <React.Fragment key={key}>{renderCell(key, o)}</React.Fragment>)}
