@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getPlatformInfo } from '../../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -19,6 +20,14 @@ export default function OwnerRegister() {
   const [phoneMasked, setPhoneMasked] = useState('');
   const [code, setCode] = useState('');
   const [resendIn, setResendIn] = useState(0);
+  // Platform branding (super-admin configurable)
+  const [brand, setBrand] = useState({ logo: '', favicon: '', name: 'KyoMarket' });
+  useEffect(() => {
+    getPlatformInfo().then(r => {
+      const d = r.data || {};
+      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || 'KyoMarket' });
+    }).catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     if (resendIn <= 0) return;
@@ -80,8 +89,12 @@ export default function OwnerRegister() {
         <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
           <div className="flex items-center justify-between mb-8">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
-              <span className="text-xl font-extrabold font-display">KyoMarket</span>
+              {brand.logo || brand.favicon ? (
+                <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg shadow-brand-500/30" />
+              ) : (
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
+              )}
+              <span className="text-xl font-extrabold font-display">{brand.name}</span>
             </Link>
             <LanguageSwitcher />
           </div>
