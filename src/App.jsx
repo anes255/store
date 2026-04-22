@@ -1,18 +1,43 @@
-import React,{Suspense,lazy,useEffect,useState}from'react';import{Routes,Route,Navigate,useNavigate,useParams}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
+import React,{Suspense,lazy,useEffect,useState,useRef}from'react';import{Routes,Route,Navigate,useNavigate,useParams,useLocation}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
 
 // The platform brand name is permanently "KyoMarket". The document title is
 // hard-locked and never overridden by the API, even if platform_settings
 // still contains the legacy "MultiStorePlatform" value. Only the favicon is
 // allowed to be customised through the admin settings.
+// Platform favicon/title is applied on every route change UNLESS we are on a
+// store admin dashboard (/dashboard/*) or a store-owned buyer surface
+// (/s/:slug/*, or a custom-domain store page). Those pages set their own
+// favicon; this effect restores the super-admin's platform favicon
+// everywhere else.
+const RESERVED_TOP=new Set(['admin','dashboard','login','register','s','api','platform','owner','profile','favorites','checkout','auth','product','']);
+function isStoreRoute(pathname){
+  if(!pathname)return false;
+  if(pathname.startsWith('/dashboard'))return true;
+  if(pathname.startsWith('/s/'))return true;
+  // Custom domain or clean slug path like /mystore
+  const seg=pathname.split('/').filter(Boolean)[0]||'';
+  if(seg && !RESERVED_TOP.has(seg.toLowerCase()))return true;
+  return false;
+}
 function PlatformMeta(){
+  const location=useLocation();
+  const cached=useRef(null);
   useEffect(()=>{
+    const apply=(fav)=>{
+      document.title='KyoMarket';
+      let l=document.querySelector("link[rel~='icon']");
+      if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}
+      l.href=fav||'/favicon.ico';
+    };
+    if(isStoreRoute(location.pathname))return; // store pages manage their own favicon
+    if(cached.current){apply(cached.current);return;}
     document.title='KyoMarket';
     getPlatformInfo().then(r=>{
       const d=r.data||{};
-      document.title='KyoMarket';
-      if(d.favicon){let l=document.querySelector("link[rel~='icon']");if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.href=d.favicon;}
+      cached.current=d.favicon||'';
+      apply(cached.current);
     }).catch(()=>{document.title='KyoMarket';});
-  },[]);
+  },[location.pathname]);
   return null;
 }
 
