@@ -25,13 +25,21 @@ function PlatformMeta(){
   useEffect(()=>{
     const apply=(fav)=>{
       document.title='KyoMarket';
-      let l=document.querySelector("link[rel~='icon']");
-      if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}
-      l.href=fav||'/favicon.ico';
+      // Remove any existing icon links first to defeat browser caching of
+      // the previous store's favicon, then inject a fresh one.
+      document.querySelectorAll("link[rel~='icon'],link[rel='shortcut icon']").forEach(el=>el.parentNode&&el.parentNode.removeChild(el));
+      const l=document.createElement('link');
+      l.rel='icon';
+      l.href=(fav||'/favicon.ico')+(fav&&fav.indexOf('?')===-1?('?v='+Date.now()):'');
+      document.head.appendChild(l);
     };
     if(isStoreRoute(location.pathname))return; // store pages manage their own favicon
-    if(cached.current){apply(cached.current);return;}
-    document.title='KyoMarket';
+    // Apply the default/cached platform icon IMMEDIATELY so the previous
+    // store favicon is cleared the instant the user leaves a store page
+    // (e.g. after logout). The async fetch below can then upgrade to the
+    // super-admin's configured favicon once it resolves.
+    apply(cached.current||'/favicon.ico');
+    if(cached.current!==null&&cached.current!==undefined)return;
     getPlatformInfo().then(r=>{
       const d=r.data||{};
       cached.current=d.favicon||'';
