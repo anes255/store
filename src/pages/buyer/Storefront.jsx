@@ -513,16 +513,14 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           {onSale && <span className="absolute top-2 left-2 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
         </div>
 
-        {/* Floating action icons on image — always visible so mobile/touch
-            users don't need to hover to add to cart or favorites. */}
-        <div className="absolute top-4 right-4 flex flex-col gap-1.5">
-          <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm border border-white/10"
-            aria-label="Add to cart"><ShoppingCart size={14} /></button>
-          <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inWishlist ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white/70 hover:text-red-400'}`}
-            aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
-        </div>
+        {/* Favourite pinned to top-LEFT, Cart pinned to top-RIGHT — opposite
+            sides of the product card per requested layout. */}
+        <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
+          className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inWishlist ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white/70 hover:text-red-400'}`}
+          aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
+        <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm border border-white/10"
+          aria-label="Add to cart"><ShoppingCart size={14} /></button>
       </div>
 
       {/* Product Info */}
@@ -1096,11 +1094,9 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
             {shown.map(product=>{const thumb=getThumb(product);const inW=wishlist.includes(product.id);return(
               <div key={product.id} className={`bg-white rounded-2xl overflow-hidden ${cardClass} group relative transition-all`}>
                 <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
-                {/* Floating quick actions — cart + favorite, no navigation required */}
-                <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-                  {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>}
-                  <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
-                </div>
+                {/* Favourite on the LEFT, cart on the RIGHT — opposite corners of the card */}
+                <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`absolute top-3 left-3 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
+                {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>}
                 <div className="p-3.5">{c.showName!==false&&<Link to={`/s/${storeSlug}/product/${product.slug}`}><h3 className="font-semibold text-sm text-gray-800 truncate">{getName(product)}</h3></Link>}{c.showPrice!==false&&<div className="flex items-baseline gap-2 mt-2"><span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span><span className="text-xs text-gray-400">{store.currency||'DZD'}</span>{product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}</div>}</div>
               </div>);})}
           </div>}
