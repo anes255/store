@@ -89,3 +89,10 @@ html.admin-dark .border-gray-200, html.platform-dark .border-gray-200{border-col
 
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+
+/* Persistent horizontal scrollbar for the Orders table on all viewports */
+.orders-hscroll{overflow-x:auto !important;overflow-y:hidden;}
+.orders-hscroll::-webkit-scrollbar{height:12px;background:#f3f4f6;}
+.orders-hscroll::-webkit-scrollbar-thumb{background:#9ca3af;border-radius:8px;border:2px solid #f3f4f6;}
+.orders-hscroll::-webkit-scrollbar-thumb:hover{background:#6b7280;}
+.orders-hscroll::-webkit-scrollbar-track{background:#f3f4f6;border-radius:8px;}

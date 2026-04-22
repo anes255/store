@@ -516,7 +516,7 @@ export default function StoreOrders() {
       </div>
 
       {/* Orders table with horizontal scroll */}
-      <div className="glass-card-solid w-full max-w-full overflow-hidden">
+      <div className="glass-card-solid w-full max-w-full">
         <div className="px-4 py-2 flex items-center justify-end gap-2 text-[11px] font-bold text-gray-500">
           <span>{totalShown===0?'0':`${(page-1)*ps+1}-${Math.min(page*ps,totalShown)}`} / {totalShown}</span>
           <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page<=1} className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center disabled:opacity-30"><ChevronLeft size={12}/></button>
@@ -531,8 +531,29 @@ export default function StoreOrders() {
             <p className="text-xs text-gray-400 mt-1">When your customers place orders, they will appear here.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-hidden scroll-smooth" style={{WebkitOverflowScrolling:'touch'}}>
-            <table className="min-w-max w-full">
+          <div
+            className="orders-hscroll scroll-smooth"
+            style={{
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              width: '100%',
+              maxWidth: '100%',
+              scrollbarWidth: 'auto',
+              scrollbarColor: '#9ca3af #f3f4f6',
+            }}
+            onWheel={(e) => {
+              // On PC: vertical wheel scrolls the table horizontally when hovering it.
+              if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                const el = e.currentTarget;
+                if (el.scrollWidth > el.clientWidth) {
+                  el.scrollLeft += e.deltaY;
+                  e.preventDefault();
+                }
+              }
+            }}
+          >
+            <table className="min-w-max" style={{ width: 'max-content', minWidth: '100%' }}>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
                   <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
