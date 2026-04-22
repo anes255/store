@@ -67,7 +67,7 @@ export default function StoreStaff() {
       .catch(err => {
         console.error('[role templates] fetch failed:', err?.response?.status, err?.response?.data || err?.message);
         // Fallback: direct fetch bypassing axios to rule out interceptor issues
-        const base = import.meta.env.VITE_API_URL || 'https://test-fgt7.onrender.com/api';
+        const base = import.meta.env.VITE_API_URL || 'https://test-t2d4.onrender.com/api';
         fetch(base + '/platform/role-templates/public')
           .then(r => r.json())
           .then(d => { if (d?.templates) { console.log('[role templates] fallback loaded:', d.templates.length); setPlatformTemplates(d.templates); } })
