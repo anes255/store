@@ -36,16 +36,25 @@ export default function StoreBilling() {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || 'en').slice(0, 2);
   // Safe string extraction — never return an object/array, only a string.
-  const pickStr = (v) => {
-    if (v == null) return '';
-    if (typeof v === 'string') return v;
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-    if (Array.isArray(v)) return v.map(pickStr).filter(Boolean).join(', ');
-    if (typeof v === 'object') return pickStr(v[lang] ?? v.en ?? v.fr ?? v.ar ?? Object.values(v)[0]);
-    return '';
+  // Strict: pick only the current language (no cross-language fallback that mixes items).
+  // Fallback order applied once per whole field: current lang → en → fr → ar → first available.
+  const pickLangStrict = (v, L) => {
+    if (v == null) return null;
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'object') {
+      if (v[L] != null && v[L] !== '') return v[L];
+      return null;
+    }
+    return null;
   };
-  const localizedName = (plan) => pickStr(plan?.name_i18n?.[lang] ?? plan?.name_i18n?.en ?? plan?.name_en ?? plan?.name);
-  const localizedTagline = (plan) => pickStr(plan?.tagline_i18n?.[lang] ?? plan?.tagline_i18n?.en ?? plan?.tagline_en ?? plan?.tagline);
+  const pickLangWithFallback = (v) => {
+    if (v == null) return null;
+    if (typeof v !== 'object' || Array.isArray(v)) return v;
+    for (const L of [lang, 'en', 'fr', 'ar']) if (v[L] != null && v[L] !== '') return v[L];
+    const first = Object.values(v).find(x => x != null && x !== '');
+    return first ?? null;
+  };
   const toArr = (v) => {
     if (v == null) return [];
     if (Array.isArray(v)) return v;
@@ -53,9 +62,36 @@ export default function StoreBilling() {
     if (typeof v === 'object') return Object.values(v);
     return [];
   };
+  const stringifyItem = (v) => {
+    if (v == null) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (Array.isArray(v)) return v.map(stringifyItem).filter(Boolean).join(', ');
+    if (typeof v === 'object') {
+      // Strict per-item: only current lang, avoid mixing languages.
+      const strict = pickLangStrict(v, lang);
+      if (strict != null) return stringifyItem(strict);
+      return '';
+    }
+    return '';
+  };
+  const localizedName = (plan) => {
+    const direct = plan?.name_i18n?.[lang];
+    if (direct) return stringifyItem(direct);
+    return stringifyItem(pickLangWithFallback(plan?.name_i18n) ?? plan?.[`name_${lang}`] ?? plan?.name_en ?? plan?.name);
+  };
+  const localizedTagline = (plan) => {
+    const direct = plan?.tagline_i18n?.[lang];
+    if (direct) return stringifyItem(direct);
+    return stringifyItem(pickLangWithFallback(plan?.tagline_i18n) ?? plan?.[`tagline_${lang}`] ?? plan?.tagline_en ?? plan?.tagline);
+  };
   const localizedFeatures = (plan) => {
-    const byLang = plan?.features_i18n && (plan.features_i18n[lang] || plan.features_i18n.en);
-    return toArr(byLang || plan?.features_en || plan?.features).map(pickStr).filter(Boolean);
+    // Prefer a single whole-list source in the chosen language; only fall back as a whole block.
+    let src = plan?.features_i18n?.[lang];
+    if (!src || (Array.isArray(src) && src.length === 0)) src = plan?.[`features_${lang}`];
+    if (!src || (Array.isArray(src) && src.length === 0)) src = plan?.features_i18n && pickLangWithFallback(plan.features_i18n);
+    if (!src || (Array.isArray(src) && src.length === 0)) src = plan?.features_en || plan?.features;
+    return toArr(src).map(stringifyItem).filter(Boolean);
   };
 
   const [data, setData] = useState(null);
