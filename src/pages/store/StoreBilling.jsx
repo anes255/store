@@ -35,12 +35,27 @@ function Countdown({ expiresAt, t }) {
 export default function StoreBilling() {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || 'en').slice(0, 2);
-  const localizedName = (plan) => (plan?.name_i18n && (plan.name_i18n[lang] || plan.name_i18n.en)) || plan?.name_en || plan?.name || '';
-  const localizedTagline = (plan) => (plan?.tagline_i18n && (plan.tagline_i18n[lang] || plan.tagline_i18n.en)) || plan?.tagline_en || plan?.tagline || '';
-  const toArr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : (v ? [v] : []); } catch { return v ? [v] : []; } } if (v && typeof v === 'object') return Object.values(v); return []; };
+  // Safe string extraction — never return an object/array, only a string.
+  const pickStr = (v) => {
+    if (v == null) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (Array.isArray(v)) return v.map(pickStr).filter(Boolean).join(', ');
+    if (typeof v === 'object') return pickStr(v[lang] ?? v.en ?? v.fr ?? v.ar ?? Object.values(v)[0]);
+    return '';
+  };
+  const localizedName = (plan) => pickStr(plan?.name_i18n?.[lang] ?? plan?.name_i18n?.en ?? plan?.name_en ?? plan?.name);
+  const localizedTagline = (plan) => pickStr(plan?.tagline_i18n?.[lang] ?? plan?.tagline_i18n?.en ?? plan?.tagline_en ?? plan?.tagline);
+  const toArr = (v) => {
+    if (v == null) return [];
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : (v ? [v] : []); } catch { return v ? [v] : []; } }
+    if (typeof v === 'object') return Object.values(v);
+    return [];
+  };
   const localizedFeatures = (plan) => {
     const byLang = plan?.features_i18n && (plan.features_i18n[lang] || plan.features_i18n.en);
-    return toArr(byLang || plan?.features_en || plan?.features);
+    return toArr(byLang || plan?.features_en || plan?.features).map(pickStr).filter(Boolean);
   };
 
   const [data, setData] = useState(null);
