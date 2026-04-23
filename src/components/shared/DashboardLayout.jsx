@@ -410,7 +410,7 @@ export default function DashboardLayout({children}){
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
-      <div className="p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden">{children}</div>
+      <div className="p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-clip">{children}</div>
     </main>
   </div>);
 }

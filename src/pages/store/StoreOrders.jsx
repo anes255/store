@@ -553,11 +553,12 @@ export default function StoreOrders() {
             ref={hscrollRef}
             className="orders-hscroll scroll-smooth"
             style={{
-              overflowX: 'auto',
+              overflowX: 'scroll',
               overflowY: 'hidden',
               WebkitOverflowScrolling: 'touch',
               width: '100%',
               maxWidth: '100%',
+              display: 'block',
               scrollbarWidth: 'auto',
               scrollbarColor: '#9ca3af #f3f4f6',
             }}
@@ -571,7 +572,7 @@ export default function StoreOrders() {
               }
             }}
           >
-            <table className="min-w-max" style={{ width: 'max-content', minWidth: '100%' }}>
+            <table className="" style={{ width: 'auto', minWidth: `${Math.max(1600, (activeColumns.length + 1) * 160)}px`, tableLayout: 'auto', whiteSpace: 'nowrap' }}>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
                   <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
