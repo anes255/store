@@ -112,7 +112,7 @@ export default function StoreOrders() {
   useEffect(() => { localStorage.setItem('orders.columns.v3', JSON.stringify(activeColumns)); }, [activeColumns]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'cards');
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');
   useEffect(() => { localStorage.setItem('orders.viewMode', viewMode); }, [viewMode]);
 
   const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -610,11 +610,13 @@ export default function StoreOrders() {
               overflowX: 'scroll',
               overflowY: 'hidden',
               WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-x pan-y',
               width: '100%',
               maxWidth: '100%',
               display: 'block',
               scrollbarWidth: 'auto',
               scrollbarColor: '#9ca3af #f3f4f6',
+              overscrollBehaviorX: 'contain',
             }}
             onWheel={(e) => {
               if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
