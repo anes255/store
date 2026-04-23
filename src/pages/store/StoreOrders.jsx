@@ -104,7 +104,23 @@ export default function StoreOrders() {
   const [quickAction, setQuickAction] = useState(null);
   // Horizontal scroll container ref — used by the on-screen scroll buttons.
   const hscrollRef = React.useRef(null);
+  const topScrollRef = React.useRef(null);
+  const [topScrollWidth, setTopScrollWidth] = React.useState(0);
   const scrollTableBy = (dx) => { const el = hscrollRef.current; if (el) el.scrollBy({ left: dx, behavior: 'smooth' }); };
+  // Sync top ↔ bottom horizontal scrollbars.
+  const syncingRef = React.useRef(false);
+  const onTopScroll = (e) => { if (syncingRef.current) return; syncingRef.current = true; if (hscrollRef.current) hscrollRef.current.scrollLeft = e.currentTarget.scrollLeft; syncingRef.current = false; };
+  const onBottomScroll = (e) => { if (syncingRef.current) return; syncingRef.current = true; if (topScrollRef.current) topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; syncingRef.current = false; };
+  React.useEffect(() => {
+    const el = hscrollRef.current; if (!el) return;
+    const update = () => setTopScrollWidth(el.scrollWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    window.addEventListener('resize', update);
+    return () => { ro.disconnect(); window.removeEventListener('resize', update); };
+  });
   const [activeColumns, setActiveColumns] = useState(() => {
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v3') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
@@ -552,8 +568,26 @@ export default function StoreOrders() {
             <button type="button" onClick={() => scrollTableBy(-300)} className="flex-1 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1"><ChevronLeft size={14}/>Scroll Left</button>
             <button type="button" onClick={() => scrollTableBy(300)} className="flex-1 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1">Scroll Right<ChevronRight size={14}/></button>
           </div>
+          {/* Mirrored top scrollbar — lets you scroll the wide table from the top too. */}
+          <div
+            ref={topScrollRef}
+            onScroll={onTopScroll}
+            className="orders-hscroll-top"
+            style={{
+              overflowX: 'scroll',
+              overflowY: 'hidden',
+              width: '100%',
+              maxWidth: '100%',
+              height: 16,
+              scrollbarWidth: 'auto',
+              scrollbarColor: '#9ca3af #f3f4f6',
+            }}
+          >
+            <div style={{ width: topScrollWidth, height: 1 }} />
+          </div>
           <div
             ref={hscrollRef}
+            onScroll={onBottomScroll}
             className="orders-hscroll scroll-smooth"
             style={{
               overflowX: 'scroll',
