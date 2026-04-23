@@ -207,6 +207,7 @@ export const storeApi = {
   // Public tracking
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
   trackByOrderId: (slug, orderId) => api.get(`/store/${slug}/track?order_id=${encodeURIComponent(orderId)}`),
+  getStatusTemplates: (storeId) => api.get(`/public/stores/${storeId}/status-templates`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
   // Shipping wilayas (public, for checkout)

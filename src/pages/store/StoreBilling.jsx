@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import { ownerApi, publicPlansApi } from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Zap, Check, X, CreditCard, Upload, Clock, AlertTriangle, Copy, Smartphone, Building2, Wallet, Info, Loader2 } from 'lucide-react';
+import { Zap, Check, X, CreditCard, Upload, Clock, AlertTriangle, Copy, Smartphone, Building2, Banknote, Info, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 // Renders a live countdown until `expiresAt` (ISO string). Updates every second.
@@ -130,25 +130,25 @@ export default function StoreBilling() {
       color: 'emerald',
     },
     {
-      key: 'bank',
-      icon: Wallet,
-      title: t('storePage.pmBankTitle', 'Bank Transfer'),
-      available: !!data?.billing_bank_account,
-      value: data?.billing_bank_account,
-      valueLabel: data?.billing_bank_name,
+      key: 'cash',
+      icon: Banknote,
+      title: t('storePage.pmCashTitle', 'Cash Payment'),
+      available: true,
+      value: null,
       steps: [
-        t('storePage.pmBankStep1', 'Visit your bank branch or use its mobile app.'),
-        t('storePage.pmBankStep2', 'Transfer the amount to the account number below.'),
-        t('storePage.pmBankStep3', 'Upload the transfer confirmation at checkout.'),
+        t('storePage.pmCashStep1', 'Hand the cash directly to the platform representative or agent.'),
+        t('storePage.pmCashStep2', 'Request a signed receipt with the plan name and paid amount.'),
+        t('storePage.pmCashStep3', 'Upload a photo of that receipt below to activate your plan.'),
       ],
-      color: 'purple',
+      color: 'amber',
     },
   ];
 
   const COLOR_CLASSES = {
-    blue:    { chip: 'bg-blue-50 text-blue-700 border-blue-200',       icon: 'bg-blue-500',    ring: 'ring-blue-200' },
-    emerald: { chip: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'bg-emerald-500', ring: 'ring-emerald-200' },
-    purple:  { chip: 'bg-purple-50 text-purple-700 border-purple-200', icon: 'bg-purple-500',  ring: 'ring-purple-200' },
+    blue:    { chip: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-400/30',       icon: 'bg-blue-500',    ring: 'ring-blue-200', glow: 'shadow-blue-500/20' },
+    emerald: { chip: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-400/30', icon: 'bg-emerald-500', ring: 'ring-emerald-200', glow: 'shadow-emerald-500/20' },
+    amber:   { chip: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-400/30', icon: 'bg-amber-500', ring: 'ring-amber-200', glow: 'shadow-amber-500/20' },
+    purple:  { chip: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-400/30', icon: 'bg-purple-500',  ring: 'ring-purple-200', glow: 'shadow-purple-500/20' },
   };
 
   return (<DashboardLayout>
@@ -176,35 +176,35 @@ export default function StoreBilling() {
     </div>
 
     {/* Payment Methods — how they work */}
-    <div className="glass-card-solid p-6 mb-6">
-      <div className="flex items-center gap-2 mb-1"><CreditCard size={18} className="text-brand-500"/><h3 className="font-bold text-gray-900">{t('storePage.acceptedPayments', 'Accepted Payment Methods')}</h3></div>
-      <p className="text-xs text-gray-400 mb-4">{t('storePage.acceptedPaymentsDesc', 'Pay using any of these methods. After transferring, upload your receipt when you subscribe.')}</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="glass-card-solid p-8 mb-8 dark:bg-gray-900/40 dark:border-white/10">
+      <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center"><CreditCard size={20} className="text-brand-500"/></div><h3 className="text-xl font-black text-gray-900 dark:text-white">{t('storePage.acceptedPayments', 'Accepted Payment Methods')}</h3></div>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('storePage.acceptedPaymentsDesc', 'Pay using any of these methods. After transferring, upload your receipt when you subscribe.')}</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {paymentMethods.map(pm => {
           const c = COLOR_CLASSES[pm.color];
           const Icon = pm.icon;
           return (
-            <div key={pm.key} className={`rounded-2xl border ${pm.available ? 'bg-white' : 'bg-gray-50 opacity-70'} p-4 flex flex-col`}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`w-9 h-9 rounded-xl ${c.icon} text-white flex items-center justify-center`}><Icon size={16}/></div>
+            <div key={pm.key} className={`rounded-3xl border-2 p-6 flex flex-col transition-all hover:shadow-xl ${pm.available ? 'bg-white border-gray-200 dark:bg-gray-900/60 dark:border-white/10' : 'bg-gray-50 border-gray-100 opacity-70 dark:bg-gray-900/30 dark:border-white/5'} ${c.glow}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-14 h-14 rounded-2xl ${c.icon} text-white flex items-center justify-center shadow-lg`}><Icon size={24}/></div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{pm.title}</p>
-                  <span className={`inline-block text-[9px] px-1.5 py-0.5 rounded border font-bold ${pm.available ? c.chip : 'bg-gray-100 text-gray-400 border-gray-200'}`}>{pm.available ? t('storePage.pmAvailable', 'AVAILABLE') : t('storePage.pmNotSetup', 'NOT SET UP')}</span>
+                  <p className="text-base font-black text-gray-900 dark:text-white truncate">{pm.title}</p>
+                  <span className={`inline-block text-[10px] mt-1 px-2 py-0.5 rounded-full border font-bold tracking-wide ${pm.available ? c.chip : 'bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-white/10'}`}>{pm.available ? t('storePage.pmAvailable', 'AVAILABLE') : t('storePage.pmNotSetup', 'NOT SET UP')}</span>
                 </div>
               </div>
-              <ol className="space-y-1.5 mb-3 text-[11px] text-gray-600 list-decimal list-inside">
+              <ol className="space-y-2.5 mb-4 text-[13px] text-gray-700 dark:text-gray-300 list-decimal list-inside leading-relaxed">
                 {pm.steps.map((s, i) => <li key={i}>{s}</li>)}
               </ol>
               {pm.available && pm.value && (
-                <div className="mt-auto p-2.5 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-between gap-2">
+                <div className="mt-auto p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-white/10 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-mono text-xs font-bold text-gray-800 truncate">{pm.value}</p>
-                    {pm.valueLabel && <p className="text-[10px] text-gray-400 truncate">{pm.valueLabel}</p>}
+                    <p className="font-mono text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{pm.value}</p>
+                    {pm.valueLabel && <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{pm.valueLabel}</p>}
                   </div>
-                  <button onClick={() => copy(pm.value)} className="p-1.5 hover:bg-gray-200 rounded shrink-0"><Copy size={13}/></button>
+                  <button onClick={() => copy(pm.value)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg shrink-0"><Copy size={15} className="text-gray-600 dark:text-gray-300"/></button>
                 </div>
               )}
-              {pm.available && pm.qr && <img src={pm.qr} alt="" className="w-full max-w-[140px] mx-auto mt-2 rounded-lg border"/>}
+              {pm.available && pm.qr && <img src={pm.qr} alt="" className="w-full max-w-[160px] mx-auto mt-3 rounded-xl border dark:border-white/10"/>}
             </div>
           );
         })}
@@ -235,65 +235,67 @@ export default function StoreBilling() {
     </div>
 
     {/* All Plans Comparison Table — auto-syncs with super-admin edits */}
-    <div className="glass-card-solid p-6 mb-6 overflow-x-auto">
+    <div className="glass-card-solid p-8 mb-8 dark:bg-gray-900/40 dark:border-white/10">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2"><Info size={16} className="text-brand-500"/><h3 className="font-bold text-gray-900">{t('storePage.allPlansTitle', 'All Subscription Plans & Features')}</h3></div>
-        <button onClick={loadAllPlans} className="text-[11px] px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-600">{t('common.refresh', 'Refresh')}</button>
+        <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center"><Info size={20} className="text-brand-500"/></div><h3 className="text-xl font-black text-gray-900 dark:text-white">{t('storePage.allPlansTitle', 'All Subscription Plans & Features')}</h3></div>
+        <button onClick={loadAllPlans} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 font-bold text-gray-600 dark:text-gray-300">{t('common.refresh', 'Refresh')}</button>
       </div>
-      <p className="text-xs text-gray-400 mb-4">{t('storePage.allPlansDesc', 'Live view of every plan the platform offers. Updates automatically when the admin changes pricing or features.')}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('storePage.allPlansDesc', 'Live view of every plan the platform offers. Updates automatically when the admin changes pricing or features.')}</p>
       {allPlans.length === 0
-        ? <p className="text-center py-6 text-sm text-gray-400">{t('storePage.noPlansYet', 'No plans published yet.')}</p>
+        ? <p className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">{t('storePage.noPlansYet', 'No plans published yet.')}</p>
         : (
-          <table className="w-full text-sm min-w-[640px]">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-wider text-gray-500 border-b border-gray-100">
-                <th className="py-2 pr-3">{t('storePage.planName', 'Plan')}</th>
-                <th className="py-2 px-3">{t('storePage.priceMonthly', 'Monthly')}</th>
-                <th className="py-2 px-3">{t('storePage.priceYearly', 'Yearly')}</th>
-                <th className="py-2 px-3">{t('storePage.limits', 'Limits')}</th>
-                <th className="py-2 px-3">{t('storePage.featuresCol', 'Features')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allPlans.map(p => {
-                const name = localizedName(p);
-                const tagline = localizedTagline(p);
-                const feats = localizedFeatures(p);
-                const isCurrent = data?.plan === p.slug && isActive;
-                return (
-                  <tr key={p.id || p.slug} className={`border-b border-gray-50 ${isCurrent ? 'bg-brand-50/40' : ''}`}>
-                    <td className="py-3 pr-3 align-top">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-gray-900">{name}</p>
-                        {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">{t('storePage.popularTag', 'POPULAR')}</span>}
-                        {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">{t('storePage.currentTag', 'CURRENT')}</span>}
-                      </div>
-                      {tagline && <p className="text-[11px] text-gray-400 mt-0.5">{tagline}</p>}
-                    </td>
-                    <td className="py-3 px-3 align-top whitespace-nowrap">
-                      <p className="font-bold text-gray-800">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency || 'DZD'}</span></p>
-                    </td>
-                    <td className="py-3 px-3 align-top whitespace-nowrap">
-                      <p className="font-bold text-gray-800">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency || 'DZD'}</span></p>
-                    </td>
-                    <td className="py-3 px-3 align-top text-[11px] text-gray-600">
-                      <p>{t('storePage.maxProducts', 'Products')}: <span className="font-bold text-gray-800">{p.max_products || t('storePage.unlimited', '∞')}</span></p>
-                      <p>{t('storePage.maxOrders', 'Orders/mo')}: <span className="font-bold text-gray-800">{p.max_orders_month || t('storePage.unlimited', '∞')}</span></p>
-                      <p>{t('storePage.maxStaff', 'Staff')}: <span className="font-bold text-gray-800">{p.max_staff || t('storePage.unlimited', '∞')}</span></p>
-                    </td>
-                    <td className="py-3 px-3 align-top">
-                      {feats.length === 0
-                        ? <span className="text-[11px] text-gray-300">—</span>
-                        : <ul className="space-y-1 text-[11px] text-gray-600">
-                            {feats.slice(0, 6).map((f, i) => <li key={i} className="flex items-start gap-1.5"><Check size={11} className="text-emerald-500 mt-0.5 shrink-0"/><span>{f}</span></li>)}
-                            {feats.length > 6 && <li className="text-[10px] text-gray-400">+{feats.length - 6} {t('storePage.moreFeatures', 'more')}</li>}
-                          </ul>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto -mx-2 px-2">
+            <table className="w-full text-sm min-w-[880px] border-separate border-spacing-0">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 rounded-l-xl border-b-2 border-gray-200 dark:border-white/10 font-black">{t('storePage.planName', 'Plan')}</th>
+                  <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 font-black">{t('storePage.priceMonthly', 'Monthly')}</th>
+                  <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 font-black">{t('storePage.priceYearly', 'Yearly')}</th>
+                  <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 font-black">{t('storePage.limits', 'Limits')}</th>
+                  <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 rounded-r-xl border-b-2 border-gray-200 dark:border-white/10 font-black">{t('storePage.featuresCol', 'Features')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allPlans.map(p => {
+                  const name = localizedName(p);
+                  const tagline = localizedTagline(p);
+                  const feats = localizedFeatures(p);
+                  const isCurrent = data?.plan === p.slug && isActive;
+                  return (
+                    <tr key={p.id || p.slug} className={`${isCurrent ? 'bg-brand-50/60 dark:bg-brand-500/10' : 'hover:bg-gray-50/60 dark:hover:bg-white/5'} transition-colors`}>
+                      <td className="py-5 px-5 align-top border-b border-gray-100 dark:border-white/10">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-black text-base text-gray-900 dark:text-white">{name}</p>
+                          {p.is_popular && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag', 'POPULAR')}</span>}
+                          {isCurrent && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag', 'CURRENT')}</span>}
+                        </div>
+                        {tagline && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tagline}</p>}
+                      </td>
+                      <td className="py-5 px-5 align-top whitespace-nowrap border-b border-gray-100 dark:border-white/10">
+                        <p className="font-black text-lg text-gray-900 dark:text-white">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[11px] font-normal text-gray-400 dark:text-gray-500">{p.currency || 'DZD'}</span></p>
+                      </td>
+                      <td className="py-5 px-5 align-top whitespace-nowrap border-b border-gray-100 dark:border-white/10">
+                        <p className="font-black text-lg text-gray-900 dark:text-white">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[11px] font-normal text-gray-400 dark:text-gray-500">{p.currency || 'DZD'}</span></p>
+                      </td>
+                      <td className="py-5 px-5 align-top text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 space-y-1">
+                        <p>{t('storePage.maxProducts', 'Products')}: <span className="font-black text-gray-900 dark:text-white">{p.max_products || t('storePage.unlimited', '∞')}</span></p>
+                        <p>{t('storePage.maxOrders', 'Orders/mo')}: <span className="font-black text-gray-900 dark:text-white">{p.max_orders_month || t('storePage.unlimited', '∞')}</span></p>
+                        <p>{t('storePage.maxStaff', 'Staff')}: <span className="font-black text-gray-900 dark:text-white">{p.max_staff || t('storePage.unlimited', '∞')}</span></p>
+                      </td>
+                      <td className="py-5 px-5 align-top border-b border-gray-100 dark:border-white/10">
+                        {feats.length === 0
+                          ? <span className="text-sm text-gray-300 dark:text-gray-600">—</span>
+                          : <ul className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                              {feats.slice(0, 8).map((f, i) => <li key={i} className="flex items-start gap-2"><Check size={14} className="text-emerald-500 mt-0.5 shrink-0"/><span>{f}</span></li>)}
+                              {feats.length > 8 && <li className="text-xs text-gray-400 dark:text-gray-500">+{feats.length - 8} {t('storePage.moreFeatures', 'more')}</li>}
+                            </ul>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
     </div>
 

@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useBuyerTheme } from '../../hooks/useStore';
-import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash } from 'lucide-react';
+import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from './Checkout';
-
 const DEFAULT_STATUS_COLORS = {
   new_order: 'bg-indigo-500/20 text-indigo-300',
   pending: 'bg-amber-500/20 text-amber-300',
@@ -19,6 +18,24 @@ const DEFAULT_STATUS_COLORS = {
   cancelled: 'bg-red-500/20 text-red-300',
   returned: 'bg-gray-600/40 text-gray-300',
 };
+
+// Visual pipeline steps (order-level lifecycle)
+const PIPELINE = [
+  { key: 'new_order', icon: Hash, defaultLabel: 'New' },
+  { key: 'confirmed', icon: Check, defaultLabel: 'Confirmed' },
+  { key: 'preparing', icon: Box, defaultLabel: 'Preparing' },
+  { key: 'ready', icon: Package, defaultLabel: 'Ready' },
+  { key: 'shipped', icon: Truck, defaultLabel: 'Shipped' },
+  { key: 'delivered', icon: Home, defaultLabel: 'Delivered' },
+];
+const FAIL = ['cancelled', 'returned', 'delivery_failed'];
+function stepIndexFor(status) {
+  const i = PIPELINE.findIndex(s => s.key === status);
+  if (i >= 0) return i;
+  if (status === 'pending') return 0;
+  if (status === 'out_for_delivery' || status === 'in_transit' || status === 'at_center' || status === 'picked_up' || status === 'awaiting_pickup') return 4;
+  return 0;
+}
 
 export default function TrackOrder() {
   const { storeSlug } = useParams();
@@ -65,6 +82,14 @@ export default function TrackOrder() {
         tracking_show_tracking_number: d.tracking_show_tracking_number !== false,
       }));
       setMode((d.tracking_search_method === 'order_id') ? 'order_id' : 'phone');
+      if (d.id) {
+        storeApi.getStatusTemplates(d.id).then(rr => {
+          const rows = Array.isArray(rr.data) ? rr.data : [];
+          const map = {};
+          rows.forEach(r => { map[r.key] = { label: r.label, color: r.color }; });
+          setStatusMap(map);
+        }).catch(() => {});
+      }
     }).catch(() => {});
   }, [storeSlug]);
 
@@ -236,6 +261,50 @@ export default function TrackOrder() {
                       {store.tracking_show_items && items.length > 0 && <span className="flex items-center gap-1"><Package size={10} />{items.length} {items.length === 1 ? t('track.item', 'item') : t('track.items', 'items')}</span>}
                       {store.tracking_show_tracking_number && o.tracking_number && <span className="font-mono text-cyan-300 flex items-center gap-1"><Hash size={10} />{o.tracking_number}</span>}
                     </div>
+
+                    {store.tracking_show_timeline && (() => {
+                      const cur = o.status || 'new_order';
+                      const failed = FAIL.includes(cur);
+                      const idx = stepIndexFor(cur);
+                      const visible = PIPELINE.filter(s => !statusMap[s.key] || statusMap[s.key] !== undefined);
+                      return (
+                        <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase mb-4 flex items-center gap-1.5"><Truck size={11}/>{t('track.progress','Delivery progress')}</p>
+                          {failed ? (
+                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+                              <Ban size={24} className="mx-auto text-red-400 mb-2"/>
+                              <p className="text-sm font-bold text-red-300 capitalize">{statusMap[cur]?.label || cur.replace(/_/g,' ')}</p>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <div className="absolute top-4 left-4 right-4 h-0.5 bg-white/10 rounded-full"/>
+                              <div className="absolute top-4 left-4 h-0.5 rounded-full transition-all duration-700" style={{ width: `calc(${Math.max(0, (idx/(visible.length-1))*100)}% - 32px)`, background: `linear-gradient(to right, ${pc}, ${pc}cc)` }}/>
+                              <div className="relative flex justify-between">
+                                {visible.map((step, i) => {
+                                  const Icon = step.icon;
+                                  const done = i < idx;
+                                  const active = i === idx;
+                                  const cfg = statusMap[step.key];
+                                  const label = cfg?.label || step.defaultLabel;
+                                  const color = active ? (cfg?.color || pc) : null;
+                                  return (
+                                    <div key={step.key} className="flex flex-col items-center flex-1 min-w-0">
+                                      <div
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${active ? 'scale-110 shadow-lg' : done ? 'bg-emerald-500/80 border-emerald-400 text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                                        style={active ? { backgroundColor: color, borderColor: color, color: '#fff', boxShadow: `0 0 0 4px ${color}33` } : undefined}
+                                      >
+                                        {done && !active ? <Check size={13}/> : <Icon size={13}/>}
+                                      </div>
+                                      <p className={`text-[9px] sm:text-[10px] font-bold mt-2 text-center leading-tight truncate w-full px-0.5 ${active ? 'text-white' : done ? 'text-emerald-300' : 'text-gray-500'}`}>{label}</p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {store.tracking_show_items && items.length > 0 && (
