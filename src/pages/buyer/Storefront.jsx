@@ -496,7 +496,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
   const cartItems = useCartStore(s => s.items);
-  const inCart = cartItems.some(i => i.id === product.id);
+  const inCart = cartItems.some(i => i.product_id === product.id);
   const price = parseFloat(product.price) || 0;
   const comparePrice = product.compare_at_price ? parseFloat(product.compare_at_price) : null;
   const onSale = comparePrice && comparePrice > price;
