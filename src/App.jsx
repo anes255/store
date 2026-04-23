@@ -155,7 +155,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/dashboard/about" element={<P><AboutUs/></P>}/>
 <Route path="/dashboard/faqs" element={<P><FAQs/></P>}/>
 <Route path="/dashboard/contact" element={<P><ContactInfo/></P>}/>
-<Route path="/dashboard/order-tracking" element={<P><OrderTracking/></P>}/>
+<Route path="/dashboard/order-tracking" element={<P><TrackingOrders/></P>}/>
 <Route path="/dashboard/status-management" element={<P><StatusManagement/></P>}/>
 <Route path="/dashboard/tracking-orders" element={<P><TrackingOrders/></P>}/>
 <Route path="/dashboard/smart-reviews" element={<P><SmartReviews/></P>}/>
