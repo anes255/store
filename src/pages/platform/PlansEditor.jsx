@@ -28,7 +28,7 @@ const EMPTY = {
   slug: '', name: { en: '', fr: '', ar: '' }, tagline: { en: '', fr: '', ar: '' },
   price_monthly: 0, price_yearly: 0, currency: 'DZD',
   features: { en: [''], fr: [''], ar: [''] }, feature_keys: [],
-  max_products: 0, max_orders_month: 0, max_staff: 0,
+  max_products: 0, max_orders_month: 0, max_staff: 0, max_stores: 1,
   is_popular: false, is_active: true, sort_order: 0,
 };
 const LANGS = [
@@ -292,6 +292,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
                   { k: 'max_products', I: Package, l: 'MAX PRODUCTS' },
                   { k: 'max_orders_month', I: ShoppingCart, l: 'MAX ORDERS / MONTH' },
                   { k: 'max_staff', I: Users, l: 'MAX STAFF' },
+                  { k: 'max_stores', I: Globe, l: 'MAX STORES' },
                 ].map(f => {
                   const I = f.I; const v = plan[f.k] || 0;
                   return (

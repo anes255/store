@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 
 // Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
 // include the key the sidebar item renders with a lock icon + muted styling,
@@ -125,7 +125,14 @@ const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarCha
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
-  const{user,logout}=useAuthStore();const{currentStore}=useStoreManagement();
+  const{user,logout}=useAuthStore();const{currentStore,setCurrentStore,stores,setStores}=useStoreManagement();
+  const[storeSwitchOpen,setStoreSwitchOpen]=useState(false);
+  // Load owner's store list if empty (e.g. after page refresh).
+  useEffect(()=>{
+    if(!user||user.is_staff)return;
+    if(Array.isArray(stores)&&stores.length>0)return;
+    import('../../utils/api').then(m=>{m.ownerApi.getStores().then(r=>{if(Array.isArray(r.data))setStores(r.data);}).catch(()=>{});});
+  },[user]);// eslint-disable-line
   const planCtx = usePlanFeatures();
   const theme = useAdminTheme();
   const isDark = theme.mode === 'dark';
@@ -289,6 +296,30 @@ export default function DashboardLayout({children}){
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</Link>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
+      {/* Store switcher — only shows when owner has multiple stores */}
+      {sidebarOpen&&Array.isArray(stores)&&stores.length>1&&(
+        <div className={`px-3 pt-3 relative`}>
+          <button onClick={()=>setStoreSwitchOpen(!storeSwitchOpen)} className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs border transition-all ${isDark?'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200':'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'}`}>
+            <span className="flex items-center gap-2 min-w-0"><Globe size={12} className="shrink-0" style={{color:pc}}/><span className="font-bold truncate">{currentStore?.name||t('sidebar.selectStore','Select store')}</span></span>
+            <ChevronDown size={12} className={`shrink-0 transition-transform ${storeSwitchOpen?'rotate-180':''}`}/>
+          </button>
+          {storeSwitchOpen&&(<>
+            <div className="fixed inset-0 z-30" onClick={()=>setStoreSwitchOpen(false)}/>
+            <div className={`absolute left-3 right-3 top-full mt-1 rounded-lg border shadow-xl z-40 max-h-64 overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-200'}`}>
+              {stores.map(st=>{const sel=currentStore?.id===st.id;return(
+                <button key={st.id} onClick={()=>{setCurrentStore(st);setStoreSwitchOpen(false);navigate('/dashboard');}} className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
+                  {st.logo?<img src={st.logo} className="w-5 h-5 rounded object-cover shrink-0"/>:<div className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
+                  <span className={`flex-1 truncate font-medium ${isDark?'text-gray-200':'text-gray-700'}`}>{st.name}</span>
+                  {sel&&<Check size={12} style={{color:pc}}/>}
+                </button>
+              );})}
+              <Link to="/dashboard" onClick={()=>setStoreSwitchOpen(false)} className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-t ${isDark?'border-gray-700 text-gray-400 hover:bg-gray-800':'border-gray-100 text-gray-500 hover:bg-gray-50'}`}>
+                <Plus size={12}/>{t('sidebar.manageStores','Manage stores')}
+              </Link>
+            </div>
+          </>)}
+        </div>
+      )}
       {sidebarOpen&&<div className="px-3 pt-3 relative">
         <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
         <input

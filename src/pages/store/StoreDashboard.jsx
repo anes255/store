@@ -139,6 +139,31 @@ export default function StoreDashboard() {
 
   return (
     <DashboardLayout>
+      {/* Multi-store picker */}
+      {stores.length > 1 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('storePage.yourStores','Your Stores')}</p>
+            <button onClick={() => setShowCreateModal(true)} className="text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1"><Plus size={12} />{t('storePage.createStore','Create Store')}</button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {stores.map(st => {
+              const sel = currentStore?.id === st.id;
+              return (
+                <button key={st.id} onClick={() => setCurrentStore(st)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-sm ${sel ? 'border-brand-500 bg-brand-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  {st.logo ? <img src={st.logo} className="w-6 h-6 rounded object-cover" /> : <div className="w-6 h-6 rounded bg-brand-100 flex items-center justify-center text-[10px] font-bold text-brand-600">{(st.name || 'S')[0]}</div>}
+                  <span className={`font-bold ${sel ? 'text-brand-700' : 'text-gray-700'}`}>{st.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {stores.length === 1 && !user?.is_staff && (
+        <div className="mb-4 flex justify-end">
+          <button onClick={() => setShowCreateModal(true)} className="text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1"><Plus size={12} />{t('storePage.addAnotherStore','Add another store')}</button>
+        </div>
+      )}
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-brand-500 via-purple-500 to-brand-600 rounded-3xl p-8 mb-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2230%22%20height%3D%2230%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M1.22676%200C1.91374%200%202.45351%200.539773%202.45351%201.22676C2.45351%201.91374%201.91374%202.45351%201.22676%202.45351C0.539773%202.45351%200%201.91374%200%201.22676C0%200.539773%200.539773%200%201.22676%200Z%22%20fill%3D%22rgba(255%2C255%2C255%2C0.06)%22%2F%3E%3C%2Fsvg%3E')]" />
