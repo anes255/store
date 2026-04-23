@@ -6,6 +6,10 @@ export default function ShippingWilayas(){
   const[wilayas,setWilayas]=useState([]);
   const[search,setSearch]=useState('');
   const[filter,setFilter]=useState('all');
+  const[priceMin,setPriceMin]=useState('');
+  const[priceMax,setPriceMax]=useState('');
+  const[priceField,setPriceField]=useState('home'); // 'home' | 'desk' | 'either'
+  const[priceSort,setPriceSort]=useState('none'); // 'none' | 'asc' | 'desc'
   const[loading,setLoading]=useState(true);
   const[saving,setSaving]=useState(false);
   const[seeding,setSeeding]=useState(false);
@@ -128,13 +132,35 @@ export default function ShippingWilayas(){
   };
 
   const wName=(w)=>t(`wilayas.${w.wilaya_code}`,w.wilaya_name);
-  const filtered=wilayas.filter(w=>{
-    const translated=(t(`wilayas.${w.wilaya_code}`,w.wilaya_name)||'').toLowerCase();
-    if(search&&!w.wilaya_name.toLowerCase().includes(search.toLowerCase())&&!translated.includes(search.toLowerCase())&&!w.wilaya_code.includes(search))return false;
-    if(filter==='active'&&w.is_active===false)return false;
-    if(filter==='inactive'&&w.is_active!==false)return false;
-    return true;
-  });
+  const _num=v=>{const n=parseFloat(v);return isNaN(n)?null:n;};
+  const filtered=(()=>{
+    const min=_num(priceMin),max=_num(priceMax);
+    let list=wilayas.filter(w=>{
+      const translated=(t(`wilayas.${w.wilaya_code}`,w.wilaya_name)||'').toLowerCase();
+      if(search&&!w.wilaya_name.toLowerCase().includes(search.toLowerCase())&&!translated.includes(search.toLowerCase())&&!w.wilaya_code.includes(search))return false;
+      if(filter==='active'&&w.is_active===false)return false;
+      if(filter==='inactive'&&w.is_active!==false)return false;
+      if(min!==null||max!==null){
+        const hp=_num(w.home_delivery_price)??0, dp=_num(w.desk_delivery_price)??0;
+        let p;
+        if(priceField==='home')p=hp;
+        else if(priceField==='desk')p=dp;
+        else p=Math.min(hp||Infinity,dp||Infinity);
+        if(min!==null&&p<min)return false;
+        if(max!==null&&p>max)return false;
+      }
+      return true;
+    });
+    if(priceSort!=='none'){
+      const key=priceField==='desk'?'desk_delivery_price':'home_delivery_price';
+      list=[...list].sort((a,b)=>{
+        const av=_num(a[key])??0,bv=_num(b[key])??0;
+        return priceSort==='asc'?av-bv:bv-av;
+      });
+    }
+    return list;
+  })();
+  const resetFilters=()=>{setSearch('');setFilter('all');setPriceMin('');setPriceMax('');setPriceField('home');setPriceSort('none');};
 
   const total=wilayas.length;
   const active=wilayas.filter(w=>w.is_active!==false).length;
@@ -263,6 +289,50 @@ export default function ShippingWilayas(){
           {saving?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={14}/>}
           {saving?t('storePage.saving','Saving...'):t('storePage.saveChanges','Save Changes')}
         </button>
+      </div>
+
+      {/* Advanced price filters */}
+      <div className="glass-card-solid p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2"><DollarSign size={16} className="text-brand-500"/><p className="text-sm font-bold text-gray-800">{t('storePage.priceFilters','Price Filters')}</p></div>
+          <button onClick={resetFilters} className="text-[11px] font-bold text-gray-400 hover:text-gray-600">{t('storePage.reset','Reset')}</button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('storePage.appliesTo','Applies to')}</label>
+            <select value={priceField} onChange={e=>setPriceField(e.target.value)} className="input-field !py-1.5 text-xs">
+              <option value="home">{t('storePage.homePrice','Home Price')}</option>
+              <option value="desk">{t('storePage.deskPrice','Desk Price')}</option>
+              <option value="either">{t('storePage.eitherPrice','Either (lowest)')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('storePage.minPrice','Min (DA)')}</label>
+            <input type="number" min="0" value={priceMin} onChange={e=>setPriceMin(e.target.value)} className="input-field !py-1.5 text-xs" placeholder="0"/>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('storePage.maxPrice','Max (DA)')}</label>
+            <input type="number" min="0" value={priceMax} onChange={e=>setPriceMax(e.target.value)} className="input-field !py-1.5 text-xs" placeholder="∞"/>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('storePage.sortBy','Sort by price')}</label>
+            <select value={priceSort} onChange={e=>setPriceSort(e.target.value)} className="input-field !py-1.5 text-xs">
+              <option value="none">{t('storePage.sortDefault','Default order')}</option>
+              <option value="asc">{t('storePage.sortAsc','Low → High')}</option>
+              <option value="desc">{t('storePage.sortDesc','High → Low')}</option>
+            </select>
+          </div>
+          <div className="flex items-end gap-1">
+            {[
+              {lo:0,hi:300,label:t('storePage.priceCheap','≤ 300')},
+              {lo:300,hi:600,label:t('storePage.priceMid','300–600')},
+              {lo:600,hi:null,label:t('storePage.priceHigh','≥ 600')},
+            ].map(p=>(
+              <button key={p.label} type="button" onClick={()=>{setPriceMin(String(p.lo));setPriceMax(p.hi==null?'':String(p.hi));}} className="flex-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-600">{p.label}</button>
+            ))}
+          </div>
+        </div>
+        <p className="text-[11px] text-gray-400 mt-2">{t('storePage.priceFiltersHint','Filter and sort wilayas by their delivery price. Combine with the search and state filters above.')}</p>
       </div>
 
       <div className="glass-card-solid overflow-hidden">
