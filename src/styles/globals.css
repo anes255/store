@@ -54,8 +54,19 @@ html.admin-dark .text-gray-800, html.platform-dark .text-gray-800{color:#e5e7eb 
 html.admin-dark .text-gray-700, html.platform-dark .text-gray-700{color:#d1d5db !important;}
 html.admin-dark .bg-white, html.platform-dark .bg-white{background:#1f2937 !important;}
 html.admin-dark .bg-gray-50, html.platform-dark .bg-gray-50{background:#111827 !important;}
+html.admin-dark .bg-gray-100, html.platform-dark .bg-gray-100{background:#1f2937 !important;}
+html.admin-dark .bg-gray-200, html.platform-dark .bg-gray-200{background:#374151 !important;}
 html.admin-dark .border-gray-100, html.platform-dark .border-gray-100{border-color:#374151 !important;}
 html.admin-dark .border-gray-200, html.platform-dark .border-gray-200{border-color:#374151 !important;}
+html.admin-dark .border-gray-300, html.platform-dark .border-gray-300{border-color:#4b5563 !important;}
+html.admin-dark .text-gray-600, html.platform-dark .text-gray-600{color:#9ca3af !important;}
+html.admin-dark .text-gray-500, html.platform-dark .text-gray-500{color:#9ca3af !important;}
+html.admin-dark .text-gray-400, html.platform-dark .text-gray-400{color:#6b7280 !important;}
+html.admin-dark .divide-gray-100>*, html.admin-dark .divide-gray-200>*, html.platform-dark .divide-gray-100>*, html.platform-dark .divide-gray-200>*{border-color:#374151 !important;}
+html.admin-dark table tbody tr{border-color:#374151 !important;}
+html.admin-dark table thead{background:#111827 !important;}
+html.admin-dark .hover\:bg-gray-50:hover, html.admin-dark .hover\:bg-gray-100:hover{background:#374151 !important;}
+html.admin-dark .bg-brand-50{background:rgba(124,58,237,0.15) !important;}
 
 @layer components{
 .glass-card{@apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-glass rounded-2xl;}

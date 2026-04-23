@@ -24,7 +24,7 @@ const PRESET_COLORS = [
  * @param {Function} props.onColorChange - (hex) => void
  * @param {boolean} [props.compact] - Render as a compact dropdown button
  */
-export default function ThemePanel({ mode, primaryColor, onModeChange, onColorChange, compact = false }) {
+export default function ThemePanel({ mode, primaryColor, onModeChange, onColorChange, compact = false, modeOnly = false }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [customColor, setCustomColor] = useState(primaryColor);
@@ -78,7 +78,7 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
       </div>
 
       {/* Color Presets */}
-      <div>
+      {!modeOnly && <div>
         <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
           {t('theme.primaryColor', 'Primary Color')}
         </p>
@@ -134,10 +134,10 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           />
           <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('theme.custom', 'Custom')}</span>
         </div>
-      </div>
+      </div>}
 
       {/* Preview */}
-      <div className={`p-3 rounded-xl border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+      {!modeOnly && <div className={`p-3 rounded-xl border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
         <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
           {t('theme.preview', 'Preview')}
         </p>
@@ -150,7 +150,7 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           </button>
           <span className="text-xs font-bold" style={{ color: primaryColor }}>Text</span>
         </div>
-      </div>
+      </div>}
     </div>
   );
 

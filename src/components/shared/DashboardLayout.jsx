@@ -286,7 +286,7 @@ export default function DashboardLayout({children}){
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className="flex items-center gap-2">{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</div>
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</Link>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
       {sidebarOpen&&<div className="px-3 pt-3 relative">
@@ -352,7 +352,7 @@ export default function DashboardLayout({children}){
         ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>
     </aside>
-    <main className={`flex-1 transition-all duration-300 ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
+    <main className={`flex-1 transition-all duration-300 min-h-screen ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
       <header className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center justify-between transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
         <div className="flex items-center gap-3">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}
@@ -410,7 +410,7 @@ export default function DashboardLayout({children}){
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
-      <div className="p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-clip">{children}</div>
+      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-clip ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`}>{children}</div>
     </main>
   </div>);
 }

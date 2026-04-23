@@ -495,6 +495,8 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
 function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow, themeMode }) {
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
+  const cartItems = useCartStore(s => s.items);
+  const inCart = cartItems.some(i => i.id === product.id);
   const price = parseFloat(product.price) || 0;
   const comparePrice = product.compare_at_price ? parseFloat(product.compare_at_price) : null;
   const onSale = comparePrice && comparePrice > price;
@@ -502,25 +504,23 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const isLight = themeMode === 'light';
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group relative"
-      style={{ background: isLight ? '#ffffff' : 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)', border: isLight ? '1px solid #e5e7eb' : 'none' }}>
+    <div className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group relative ${inCart ? 'ring-2 ring-yellow-400' : ''}`}
+      style={{ background: inCart ? (isLight ? '#fef9c3' : 'linear-gradient(145deg, #713f12 0%, #422006 60%, #1c1917 100%)') : (isLight ? '#ffffff' : 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)'), border: isLight && !inCart ? '1px solid #e5e7eb' : 'none' }}>
       {/* Product Image */}
       <div className="relative cursor-pointer" onClick={() => openDetail(product)}>
         <div className="aspect-square bg-white/5 relative overflow-hidden m-2.5 rounded-xl">
           {thumb
             ? <img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
             : <div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-white/15" /></div>}
-          {onSale && <span className="absolute top-2 left-2 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
         </div>
 
-        {/* Favourite pinned to LEFT (below the SALE sticker when visible),
-            Cart pinned to top-RIGHT — opposite sides of the card. */}
+        {/* Favourite on LEFT top, SALE badge UNDER it. Cart on top-RIGHT. */}
         <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
-          className={`absolute left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inWishlist ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white/70 hover:text-red-400'}`}
-          style={{ top: onSale ? 48 : 16 }}
+          className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inWishlist ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white/70 hover:text-red-400'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
+        {onSale && <span className="absolute top-[52px] left-4 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
         <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm border border-white/10"
+          className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-white/20 text-white'}`}
           aria-label="Add to cart"><ShoppingCart size={14} /></button>
       </div>
 
@@ -754,7 +754,9 @@ export default function Storefront() {
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
 
   // Templates removed: theme picker fully drives the storefront palette.
-  const pc = buyerTheme.primaryColor || store.primary_color || '#7C3AED';
+  // Admin's customization primary_color takes precedence over the buyer theme
+  // default so colors picked in Settings → Customization actually apply.
+  const pc = store.primary_color || buyerTheme.primaryColor || '#7C3AED';
   const tplStyle = {};
   const headerBg = pc;
   const headerText = '#ffffff';
@@ -788,7 +790,7 @@ export default function Storefront() {
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
-            <div className="hidden sm:block"><ThemePanel compact mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
+            <div className="hidden sm:block"><ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full" title="Track your order"><Truck size={18} className="sm:w-5 sm:h-5"/></Link>}
             {/* Favourites sits right beside the cart in the header */}

@@ -360,16 +360,22 @@ export default function ShippingWilayas(){
                 {(shippingMode==='home'||shippingMode==='both')&&(
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <input type="number" className="input-field !w-24 !py-1.5 text-sm text-center" value={w.home_delivery_price||''} onChange={e=>updatePrice(w.id,'home_delivery_price',e.target.value)} placeholder="0"/>
+                      <input type="number" disabled={w.home_enabled===false} className="input-field !w-24 !py-1.5 text-sm text-center disabled:opacity-50" value={w.home_delivery_price||''} onChange={e=>updatePrice(w.id,'home_delivery_price',e.target.value)} placeholder="0"/>
                       <span className="text-[10px] text-gray-400">DA</span>
+                      <button onClick={()=>setWilayas(wilayas.map(x=>x.id===w.id?{...x,home_enabled:x.home_enabled===false?true:false}:x))} className={`ml-1 px-2 py-1 rounded-md text-[10px] font-bold ${w.home_enabled!==false?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-red-100 text-red-700 hover:bg-red-200'}`} title={w.home_enabled!==false?'Disable home delivery':'Enable home delivery'}>
+                        {w.home_enabled!==false?'ON':'OFF'}
+                      </button>
                     </div>
                   </td>
                 )}
                 {(shippingMode==='desk'||shippingMode==='both')&&(
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <input type="number" className="input-field !w-24 !py-1.5 text-sm text-center" value={w.desk_delivery_price||''} onChange={e=>updatePrice(w.id,'desk_delivery_price',e.target.value)} placeholder="0"/>
+                      <input type="number" disabled={w.desk_enabled===false} className="input-field !w-24 !py-1.5 text-sm text-center disabled:opacity-50" value={w.desk_delivery_price||''} onChange={e=>updatePrice(w.id,'desk_delivery_price',e.target.value)} placeholder="0"/>
                       <span className="text-[10px] text-gray-400">DA</span>
+                      <button onClick={()=>setWilayas(wilayas.map(x=>x.id===w.id?{...x,desk_enabled:x.desk_enabled===false?true:false}:x))} className={`ml-1 px-2 py-1 rounded-md text-[10px] font-bold ${w.desk_enabled!==false?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-red-100 text-red-700 hover:bg-red-200'}`} title={w.desk_enabled!==false?'Disable desk delivery':'Enable desk delivery'}>
+                        {w.desk_enabled!==false?'ON':'OFF'}
+                      </button>
                     </div>
                   </td>
                 )}
