@@ -111,15 +111,23 @@ export default function StoreOrders() {
   const syncingRef = React.useRef(false);
   const onTopScroll = (e) => { if (syncingRef.current) return; syncingRef.current = true; if (hscrollRef.current) hscrollRef.current.scrollLeft = e.currentTarget.scrollLeft; syncingRef.current = false; };
   const onBottomScroll = (e) => { if (syncingRef.current) return; syncingRef.current = true; if (topScrollRef.current) topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; syncingRef.current = false; };
-  React.useEffect(() => {
+  // Measure the inner table width repeatedly so the top mirror scrollbar has correct width even after data/col changes.
+  const measureScroll = React.useCallback(() => {
     const el = hscrollRef.current; if (!el) return;
-    const update = () => setTopScrollWidth(el.scrollWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    if (el.firstElementChild) ro.observe(el.firstElementChild);
-    window.addEventListener('resize', update);
-    return () => { ro.disconnect(); window.removeEventListener('resize', update); };
+    const tbl = el.querySelector('table');
+    const w = Math.max(el.scrollWidth, tbl?.scrollWidth || 0, tbl?.offsetWidth || 0);
+    if (w && w !== topScrollWidth) setTopScrollWidth(w);
+  }, [topScrollWidth]);
+  React.useEffect(() => {
+    measureScroll();
+    const t1 = setTimeout(measureScroll, 50);
+    const t2 = setTimeout(measureScroll, 250);
+    const t3 = setTimeout(measureScroll, 800);
+    const ro = new ResizeObserver(() => measureScroll());
+    const el = hscrollRef.current;
+    if (el) { ro.observe(el); const tbl = el.querySelector('table'); if (tbl) ro.observe(tbl); }
+    window.addEventListener('resize', measureScroll);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); ro.disconnect(); window.removeEventListener('resize', measureScroll); };
   });
   const [activeColumns, setActiveColumns] = useState(() => {
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v3') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
@@ -574,16 +582,19 @@ export default function StoreOrders() {
             onScroll={onTopScroll}
             className="orders-hscroll-top"
             style={{
-              overflowX: 'scroll',
+              overflowX: 'auto',
               overflowY: 'hidden',
               width: '100%',
               maxWidth: '100%',
-              height: 16,
+              height: 18,
+              background: '#f3f4f6',
+              borderRadius: 6,
+              marginBottom: 4,
               scrollbarWidth: 'auto',
-              scrollbarColor: '#9ca3af #f3f4f6',
+              scrollbarColor: '#6b7280 #e5e7eb',
             }}
           >
-            <div style={{ width: topScrollWidth, height: 1 }} />
+            <div style={{ width: Math.max(topScrollWidth, (activeColumns.length + 1) * 160, 1600), height: 1 }} />
           </div>
           <div
             ref={hscrollRef}
