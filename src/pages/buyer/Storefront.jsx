@@ -790,7 +790,7 @@ export default function Storefront() {
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <div className="hidden sm:block"><ThemePanel compact mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
-            <Link to={`/s/${storeSlug}/track`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full" title="Track your order"><Truck size={18} className="sm:w-5 sm:h-5"/></Link>
+            {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full" title="Track your order"><Truck size={18} className="sm:w-5 sm:h-5"/></Link>}
             {/* Favourites sits right beside the cart in the header */}
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative" title="Favorites">
               <Heart size={18} className="sm:w-5 sm:h-5"/>

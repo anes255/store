@@ -206,6 +206,7 @@ export const storeApi = {
   submitReview: (slug, productSlug, data) => api.post(`/store/${slug}/products/${productSlug}/reviews`, data),
   // Public tracking
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
+  trackByOrderId: (slug, orderId) => api.get(`/store/${slug}/track?order_id=${encodeURIComponent(orderId)}`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
   // Shipping wilayas (public, for checkout)
