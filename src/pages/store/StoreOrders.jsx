@@ -111,6 +111,9 @@ export default function StoreOrders() {
   });
   useEffect(() => { localStorage.setItem('orders.columns.v3', JSON.stringify(activeColumns)); }, [activeColumns]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
+  // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'cards');
+  useEffect(() => { localStorage.setItem('orders.viewMode', viewMode); }, [viewMode]);
 
   const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   const moveColumn = (key, dir) => setActiveColumns(prev => {
@@ -478,6 +481,10 @@ export default function StoreOrders() {
           <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <BarChart3 size={13}/>Admin Stats
           </button>
+          <div className="inline-flex items-center gap-0 p-0.5 rounded-xl bg-gray-100">
+            <button onClick={() => setViewMode('cards')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider ${viewMode==='cards'?'bg-white shadow text-brand-600':'text-gray-500'}`}>Cards</button>
+            <button onClick={() => setViewMode('table')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider ${viewMode==='table'?'bg-white shadow text-brand-600':'text-gray-500'}`}>Table</button>
+          </div>
           <div className="relative">
             <button onClick={() => setColumnPickerOpen(v => !v)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-[11px] font-bold text-yellow-700 uppercase tracking-wider">
               <Columns size={13}/>Columns<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500 text-white">{activeColumns.length}</span>
@@ -532,6 +539,53 @@ export default function StoreOrders() {
             <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4"><ShoppingBag size={28} className="text-purple-400"/></div>
             <p className="text-gray-700 font-bold">No orders found</p>
             <p className="text-xs text-gray-400 mt-1">When your customers place orders, they will appear here.</p>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="p-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {pageOrders.map(o => {
+              const sc = statusConfig[o.status] || statusConfig.pending;
+              const transfer = transferBadge(o);
+              const items = o.items || [];
+              const first = items[0];
+              const isSel = selectedItems.has(o.id);
+              return (
+                <div key={o.id} data-order-id={o.id} className={`rounded-2xl border bg-white p-3 hover:shadow-md transition-all ${isSel ? 'border-brand-400 ring-2 ring-brand-100' : 'border-gray-100'}`}>
+                  <div className="flex items-start gap-2.5 mb-2">
+                    <button onClick={() => toggleSelect(o.id)} className="mt-1 shrink-0">{isSel ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-300"/>}</button>
+                    {o.first_image ? <img src={o.first_image} alt="" className="w-12 h-12 rounded-xl object-cover border border-gray-200 shrink-0"/> : <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0"><Package size={16} className="text-gray-400"/></div>}
+                    <div className="flex-1 min-w-0">
+                      <button onClick={e => { e.stopPropagation(); setQuickAction({ type: 'order', order: o }); }} className="text-left w-full">
+                        <p className="font-mono font-bold text-xs text-emerald-600 truncate">{o.order_number}</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">{o.customer_name || '—'}</p>
+                        <p className="text-[11px] text-gray-500 truncate">{o.customer_phone || '—'}</p>
+                      </button>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); setQuickAction({ type: 'status', order: o }); }} className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold shrink-0 ${sc.bg} ${sc.text}`}>{sc.label}</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-[11px] mb-2">
+                    <button onClick={() => setQuickAction({ type: 'address', order: o })} className="text-left p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase">Wilaya</p>
+                      <p className="truncate text-gray-700">{o.shipping_wilaya || '—'}{o.shipping_city ? ` · ${o.shipping_city}` : ''}</p>
+                    </button>
+                    <button onClick={() => setQuickAction({ type: 'shipping_method', order: o })} className="text-left p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase">Shipping</p>
+                      <p className="truncate text-gray-700 flex items-center gap-1">{o.shipping_type === 'home' ? <><Home size={10}/>HOME</> : <><Package size={10}/>DESK</>} · {fmtMoney(o.shipping_cost, o.currency)}</p>
+                    </button>
+                    <button onClick={() => setQuickAction({ type: 'products', order: o })} className="text-left p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 col-span-2">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase">Products</p>
+                      {first ? <p className="truncate text-gray-700"><span className="font-bold">{first.quantity}×</span> {first.product_name || first.name}{items.length > 1 && <span className="text-gray-400"> +{items.length - 1} more</span>}</p> : <p className="text-gray-400">—</p>}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <button onClick={() => setQuickAction({ type: 'transfer', order: o })} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${transfer ? transfer.className : 'bg-gray-100 text-gray-600'}`}>{transfer ? transfer.label : (<><Send size={9}/>Assign</>)}</button>
+                      {o.tracking_number && <span className="font-mono text-[9px] text-gray-400">#{o.tracking_number}</span>}
+                    </div>
+                    <p className="text-sm font-black text-gray-900">{fmtMoney(o.total, o.currency)}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="relative">

@@ -4,7 +4,7 @@ import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import api,{ownerApi} from'../../utils/api';
 import toast from'react-hot-toast';
-import{Search,Truck,Package,MapPin,RefreshCw,ExternalLink,Clock,Check,X,AlertTriangle,Phone,ChevronRight,Box,Home,RotateCcw,Settings as SettingsIcon,Eye,Hash,Power,Save,Monitor,Smartphone}from'lucide-react';
+import{Search,Truck,Package,MapPin,RefreshCw,ExternalLink,Clock,Check,X,AlertTriangle,Phone,ChevronRight,Box,Home,RotateCcw,Settings as SettingsIcon,Eye,Hash,Power,Save,Monitor,Smartphone,Plus,Trash2,Palette,Loader2,Tag}from'lucide-react';
 
 const STEPS=[
   {key:'awaiting_pickup',labelKey:'storePage.awaitingPickup',labelDefault:'Awaiting Pickup',icon:Box},
@@ -113,9 +113,59 @@ export default function TrackingOrders(){
     setSaving(false);
   };
 
+  // ── Status templates state ──
+  const STATUS_BUILT_IN=[
+    {key:'new_order',default_label:'New',color:'#6366f1',is_builtin:true},
+    {key:'pending',default_label:'Pending',color:'#f59e0b',is_builtin:true},
+    {key:'confirmed',default_label:'Confirmed',color:'#3b82f6',is_builtin:true},
+    {key:'preparing',default_label:'Preparing',color:'#a855f7',is_builtin:true},
+    {key:'ready',default_label:'Ready',color:'#14b8a6',is_builtin:true},
+    {key:'shipped',default_label:'Shipped',color:'#f97316',is_builtin:true},
+    {key:'delivered',default_label:'Delivered',color:'#10b981',is_builtin:true},
+    {key:'cancelled',default_label:'Cancelled',color:'#ef4444',is_builtin:true},
+    {key:'returned',default_label:'Returned',color:'#6b7280',is_builtin:true},
+  ];
+  const[statusRows,setStatusRows]=useState([]);
+  const[statusLoading,setStatusLoading]=useState(false);
+  const[statusSaving,setStatusSaving]=useState(false);
+  const loadStatuses=async()=>{
+    if(!currentStore?.id)return;
+    setStatusLoading(true);
+    try{
+      const{data}=await api.get(`/manage/stores/${currentStore.id}/status-templates`);
+      const existing=Array.isArray(data)?data:(data?.rows||[]);
+      const byKey=new Map(existing.map(r=>[r.key,r]));
+      const merged=STATUS_BUILT_IN.map(b=>({...b,
+        label:byKey.get(b.key)?.label||b.default_label,
+        color:byKey.get(b.key)?.color||b.color,
+        enabled:byKey.get(b.key)?.enabled!==false,
+        notify_customer:byKey.get(b.key)?.notify_customer!==false,
+      }));
+      const customs=existing.filter(r=>!STATUS_BUILT_IN.find(b=>b.key===r.key));
+      setStatusRows([...merged,...customs.map(c=>({...c,is_builtin:false,enabled:c.enabled!==false}))]);
+    }catch{
+      setStatusRows(STATUS_BUILT_IN.map(b=>({...b,label:b.default_label,enabled:true,notify_customer:true})));
+    }
+    setStatusLoading(false);
+  };
+  useEffect(()=>{if(tab==='statuses')loadStatuses();},[tab,currentStore?.id]);
+  const statusUpdate=(i,patch)=>setStatusRows(prev=>prev.map((r,idx)=>idx===i?{...r,...patch}:r));
+  const statusRemove=(i)=>setStatusRows(prev=>prev.filter((_,idx)=>idx!==i));
+  const statusAddCustom=()=>{
+    const slug='custom_'+Date.now();
+    setStatusRows(prev=>[...prev,{key:slug,label:t('statusMgmt.newStatus','New Status'),color:'#64748b',enabled:true,notify_customer:false,is_builtin:false}]);
+  };
+  const statusSave=async()=>{
+    if(!currentStore?.id)return;
+    setStatusSaving(true);
+    try{await api.put(`/manage/stores/${currentStore.id}/status-templates`,{statuses:statusRows});toast.success(t('statusMgmt.saved','Status templates saved'));}
+    catch(e){toast.error(e?.response?.data?.error||t('statusMgmt.saveFailed','Failed to save'));}
+    setStatusSaving(false);
+  };
+
   // ── Preview state ──
   const[previewDevice,setPreviewDevice]=useState('desktop'); // 'desktop' | 'mobile'
-  const previewUrl=currentStore?.slug?`${window.location.origin}/store/${currentStore.slug}/track`:null;
+  const previewUrl=currentStore?.slug?`${window.location.origin}/s/${currentStore.slug}/track`:null;
   const iframeRef=useRef(null);
 
   // ═══════════════════ MODAL (shipments) ═══════════════════
@@ -322,6 +372,52 @@ export default function TrackingOrders(){
     </div>
   </>);
 
+  const statusesTab=()=>(<>
+    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <p className="text-xs text-gray-400">{t('statusMgmt.subtitle','Customize order status labels, colors, and customer notifications. Built-in statuses can be renamed but not deleted.')}</p>
+      <div className="flex items-center gap-2">
+        <button onClick={statusAddCustom} className="px-3 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold flex items-center gap-1.5"><Plus size={13}/>{t('statusMgmt.addCustom','Add Custom Status')}</button>
+        <button onClick={statusSave} disabled={statusSaving} className="btn-primary text-xs flex items-center gap-2">{statusSaving?<Loader2 size={13} className="animate-spin"/>:<Save size={13}/>}{t('common.save','Save')}</button>
+      </div>
+    </div>
+    {statusLoading?(
+      <div className="py-16 text-center"><Loader2 size={24} className="animate-spin mx-auto text-brand-500"/></div>
+    ):(
+      <div className="glass-card-solid overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead>
+              <tr className="bg-gray-50 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3">{t('statusMgmt.key','Key')}</th>
+                <th className="px-4 py-3">{t('statusMgmt.label','Label')}</th>
+                <th className="px-4 py-3">{t('statusMgmt.color','Color')}</th>
+                <th className="px-4 py-3 text-center">{t('statusMgmt.enabled','Enabled')}</th>
+                <th className="px-4 py-3 text-center">{t('statusMgmt.notify','Notify Customer')}</th>
+                <th className="px-4 py-3 text-right">{t('common.actions','Actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {statusRows.map((r,i)=>(
+                <tr key={r.key} className="border-t border-gray-100">
+                  <td className="px-4 py-3"><span className="font-mono text-xs text-gray-500">{r.key}</span>{r.is_builtin&&<span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700">{t('statusMgmt.builtin','BUILT-IN')}</span>}</td>
+                  <td className="px-4 py-3"><input className="input-field !py-1.5 !text-sm" value={r.label||''} onChange={e=>statusUpdate(i,{label:e.target.value})}/></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><input type="color" className="w-8 h-8 rounded border border-gray-200" value={r.color||'#6366f1'} onChange={e=>statusUpdate(i,{color:e.target.value})}/><span className="font-mono text-[10px] text-gray-400">{r.color}</span></div></td>
+                  <td className="px-4 py-3 text-center"><button onClick={()=>statusUpdate(i,{enabled:!r.enabled})} className={`w-10 h-5 rounded-full relative transition-colors ${r.enabled?'bg-emerald-500':'bg-gray-300'}`}><div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${r.enabled?'translate-x-5':'translate-x-0.5'}`}/></button></td>
+                  <td className="px-4 py-3 text-center"><button onClick={()=>statusUpdate(i,{notify_customer:!r.notify_customer})} className={`w-10 h-5 rounded-full relative transition-colors ${r.notify_customer?'bg-blue-500':'bg-gray-300'}`}><div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${r.notify_customer?'translate-x-5':'translate-x-0.5'}`}/></button></td>
+                  <td className="px-4 py-3 text-right">{r.is_builtin?<span className="text-[10px] text-gray-300">—</span>:<button onClick={()=>statusRemove(i)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"><Trash2 size={14}/></button>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+    <div className="mt-4 p-4 rounded-2xl bg-blue-50 border border-blue-100 text-sm text-blue-700">
+      <p className="font-bold mb-1 flex items-center gap-1.5"><Palette size={14}/>{t('statusMgmt.howTitle','How it works')}</p>
+      <p className="text-xs">{t('statusMgmt.howDesc','These settings apply to: the storefront profile order history, the public Track Order button, and the tracking details shown on the customer tracking page. Toggling "Notify Customer" off will skip WhatsApp/email messages for that status.')}</p>
+    </div>
+  </>);
+
   const previewTab=()=>(<>
     <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
       <div>
@@ -373,6 +469,7 @@ export default function TrackingOrders(){
       {[
         {k:'shipments',icon:Truck,label:t('storePage.shipmentsTab','Shipments')},
         {k:'settings',icon:SettingsIcon,label:t('storePage.settingsTab','Settings')},
+        {k:'statuses',icon:Tag,label:t('storePage.statusesTab','Status Management')},
         {k:'preview',icon:Eye,label:t('storePage.previewTab','Buyer Preview')},
       ].map(x=>{const Icon=x.icon;return(
         <button key={x.k} onClick={()=>setTab(x.k)} className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap ${tab===x.k?'bg-white shadow text-brand-600':'text-gray-500 hover:text-gray-700'}`}><Icon size={14}/>{x.label}</button>
@@ -381,6 +478,7 @@ export default function TrackingOrders(){
 
     {tab==='shipments'&&shipmentsTab()}
     {tab==='settings'&&settingsTab()}
+    {tab==='statuses'&&statusesTab()}
     {tab==='preview'&&previewTab()}
 
     {renderModal()}
