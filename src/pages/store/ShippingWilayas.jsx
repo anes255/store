@@ -127,8 +127,10 @@ export default function ShippingWilayas(){
     setWilayas(wilayas.map(w=>w.id===id?{...w,is_active:w.is_active===false?true:false}:w));
   };
 
+  const wName=(w)=>t(`wilayas.${w.wilaya_code}`,w.wilaya_name);
   const filtered=wilayas.filter(w=>{
-    if(search&&!w.wilaya_name.toLowerCase().includes(search.toLowerCase())&&!w.wilaya_code.includes(search))return false;
+    const translated=(t(`wilayas.${w.wilaya_code}`,w.wilaya_name)||'').toLowerCase();
+    if(search&&!w.wilaya_name.toLowerCase().includes(search.toLowerCase())&&!translated.includes(search.toLowerCase())&&!w.wilaya_code.includes(search))return false;
     if(filter==='active'&&w.is_active===false)return false;
     if(filter==='inactive'&&w.is_active!==false)return false;
     return true;
@@ -281,7 +283,7 @@ export default function ShippingWilayas(){
                   <div className="flex items-center gap-3">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${w.is_active!==false?'bg-brand-100 text-brand-600':'bg-gray-100 text-gray-400'}`}>{w.wilaya_code}</span>
                     <div>
-                      <p className={`font-semibold ${w.is_active!==false?'text-gray-800':'text-gray-400'}`}>{w.wilaya_name}</p>
+                      <p className={`font-semibold ${w.is_active!==false?'text-gray-800':'text-gray-400'}`}>{wName(w)}</p>
                     </div>
                   </div>
                 </td>
