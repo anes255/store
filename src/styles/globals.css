@@ -88,6 +88,42 @@ html.admin-dark table tbody tr{border-color:#374151 !important;}
 html.admin-dark table thead{background:#111827 !important;}
 html.admin-dark .hover\:bg-gray-50:hover, html.admin-dark .hover\:bg-gray-100:hover{background:#374151 !important;}
 html.admin-dark .bg-brand-50{background:rgba(124,58,237,0.15) !important;}
+/* Opacity variants and hover backgrounds that otherwise render white */
+html.admin-dark .bg-white\/80, html.platform-dark .bg-white\/80{background-color:rgba(31,41,55,0.85) !important;}
+html.admin-dark .bg-white\/90, html.platform-dark .bg-white\/90{background-color:rgba(31,41,55,0.92) !important;}
+html.admin-dark .bg-white\/95, html.platform-dark .bg-white\/95{background-color:rgba(31,41,55,0.95) !important;}
+html.admin-dark .bg-white\/50, html.platform-dark .bg-white\/50{background-color:rgba(31,41,55,0.55) !important;}
+html.admin-dark .hover\:bg-white:hover, html.platform-dark .hover\:bg-white:hover{background-color:#1f2937 !important;}
+html.admin-dark .hover\:bg-gray-200:hover, html.platform-dark .hover\:bg-gray-200:hover{background-color:#4b5563 !important;}
+html.admin-dark .from-white, html.platform-dark .from-white{--tw-gradient-from:#1f2937 !important;}
+html.admin-dark .to-white, html.platform-dark .to-white{--tw-gradient-to:#1f2937 !important;}
+html.admin-dark .via-white, html.platform-dark .via-white{--tw-gradient-via:#1f2937 !important;}
+/* Light pastel backgrounds used for banners should get a darker tint */
+html.admin-dark .bg-blue-50, html.platform-dark .bg-blue-50{background-color:rgba(59,130,246,0.12) !important;}
+html.admin-dark .bg-emerald-50, html.platform-dark .bg-emerald-50{background-color:rgba(16,185,129,0.12) !important;}
+html.admin-dark .bg-purple-50, html.platform-dark .bg-purple-50{background-color:rgba(168,85,247,0.12) !important;}
+html.admin-dark .bg-amber-50, html.platform-dark .bg-amber-50{background-color:rgba(245,158,11,0.12) !important;}
+html.admin-dark .bg-red-50, html.platform-dark .bg-red-50{background-color:rgba(239,68,68,0.12) !important;}
+html.admin-dark .bg-pink-50, html.platform-dark .bg-pink-50{background-color:rgba(236,72,153,0.12) !important;}
+html.admin-dark .bg-indigo-50, html.platform-dark .bg-indigo-50{background-color:rgba(99,102,241,0.12) !important;}
+html.admin-dark .bg-cyan-50, html.platform-dark .bg-cyan-50{background-color:rgba(6,182,212,0.12) !important;}
+html.admin-dark .bg-yellow-50, html.platform-dark .bg-yellow-50{background-color:rgba(234,179,8,0.12) !important;}
+html.admin-dark .bg-orange-50, html.platform-dark .bg-orange-50{background-color:rgba(249,115,22,0.12) !important;}
+html.admin-dark .bg-teal-50, html.platform-dark .bg-teal-50{background-color:rgba(20,184,166,0.12) !important;}
+html.admin-dark .bg-rose-50, html.platform-dark .bg-rose-50{background-color:rgba(244,63,94,0.12) !important;}
+html.admin-dark .bg-slate-50, html.platform-dark .bg-slate-50{background-color:#111827 !important;}
+html.admin-dark .bg-stone-50, html.platform-dark .bg-stone-50{background-color:#111827 !important;}
+html.admin-dark .bg-neutral-50, html.platform-dark .bg-neutral-50{background-color:#111827 !important;}
+html.admin-dark .bg-zinc-50, html.platform-dark .bg-zinc-50{background-color:#111827 !important;}
+/* Common 100-level pastel rows/chips */
+html.admin-dark .bg-blue-100, html.platform-dark .bg-blue-100{background-color:rgba(59,130,246,0.22) !important;color:#bfdbfe !important;}
+html.admin-dark .bg-emerald-100, html.platform-dark .bg-emerald-100{background-color:rgba(16,185,129,0.22) !important;color:#a7f3d0 !important;}
+html.admin-dark .bg-purple-100, html.platform-dark .bg-purple-100{background-color:rgba(168,85,247,0.22) !important;color:#e9d5ff !important;}
+html.admin-dark .bg-amber-100, html.platform-dark .bg-amber-100{background-color:rgba(245,158,11,0.22) !important;color:#fde68a !important;}
+html.admin-dark .bg-red-100, html.platform-dark .bg-red-100{background-color:rgba(239,68,68,0.22) !important;color:#fecaca !important;}
+/* Modals and dialogs that hard-code bg-white should respect dark mode */
+html.admin-dark .rounded-2xl.bg-white, html.platform-dark .rounded-2xl.bg-white,
+html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{background:#1f2937 !important;color:#e5e7eb !important;}
 
 @layer components{
 .glass-card{@apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-glass rounded-2xl;}

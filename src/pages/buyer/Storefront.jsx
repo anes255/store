@@ -393,7 +393,12 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                 </div>
               </div>
               <button
-                onClick={() => { onAddToCart({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose(); }}
+                onClick={() => {
+                  const missing = groupTypes.filter(t => selectedVariants[t] == null);
+                  if (missing.length) { toast.error('Please choose: ' + missing.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')); return; }
+                  if (!quantity || quantity < 1) { toast.error('Pick a quantity'); return; }
+                  onAddToCart({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose();
+                }}
                 disabled={stockCount <= 0 && !product.allow_oversell}
                 className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all text-sm"
                 style={{ backgroundColor: pc }}
@@ -401,7 +406,12 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                 <ShoppingCart size={16} /> {store.btn_add_cart || 'Add to Cart'}
               </button>
               <button
-                onClick={() => { onBuyNow({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose(); }}
+                onClick={() => {
+                  const missing = groupTypes.filter(t => selectedVariants[t] == null);
+                  if (missing.length) { toast.error('Please choose: ' + missing.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')); return; }
+                  if (!quantity || quantity < 1) { toast.error('Pick a quantity'); return; }
+                  onBuyNow({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose();
+                }}
                 disabled={stockCount <= 0 && !product.allow_oversell}
                 className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 disabled:opacity-50 transition-all text-sm"
                 style={{ borderColor: pc, color: pc, backgroundColor: pc + '15' }}
@@ -711,8 +721,12 @@ export default function Storefront() {
     toast.success(t('store.addedToCart','Added to cart'));
   };
 
-  // Opens the full product detail popup.
-  const openDetail = (product) => { setDetailProduct(product); try { trackViewContent(store?.tracking_pixels, product); } catch {} };
+  // Navigate to the full product detail page (with reviews, comments, etc.)
+  const openDetail = (product) => {
+    try { trackViewContent(store?.tracking_pixels, product); } catch {}
+    const slug = product.slug || product.id;
+    navigate(`/s/${storeSlug}/product/${slug}`);
+  };
   // Buy now: show a checkout preview first so the buyer can confirm the
   // product, qty and total before committing to the full checkout flow.
   // The full Checkout modal only opens after they hit "Continue".

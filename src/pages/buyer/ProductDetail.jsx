@@ -119,12 +119,21 @@ export default function ProductDetail() {
     setSelectedImage(0);
   };
 
+  const requireSelections = () => {
+    const missing = groupTypes.filter(t => selectedVariants[t] == null);
+    if (missing.length) { toast.error('Please choose: ' + missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')); return false; }
+    if (!quantity || quantity < 1) { toast.error('Pick a quantity'); return false; }
+    return true;
+  };
+
   const handleAddToCart = () => {
+    if (!requireSelections()) return;
     addItem({ ...product, price: finalPrice }, quantity, buildVariantObj());
     toast.success(variantLabel ? `Added "${variantLabel}" to cart` : 'Added to cart');
   };
 
   const handleBuyNow = () => {
+    if (!requireSelections()) return;
     // Parse images safely
     let imgs = product.images;
     if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }

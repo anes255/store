@@ -436,7 +436,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                             <span className="text-xl">{dt.icon}</span>
                             <div className="flex-1">
                               <p className="font-bold text-sm text-gray-800">{dt.label}</p>
-                              <p className="text-xs text-gray-400">{selectedWilayaData.delivery_days || '?'} {t('checkout.days','days')}</p>
+                              <p className="text-xs text-gray-400">{(() => { const d = parseInt(selectedWilayaData.delivery_days) || 3; return d <= 1 ? '1' : `1-${d}`; })()} {t('checkout.days','days')}</p>
                             </div>
                             <span className="font-extrabold text-sm" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
                             {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}

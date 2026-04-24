@@ -100,6 +100,7 @@ export default function StoreOrders() {
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
   const [adminStatsOpen, setAdminStatsOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // {ids:[]}
   // Quick action drawer: { type: string, order: {...} } — null when closed.
   const [quickAction, setQuickAction] = useState(null);
   // Horizontal scroll container ref — used by the on-screen scroll buttons.
@@ -654,8 +655,47 @@ export default function StoreOrders() {
           <span className="text-sm font-bold">{selectedItems.size} selected</span>
           <div className="w-px h-5 bg-gray-600"/>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold"><Download size={12}/>Export</button>
-          <button onClick={async () => { if (!confirm(`Delete ${selectedItems.size} orders?`)) return; try { await orderApi.bulkDelete(currentStore.id, Array.from(selectedItems)); } catch {} clearSelection(); loadOrders(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold"><Trash2 size={12}/>Delete</button>
+          <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold"><Trash2 size={12}/>Delete</button>
           <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg"><X size={14}/></button>
+        </div>
+      )}
+
+      {/* Archive-before-delete confirmation */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0"><Trash2 size={18}/></div>
+              <div>
+                <h2 className="text-lg font-black text-gray-900">Delete {deleteConfirm.ids.length} order{deleteConfirm.ids.length>1?'s':''}?</h2>
+                <p className="text-sm text-gray-500 mt-1">Do you want to archive {deleteConfirm.ids.length>1?'them':'it'} before deleting? Archived orders can be restored from the vault.</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 mt-5">
+              <button
+                onClick={async () => {
+                  const ids = deleteConfirm.ids;
+                  try { await orderApi.bulkArchive(currentStore.id, ids, true); } catch {}
+                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch {}
+                  setDeleteConfirm(null); clearSelection(); loadOrders();
+                }}
+                className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-2"
+              >
+                Archive & Delete
+              </button>
+              <button
+                onClick={async () => {
+                  const ids = deleteConfirm.ids;
+                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch {}
+                  setDeleteConfirm(null); clearSelection(); loadOrders();
+                }}
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm"
+              >
+                Delete without archiving
+              </button>
+              <button onClick={() => setDeleteConfirm(null)} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm">Cancel</button>
+            </div>
+          </div>
         </div>
       )}
 

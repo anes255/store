@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Minus, Plus, ShoppingCart, Package, Check, Heart } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // =============================================================================
 // PRODUCT QUICK-ADD POPUP
@@ -104,6 +105,13 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
   };
 
   const handleAdd = () => {
+    // Require a selection from every variant group before allowing add/order
+    const missing = groupTypes.filter(t => selectedVariants[t] == null);
+    if (missing.length) {
+      toast.error('Please choose: ' + missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', '));
+      return;
+    }
+    if (!quantity || quantity < 1) { toast.error('Please pick a quantity'); return; }
     onAddToCart({
       product: { ...product, price: finalPrice },
       selectedVariant: buildVariantObj(),
