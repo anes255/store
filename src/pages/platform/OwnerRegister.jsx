@@ -12,8 +12,9 @@ export default function OwnerRegister() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', address: '', city: '', wilaya: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1=form, 2=otp
   const [otpToken, setOtpToken] = useState('');
@@ -39,6 +40,10 @@ export default function OwnerRegister() {
     e.preventDefault();
     if (!form.name || !form.email || !form.phone || !form.password) {
       toast.error(t('auth.allFieldsRequired'));
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      toast.error(t('auth.passwordsDontMatch','Passwords do not match'));
       return;
     }
     setLoading(true);
@@ -135,6 +140,20 @@ export default function OwnerRegister() {
                   {showPw ? <EyeOff size={18}/> : <Eye size={18}/>}
                 </button>
               </div>
+            </div>
+            <div>
+              <label className="input-label">{t('auth.confirmPassword','Confirm password')} *</label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type={showPw2 ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder={t('auth.confirmPasswordPlaceholder','Re-enter your password')}
+                  value={form.confirmPassword} onChange={set('confirmPassword')} required minLength={6} />
+                <button type="button" onClick={()=>setShowPw2(!showPw2)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPw2 ? <EyeOff size={18}/> : <Eye size={18}/>}
+                </button>
+              </div>
+              {form.confirmPassword && form.password !== form.confirmPassword && (
+                <p className="mt-1 text-xs text-red-500">{t('auth.passwordsDontMatch','Passwords do not match')}</p>
+              )}
             </div>
             <div>
               <label className="input-label">{t('auth.address')}</label>

@@ -377,10 +377,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-900 mb-4">{t('checkout.shippingInfo','Shipping Information')}</h3>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
-                  <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/></div>
-                </div>
+                {/* Name, phone and email stacked vertically — easier to tap on mobile */}
+                <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
+                <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/></div>
                 {store?.checkout_email!==false && <div><label className="input-label">{t('auth.email')}{store?.checkout_email===true?' *':''}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required={store?.checkout_email===true}/></div>}
                 <div><label className="input-label">{t('auth.address')} *</label><input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
 

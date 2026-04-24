@@ -514,11 +514,11 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
             : <div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-white/15" /></div>}
         </div>
 
-        {/* Favourite on LEFT top, SALE badge UNDER it. Cart on top-RIGHT. */}
+        {/* Favourite on LEFT top. SALE badge at BOTTOM-LEFT. Cart on top-RIGHT. */}
         <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
           className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inWishlist ? 'bg-red-500/80 text-white' : 'bg-white/20 text-white/70 hover:text-red-400'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
-        {onSale && <span className="absolute top-[52px] left-4 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
+        {onSale && <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
         <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
           className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform backdrop-blur-sm border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-white/20 text-white'}`}
           aria-label="Add to cart"><ShoppingCart size={14} /></button>
@@ -1102,9 +1102,9 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
           <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:20}}>
             {shown.map(product=>{const thumb=getThumb(product);const inW=wishlist.includes(product.id);return(
               <div key={product.id} className={`bg-white rounded-2xl overflow-hidden ${cardClass} group relative transition-all`}>
-                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
-                {/* Favourite on the LEFT (below SALE sticker if present), cart on the RIGHT */}
-                <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`absolute left-3 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} style={{top: product.compare_at_price ? 44 : 12}} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
+                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute bottom-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
+                {/* Favourite on the LEFT (top), cart on the RIGHT. SALE is at bottom-left of image. */}
+                <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`absolute left-3 top-3 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-white text-gray-400 hover:text-red-500'}`} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
                 {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform" style={{backgroundColor:pc}} aria-label="Add to cart"><ShoppingCart size={14}/></button>}
                 <div className="p-3.5">{c.showName!==false&&<Link to={`/s/${storeSlug}/product/${product.slug}`}><h3 className="font-semibold text-sm text-gray-800 truncate">{getName(product)}</h3></Link>}{c.showPrice!==false&&<div className="flex items-baseline gap-2 mt-2"><span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span><span className="text-xs text-gray-400">{store.currency||'DZD'}</span>{product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}</div>}</div>
               </div>);})}

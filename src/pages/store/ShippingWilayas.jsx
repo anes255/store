@@ -94,33 +94,49 @@ export default function ShippingWilayas(){
     setSeeding(false);
   };
 
+  // Serialize a wilaya row for persistence — includes the per-mode enabled
+  // flags so "home only" or "desk only" per wilaya actually sticks.
+  const serializeW=(w)=>({
+    id:w.id,
+    wilaya_code:w.wilaya_code,
+    wilaya_name:w.wilaya_name,
+    home_delivery_price:w.home_delivery_price,
+    desk_delivery_price:w.desk_delivery_price,
+    is_active:w.is_active,
+    home_enabled:w.home_enabled!==false,
+    desk_enabled:w.desk_enabled!==false,
+  });
   const saveChanges=async()=>{
     if(!currentStore?.id)return;
     setSaving(true);
     // Persist local snapshot instantly — that's the user-visible "saved" state.
     try{
       localStorage.setItem(cacheKey,JSON.stringify({
-        wilayas:wilayas.map(w=>({id:w.id,wilaya_code:w.wilaya_code,wilaya_name:w.wilaya_name,home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})),
+        wilayas:wilayas.map(serializeW),
         shipping_mode:shippingMode,
         free_shipping_enabled:freeShippingEnabled,
         free_shipping_threshold:freeShippingThreshold,
       }));
     }catch{}
-    toast.success(t('storePage.changesSaved','Changes saved successfully!'));
-    setSaving(false);
-    // Fire remote save in background — don't block the UI on it.
-    (async()=>{
-      const payload={
-        wilayas:wilayas.map(w=>({id:w.id,wilaya_code:w.wilaya_code,wilaya_name:w.wilaya_name,home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})),
-        shipping_mode:shippingMode,
-        free_shipping_enabled:freeShippingEnabled,
-        free_shipping_threshold:freeShippingThreshold?parseFloat(freeShippingThreshold):0,
-      };
-      try{await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,payload);return;}catch{}
-      // Fallback in parallel
+    // Fire remote save and WAIT for it — we want the admin to know the
+    // server actually accepted the change before we dismiss the toast.
+    const payload={
+      wilayas:wilayas.map(serializeW),
+      shipping_mode:shippingMode,
+      free_shipping_enabled:freeShippingEnabled,
+      free_shipping_threshold:freeShippingThreshold?parseFloat(freeShippingThreshold):0,
+    };
+    let ok=false;
+    try{await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,payload);ok=true;}catch(e){console.warn('[wilayas] bulk save failed, falling back to per-row',e?.response?.status);}
+    if(!ok){
+      // Fallback: update store-level options, then per-wilaya rows in parallel
       try{await api.put(`/owner/stores/${currentStore.id}`,{shipping_mode:shippingMode,free_shipping_enabled:freeShippingEnabled,free_shipping_threshold:payload.free_shipping_threshold});}catch{}
-      await Promise.allSettled(wilayas.filter(w=>!String(w.id).startsWith('local-')).map(w=>api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active})));
-    })();
+      const results=await Promise.allSettled(wilayas.filter(w=>!String(w.id).startsWith('local-')).map(w=>api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active,home_enabled:w.home_enabled!==false,desk_enabled:w.desk_enabled!==false})));
+      ok=results.some(r=>r.status==='fulfilled');
+    }
+    setSaving(false);
+    if(ok)toast.success(t('storePage.changesSaved','Changes saved successfully!'));
+    else toast.success(t('storePage.savedLocally','Saved locally — will sync when connection is restored'));
   };
 
   const updatePrice=(id,field,val)=>{
@@ -359,22 +375,36 @@ export default function ShippingWilayas(){
                 </td>
                 {(shippingMode==='home'||shippingMode==='both')&&(
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <input type="number" disabled={w.home_enabled===false} className="input-field !w-24 !py-1.5 text-sm text-center disabled:opacity-50" value={w.home_delivery_price||''} onChange={e=>updatePrice(w.id,'home_delivery_price',e.target.value)} placeholder="0"/>
-                      <span className="text-[10px] text-gray-400">DA</span>
-                      <button onClick={()=>setWilayas(wilayas.map(x=>x.id===w.id?{...x,home_enabled:x.home_enabled===false?true:false}:x))} className={`ml-1 px-2 py-1 rounded-md text-[10px] font-bold ${w.home_enabled!==false?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-red-100 text-red-700 hover:bg-red-200'}`} title={w.home_enabled!==false?'Disable home delivery':'Enable home delivery'}>
-                        {w.home_enabled!==false?'ON':'OFF'}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <input type="number" disabled={w.home_enabled===false} className="input-field !w-24 !py-1.5 text-sm text-center disabled:opacity-40" value={w.home_delivery_price||''} onChange={e=>updatePrice(w.id,'home_delivery_price',e.target.value)} placeholder="0"/>
+                        <span className="text-[10px] text-gray-400">DA</span>
+                      </div>
+                      <button
+                        onClick={()=>setWilayas(wilayas.map(x=>x.id===w.id?{...x,home_enabled:x.home_enabled===false?true:false}:x))}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${w.home_enabled!==false?'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100':'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+                        title={w.home_enabled!==false?t('storePage.disableHome','Disable home delivery for this wilaya'):t('storePage.enableHome','Enable home delivery for this wilaya')}
+                      >
+                        {w.home_enabled!==false?<ToggleRight size={13}/>:<ToggleLeft size={13}/>}
+                        {w.home_enabled!==false?t('storePage.enabled','Enabled'):t('storePage.disabled','Disabled')}
                       </button>
                     </div>
                   </td>
                 )}
                 {(shippingMode==='desk'||shippingMode==='both')&&(
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <input type="number" disabled={w.desk_enabled===false} className="input-field !w-24 !py-1.5 text-sm text-center disabled:opacity-50" value={w.desk_delivery_price||''} onChange={e=>updatePrice(w.id,'desk_delivery_price',e.target.value)} placeholder="0"/>
-                      <span className="text-[10px] text-gray-400">DA</span>
-                      <button onClick={()=>setWilayas(wilayas.map(x=>x.id===w.id?{...x,desk_enabled:x.desk_enabled===false?true:false}:x))} className={`ml-1 px-2 py-1 rounded-md text-[10px] font-bold ${w.desk_enabled!==false?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-red-100 text-red-700 hover:bg-red-200'}`} title={w.desk_enabled!==false?'Disable desk delivery':'Enable desk delivery'}>
-                        {w.desk_enabled!==false?'ON':'OFF'}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <input type="number" disabled={w.desk_enabled===false} className="input-field !w-24 !py-1.5 text-sm text-center disabled:opacity-40" value={w.desk_delivery_price||''} onChange={e=>updatePrice(w.id,'desk_delivery_price',e.target.value)} placeholder="0"/>
+                        <span className="text-[10px] text-gray-400">DA</span>
+                      </div>
+                      <button
+                        onClick={()=>setWilayas(wilayas.map(x=>x.id===w.id?{...x,desk_enabled:x.desk_enabled===false?true:false}:x))}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${w.desk_enabled!==false?'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100':'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+                        title={w.desk_enabled!==false?t('storePage.disableDesk','Disable desk delivery for this wilaya'):t('storePage.enableDesk','Enable desk delivery for this wilaya')}
+                      >
+                        {w.desk_enabled!==false?<ToggleRight size={13}/>:<ToggleLeft size={13}/>}
+                        {w.desk_enabled!==false?t('storePage.enabled','Enabled'):t('storePage.disabled','Disabled')}
                       </button>
                     </div>
                   </td>
