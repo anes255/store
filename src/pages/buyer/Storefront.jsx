@@ -848,18 +848,6 @@ export default function Storefront() {
         </div>
       </section>
 
-      {/* ============ SEARCH BAR ============ */}
-      <div className="max-w-4xl mx-auto px-4 -mt-5 relative z-10">
-        <div className="flex items-center bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="flex-1 relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input className="w-full pl-11 pr-4 py-3.5 text-sm focus:outline-none" placeholder={t('store.search')} value={search} onChange={e=>setSearch(e.target.value)}/>
-          </div>
-          <button className="px-5 py-3.5 text-xs font-extrabold uppercase tracking-wider text-gray-700 border-l border-gray-100 hover:bg-gray-50 transition-colors">{t('store.allCategories')}</button>
-          <button className="px-5 py-3.5 text-xs font-extrabold uppercase tracking-wider text-white" style={{backgroundColor:pc}}>{t('store.new')}</button>
-        </div>
-      </div>
-
       {/* ============ CATEGORY TABS ============ */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">

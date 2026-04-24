@@ -103,33 +103,44 @@ export default function StoreOrders() {
   const [deleteConfirm, setDeleteConfirm] = useState(null); // {ids:[]}
   // Quick action drawer: { type: string, order: {...} } — null when closed.
   const [quickAction, setQuickAction] = useState(null);
-  // Horizontal scroll container ref — used by the on-screen scroll buttons.
+  // Horizontal scroll container ref — users scroll by touch-drag / pointer-drag / trackpad / wheel.
   const hscrollRef = React.useRef(null);
-  const topScrollRef = React.useRef(null);
-  const [topScrollWidth, setTopScrollWidth] = React.useState(0);
-  const scrollTableBy = (dx) => { const el = hscrollRef.current; if (el) el.scrollBy({ left: dx, behavior: 'smooth' }); };
-  // Sync top ↔ bottom horizontal scrollbars.
-  const syncingRef = React.useRef(false);
-  const onTopScroll = (e) => { if (syncingRef.current) return; syncingRef.current = true; if (hscrollRef.current) hscrollRef.current.scrollLeft = e.currentTarget.scrollLeft; syncingRef.current = false; };
-  const onBottomScroll = (e) => { if (syncingRef.current) return; syncingRef.current = true; if (topScrollRef.current) topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft; syncingRef.current = false; };
-  // Measure the inner table width repeatedly so the top mirror scrollbar has correct width even after data/col changes.
-  const measureScroll = React.useCallback(() => {
-    const el = hscrollRef.current; if (!el) return;
-    const tbl = el.querySelector('table');
-    const w = Math.max(el.scrollWidth, tbl?.scrollWidth || 0, tbl?.offsetWidth || 0);
-    if (w && w !== topScrollWidth) setTopScrollWidth(w);
-  }, [topScrollWidth]);
+  // Pointer-drag to scroll: lets mouse users grab-and-pan the wide table like on touch.
   React.useEffect(() => {
-    measureScroll();
-    const t1 = setTimeout(measureScroll, 50);
-    const t2 = setTimeout(measureScroll, 250);
-    const t3 = setTimeout(measureScroll, 800);
-    const ro = new ResizeObserver(() => measureScroll());
-    const el = hscrollRef.current;
-    if (el) { ro.observe(el); const tbl = el.querySelector('table'); if (tbl) ro.observe(tbl); }
-    window.addEventListener('resize', measureScroll);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); ro.disconnect(); window.removeEventListener('resize', measureScroll); };
-  });
+    const el = hscrollRef.current; if (!el) return;
+    let isDown = false, startX = 0, startLeft = 0, pointerId = null, moved = false;
+    const onDown = (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      // Don't hijack clicks on interactive controls — only start drag on empty space / cells.
+      const tgt = e.target;
+      if (tgt.closest && tgt.closest('button,a,input,select,textarea,[role="button"]')) return;
+      isDown = true; moved = false; pointerId = e.pointerId;
+      startX = e.clientX; startLeft = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+    };
+    const onMove = (e) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      el.scrollLeft = startLeft - dx;
+    };
+    const onUp = () => { isDown = false; el.style.cursor = ''; };
+    const onClickCapture = (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } };
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+    el.addEventListener('pointerleave', onUp);
+    el.addEventListener('click', onClickCapture, true);
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      el.removeEventListener('pointerleave', onUp);
+      el.removeEventListener('click', onClickCapture, true);
+    };
+  }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v3') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
@@ -139,6 +150,13 @@ export default function StoreOrders() {
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');
   useEffect(() => { localStorage.setItem('orders.viewMode', viewMode); }, [viewMode]);
+  // Row density — admin-controlled box size. 'compact' | 'normal' | 'large'
+  const [density, setDensity] = useState(() => localStorage.getItem('orders.density') || 'normal');
+  useEffect(() => { localStorage.setItem('orders.density', density); }, [density]);
+  // Admin column width / font-size multiplier.
+  const [colScale, setColScale] = useState(() => parseFloat(localStorage.getItem('orders.colScale') || '1'));
+  useEffect(() => { localStorage.setItem('orders.colScale', String(colScale)); }, [colScale]);
+  const densityRowCls = density === 'compact' ? 'orders-row-compact' : density === 'large' ? 'orders-row-large' : 'orders-row-normal';
 
   const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   const moveColumn = (key, dir) => setActiveColumns(prev => {
@@ -506,6 +524,19 @@ export default function StoreOrders() {
           <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <BarChart3 size={13}/>Admin Stats
           </button>
+          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Order row size">
+            {[['compact','S'],['normal','M'],['large','L']].map(([k,lbl]) => (
+              <button key={k} onClick={() => setDensity(k)}
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold uppercase ${density===k?'bg-gray-900 text-white':'text-gray-600 hover:bg-white'}`}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Column width">
+            <button onClick={() => setColScale(Math.max(0.75, +(colScale-0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">−</button>
+            <span className="px-1 text-[10px] font-bold text-gray-500 tabular-nums">{Math.round(colScale*100)}%</span>
+            <button onClick={() => setColScale(Math.min(1.5, +(colScale+0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">+</button>
+          </div>
           <div className="relative">
             <button onClick={() => setColumnPickerOpen(v => !v)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-[11px] font-bold text-yellow-700 uppercase tracking-wider">
               <Columns size={13}/>Columns<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500 text-white">{activeColumns.length}</span>
@@ -563,55 +594,20 @@ export default function StoreOrders() {
           </div>
         ) : (
           <div className="relative">
-          {/* Floating scroll buttons — always visible so you can pan the wide table on PC. */}
-          <button type="button" aria-label="Scroll left" onClick={() => scrollTableBy(-400)}
-            className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-gray-900/85 hover:bg-gray-900 text-white items-center justify-center shadow-xl ring-2 ring-white/40">
-            <ChevronLeft size={18}/>
-          </button>
-          <button type="button" aria-label="Scroll right" onClick={() => scrollTableBy(400)}
-            className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-gray-900/85 hover:bg-gray-900 text-white items-center justify-center shadow-xl ring-2 ring-white/40">
-            <ChevronRight size={18}/>
-          </button>
-          {/* Mobile fallback — inline pair below the table. */}
-          <div className="md:hidden flex items-center justify-between gap-2 px-3 pt-2">
-            <button type="button" onClick={() => scrollTableBy(-300)} className="flex-1 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1"><ChevronLeft size={14}/>Scroll Left</button>
-            <button type="button" onClick={() => scrollTableBy(300)} className="flex-1 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1">Scroll Right<ChevronRight size={14}/></button>
-          </div>
-          {/* Mirrored top scrollbar — lets you scroll the wide table from the top too. */}
-          <div
-            ref={topScrollRef}
-            onScroll={onTopScroll}
-            className="orders-hscroll-top"
-            style={{
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              width: '100%',
-              maxWidth: '100%',
-              height: 18,
-              background: '#f3f4f6',
-              borderRadius: 6,
-              marginBottom: 4,
-              scrollbarWidth: 'auto',
-              scrollbarColor: '#6b7280 #e5e7eb',
-            }}
-          >
-            <div style={{ width: Math.max(topScrollWidth, (activeColumns.length + 1) * 160, 1600), height: 1 }} />
-          </div>
           <div
             ref={hscrollRef}
-            onScroll={onBottomScroll}
-            className="orders-hscroll scroll-smooth"
+            className={`orders-hscroll orders-hscroll-clean ${densityRowCls}`}
             style={{
-              overflowX: 'scroll',
+              overflowX: 'auto',
               overflowY: 'hidden',
               WebkitOverflowScrolling: 'touch',
               touchAction: 'pan-x pan-y',
               width: '100%',
               maxWidth: '100%',
               display: 'block',
-              scrollbarWidth: 'auto',
-              scrollbarColor: '#9ca3af #f3f4f6',
               overscrollBehaviorX: 'contain',
+              cursor: 'grab',
+              fontSize: `${colScale}em`,
             }}
             onWheel={(e) => {
               if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
@@ -623,7 +619,7 @@ export default function StoreOrders() {
               }
             }}
           >
-            <table className="" style={{ width: 'auto', minWidth: `${Math.max(1600, (activeColumns.length + 1) * 160)}px`, tableLayout: 'auto', whiteSpace: 'nowrap' }}>
+            <table className="" style={{ width: 'auto', minWidth: `${Math.max(1600, (activeColumns.length + 1) * 160 * colScale)}px`, tableLayout: 'auto', whiteSpace: 'nowrap' }}>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
                   <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>

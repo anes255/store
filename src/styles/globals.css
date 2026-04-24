@@ -160,9 +160,16 @@ html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{ba
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
 
-/* Persistent horizontal scrollbar for the Orders table on all viewports */
-.orders-hscroll{overflow-x:auto !important;overflow-y:hidden;}
-.orders-hscroll::-webkit-scrollbar{height:12px;background:#f3f4f6;}
-.orders-hscroll::-webkit-scrollbar-thumb{background:#9ca3af;border-radius:8px;border:2px solid #f3f4f6;}
-.orders-hscroll::-webkit-scrollbar-thumb:hover{background:#6b7280;}
-.orders-hscroll::-webkit-scrollbar-track{background:#f3f4f6;border-radius:8px;}
+/* Orders horizontal scroll — natural touch/pointer pan, no visible scrollbar. */
+.orders-hscroll{overflow-x:auto !important;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
+.orders-hscroll::-webkit-scrollbar{display:none;height:0;width:0;}
+.orders-hscroll-clean{-ms-overflow-style:none;}
+.orders-hscroll-clean *{user-select:none;}
+.orders-hscroll-clean:active{cursor:grabbing !important;}
+
+/* Row density — admin-controlled order box size. */
+.orders-row-compact td,.orders-row-compact th{padding-top:.35rem !important;padding-bottom:.35rem !important;}
+.orders-row-compact td{font-size:.78em;}
+.orders-row-normal td,.orders-row-normal th{padding-top:.75rem;padding-bottom:.75rem;}
+.orders-row-large td,.orders-row-large th{padding-top:1.1rem !important;padding-bottom:1.1rem !important;}
+.orders-row-large td{font-size:1.05em;}

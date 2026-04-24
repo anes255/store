@@ -489,10 +489,19 @@ export default function CustomerProfile() {
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.phoneNumber', 'Phone Number')}</label>
-                        <p className="text-white text-xl font-medium flex items-center gap-2" style={{ fontFamily: "Arial, sans-serif" }}>
-                          <Phone size={14} className="text-gray-500 shrink-0" />
-                          {profile.phone || '-'}
-                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-white text-xl font-medium flex items-center gap-2" style={{ fontFamily: "Arial, sans-serif" }}>
+                            <Phone size={14} className="text-gray-500 shrink-0" />
+                            {profile.phone || '-'}
+                          </p>
+                          <button
+                            onClick={() => setEditing(true)}
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
+                            style={{ color: pc }}
+                          >
+                            {t('store.changePhone', 'Change Phone')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     {(profile.address || profile.city || profile.wilaya) && (
