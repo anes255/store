@@ -7,8 +7,34 @@ const WA_STATUSES=['new_order','confirmed','under_preparation','shipped','delive
 const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirmé',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En préparation',ar:'قيد التحضير'},shipped:{en:'Shipped',fr:'Expédié',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livré',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annulé',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Failed Call 1',fr:'Appel échoué 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Failed Call 2',fr:'Appel échoué 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Failed Call 3',fr:'Appel échoué 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourné',ar:'مرتجع'}};
 const WA_TIMING_OPTIONS=[{v:'immediately',en:'Immediately',fr:'Immédiatement',ar:'فورا'},{v:'5min',en:'After 5 min',fr:'Après 5 min',ar:'بعد 5 دقائق'},{v:'15min',en:'After 15 min',fr:'Après 15 min',ar:'بعد 15 دقيقة'},{v:'30min',en:'After 30 min',fr:'Après 30 min',ar:'بعد 30 دقيقة'},{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'2hours',en:'After 2 hours',fr:'Après 2 heures',ar:'بعد ساعتين'}];
 const WA_CART_TIMING=[{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'3hours',en:'After 3 hours',fr:'Après 3 heures',ar:'بعد 3 ساعات'},{v:'6hours',en:'After 6 hours',fr:'Après 6 heures',ar:'بعد 6 ساعات'},{v:'12hours',en:'After 12 hours',fr:'Après 12 heures',ar:'بعد 12 ساعة'},{v:'24hours',en:'After 24 hours',fr:'Après 24 heures',ar:'بعد 24 ساعة'}];
-const WA_VARS=['{store_name}','{order_number}','{customer_name}','{total}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{payment_method}','{tracking_number}','{delivery_company}'];
-const WA_CART_VARS=['{store_name}','{cart_url}','{item_count}','{customer_name}'];
+const WA_VARS=['{store_name}','{order_number}','{customer_name}','{customer_phone}','{total}','{subtotal}','{shipping_cost}','{discount}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{shipping_zip}','{payment_method}','{tracking_number}','{delivery_company}','{order_date}','{order_time}','{item_count}','{product_list}','{store_phone}','{store_email}'];
+const WA_CART_VARS=['{store_name}','{cart_url}','{item_count}','{customer_name}','{customer_phone}','{total}','{currency}','{product_list}'];
+// Translatable labels for each variable — shown as tooltip + replaces the raw placeholder name in UI
+const WA_VAR_LABELS={
+  '{store_name}':{en:'Store name',fr:'Nom du magasin',ar:'اسم المتجر'},
+  '{order_number}':{en:'Order number',fr:'N° de commande',ar:'رقم الطلب'},
+  '{customer_name}':{en:'Customer name',fr:'Nom du client',ar:'اسم العميل'},
+  '{customer_phone}':{en:'Customer phone',fr:'Téléphone client',ar:'هاتف العميل'},
+  '{total}':{en:'Total amount',fr:'Montant total',ar:'المبلغ الإجمالي'},
+  '{subtotal}':{en:'Subtotal',fr:'Sous-total',ar:'المجموع الفرعي'},
+  '{shipping_cost}':{en:'Shipping cost',fr:'Frais de livraison',ar:'تكلفة التوصيل'},
+  '{discount}':{en:'Discount',fr:'Remise',ar:'الخصم'},
+  '{currency}':{en:'Currency',fr:'Devise',ar:'العملة'},
+  '{shipping_address}':{en:'Address',fr:'Adresse',ar:'العنوان'},
+  '{shipping_city}':{en:'City',fr:'Ville',ar:'المدينة'},
+  '{shipping_wilaya}':{en:'Wilaya',fr:'Wilaya',ar:'الولاية'},
+  '{shipping_zip}':{en:'ZIP code',fr:'Code postal',ar:'الرمز البريدي'},
+  '{payment_method}':{en:'Payment method',fr:'Mode de paiement',ar:'طريقة الدفع'},
+  '{tracking_number}':{en:'Tracking number',fr:'N° de suivi',ar:'رقم التتبع'},
+  '{delivery_company}':{en:'Delivery company',fr:'Transporteur',ar:'شركة التوصيل'},
+  '{order_date}':{en:'Order date',fr:'Date de commande',ar:'تاريخ الطلب'},
+  '{order_time}':{en:'Order time',fr:'Heure de commande',ar:'وقت الطلب'},
+  '{item_count}':{en:'Item count',fr:'Nombre d\'articles',ar:'عدد القطع'},
+  '{product_list}':{en:'Product list',fr:'Liste des produits',ar:'قائمة المنتجات'},
+  '{store_phone}':{en:'Store phone',fr:'Téléphone du magasin',ar:'هاتف المتجر'},
+  '{store_email}':{en:'Store email',fr:'Email du magasin',ar:'بريد المتجر'},
+  '{cart_url}':{en:'Cart URL',fr:'Lien du panier',ar:'رابط السلة'}
+};
 const WA_DEFAULT_TEMPLATES={
   en:{new_order:'Hi {customer_name}! We received your order #{order_number} at {store_name}. Total: {total} {currency}. We will process it shortly!',confirmed:'Hi {customer_name}! Your order #{order_number} from {store_name} has been confirmed. Total: {total} {currency}. We\'ll keep you updated!',under_preparation:'Hello {customer_name}! Your order #{order_number} is now being prepared at {store_name}. We\'ll notify you once it ships!',shipped:'Great news {customer_name}! Your order #{order_number} has been shipped. Track: {tracking_number}. Delivery by {delivery_company}.',delivered:'Your order #{order_number} has been delivered! Thank you for shopping at {store_name}!',cancelled:'Hi {customer_name}, your order #{order_number} from {store_name} has been cancelled. If this was a mistake, please contact us.',awaiting:'Hi {customer_name}, your order #{order_number} is awaiting confirmation. We will get back to you soon!',failed_call_1:'Hi {customer_name}, we tried to reach you about order #{order_number}. Please call us back at your convenience.',failed_call_2:'Hello {customer_name}, this is our second attempt to reach you about order #{order_number}. Please respond as soon as possible.',failed_call_3:'Dear {customer_name}, we have been unable to reach you about order #{order_number}. Your order may be cancelled if we don\'t hear from you.',returned:'Hi {customer_name}, your order #{order_number} has been returned. Please contact {store_name} for more details.',abandoned_cart:'Hi {customer_name}! You left {item_count} item(s) in your cart at {store_name}. Complete your order here: {cart_url}'},
   fr:{new_order:'Bonjour {customer_name}! Nous avons reçu votre commande #{order_number} chez {store_name}. Total: {total} {currency}.',confirmed:'Bonjour {customer_name}! Votre commande #{order_number} de {store_name} est confirmée. Total: {total} {currency}.',under_preparation:'Bonjour {customer_name}! Votre commande #{order_number} est en cours de préparation chez {store_name}.',shipped:'Bonne nouvelle {customer_name}! Votre commande #{order_number} a été expédiée. Suivi: {tracking_number}. Livraison par {delivery_company}.',delivered:'Votre commande #{order_number} a été livrée! Merci d\'avoir choisi {store_name}!',cancelled:'Bonjour {customer_name}, votre commande #{order_number} de {store_name} a été annulée. Si c\'est une erreur, contactez-nous.',awaiting:'Bonjour {customer_name}, votre commande #{order_number} est en attente de confirmation.',failed_call_1:'Bonjour {customer_name}, nous avons essayé de vous joindre concernant la commande #{order_number}. Veuillez nous rappeler.',failed_call_2:'Bonjour {customer_name}, ceci est notre deuxième tentative pour la commande #{order_number}. Merci de nous répondre.',failed_call_3:'Cher {customer_name}, nous n\'arrivons pas à vous joindre pour la commande #{order_number}. Elle risque d\'être annulée.',returned:'Bonjour {customer_name}, votre commande #{order_number} a été retournée. Contactez {store_name} pour plus de détails.',abandoned_cart:'Bonjour {customer_name}! Vous avez laissé {item_count} article(s) dans votre panier chez {store_name}. Complétez ici: {cart_url}'},
@@ -43,7 +69,56 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
 
   const insertVar=(v)=>{const ta=msgRef.current;if(!ta)return;const start=ta.selectionStart;const end=ta.selectionEnd;const cur=getTpl(activeStatus);const nv=cur.substring(0,start)+v+cur.substring(end);setTpl(activeStatus,nv);setTimeout(()=>{ta.focus();ta.selectionStart=ta.selectionEnd=start+v.length;},50);};
 
-  const preview=(tpl)=>{let m=tpl||'';m=m.replace(/\{store_name\}/g,cfg.name||cfg.store_name||'My Store');m=m.replace(/\{order_number\}/g,'100254');m=m.replace(/\{customer_name\}/g,'Ahmed');m=m.replace(/\{total\}/g,'3,500');m=m.replace(/\{currency\}/g,cfg.currency||'DZD');m=m.replace(/\{shipping_address\}/g,'12 Rue Didouche');m=m.replace(/\{shipping_city\}/g,'Alger');m=m.replace(/\{shipping_wilaya\}/g,'Alger');m=m.replace(/\{payment_method\}/g,'COD');m=m.replace(/\{tracking_number\}/g,'TR-98421');m=m.replace(/\{delivery_company\}/g,'Yalidine');m=m.replace(/\{cart_url\}/g,'https://store.com/cart/abc');m=m.replace(/\{item_count\}/g,'3');return m;};
+  const preview=(tpl)=>{let m=tpl||'';const now=new Date();
+    m=m.replace(/\{store_name\}/g,cfg.name||cfg.store_name||'My Store');
+    m=m.replace(/\{order_number\}/g,'100254');
+    m=m.replace(/\{customer_name\}/g,'Ahmed');
+    m=m.replace(/\{customer_phone\}/g,'+213 555 12 34 56');
+    m=m.replace(/\{total\}/g,'3,500');
+    m=m.replace(/\{subtotal\}/g,'3,200');
+    m=m.replace(/\{shipping_cost\}/g,'300');
+    m=m.replace(/\{discount\}/g,'0');
+    m=m.replace(/\{currency\}/g,cfg.currency||'DZD');
+    m=m.replace(/\{shipping_address\}/g,'12 Rue Didouche');
+    m=m.replace(/\{shipping_city\}/g,'Alger');
+    m=m.replace(/\{shipping_wilaya\}/g,'Alger');
+    m=m.replace(/\{shipping_zip\}/g,'16000');
+    m=m.replace(/\{payment_method\}/g,'COD');
+    m=m.replace(/\{tracking_number\}/g,'TR-98421');
+    m=m.replace(/\{delivery_company\}/g,'Yalidine');
+    m=m.replace(/\{cart_url\}/g,'https://store.com/cart/abc');
+    m=m.replace(/\{item_count\}/g,'3');
+    m=m.replace(/\{order_date\}/g,now.toLocaleDateString(lang==='ar'?'ar-DZ':lang==='fr'?'fr-DZ':'en-GB'));
+    m=m.replace(/\{order_time\}/g,now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+    m=m.replace(/\{product_list\}/g,lang==='ar'?'• حذاء رياضي × 1\n• قميص × 2':lang==='fr'?'• Baskets × 1\n• Chemise × 2':'• Sneakers × 1\n• Shirt × 2');
+    m=m.replace(/\{store_phone\}/g,cfg.phone||cfg.store_phone||'+213 550 00 00 00');
+    m=m.replace(/\{store_email\}/g,cfg.email||cfg.store_email||'contact@store.com');
+    return m;};
+  // Send a real test WA message to a phone number the admin enters
+  const[testPhone,setTestPhone]=useState('');
+  const[testSending,setTestSending]=useState(false);
+  const sendTest=async()=>{
+    if(!storeId){alert('Save store first');return;}
+    const phone=(testPhone||'').trim();
+    if(!phone){alert('Enter a test phone number');return;}
+    if(!waStatus?.connected){alert('WhatsApp is not connected — scan the QR first.');return;}
+    setTestSending(true);
+    try{
+      const msg=preview(getTpl(activeStatus));
+      // Attempt known endpoints - backend may accept any of these shapes
+      let ok=false;
+      try{await aiApi.waSendTest?.(storeId,{phone,message:msg,language:lang});ok=true;}catch(e){/* try fallback */}
+      if(!ok){
+        try{
+          const{api}=await import('../../utils/api');
+          await api.post(`/ai/wa/${storeId}/send-test`,{phone,message:msg,language:lang});
+          ok=true;
+        }catch(e){throw e;}
+      }
+      alert('Test message sent to '+phone+' !');
+    }catch(e){alert('Test failed: '+(e?.response?.data?.error||e.message||'unknown'));}
+    setTestSending(false);
+  };
 
   const startConnection=async()=>{if(!storeId)return;setWaLoading(true);setWaError(null);try{const{data}=await aiApi.waQrStart(storeId);if(data.qr||data.connected){setWaStatus(data);setWaLoading(false);return;}for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,2000));try{const{data:st}=await aiApi.waQrStatus(storeId);setWaStatus(st);if(st.qr||st.connected){setWaLoading(false);return;}}catch{}}setWaError('QR is taking a while. Try again.');}catch(e){setWaError(e.response?.data?.error||e.message);}setWaLoading(false);};
   const disconnect=async()=>{if(!storeId)return;try{await aiApi.waQrDisconnect(storeId);setWaStatus({status:'disconnected',connected:false});}catch{}};
@@ -112,15 +187,27 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
                 <div className={`w-10 rounded-full cursor-pointer ${getEnabled(activeStatus)?'bg-emerald-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setEnabled(activeStatus,!getEnabled(activeStatus))}><div className={`absolute bg-white rounded-full shadow transition-transform ${getEnabled(activeStatus)?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div>
               </div>
             </div>
-            <div><p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>Insert Variable</p><div className="flex flex-wrap gap-1">{WA_VARS.map(v=>(<button key={v} onClick={()=>insertVar(v)} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{v}</button>))}</div></div>
-            <div><textarea ref={msgRef} className={`w-full ${inp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all`} rows={4} value={getTpl(activeStatus)} onChange={e=>setTpl(activeStatus,e.target.value)} placeholder="Type your message template..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!getEnabled(activeStatus)}/><div className="flex items-center justify-between mt-1"><p className={`text-[10px] ${t3}`}>{getTpl(activeStatus).length} characters</p><button onClick={()=>setTpl(activeStatus,WA_DEFAULT_TEMPLATES[lang]?.[activeStatus]||'')} className="text-[10px] text-emerald-600 font-bold hover:underline">Reset to default</button></div></div>
+            <div><p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang==='ar'?'إدراج متغير':lang==='fr'?'Insérer une variable':'Insert Variable'}</p><div className="flex flex-wrap gap-1">{WA_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;return(<button key={v} onClick={()=>insertVar(v)} title={v+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{lbl}</button>);})}</div></div>
+            <div><textarea ref={msgRef} className={`w-full ${inp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all`} rows={4} value={getTpl(activeStatus)} onChange={e=>setTpl(activeStatus,e.target.value)} placeholder="Type your message template..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!getEnabled(activeStatus)}/><div className="flex items-center justify-between mt-1"><p className={`text-[10px] ${t3}`}>{getTpl(activeStatus).length} characters</p><button onClick={()=>setTpl(activeStatus,WA_DEFAULT_TEMPLATES[lang]?.[activeStatus]||'')} className="text-[10px] text-emerald-600 font-bold hover:underline">{lang==='ar'?'إعادة تعيين للافتراضي':lang==='fr'?'Réinitialiser':'Reset to default'}</button></div></div>
+            {/* Test Message */}
+            <div className={`${dk?'bg-emerald-900/20 border border-emerald-500/30':'bg-emerald-50 border border-emerald-200'} rounded-xl p-3 mt-2`}>
+              <p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>{lang==='ar'?'إرسال رسالة تجريبية':lang==='fr'?'Envoyer un message test':'Send Test Message'}</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input className={`flex-1 ${inp} border rounded-lg px-3 py-2 text-sm font-mono`} value={testPhone} onChange={e=>setTestPhone(e.target.value)} placeholder={lang==='ar'?'+213 5XX XX XX XX':lang==='fr'?'Téléphone de test (+213...)':'Test phone (+213...)'}/>
+                <button onClick={sendTest} disabled={testSending||!waStatus?.connected} className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap">
+                  {testSending?<div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Send size={12}/>}
+                  {testSending?(lang==='ar'?'جارٍ الإرسال...':lang==='fr'?'Envoi...':'Sending...'):(lang==='ar'?'إرسال اختبار':lang==='fr'?'Envoyer test':'Send Test')}
+                </button>
+              </div>
+              <p className={`text-[10px] ${t3} mt-1.5`}>{lang==='ar'?`سيتم الإرسال بلغتك المختارة: ${lang.toUpperCase()} واستخدام قالب ${WA_STATUS_LABELS[activeStatus]?.ar}`:lang==='fr'?`Envoyé dans votre langue (${lang.toUpperCase()}) avec le template "${WA_STATUS_LABELS[activeStatus]?.fr}"`:`Will send in ${lang.toUpperCase()} using the "${WA_STATUS_LABELS[activeStatus]?.en}" template.`}</p>
+            </div>
           </div>
           {/* All Statuses Overview */}
           <div><p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>All Status Overview</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">{WA_STATUSES.map(st=>(<div key={st} onClick={()=>setActiveStatus(st)} className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${activeStatus===st?(dk?'border-emerald-400 bg-emerald-900/20':'border-emerald-400 bg-emerald-50'):card+' hover:border-gray-300'}`}><div className="flex items-center gap-2 min-w-0"><div className={`w-2 h-2 rounded-full shrink-0 ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'}`}/><span className={`text-xs font-medium ${t2} truncate`}>{WA_STATUS_LABELS[st]?.[lang]||st}</span></div><div className="flex items-center gap-1.5 shrink-0"><span className={`text-[9px] ${t3} font-medium`}>{WA_TIMING_OPTIONS.find(o=>o.v===getTiming(st))?.[lang]||'Immediately'}</span><div className={`w-7 h-4 rounded-full ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'} relative`} onClick={e=>{e.stopPropagation();setEnabled(st,!getEnabled(st));}}><div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform ${getEnabled(st)?'translate-x-3.5':'translate-x-0.5'}`} style={{top:2}}/></div></div></div>))}</div></div>
           {/* Abandoned Cart */}
           <div className={`${cartBg} rounded-xl p-4 space-y-3`}>
             <div className="flex items-center justify-between"><div className="flex items-center gap-2"><ShoppingCart size={16} className="text-purple-600"/><h4 className={`font-bold text-sm ${t1}`}>Abandoned Cart Recovery</h4></div><div className="flex items-center gap-3"><div className="flex items-center gap-1.5"><Clock size={14} className={t3}/><select className={`text-xs ${inp} border rounded-lg px-2 py-1.5 font-medium`} value={cfg.wa_abandoned_cart_timing||'3hours'} onChange={e=>setV('wa_abandoned_cart_timing',e.target.value)}>{WA_CART_TIMING.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div><div className={`w-10 rounded-full cursor-pointer ${cfg.wa_abandoned_cart_enabled?'bg-purple-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setV('wa_abandoned_cart_enabled',!cfg.wa_abandoned_cart_enabled)}><div className={`absolute bg-white rounded-full shadow transition-transform ${cfg.wa_abandoned_cart_enabled?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div></div></div>
-            <div className="flex flex-wrap gap-1">{WA_CART_VARS.map(v=>(<button key={v} onClick={()=>{const cur=cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${cartVar}`}>{v}</button>))}</div>
+            <div className="flex flex-wrap gap-1">{WA_CART_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;return(<button key={v} onClick={()=>{const cur=cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} title={v+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${cartVar}`}>{lbl}</button>);})}</div>
             <textarea className={`w-full ${cartInp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none transition-all`} rows={3} value={cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||''} onChange={e=>setV('wa_abandoned_cart_msg',e.target.value)} placeholder="Abandoned cart message..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!cfg.wa_abandoned_cart_enabled}/>
           </div>
         </div>

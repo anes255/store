@@ -58,11 +58,11 @@ function CreateStoreModal({ open, onClose, onCreate }) {
           <div>
             <label className="input-label">{t('storePage.storeUrlLabel', 'Store URL *')}</label>
             <div className="flex items-center bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-              <span className="px-3 text-sm text-gray-400 shrink-0">kyomarket.com/</span>
+              <span className="px-3 text-sm text-gray-400 shrink-0">marketdz.shop/</span>
               <input className="flex-1 px-2 py-3 bg-transparent text-sm font-bold text-brand-600 focus:outline-none" value={slug} onChange={e => handleSlugChange(e.target.value)} placeholder={t('storePage.storeUrlPlaceholder', 'my-store')} />
             </div>
             {slugError && <p className="text-xs text-red-500 mt-1">{slugError}</p>}
-            {slug && !slugError && <p className="text-xs text-emerald-500 mt-1">{t('storePage.storeWillBeAt', 'Your store will be at')} kyomarket.com/{slug}</p>}
+            {slug && !slugError && <p className="text-xs text-emerald-500 mt-1">{t('storePage.storeWillBeAt', 'Your store will be at')} marketdz.shop/{slug}</p>}
           </div>
           <div><label className="input-label">{t('storePage.description', 'Description')}</label><textarea className="input-field" rows={3} value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('storePage.descriptionPlaceholder', 'What does your store sell?')} /></div>
         </div>

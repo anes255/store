@@ -239,6 +239,7 @@ export const aiApi = {
   waQrStatus: (storeId) => api.get(`/ai/whatsapp-qr/status/${storeId}`),
   waQrDisconnect: (storeId) => api.post('/ai/whatsapp-qr/disconnect', { storeId }),
   waQrSend: (data) => api.post('/ai/whatsapp-qr/send', data),
+  waSendTest: (storeId, data) => api.post('/ai/whatsapp-qr/send', { storeId, phone:data.phone, message:data.message }),
   waQrLog: (storeId) => api.get(`/ai/whatsapp-qr/log/${storeId}`),
   waQrDebug: () => api.get('/ai/whatsapp-qr/debug'),
 };

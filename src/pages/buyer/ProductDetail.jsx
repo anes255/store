@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
-import { useCartStore, useLangStore, useAuthStore, useWishlistStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap } from 'lucide-react';
 import Checkout from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
+import ThemePanel from '../../components/shared/ThemePanel';
 
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
@@ -16,7 +17,9 @@ export default function ProductDetail() {
   const { lang } = useLangStore();
   const { token:authToken, role:authRole } = useAuthStore();
   const wishlistStore = useWishlistStore();
+  const buyerTheme = useBuyerTheme();
   useEffect(() => { wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
+  useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
   const [store, setStore] = useState(null);
   const [product, setProduct] = useState(null);
@@ -184,7 +187,7 @@ export default function ProductDetail() {
   const headerFont = tplStyle.fontFamily || 'Inter';
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className={`min-h-screen ${buyerTheme.mode==='dark'?'buyer-theme-dark bg-[#0b1020] text-gray-100':'bg-[#f5f5f5] text-gray-900'}`}>
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
@@ -204,6 +207,7 @@ export default function ProductDetail() {
           </form>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
+            <div className="hidden sm:block"><ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>

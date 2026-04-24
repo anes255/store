@@ -383,8 +383,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 {store?.checkout_email!==false && <div><label className="input-label">{t('auth.email')}{store?.checkout_email===true?' *':''}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required={store?.checkout_email===true}/></div>}
                 <div><label className="input-label">{t('auth.address')} *</label><input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
 
-                {/* Wilaya → City → ZIP */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Wilaya → City → ZIP (stacked vertically) */}
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="input-label">{t('auth.wilaya')} *</label>
                     <select className="input-field" value={form.shipping_wilaya} onChange={e => {

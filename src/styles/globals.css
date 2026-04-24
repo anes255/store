@@ -8,7 +8,9 @@ body{font-family:'DM Sans','Outfit',sans-serif;background:#FAFAFA;color:#1F2937;
    inside its own scroll container instead of breaking the page layout. */
 @media (max-width: 1023px){
   .scroll-x-mobile{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  /* Orders table is wrapped in its own scroller — don't force display:block here, it breaks the sticky column and minWidth. */
+  table:not(.orders-hscroll table):not(.no-mobile-block){display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .orders-hscroll table{display:table !important;}
   /* Any element explicitly marked wide can be horizontally swiped */
   .mobile-swipe{overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;}
   /* Avoid headings/images forcing layout wider than viewport */

@@ -20,11 +20,11 @@ export default function LandingPage() {
     { icon: Smartphone, title: t('landing.f7Title','Mobile Optimized'), desc: t('landing.f7Desc','Every store is perfectly responsive on all devices.') },
     { icon: Shield, title: t('landing.f8Title','Secure & Reliable'), desc: t('landing.f8Desc','SSL encryption, DDoS protection, and 99.9% uptime.') },
   ];
-  // Brand name is hard-locked to "KyoMarket" — never overridden by the API
-  // even if the platform_settings table still says "MultiStorePlatform".
-  const BRAND='KyoMarket';
+  // Brand name now comes from super-admin platform identity (platform_settings.site_name).
+  // Fallback to "KyoMarket" only until the API response arrives.
+  const FALLBACK_BRAND='KyoMarket';
   const cachedInfo = (() => { try { const c = JSON.parse(localStorage.getItem('platform_info_cache') || 'null'); return c && typeof c === 'object' ? c : null; } catch { return null; } })();
-  const [info, setInfo] = useState(cachedInfo ? { ...cachedInfo, site_name: BRAND } : { site_name: BRAND });
+  const [info, setInfo] = useState(cachedInfo || { site_name: FALLBACK_BRAND });
   const [infoLoaded, setInfoLoaded] = useState(!!cachedInfo);
   const [blocks, setBlocks] = useState([]);
   const [hasCustom, setHasCustom] = useState(false);
@@ -37,12 +37,13 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    document.title=BRAND;
+    document.title=info.site_name||FALLBACK_BRAND;
     getPlatformInfo().then(r => {
-      // Force the brand name regardless of what the API returns.
-      setInfo({ ...r.data, site_name: BRAND });
-      try { localStorage.setItem('platform_info_cache', JSON.stringify(r.data)); } catch {}
-      document.title=BRAND;
+      // Use the super-admin's configured site name (platform identity). Fallback if empty.
+      const resolvedName = (r.data && (r.data.site_name||r.data.siteName||r.data.name)) || FALLBACK_BRAND;
+      setInfo({ ...r.data, site_name: resolvedName });
+      try { localStorage.setItem('platform_info_cache', JSON.stringify({ ...r.data, site_name: resolvedName })); } catch {}
+      document.title=resolvedName;
       if(r.data.favicon){
         let link=document.querySelector("link[rel~='icon']");
         if(!link){link=document.createElement('link');link.rel='icon';document.head.appendChild(link);}

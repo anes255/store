@@ -50,13 +50,6 @@ function NotifBell(){
   const{currentStore}=useStoreManagement();
   const navigate=useNavigate();
   const wrapRef=React.useRef(null);
-  // Close popup when clicking outside the bell wrapper
-  React.useEffect(()=>{
-    if(!open)return;
-    const onDown=(e)=>{if(wrapRef.current&&!wrapRef.current.contains(e.target))setOpen(false);};
-    document.addEventListener('mousedown',onDown);
-    return()=>document.removeEventListener('mousedown',onDown);
-  },[open]);
   // Map a notification to its destination + highlight target id
   const routeFor=(n)=>{
     const t=n.type,r=n.ref_id||n.order_id||n.product_id||n.customer_id;
@@ -121,7 +114,7 @@ function NotifBell(){
   return(<div ref={wrapRef} className="relative flex items-center gap-1">
     {!pushOk&&<button onClick={enablePush} className="px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔 Enable</button>}
     <button onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
-    {open&&<div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+    {open&&<><div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/><div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
       <div className="max-h-72 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,20).map(n=>(
         <div key={n.id} onClick={()=>openNotif(n)} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${!n.is_read?'bg-brand-50/30':''}`}>
@@ -129,7 +122,7 @@ function NotifBell(){
         </div>
       ))}</div>
       <button onClick={()=>setOpen(false)} className="w-full p-3 text-center text-xs text-gray-400 hover:bg-gray-50 border-t">Close</button>
-    </div>}
+    </div></>}
   </div>);
 }
 
