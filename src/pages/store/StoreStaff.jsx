@@ -272,15 +272,19 @@ export default function StoreStaff() {
             const Icon = role.icon;
             const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : role.permissions;
             return (
-              <div key={s.id} className={`glass-card-solid p-6 relative ${!s.is_active ? 'opacity-50' : ''}`}>
+              <div key={s.id} className={`glass-card-solid p-6 pb-16 relative ${!s.is_active ? 'opacity-50' : ''}`}>
                 {/* Actions */}
                 <div className="absolute top-3 right-3 flex gap-1">
                   <button onClick={() => handleToggleActive(s)} className="p-1.5 hover:bg-gray-100 rounded-lg" title={s.is_active ? t('storePage.deactivate','Deactivate') : t('storePage.activate','Activate')}>
                     {s.is_active ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} className="text-gray-400" />}
                   </button>
-                  <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-gray-100 rounded-lg"><Edit size={14} className="text-gray-400" /></button>
-                  <button onClick={() => handleDelete(s.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={14} className="text-red-400" /></button>
+                  <button onClick={() => handleDelete(s.id)} className="p-1.5 hover:bg-red-50 rounded-lg" title={t('storePage.remove','Remove')}><Trash2 size={14} className="text-red-400" /></button>
                 </div>
+                {/* Prominent Edit button so the store admin can change the
+                    team member's name / email / phone / password at any time. */}
+                <button onClick={() => openEdit(s)} className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold shadow-md transition-colors">
+                  <Edit size={12}/>{t('storePage.edit','Edit')}
+                </button>
 
                 <div className="text-center mb-4">
                   <div className="w-14 h-14 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-2">

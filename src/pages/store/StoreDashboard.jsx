@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api, { ownerApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
@@ -80,6 +80,7 @@ function CreateStoreModal({ open, onClose, onCreate }) {
 export default function StoreDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuthStore();
   const { currentStore, setCurrentStore, stores, setStores } = useStoreManagement();
   const [dashboard, setDashboard] = useState(null);
@@ -96,17 +97,17 @@ export default function StoreDashboard() {
       } catch {} finally { setLoading(false); }
     };
     loadStores();
-    // The "+ New store" button in the header routes here with ?new_store=1;
-    // pop the create modal automatically when that flag is set.
-    try {
-      const qs = new URLSearchParams(window.location.search);
-      if (qs.get('new_store') === '1') {
-        setShowCreateModal(true);
-        // Strip the flag so a refresh won't reopen it.
-        window.history.replaceState({}, '', '/dashboard');
-      }
-    } catch {}
   }, []);
+
+  // Re-evaluate ?new_store=1 every time the URL changes so the header button
+  // opens the create modal even when we're already on /dashboard.
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('new_store') === '1') {
+      setShowCreateModal(true);
+      navigate('/dashboard', { replace: true });
+    }
+  }, [location.search]); // eslint-disable-line
 
   useEffect(() => {
     if (currentStore?.id) {
