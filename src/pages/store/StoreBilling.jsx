@@ -280,65 +280,56 @@ export default function StoreBilling() {
       {allPlans.length === 0
         ? <p className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">{t('storePage.noPlansYet', 'No plans published yet.')}</p>
         : (() => {
-            // Union of all features across plans (for horizontal layout rows)
+            // Plans become rows; features + limits become columns.
             const allFeatSet = new Set();
             allPlans.forEach(p => localizedFeatures(p).forEach(f => allFeatSet.add(f)));
             const allFeatures = Array.from(allFeatSet);
             return (
               <div className="overflow-x-auto -mx-2 px-2">
-                <table className="w-full text-sm border-separate border-spacing-0" style={{minWidth: `${Math.max(640, 260 + allPlans.length * 180)}px`}}>
+                <table className="w-full text-sm border-separate border-spacing-0" style={{minWidth: `${Math.max(640, 260 + (5 + allFeatures.length) * 160)}px`}}>
                   <thead>
                     <tr>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 rounded-l-xl border-b-2 border-gray-200 dark:border-white/10 text-left text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black sticky left-0 z-10">{t('storePage.featureCol', 'Feature')}</th>
-                      {allPlans.map((p, idx) => {
-                        const name = localizedName(p);
-                        const tagline = localizedTagline(p);
-                        const isCurrent = data?.plan === p.slug && isActive;
-                        return (
-                          <th key={p.id || p.slug} className={`py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center font-black ${idx === allPlans.length - 1 ? 'rounded-r-xl' : ''} ${isCurrent ? 'bg-brand-50 dark:bg-brand-500/10' : ''}`}>
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="flex items-center gap-1 flex-wrap justify-center">
-                                <span className="text-base text-gray-900 dark:text-white normal-case">{name}</span>
-                                {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag', 'POPULAR')}</span>}
-                                {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag', 'CURRENT')}</span>}
-                              </div>
-                              {tagline && <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal normal-case">{tagline}</span>}
-                            </div>
-                          </th>
-                        );
-                      })}
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 rounded-l-xl border-b-2 border-gray-200 dark:border-white/10 text-left text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black sticky left-0 z-10">{t('storePage.planCol', 'Plan')}</th>
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.priceMonthly', 'Monthly')}</th>
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.priceYearly', 'Yearly')}</th>
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.maxProducts', 'Products')}</th>
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.maxOrders', 'Orders/mo')}</th>
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.maxStaff', 'Staff')}</th>
+                      {allFeatures.map((feat, i) => (
+                        <th key={'feath_'+i} className={`py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black ${i===allFeatures.length-1?'rounded-r-xl':''}`}>{feat}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td className="py-3 px-5 font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">{t('storePage.priceMonthly', 'Monthly')}</td>
-                      {allPlans.map(p => <td key={p.id+'_m'} className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">{t('storePage.priceYearly', 'Yearly')}</td>
-                      {allPlans.map(p => <td key={p.id+'_y'} className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">{t('storePage.maxProducts', 'Products')}</td>
-                      {allPlans.map(p => <td key={p.id+'_p'} className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_products || t('storePage.unlimited', '∞')}</td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">{t('storePage.maxOrders', 'Orders/mo')}</td>
-                      {allPlans.map(p => <td key={p.id+'_o'} className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_orders_month || t('storePage.unlimited', '∞')}</td>)}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-5 font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">{t('storePage.maxStaff', 'Staff')}</td>
-                      {allPlans.map(p => <td key={p.id+'_s'} className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_staff || t('storePage.unlimited', '∞')}</td>)}
-                    </tr>
-                    {allFeatures.map((feat, i) => (
-                      <tr key={'feat_'+i}>
-                        <td className="py-2.5 px-5 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">{feat}</td>
-                        {allPlans.map(p => {
-                          const has = localizedFeatures(p).includes(feat);
-                          return <td key={p.id+'_f'+i} className="py-2.5 px-5 text-center border-b border-gray-100 dark:border-white/10">{has ? <Check size={16} className="inline text-emerald-500"/> : <span className="text-gray-300 dark:text-gray-600">—</span>}</td>;
-                        })}
-                      </tr>
-                    ))}
+                    {allPlans.map(p => {
+                      const name = localizedName(p);
+                      const tagline = localizedTagline(p);
+                      const isCurrent = data?.plan === p.slug && isActive;
+                      const planFeats = localizedFeatures(p);
+                      return (
+                        <tr key={p.id || p.slug} className={isCurrent ? 'bg-brand-50/60 dark:bg-brand-500/10' : ''}>
+                          <td className="py-3 px-5 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="text-base font-black text-gray-900 dark:text-white normal-case">{name}</span>
+                                {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag', 'POPULAR')}</span>}
+                                {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag', 'CURRENT')}</span>}
+                              </div>
+                              {tagline && <span className="text-[10px] text-gray-500 dark:text-gray-400 normal-case">{tagline}</span>}
+                            </div>
+                          </td>
+                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></td>
+                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></td>
+                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_products || t('storePage.unlimited', '∞')}</td>
+                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_orders_month || t('storePage.unlimited', '∞')}</td>
+                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_staff || t('storePage.unlimited', '∞')}</td>
+                          {allFeatures.map((feat, i) => {
+                            const has = planFeats.includes(feat);
+                            return <td key={p.id+'_f'+i} className="py-2.5 px-5 text-center border-b border-gray-100 dark:border-white/10">{has ? <Check size={16} className="inline text-emerald-500"/> : <span className="text-gray-300 dark:text-gray-600">—</span>}</td>;
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

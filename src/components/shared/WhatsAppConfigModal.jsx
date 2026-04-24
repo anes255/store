@@ -7,7 +7,7 @@ const WA_STATUSES=['new_order','confirmed','under_preparation','shipped','delive
 const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirmé',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En préparation',ar:'قيد التحضير'},shipped:{en:'Shipped',fr:'Expédié',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livré',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annulé',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Failed Call 1',fr:'Appel échoué 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Failed Call 2',fr:'Appel échoué 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Failed Call 3',fr:'Appel échoué 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourné',ar:'مرتجع'}};
 const WA_TIMING_OPTIONS=[{v:'immediately',en:'Immediately',fr:'Immédiatement',ar:'فورا'},{v:'5min',en:'After 5 min',fr:'Après 5 min',ar:'بعد 5 دقائق'},{v:'15min',en:'After 15 min',fr:'Après 15 min',ar:'بعد 15 دقيقة'},{v:'30min',en:'After 30 min',fr:'Après 30 min',ar:'بعد 30 دقيقة'},{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'2hours',en:'After 2 hours',fr:'Après 2 heures',ar:'بعد ساعتين'}];
 const WA_CART_TIMING=[{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'3hours',en:'After 3 hours',fr:'Après 3 heures',ar:'بعد 3 ساعات'},{v:'6hours',en:'After 6 hours',fr:'Après 6 heures',ar:'بعد 6 ساعات'},{v:'12hours',en:'After 12 hours',fr:'Après 12 heures',ar:'بعد 12 ساعة'},{v:'24hours',en:'After 24 hours',fr:'Après 24 heures',ar:'بعد 24 ساعة'}];
-const WA_VARS=['{store_name}','{order_number}','{customer_name}','{customer_phone}','{total}','{subtotal}','{shipping_cost}','{discount}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{shipping_zip}','{payment_method}','{tracking_number}','{delivery_company}','{order_date}','{order_time}','{item_count}','{product_list}','{store_phone}','{store_email}'];
+const WA_VARS=['{store_name}','{order_number}','{customer_name}','{customer_phone}','{total}','{total_price}','{subtotal}','{shipping_cost}','{shipping_price}','{shipping_method}','{discount}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{shipping_zip}','{wilaya_fr}','{wilaya_ar}','{commune_fr}','{commune_ar}','{payment_method}','{tracking_number}','{tracking_link}','{tracking_URL}','{delivery_company}','{shipping_company}','{delivery_office_name}','{delivery_office_map}','{delivery_office_address}','{order_date}','{order_time}','{item_count}','{product_name}','{product_price}','{products_list}','{product_list}','{variant}','{quantity}','{store_phone}','{store_email}'];
 const WA_CART_VARS=['{store_name}','{cart_url}','{item_count}','{customer_name}','{customer_phone}','{total}','{currency}','{product_list}'];
 // Translatable labels for each variable — shown as tooltip + replaces the raw placeholder name in UI
 const WA_VAR_LABELS={
@@ -33,7 +33,25 @@ const WA_VAR_LABELS={
   '{product_list}':{en:'Product list',fr:'Liste des produits',ar:'قائمة المنتجات'},
   '{store_phone}':{en:'Store phone',fr:'Téléphone du magasin',ar:'هاتف المتجر'},
   '{store_email}':{en:'Store email',fr:'Email du magasin',ar:'بريد المتجر'},
-  '{cart_url}':{en:'Cart URL',fr:'Lien du panier',ar:'رابط السلة'}
+  '{cart_url}':{en:'Cart URL',fr:'Lien du panier',ar:'رابط السلة'},
+  '{total_price}':{en:'Total price',fr:'Prix total',ar:'السعر الإجمالي'},
+  '{shipping_price}':{en:'Shipping price',fr:'Prix de livraison',ar:'سعر التوصيل'},
+  '{shipping_method}':{en:'Shipping method',fr:'Mode de livraison',ar:'طريقة التوصيل'},
+  '{wilaya_fr}':{en:'Wilaya (FR)',fr:'Wilaya (FR)',ar:'الولاية (FR)'},
+  '{wilaya_ar}':{en:'Wilaya (AR)',fr:'Wilaya (AR)',ar:'الولاية (AR)'},
+  '{commune_fr}':{en:'Commune (FR)',fr:'Commune (FR)',ar:'البلدية (FR)'},
+  '{commune_ar}':{en:'Commune (AR)',fr:'Commune (AR)',ar:'البلدية (AR)'},
+  '{tracking_link}':{en:'Tracking link',fr:'Lien de suivi',ar:'رابط التتبع'},
+  '{tracking_URL}':{en:'Tracking URL',fr:'URL de suivi',ar:'رابط التتبع'},
+  '{shipping_company}':{en:'Shipping company',fr:'Société de livraison',ar:'شركة الشحن'},
+  '{delivery_office_name}':{en:'Delivery office name',fr:'Nom du bureau de livraison',ar:'اسم مكتب التسليم'},
+  '{delivery_office_map}':{en:'Delivery office map',fr:'Carte du bureau',ar:'خريطة مكتب التسليم'},
+  '{delivery_office_address}':{en:'Delivery office address',fr:'Adresse du bureau',ar:'عنوان مكتب التسليم'},
+  '{product_name}':{en:'Product name',fr:'Nom du produit',ar:'اسم المنتج'},
+  '{product_price}':{en:'Product price',fr:'Prix du produit',ar:'سعر المنتج'},
+  '{products_list}':{en:'Products list',fr:'Liste des produits',ar:'قائمة المنتجات'},
+  '{variant}':{en:'Variant',fr:'Variante',ar:'المتغير'},
+  '{quantity}':{en:'Quantity',fr:'Quantité',ar:'الكمية'}
 };
 const WA_DEFAULT_TEMPLATES={
   en:{new_order:'Hi {customer_name}! We received your order #{order_number} at {store_name}. Total: {total} {currency}. We will process it shortly!',confirmed:'Hi {customer_name}! Your order #{order_number} from {store_name} has been confirmed. Total: {total} {currency}. We\'ll keep you updated!',under_preparation:'Hello {customer_name}! Your order #{order_number} is now being prepared at {store_name}. We\'ll notify you once it ships!',shipped:'Great news {customer_name}! Your order #{order_number} has been shipped. Track: {tracking_number}. Delivery by {delivery_company}.',delivered:'Your order #{order_number} has been delivered! Thank you for shopping at {store_name}!',cancelled:'Hi {customer_name}, your order #{order_number} from {store_name} has been cancelled. If this was a mistake, please contact us.',awaiting:'Hi {customer_name}, your order #{order_number} is awaiting confirmation. We will get back to you soon!',failed_call_1:'Hi {customer_name}, we tried to reach you about order #{order_number}. Please call us back at your convenience.',failed_call_2:'Hello {customer_name}, this is our second attempt to reach you about order #{order_number}. Please respond as soon as possible.',failed_call_3:'Dear {customer_name}, we have been unable to reach you about order #{order_number}. Your order may be cancelled if we don\'t hear from you.',returned:'Hi {customer_name}, your order #{order_number} has been returned. Please contact {store_name} for more details.',abandoned_cart:'Hi {customer_name}! You left {item_count} item(s) in your cart at {store_name}. Complete your order here: {cart_url}'},

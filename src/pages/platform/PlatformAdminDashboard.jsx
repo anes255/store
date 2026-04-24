@@ -268,8 +268,38 @@ function StoreOwners(){
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>Store Owners</h1><span className="text-xs md:text-sm text-gray-400">{owners.length} total</span></div>
     <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-3 ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'} rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20`} placeholder="Search by name, email, phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-x-auto`}><table className="w-full text-sm min-w-[720px]"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
+    {/* Mobile card list */}
+    <div className="md:hidden space-y-3">
+      {owners.length===0?<p className="text-center py-12 text-gray-400">No owners found</p>:owners.map(o=>{
+        const suspended=o.subscription_status==='suspended'||o.is_active===false;
+        return(
+          <div key={o.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm p-4`}>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">{o.full_name?.[0]||'U'}</div>
+              <div className="min-w-0 flex-1">
+                <p className={`font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p>
+                <p className="text-[11px] text-gray-400 truncate">{o.email}</p>
+                <p className="text-[11px] text-gray-400 truncate">{o.phone}</p>
+              </div>
+              {suspended?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 shrink-0">Suspended</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 shrink-0">Active</span>}
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <div><p className="text-[9px] uppercase font-bold text-gray-400">Stores</p><p className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{o.store_count||0}</p></div>
+              <div><p className="text-[9px] uppercase font-bold text-gray-400">Revenue</p><p className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{parseFloat(o.total_revenue||0).toLocaleString()} DZD</p></div>
+              <div><p className="text-[9px] uppercase font-bold text-gray-400">Plan</p><p className="text-sm font-bold text-brand-600 capitalize">{o.subscription_plan||'free'}</p></div>
+            </div>
+            <div className="flex gap-1 mt-3 justify-end">
+              {suspended?
+                <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}}} className="flex-1 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-bold">Activate</button>:
+                <button onClick={async()=>{if(!confirm('Suspend? Their stores go offline.'))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}}} className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold">Suspend</button>}
+              <button onClick={()=>del(o.id)} className="py-2 px-3 rounded-lg bg-red-50 text-red-500"><Trash2 size={14}/></button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+    <div className={`hidden md:block ${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-x-auto`}><table className="w-full text-sm min-w-[720px]"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
     <tbody>{owners.map(o=>(
       <tr key={o.id} className={`border-t ${isDark?'border-gray-700 hover:bg-gray-700':'border-gray-100 hover:bg-gray-50'}`}>
         <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs">{o.full_name?.[0]||'U'}</div><div><p className={`font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
@@ -285,7 +315,7 @@ function StoreOwners(){
           <button onClick={()=>del(o.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14}/></button>
         </div></td>
       </tr>
-    ))}</tbody></table>{owners.length===0&&<p className="text-center py-12 text-gray-400">No owners found</p>}</div>}
+    ))}</tbody></table>{owners.length===0&&<p className="text-center py-12 text-gray-400">No owners found</p>}</div></>}
   </div>);
 }
 
@@ -346,8 +376,35 @@ function AllOrders(){
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','pending','confirmed','shipped','delivered','cancelled'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f}</button>)}</div>
       <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
     </div>
-    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="bg-white rounded-2xl shadow-sm overflow-x-auto"><table className="w-full text-sm min-w-[820px]"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3 w-8"></th><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Items</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
+    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
+    {/* Mobile cards */}
+    <div className="md:hidden space-y-3">
+      {orders.length===0?<p className="text-center py-12 text-gray-400">No orders found</p>:orders.map(o=>{const isOpen=expanded===o.id;return(
+        <div key={o.id} className="bg-white rounded-2xl shadow-sm p-4">
+          <div onClick={()=>setExpanded(isOpen?null:o.id)} className="flex items-start justify-between gap-2 cursor-pointer">
+            <div className="min-w-0">
+              <p className="font-mono font-bold text-xs text-brand-600">{o.order_number}</p>
+              <p className="text-sm text-gray-800 truncate mt-0.5">{o.customer_name}</p>
+              <p className="text-[11px] text-gray-400 truncate">{o.customer_phone} · {o.store_name}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-bold whitespace-nowrap">{parseFloat(o.total).toLocaleString()} DZD</p>
+              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${o.status==='delivered'?'bg-emerald-100 text-emerald-700':o.status==='pending'?'bg-amber-100 text-amber-700':o.status==='cancelled'?'bg-red-100 text-red-700':'bg-blue-100 text-blue-700'}`}>{o.status}</span>
+              <p className="text-[10px] text-gray-400 mt-1">{new Date(o.created_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          {isOpen&&(<div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+            {(!o.items||!o.items.length)?<p className="text-xs text-gray-400">No items recorded for this order.</p>:o.items.map((it,idx)=>{const vl=variantLabel(it.variant_info);return(
+              <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                {it.image?<img src={it.image} alt="" className="w-10 h-10 rounded-md object-cover shrink-0 border border-gray-200"/>:<div className="w-10 h-10 rounded-md bg-gray-200 shrink-0"/>}
+                <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{it.product_name}</p>{vl&&<p className="text-[10px] text-gray-500 truncate">{vl}</p>}<p className="text-[10px] text-gray-400">{parseFloat(it.price||0).toLocaleString()} × {it.quantity}</p></div>
+                <p className="text-xs font-bold text-gray-900 shrink-0">{parseFloat(it.total_price||(it.price*it.quantity)||0).toLocaleString()}</p>
+              </div>);})}
+          </div>)}
+        </div>
+      );})}
+    </div>
+    <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-x-auto"><table className="w-full text-sm min-w-[820px]"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3 w-8"></th><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Items</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
     <tbody>{orders.map(o=>{const isOpen=expanded===o.id;return(<React.Fragment key={o.id}>
       <tr onClick={()=>setExpanded(isOpen?null:o.id)} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer">
         <td className="px-5 py-3 text-gray-400"><ChevronRight size={16} className={`transition-transform ${isOpen?'rotate-90':''}`}/></td>
@@ -367,7 +424,7 @@ function AllOrders(){
             <p className="text-sm font-bold text-gray-900 shrink-0">{parseFloat(it.total_price||(it.price*it.quantity)||0).toLocaleString()} DZD</p>
           </div>);})}
       </div></td></tr>)}
-    </React.Fragment>);})}</tbody></table>{orders.length===0&&<p className="text-center py-12 text-gray-400">No orders found</p>}</div>}
+    </React.Fragment>);})}</tbody></table>{orders.length===0&&<p className="text-center py-12 text-gray-400">No orders found</p>}</div></>}
   </div>);
 }
 
@@ -483,8 +540,35 @@ function Subscriptions({isDark}){
       <div className={`${isDark?'bg-emerald-900/30 border border-emerald-800':'bg-emerald-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400`} onClick={()=>setFilter('approved')}><p className={`text-xs ${isDark?'text-emerald-300':'text-emerald-600'}`}>Approved</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-emerald-200':'text-emerald-700'}`}>{stats.approved||0}</p></div>
       <div className={`${isDark?'bg-red-900/30 border border-red-800':'bg-red-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('rejected')}><p className={`text-xs ${isDark?'text-red-300':'text-red-600'}`}>Rejected</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-red-200':'text-red-700'}`}>{stats.rejected||0}</p></div>
     </div>
-    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className={`${card} rounded-2xl shadow-sm overflow-x-auto`}>
+    {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
+    {/* Mobile cards */}
+    <div className="md:hidden space-y-3">
+      {data.payments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:data.payments.map(p=>(
+        <div key={p.id} className={`${card} rounded-2xl shadow-sm p-4`}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className={`font-bold ${textC} truncate`}>{p.owner_name||'N/A'}</p>
+              <p className={`text-[11px] ${mutedC}`}>{p.owner_phone}</p>
+              <p className={`text-[11px] mt-1 capitalize ${textC}`}><span className="font-bold">{p.plan}</span> · {p.period}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className={`font-bold ${textC}`}>{parseFloat(p.amount).toLocaleString()} DZD</p>
+              <span className={`inline-block mt-1 px-2 py-1 rounded-full text-[10px] font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{p.status?.toUpperCase()}</span>
+            </div>
+          </div>
+          <div className={`flex items-center gap-2 mt-3 text-[11px] ${mutedC}`}>
+            <span className="uppercase font-bold">{p.payment_method}</span>
+            {p.receipt_image&&<button onClick={()=>setViewReceipt(p)} className="text-brand-600 font-bold hover:underline flex items-center gap-1 ml-auto"><Eye size={12}/>Receipt</button>}
+          </div>
+          <div className="flex gap-2 mt-3 flex-wrap">
+            {p.status==='pending'&&<><button onClick={()=>approve(p.id)} className="flex-1 px-3 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="flex-1 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-bold">Reject</button></>}
+            {p.status==='approved'&&<button onClick={()=>suspend(p.owner_id)} className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-bold">Suspend</button>}
+            {p.owner_id&&<button onClick={()=>{setGrantModal({id:p.owner_id,name:p.owner_name});setGrantDays(7);}} className="px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1"><Gift size={12}/>Grant</button>}
+          </div>
+        </div>
+      ))}
+    </div>
+    <div className={`hidden md:block ${card} rounded-2xl shadow-sm overflow-x-auto`}>
       {data.payments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:
       <table className="w-full text-sm min-w-[780px]"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
       <tbody>{data.payments.map(p=>(
@@ -502,7 +586,7 @@ function Subscriptions({isDark}){
           </div></td>
         </tr>
       ))}</tbody></table>}
-    </div>}
+    </div></>}
     {rejectModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setRejectModal(null)}><div className={`${card} rounded-3xl p-6 w-full max-w-sm shadow-2xl`} onClick={e=>e.stopPropagation()}><h3 className={`font-bold text-lg mb-4 ${titleC}`}>Reject Payment</h3><textarea className={`w-full px-4 py-3 rounded-xl text-sm ${inputCls}`} rows={3} placeholder="Reason for rejection..." value={rejectNotes} onChange={e=>setRejectNotes(e.target.value)}/><div className="flex gap-3 mt-4"><button onClick={()=>setRejectModal(null)} className={`flex-1 py-2 rounded-xl text-sm font-bold ${isDark?'bg-gray-800 text-gray-200':'bg-gray-100'}`}>Cancel</button><button onClick={reject} className="flex-1 py-2 bg-red-500 text-white rounded-xl text-sm font-bold">Reject</button></div></div></div>}
     {grantModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setGrantModal(null)}><div className={`${card} rounded-3xl p-6 w-full max-w-sm shadow-2xl`} onClick={e=>e.stopPropagation()}>
       <h3 className={`font-bold text-lg mb-2 ${titleC} flex items-center gap-2`}><Gift size={18} className="text-emerald-500"/>Grant Free Days</h3>
