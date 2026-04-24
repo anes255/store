@@ -358,7 +358,14 @@ export default function DashboardLayout({children}){
             <div className="fixed inset-0 z-30" onClick={()=>setStoreSwitchOpen(false)}/>
             <div className={`absolute left-3 right-3 top-full mt-1 rounded-lg border shadow-xl z-40 max-h-64 overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-200'}`}>
               {stores.map(st=>{const sel=currentStore?.id===st.id;return(
-                <button key={st.id} onClick={()=>{setCurrentStore(st);setStoreSwitchOpen(false);navigate('/dashboard');}} className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
+                <button key={st.id} onClick={()=>{
+                  if(currentStore?.id===st.id){setStoreSwitchOpen(false);return;}
+                  setCurrentStore(st);
+                  setStoreSwitchOpen(false);
+                  // Full page reload so every page (dashboard, orders, products,
+                  // settings, etc.) refetches data for the newly selected store.
+                  window.location.href='/dashboard';
+                }} className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
                   {st.logo?<img src={st.logo} className="w-5 h-5 rounded object-cover shrink-0"/>:<div className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
                   <span className={`flex-1 truncate font-medium ${isDark?'text-gray-200':'text-gray-700'}`}>{st.name}</span>
                   {sel&&<Check size={12} style={{color:pc}}/>}
@@ -490,12 +497,12 @@ export default function DashboardLayout({children}){
           {!user?.is_staff&&Array.isArray(stores)&&(
             <div className="relative">
               {stores.length<=1?(
-                <button onClick={()=>navigate('/dashboard?new_store=1')} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title={t('sidebar.createStore','Create a store')}>
-                  <Plus size={13}/>{t('sidebar.newStore','New store')}
+                <button onClick={()=>navigate('/dashboard?new_store=1')} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title={t('sidebar.createStore','Create a store')}>
+                  <Plus size={13}/><span className="hidden sm:inline">{t('sidebar.newStore','New store')}</span>
                 </button>
               ):(
                 <>
-                  <button onClick={()=>setStoreSwitchOpen(!storeSwitchOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all max-w-[180px] ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  <button onClick={()=>setStoreSwitchOpen(!storeSwitchOpen)} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all max-w-[120px] sm:max-w-[180px] ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                     <Globe size={13} style={{color:pc}}/>
                     <span className="truncate">{currentStore?.name||t('sidebar.selectStore','Stores')}</span>
                     <ChevronDown size={11} className={`transition-transform ${storeSwitchOpen?'rotate-180':''}`}/>
@@ -505,7 +512,12 @@ export default function DashboardLayout({children}){
                     <div className={`absolute right-0 top-full mt-2 w-72 rounded-2xl shadow-2xl border z-50 p-2 max-h-[70vh] overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
                       <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1.5" style={{color:isDark?'#9ca3af':'#6b7280'}}>{t('sidebar.yourStores','Your Stores')}</p>
                       {stores.map(st=>{const sel=currentStore?.id===st.id;return(
-                        <button key={st.id} onClick={()=>{setCurrentStore(st);setStoreSwitchOpen(false);navigate('/dashboard');}} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
+                        <button key={st.id} onClick={()=>{
+                          if(currentStore?.id===st.id){setStoreSwitchOpen(false);return;}
+                          setCurrentStore(st);
+                          setStoreSwitchOpen(false);
+                          window.location.href='/dashboard';
+                        }} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
                           {st.logo?<img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0"/>:<div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
                           <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
                           {sel&&<Check size={12} style={{color:pc}}/>}
@@ -520,14 +532,14 @@ export default function DashboardLayout({children}){
               )}
             </div>
           )}
-          <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
+          <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`hidden sm:inline-flex p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
           <div className="hidden md:block"><LanguageSwitcher/></div>
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
-      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-clip ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`}>
+      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-auto ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`} style={{WebkitOverflowScrolling:'touch'}}>
         {isStaffBlocked(location.pathname)?(
           <div className={`max-w-md mx-auto mt-16 p-8 rounded-3xl text-center ${isDark?'bg-gray-900 border border-gray-800':'bg-white border border-gray-100 shadow-md'}`}>
             <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{backgroundColor:pc+'15'}}><Lock size={24} style={{color:pc}}/></div>

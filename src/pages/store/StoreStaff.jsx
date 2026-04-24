@@ -152,7 +152,10 @@ export default function StoreStaff() {
     if (!form.name) return toast.error(t('storePage.nameRequired','Name is required'));
     if (!editing && !form.password) return toast.error(t('storePage.passwordRequiredNewStaff','Password is required for new staff'));
     try {
-      const payload = { ...form, permissions: JSON.stringify(form.permissions) };
+      // If the admin skipped role selection but picked permissions, save a
+      // generic "custom" role so the card doesn't display "select role".
+      const effectiveRole = form.role || (form.permissions.length ? 'custom' : 'viewer');
+      const payload = { ...form, role: effectiveRole, permissions: JSON.stringify(form.permissions) };
       if (!payload.password) delete payload.password;
       if (editing) {
         await ownerApi.updateStaff(currentStore.id, editing.id, payload);
@@ -205,14 +208,14 @@ export default function StoreStaff() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Shield size={22} className="text-brand-500" />{t('staff.title')}</h1>
-          <p className="text-sm text-gray-400 mt-1">{t('storePage.staffSubtitle','Manage who has access to your store dashboard and what they can do')}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Shield size={22} className="text-brand-500" />{t('staff.title')}</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">{t('storePage.staffSubtitle','Manage who has access to your store dashboard and what they can do')}</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowRoleCreator(true)} className="btn-ghost text-sm flex items-center gap-2"><Plus size={14} />{t('storePage.newRole','New Role')}</button>
-          <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm"><UserPlus size={16} />{t('staff.addStaff')}</button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setShowRoleCreator(true)} className="btn-ghost text-xs sm:text-sm flex items-center gap-2"><Plus size={14} />{t('storePage.newRole','New Role')}</button>
+          <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-xs sm:text-sm"><UserPlus size={16} />{t('staff.addStaff')}</button>
         </div>
       </div>
 
@@ -266,38 +269,40 @@ export default function StoreStaff() {
           <button onClick={openAdd} className="btn-primary text-sm mx-auto"><UserPlus size={14} className="inline mr-1" />{t('storePage.addFirstMember','Add First Member')}</button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {staff.map(s => {
-            const role = allRoles[s.role] || allRoles.viewer;
-            const Icon = role.icon;
-            const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : role.permissions;
+            const roleLabelFallback = s.role==='custom' ? t('storePage.customRole','Custom') : (s.role==='viewer' ? t('storePage.viewer','Viewer') : (s.role ? s.role.replace(/^tpl_/,'').replace(/_/g,' ') : t('storePage.noRole','No role')));
+            const role = allRoles[s.role] || { label: roleLabelFallback, icon: Shield, color: 'bg-indigo-100 text-indigo-600', permissions: [] };
+            const Icon = role.icon || Shield;
+            const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : (role.permissions || []);
             return (
-              <div key={s.id} className={`glass-card-solid p-6 relative ${!s.is_active ? 'opacity-50' : ''}`}>
-                {/* Actions — owner-only controls for this team member */}
-                <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                  <button onClick={() => handleToggleActive(s)} className="p-1.5 hover:bg-gray-100 rounded-lg" title={s.is_active ? t('storePage.deactivate','Deactivate') : t('storePage.activate','Activate')}>
-                    {s.is_active ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} className="text-gray-400" />}
-                  </button>
-                  <button
-                    onClick={() => openEdit(s)}
-                    className="flex items-center gap-1 px-2.5 py-1 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-[11px] font-bold shadow-sm"
-                    title={t('storePage.editStaffMember','Edit team member')}
-                  >
-                    <Edit size={11}/>{t('storePage.edit','Edit')}
-                  </button>
-                  <button onClick={() => handleDelete(s.id)} className="p-1.5 hover:bg-red-50 rounded-lg" title={t('storePage.remove','Remove')}><Trash2 size={14} className="text-red-400" /></button>
+              <div key={s.id} className={`glass-card-solid p-4 sm:p-5 ${!s.is_active ? 'opacity-50' : ''}`}>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                    <span className="text-lg font-bold text-brand-500">{s.name[0]?.toUpperCase()}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">{s.name}</h3>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 ${role.color}`}>
+                      <Icon size={10} />{(role.label || s.role || 'ROLE').toString().toUpperCase()}
+                    </span>
+                    <p className="text-[11px] text-gray-400 mt-1 truncate">{s.email}</p>
+                    {s.phone && <p className="text-[11px] text-gray-400 truncate">{s.phone}</p>}
+                  </div>
                 </div>
 
-                <div className="text-center mb-4">
-                  <div className="w-14 h-14 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-2">
-                    <span className="text-xl font-bold text-brand-500">{s.name[0]?.toUpperCase()}</span>
-                  </div>
-                  <h3 className="font-bold text-gray-900">{s.name}</h3>
-                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold mt-1 ${role.color}`}>
-                    <Icon size={12} />{(role.label || s.role).toUpperCase()}
-                  </span>
-                  <p className="text-xs text-gray-400 mt-1">{s.email}</p>
-                  {s.phone && <p className="text-xs text-gray-400">{s.phone}</p>}
+                {/* Always-visible action row — Edit is the primary control */}
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    onClick={() => openEdit(s)}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                  >
+                    <Edit size={13}/>{t('storePage.edit','Edit')}
+                  </button>
+                  <button onClick={() => handleToggleActive(s)} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg" title={s.is_active ? t('storePage.deactivate','Deactivate') : t('storePage.activate','Activate')}>
+                    {s.is_active ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} className="text-gray-400" />}
+                  </button>
+                  <button onClick={() => handleDelete(s.id)} className="p-2 bg-red-50 hover:bg-red-100 rounded-lg" title={t('storePage.remove','Remove')}><Trash2 size={14} className="text-red-500" /></button>
                 </div>
 
                 {/* Permission summary */}
@@ -319,18 +324,18 @@ export default function StoreStaff() {
       {/* Add/Edit staff modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl m-2" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">{editing ? t('storePage.editStaffMember','Edit Staff Member') : t('staff.addStaff')}</h2>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="input-label">{t('storePage.name','Name')} *</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                 <div><label className="input-label">{t('storePage.email','Email')}</label><input type="email" className="input-field" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
                 <div><label className="input-label">{editing ? t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)') : t('storePage.passwordRequired','Password *')}</label><input type="password" className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
               </div>
@@ -338,17 +343,23 @@ export default function StoreStaff() {
               {/* Role selection */}
               <div>
                 <label className="input-label">{t('storePage.role','Role')}</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(allRoles).map(([key, cfg]) => {
-                    const Icon = cfg.icon;
-                    return (
-                      <button key={key} onClick={() => selectRole(key)} className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${form.role === key ? 'border-brand-500 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                        <div className={`w-8 h-8 rounded-lg ${cfg.color} flex items-center justify-center shrink-0`}><Icon size={14} /></div>
-                        <div><p className="font-semibold text-sm capitalize">{cfg.label || key}</p><p className="text-[10px] text-gray-400 line-clamp-1">{cfg.desc}</p></div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {Object.keys(allRoles).length === 0 ? (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700">
+                    {t('storePage.noRolesYet','No roles defined yet. Tick permissions below — a "Custom" role will be saved automatically.')}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {Object.entries(allRoles).map(([key, cfg]) => {
+                      const Icon = cfg.icon;
+                      return (
+                        <button key={key} onClick={() => selectRole(key)} className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${form.role === key ? 'border-brand-500 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
+                          <div className={`w-8 h-8 rounded-lg ${cfg.color} flex items-center justify-center shrink-0`}><Icon size={14} /></div>
+                          <div className="min-w-0"><p className="font-semibold text-sm capitalize truncate">{cfg.label || key}</p><p className="text-[10px] text-gray-400 line-clamp-1">{cfg.desc}</p></div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Granular permissions */}
@@ -376,7 +387,7 @@ export default function StoreStaff() {
                           </button>
                         </button>
                         {expanded && (
-                          <div className="px-3 pb-3 grid grid-cols-2 gap-1.5">
+                          <div className="px-3 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                             {groupPerms.map(p => (
                               <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" checked={form.permissions.includes(p.key)} onChange={() => togglePerm(p.key)} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
