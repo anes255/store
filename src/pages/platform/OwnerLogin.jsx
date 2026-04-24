@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { ownerApi, platformApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check } from 'lucide-react';
 
 export default function OwnerLogin() {
   const { t } = useTranslation();
@@ -16,6 +16,7 @@ export default function OwnerLogin() {
   const [form, setForm] = useState({ identifier: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [storePicker, setStorePicker] = useState(null); // {owner, token, stores} when multi-store owner signs in
   // Pull the platform branding (logo/favicon/site name) so the login screen
   // reflects whatever the super-admin has configured.
   const [brand, setBrand] = useState({ logo: '', favicon: '', name: 'KyoMarket' });
@@ -42,6 +43,13 @@ export default function OwnerLogin() {
       }
       setAuth(data.owner, data.token, 'store_owner');
       setStores(data.stores);
+      // If the owner has several stores, show a picker so they choose which
+      // one to manage before navigating.
+      if ((data.stores || []).length > 1 && !data.owner.is_staff) {
+        setStorePicker({ owner: data.owner, stores: data.stores });
+        setLoading(false);
+        return;
+      }
       if (data.stores.length > 0) setCurrentStore(data.stores[0]);
       toast.success(`Welcome back, ${data.owner.name}!`);
       navigate('/dashboard');
@@ -125,6 +133,32 @@ export default function OwnerLogin() {
           </p>
         </div>
       </div>
+
+      {/* Multi-store picker shown right after login for owners with 2+ stores */}
+      {storePicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3"><StoreIcon size={26} className="text-brand-500" /></div>
+              <h2 className="text-xl font-extrabold text-gray-900">{t('storePage.chooseStore','Choose a Store')}</h2>
+              <p className="text-sm text-gray-500 mt-1">{t('storePage.chooseStoreHelp','Pick which store you want to manage right now.')}</p>
+            </div>
+            <div className="space-y-2">
+              {storePicker.stores.map(st => (
+                <button key={st.id} onClick={() => { setCurrentStore(st); toast.success(`Managing ${st.name}`); navigate('/dashboard'); }}
+                  className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-100 hover:border-brand-500 hover:bg-brand-50 transition-all text-left">
+                  {st.logo ? <img src={st.logo} className="w-12 h-12 rounded-xl object-cover" /> : <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold">{(st.name || 'S')[0]}</div>}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 truncate">{st.name}</p>
+                    <p className="text-xs text-gray-400 truncate">/{st.slug}{st.is_live !== false ? ' · Live' : ' · Draft'}</p>
+                  </div>
+                  <ArrowRight size={18} className="text-gray-300" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

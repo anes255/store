@@ -10,6 +10,38 @@ const FEATURE_GATE_MAP = {
   'abandoned': 'abandoned_cart',
 };
 
+// Maps sidebar routes to the staff permission required to use them.
+// Used to hide/disable items for team members based on the permissions their
+// store admin granted them. Owners (is_staff=false) bypass this entirely.
+const PERM_GATE_MAP = {
+  '/dashboard': 'dashboard_view',
+  '/dashboard/analytics': 'analytics_view',
+  '/dashboard/orders': 'orders_view',
+  '/dashboard/abandoned': 'orders_view',
+  '/dashboard/preparing': 'orders_prepare',
+  '/dashboard/orders-archive': 'orders_view',
+  '/dashboard/products': 'products_view',
+  '/dashboard/stock': 'stock_manage',
+  '/dashboard/smart-reviews': 'reviews_manage',
+  '/dashboard/ai-intelligence': 'analytics_view',
+  '/dashboard/settings': 'settings_view',
+  '/dashboard/contact': 'settings_view',
+  '/dashboard/faqs': 'settings_edit',
+  '/dashboard/about': 'settings_edit',
+  '/dashboard/shipping-partners': 'shipping_manage',
+  '/dashboard/shipping-wilayas': 'shipping_manage',
+  '/dashboard/how-to-connect': 'shipping_manage',
+  '/dashboard/tracking-orders': 'orders_view',
+  '/dashboard/customers': 'customers_view',
+  '/dashboard/blacklist': 'customers_blacklist',
+  '/dashboard/costs': 'finances_view',
+  '/dashboard/taxes': 'taxes_view',
+  '/dashboard/billing': 'settings_edit',
+  '/dashboard/apps': 'settings_view',
+  '/dashboard/staff': 'staff_manage',
+  '/dashboard/domains': 'domains_manage',
+};
+
 function NotifBell(){
   const[open,setOpen]=React.useState(false);
   const[notifs,setNotifs]=React.useState([]);
@@ -213,6 +245,23 @@ export default function DashboardLayout({children}){
   const toggle=(k)=>setOpenMenus({...openMenus,[k]:!openMenus[k]});
   const isActive=(p)=>location.pathname===p;
 
+  // ===== Staff permission gating =====
+  // When the logged-in user is a team member (is_staff=true), restrict sidebar
+  // items to the permissions their store admin granted. Owners see everything.
+  const staffPerms = React.useMemo(() => {
+    if (!user?.is_staff) return null; // null = owner, show everything
+    let p = user.permissions;
+    if (typeof p === 'string') { try { p = JSON.parse(p); } catch { p = []; } }
+    return Array.isArray(p) ? p : [];
+  }, [user]);
+  const hasStaffPerm=(path)=>{
+    if(!staffPerms)return true;
+    const need=PERM_GATE_MAP[path];
+    if(!need)return true; // unmapped routes default visible
+    return staffPerms.includes(need);
+  };
+  const isStaffBlocked=(path)=>!!staffPerms&&!hasStaffPerm(path);
+
   // Check if a sidebar route is gated by the plan. Look up by the route path
   // last segment or by the item id for top-level links.
   const isGated=(idOrTo)=>{
@@ -226,6 +275,7 @@ export default function DashboardLayout({children}){
     toast.error(`"${label}" is locked on your current plan. Upgrade to unlock it.`);};
 
   const SLink=({to,icon:Icon,label,gated})=>{
+    if(isStaffBlocked(to))return null;
     if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pl[300]:pl[400]}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
     const active=isActive(to);
     return(<Link to={to} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
@@ -235,6 +285,7 @@ export default function DashboardLayout({children}){
     ><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
   };
   const SubLink=({to,label})=>{
+    if(isStaffBlocked(to))return null;
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
     const segment=to.split('/').pop();
     const gated=isGated(segment);
@@ -434,6 +485,41 @@ export default function DashboardLayout({children}){
             })()}
           </div>
           {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● {t('sidebar.live','Live')}</span>}
+          {/* Header store switcher: shows a "+" when the owner has only one
+              store (quick way to create a second), and a dropdown when 2+. */}
+          {!user?.is_staff&&Array.isArray(stores)&&(
+            <div className="relative">
+              {stores.length<=1?(
+                <button onClick={()=>navigate('/dashboard?new_store=1')} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title={t('sidebar.createStore','Create a store')}>
+                  <Plus size={13}/>{t('sidebar.newStore','New store')}
+                </button>
+              ):(
+                <>
+                  <button onClick={()=>setStoreSwitchOpen(!storeSwitchOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all max-w-[180px] ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    <Globe size={13} style={{color:pc}}/>
+                    <span className="truncate">{currentStore?.name||t('sidebar.selectStore','Stores')}</span>
+                    <ChevronDown size={11} className={`transition-transform ${storeSwitchOpen?'rotate-180':''}`}/>
+                  </button>
+                  {storeSwitchOpen&&(<>
+                    <div className="fixed inset-0 z-40" onClick={()=>setStoreSwitchOpen(false)}/>
+                    <div className={`absolute right-0 top-full mt-2 w-72 rounded-2xl shadow-2xl border z-50 p-2 max-h-[70vh] overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1.5" style={{color:isDark?'#9ca3af':'#6b7280'}}>{t('sidebar.yourStores','Your Stores')}</p>
+                      {stores.map(st=>{const sel=currentStore?.id===st.id;return(
+                        <button key={st.id} onClick={()=>{setCurrentStore(st);setStoreSwitchOpen(false);navigate('/dashboard');}} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
+                          {st.logo?<img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0"/>:<div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
+                          <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
+                          {sel&&<Check size={12} style={{color:pc}}/>}
+                        </button>
+                      );})}
+                      <button onClick={()=>{setStoreSwitchOpen(false);navigate('/dashboard?new_store=1');}} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark?'border-gray-700 text-brand-400 hover:bg-gray-800':'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
+                        <Plus size={12}/>{t('sidebar.createAnotherStore','Create another store')}
+                      </button>
+                    </div>
+                  </>)}
+                </>
+              )}
+            </div>
+          )}
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
@@ -441,7 +527,16 @@ export default function DashboardLayout({children}){
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
-      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-clip ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`}>{children}</div>
+      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-clip ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`}>
+        {isStaffBlocked(location.pathname)?(
+          <div className={`max-w-md mx-auto mt-16 p-8 rounded-3xl text-center ${isDark?'bg-gray-900 border border-gray-800':'bg-white border border-gray-100 shadow-md'}`}>
+            <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{backgroundColor:pc+'15'}}><Lock size={24} style={{color:pc}}/></div>
+            <h2 className={`text-lg font-bold mb-1 ${isDark?'text-white':'text-gray-900'}`}>{t('staff.accessDenied','Access Denied')}</h2>
+            <p className={`text-sm ${isDark?'text-gray-400':'text-gray-500'}`}>{t('staff.accessDeniedHelp','Your role does not include permission to view this page. Ask the store admin to grant you access.')}</p>
+            <Link to="/dashboard" className="btn-ghost mt-4 inline-block">{t('sidebar.dashboard','Dashboard')}</Link>
+          </div>
+        ):children}
+      </div>
     </main>
   </div>);
 }

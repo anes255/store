@@ -96,6 +96,16 @@ export default function StoreDashboard() {
       } catch {} finally { setLoading(false); }
     };
     loadStores();
+    // The "+ New store" button in the header routes here with ?new_store=1;
+    // pop the create modal automatically when that flag is set.
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      if (qs.get('new_store') === '1') {
+        setShowCreateModal(true);
+        // Strip the flag so a refresh won't reopen it.
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -144,7 +154,7 @@ export default function StoreDashboard() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('storePage.yourStores','Your Stores')}</p>
-            <button onClick={() => setShowCreateModal(true)} className="text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1"><Plus size={12} />{t('storePage.createStore','Create Store')}</button>
+            {!user?.is_staff && <button onClick={() => setShowCreateModal(true)} className="text-xs font-bold text-brand-500 hover:text-brand-600 flex items-center gap-1"><Plus size={12} />{t('storePage.createStore','Create Store')}</button>}
           </div>
           <div className="flex flex-wrap gap-2">
             {stores.map(st => {
