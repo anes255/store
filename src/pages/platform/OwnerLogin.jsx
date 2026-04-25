@@ -17,13 +17,13 @@ export default function OwnerLogin() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [storePicker, setStorePicker] = useState(null); // {owner, token, stores} when multi-store owner signs in
-  // Pull the platform branding (logo/favicon/site name) so the login screen
-  // reflects whatever the super-admin has configured.
-  const [brand, setBrand] = useState({ logo: '', favicon: '', name: 'MakretDZ' });
+  // Brand comes exclusively from the super-admin's platform settings.
+  // Empty until /platform/info responds; render the name only once set.
+  const [brand, setBrand] = useState({ logo: '', favicon: '', name: '' });
   useEffect(() => {
     getPlatformInfo().then(r => {
       const d = r.data || {};
-      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || 'MakretDZ' });
+      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || '' });
     }).catch(() => {});
   }, []);
 
@@ -97,7 +97,7 @@ export default function OwnerLogin() {
               ) : (
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
               )}
-              <span className="text-xl font-extrabold font-display">{brand.name}</span>
+              {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
             </Link>
             <LanguageSwitcher />
           </div>

@@ -21,12 +21,13 @@ export default function OwnerRegister() {
   const [phoneMasked, setPhoneMasked] = useState('');
   const [code, setCode] = useState('');
   const [resendIn, setResendIn] = useState(0);
-  // Platform branding (super-admin configurable)
-  const [brand, setBrand] = useState({ logo: '', favicon: '', name: 'KyoMarket' });
+  // Platform branding comes exclusively from the super admin's settings —
+  // no hard-coded fallback name is shown if the API hasn't responded yet.
+  const [brand, setBrand] = useState({ logo: '', favicon: '', name: '' });
   useEffect(() => {
     getPlatformInfo().then(r => {
       const d = r.data || {};
-      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || 'KyoMarket' });
+      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || '' });
     }).catch(() => {});
   }, []);
 
@@ -99,7 +100,7 @@ export default function OwnerRegister() {
               ) : (
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
               )}
-              <span className="text-xl font-extrabold font-display">{brand.name}</span>
+              {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
             </Link>
             <LanguageSwitcher />
           </div>
