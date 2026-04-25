@@ -187,10 +187,10 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           <>
             <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
             <div
-              className={`fixed w-80 rounded-2xl shadow-2xl border z-[101] p-4 ${
+              className={`fixed rounded-2xl shadow-2xl border z-[101] p-4 max-h-[80vh] overflow-y-auto ${
                 isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
               }`}
-              style={{ top: anchor.top, right: anchor.right }}
+              style={{ top: anchor.top, right: anchor.right, width: Math.min(320, window.innerWidth - 16) }}
             >
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>

@@ -132,7 +132,8 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
         </div>
         <button type="button" onClick={(e)=>{e.stopPropagation();onPreview();}} title="Preview" className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>Preview</button>
         <button type="button" onClick={(e)=>{e.stopPropagation();onTest();}} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>Test</button>
-        <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:enabled?meta.color:'#d1d5db'}}/>
+        {/* The colored dot doubles as the on/off toggle for this status. */}
+        <button type="button" onClick={(e)=>{e.stopPropagation();onToggle(!enabled);}} title={enabled?'Click to disable':'Click to enable'} className="w-5 h-5 rounded-full shrink-0 ring-2 ring-transparent hover:ring-gray-300 transition-all" style={{backgroundColor:enabled?meta.color:'#d1d5db'}}/>
         <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} aria-label="Expand">
           <ChevronDown size={16} className={`transition-transform ${expanded?'rotate-180':''}`}/>
         </button>
@@ -213,7 +214,17 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   // open and matches the message the backend would actually send.
   // Returns the user's saved template (even if empty so the admin can clear it),
   // falling back to the bundled default ONLY when the key has never been set.
-  const getTpl=(st)=>{const t=getTemplates();const v=t?.[lang]?.[st];if(typeof v==='string')return v;return WA_DEFAULT_TEMPLATES[lang]?.[st]||WA_DEFAULT_TEMPLATES.en?.[st]||'';};
+  // Bulletproof fallback so the preview is never blank: try active lang →
+  // any saved lang → bundled defaults (fr→ar→en).
+  const getTpl=(st)=>{
+    const t=getTemplates();
+    const v=t?.[lang]?.[st];
+    if(typeof v==='string'&&v.length)return v;
+    return (t?.fr?.[st]||t?.ar?.[st]||t?.en?.[st]
+      ||WA_DEFAULT_TEMPLATES[lang]?.[st]
+      ||WA_DEFAULT_TEMPLATES.fr?.[st]||WA_DEFAULT_TEMPLATES.ar?.[st]||WA_DEFAULT_TEMPLATES.en?.[st]
+      ||'');
+  };
   const setTpl=(st,val)=>{const t=getTemplates();if(!t[lang])t[lang]={};t[lang][st]=val;setV('wa_templates',JSON.stringify(t));};
   const getEnabled=(st)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; return e[st]!==false;}catch{return true;}};
   const setEnabled=(st,val)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; e[st]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
@@ -534,9 +545,9 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
         </div>
       </div>
 
-      {/* ─── Preview popup ─── */}
-      {previewStatus&&(
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setPreviewStatus(null)}>
+      {/* ─── Preview popup (portal so it sits above the modal stacking ctx) ─── */}
+      {previewStatus&&createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setPreviewStatus(null)}>
           <div className={`${dk?'bg-gray-800':'bg-white'} rounded-3xl p-5 w-full max-w-sm shadow-2xl relative`} onClick={e=>e.stopPropagation()}>
             <button onClick={()=>setPreviewStatus(null)} className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center ${dk?'hover:bg-gray-700 text-gray-300':'hover:bg-gray-100 text-gray-500'}`}><X size={16}/></button>
             <div className="flex items-center gap-2 mb-3">
@@ -560,7 +571,8 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             </div>
             <p className={`text-center text-[10px] ${t3} mt-2`}>Preview generated with sample data</p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -173,6 +173,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
     if (!form.shipping_address) return toast.error(t('checkout.errAddress', 'Please enter your shipping address'));
     if (!form.shipping_wilaya) return toast.error(t('checkout.errWilaya', 'Please choose your wilaya'));
+    if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
+    if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
+    if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
     if (saveInfo) {
       try {
         const { coupon_code, notes, ...persist } = form;
@@ -449,7 +452,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                             <span className="text-xl">{dt.icon}</span>
                             <div className="flex-1">
                               <p className="font-bold text-sm text-gray-800">{dt.label}</p>
-                              <p className="text-xs text-gray-400">{(() => { const d = parseInt(selectedWilayaData.delivery_days) || 3; return d <= 1 ? '1' : `1-${d}`; })()} {t('checkout.days','days')}</p>
+                              <p className="text-xs text-gray-400">1-3 {t('checkout.days','days')}</p>
                             </div>
                             <span className="font-extrabold text-sm" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
                             {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}

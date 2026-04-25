@@ -50,7 +50,7 @@ export default function StoreStaff() {
   const [customRoles, setCustomRoles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('custom_roles_' + (currentStore?.id || '')) || '[]'); } catch { return []; }
   });
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: '', permissions: [], assigned_store_ids: [] });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '', role: '', permissions: [], assigned_store_ids: [] });
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] });
   const [platformTemplates, setPlatformTemplates] = useState([]);
 
@@ -121,7 +121,7 @@ export default function StoreStaff() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', email: '', phone: '', password: '', role: '', permissions: [], assigned_store_ids: currentStore?.id ? [currentStore.id] : [] });
+    setForm({ name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '', role: '', permissions: [], assigned_store_ids: currentStore?.id ? [currentStore.id] : [] });
     setShowModal(true);
   };
 
@@ -129,7 +129,7 @@ export default function StoreStaff() {
     setEditing(s);
     const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : (allRoles[s.role]?.permissions || []);
     const assigned = Array.isArray(s.assigned_store_ids) && s.assigned_store_ids.length ? s.assigned_store_ids : (currentStore?.id ? [currentStore.id] : []);
-    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', role: s.role || '', permissions: [...perms], assigned_store_ids: [...assigned] });
+    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', confirmPassword: '', avatar: s.avatar || '', role: s.role || '', permissions: [...perms], assigned_store_ids: [...assigned] });
     setShowModal(true);
   };
 
@@ -162,6 +162,7 @@ export default function StoreStaff() {
   const handleSave = async () => {
     if (!form.name) return toast.error(t('storePage.nameRequired','Name is required'));
     if (!editing && !form.password) return toast.error(t('storePage.passwordRequiredNewStaff','Password is required for new staff'));
+    if (form.password && form.password !== form.confirmPassword) return toast.error(t('storePage.passwordsDontMatch','Passwords do not match'));
     try {
       // If the admin skipped role selection but picked permissions, save a
       // generic "custom" role so the card doesn't display "select role".
@@ -169,7 +170,8 @@ export default function StoreStaff() {
       const assignedIds = Array.isArray(form.assigned_store_ids) && form.assigned_store_ids.length
         ? Array.from(new Set([...form.assigned_store_ids, currentStore.id]))
         : [currentStore.id];
-      const payload = { ...form, role: effectiveRole, permissions: JSON.stringify(form.permissions), assigned_store_ids: assignedIds };
+      const { confirmPassword, ...rest } = form; void confirmPassword;
+      const payload = { ...rest, role: effectiveRole, permissions: JSON.stringify(form.permissions), assigned_store_ids: assignedIds };
       if (!payload.password) delete payload.password;
       if (editing) {
         await ownerApi.updateStaff(currentStore.id, editing.id, payload);
@@ -352,6 +354,47 @@ export default function StoreStaff() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
                 <div><label className="input-label">{editing ? t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)') : t('storePage.passwordRequired','Password *')}</label><input type="password" className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+              </div>
+
+              {/* Confirm password — must match the password above. */}
+              {(form.password || !editing) && (
+                <div>
+                  <label className="input-label">{t('storePage.confirmPassword','Confirm Password')}</label>
+                  <input type="password" className="input-field" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} />
+                  {form.confirmPassword && form.password !== form.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-500">{t('storePage.passwordsDontMatch','Passwords do not match')}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Profile photo — uploaded as a base64 data URL so any backend
+                  that stores the column already handles it without setup. */}
+              <div>
+                <label className="input-label">{t('storePage.profilePhoto','Profile Photo')}</label>
+                <div className="flex items-center gap-3">
+                  {form.avatar
+                    ? <img src={form.avatar} alt="" className="w-16 h-16 rounded-full object-cover border border-gray-200" />
+                    : <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center text-brand-500 font-bold text-lg shrink-0">{(form.name || '?')[0]?.toUpperCase()}</div>}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async e => {
+                        const f = e.target.files?.[0]; if (!f) return;
+                        if (f.size > 3 * 1024 * 1024) return toast.error(t('storePage.imageTooLarge','Image too large (max 3MB)'));
+                        const r = new FileReader();
+                        r.onload = () => setForm(prev => ({ ...prev, avatar: r.result }));
+                        r.readAsDataURL(f);
+                      }}
+                      className="text-xs text-gray-500"
+                    />
+                    {form.avatar && (
+                      <button type="button" onClick={() => setForm({ ...form, avatar: '' })} className="block text-[11px] text-red-500 mt-1 hover:underline">
+                        {t('storePage.removePhoto','Remove photo')}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Multi-store assignment — only when admin owns more than one store */}

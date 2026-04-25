@@ -45,7 +45,7 @@ const ALL_COLUMNS = [
   { key: 'company_name',     label: 'Company Name' },
   { key: 'notes',            label: 'Notes' },
 ];
-const DEFAULT_COLUMNS = ['order','photo','products','wilaya','commune','customer_name','phone','whatsapp','transfer','status','shipping_method','shipping_cost','total','financial_status','tracking_number','notes'];
+const DEFAULT_COLUMNS = ['order','photo','products','wilaya','wilaya_number','commune','customer_name','phone','whatsapp','transfer','status','shipping_method','shipping_cost','total','financial_status','tracking_number','notes'];
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
@@ -61,8 +61,9 @@ const statusConfig = {
   failed_call_2:  { color: 'bg-orange-400', bg: 'bg-orange-50', text: 'text-orange-700', label: 'CALL FAILED 2' },
   failed_call_3:  { color: 'bg-red-400',    bg: 'bg-red-50',    text: 'text-red-700',    label: 'CALL FAILED 3' },
   returned:       { color: 'bg-gray-500',   bg: 'bg-gray-50',   text: 'text-gray-700',   label: 'RETURNED' },
+  archived:       { color: 'bg-slate-500',  bg: 'bg-slate-50',  text: 'text-slate-700',  label: 'ARCHIVED' },
 };
-const allStatuses = ['new_order','pending','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned'];
+const allStatuses = ['new_order','pending','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','archived'];
 
 function transferBadge(o) {
   const name = (o.delivery_company_name || '').toLowerCase();
@@ -378,10 +379,12 @@ export default function StoreOrders() {
         );
       }
 
-      case 'wilaya':
+      case 'wilaya': {
+        const wn = o.shipping_wilaya_code || o.shipping_zip?.slice(0,2) || '';
         return <td className="px-3 py-3">{cellBtn(o, 'address',
-          <><p className="text-xs font-semibold">{wilayaBi.en || '—'}</p>{wilayaBi.ar && wilayaBi.ar !== wilayaBi.en && <p className="text-[10px] text-gray-400" dir="rtl">{wilayaBi.ar}</p>}</>
+          <><p className="text-xs font-semibold">{wn && <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded bg-gray-100 text-gray-700 font-mono text-[10px]">{wn}</span>}{wilayaBi.en || '—'}</p>{wilayaBi.ar && wilayaBi.ar !== wilayaBi.en && <p className="text-[10px] text-gray-400" dir="rtl">{wilayaBi.ar}</p>}</>
         )}</td>;
+      }
 
       case 'wilaya_number':
         return <td className="px-3 py-3">{cellBtn(o, 'address', <span className="font-mono text-xs text-gray-500">{o.shipping_wilaya_code || o.shipping_zip?.slice(0,2) || '—'}</span>)}</td>;
@@ -403,7 +406,7 @@ export default function StoreOrders() {
             transfer ? (
               <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold leading-tight ${transfer.className}`}>{transfer.label}</span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600"><Send size={10}/>Assign</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600"><Send size={10}/>{t('orders.transfer','Transfer')}</span>
             )
           )}</td>
         );
@@ -799,15 +802,13 @@ export default function StoreOrders() {
         </div>
       )}
 
-      {/* Create Order modal */}
+      {/* Create Order modal — actually create an order inline */}
       {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setCreateOpen(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-black">Create Order</h2><button onClick={() => setCreateOpen(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16}/></button></div>
-            <p className="text-sm text-gray-500 mb-4">Manually create an order for a customer who contacted you outside the store.</p>
-            <button onClick={() => { setCreateOpen(false); window.location.href = '/dashboard/products'; }} className="w-full py-3 rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600">Open Products → Add to Cart</button>
-          </div>
-        </div>
+        <CreateOrderModal
+          storeId={currentStore?.id}
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => { setCreateOpen(false); loadOrders(); toast.success('Order created'); }}
+        />
       )}
 
       {/* Quick action drawer — dispatches by column type */}
@@ -927,6 +928,7 @@ export default function StoreOrders() {
 // Quick Action Drawer — one modal that switches on column type.
 // ==========================================================================
 function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, companies, statusConfig, allStatuses }) {
+  const { t } = useTranslation();
   const { type, order: o } = action;
   const [localPatch, setLocalPatch] = useState({});
   const cur = o.currency || 'DZD';
@@ -935,17 +937,17 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   const save = () => { if (Object.keys(localPatch).length) onSaveField(localPatch); onClose(); };
 
   const title = {
-    photo: 'Order Photo',
-    order: 'Order #' + o.order_number,
-    products: `Products (${(o.items||[]).length})`,
-    address: 'Shipping Address',
-    customer: 'Customer',
-    phone: 'Phone',
-    transfer: 'Transfer / Delivery Company',
-    status: 'Order Status',
-    shipping_method: 'Shipping Method',
-    totals: 'Totals Breakdown',
-    processed_at: 'Processed At',
+    photo: t('orders.qa.photo','Order Photo'),
+    order: t('orders.qa.order','Order') + ' #' + o.order_number,
+    products: t('orders.qa.products','Products') + ` (${(o.items||[]).length})`,
+    address: t('orders.qa.address','Shipping Address'),
+    customer: t('orders.qa.customer','Customer'),
+    phone: t('orders.qa.phone','Phone'),
+    transfer: t('orders.qa.transfer','Transfer / Delivery Company'),
+    status: t('orders.qa.status','Order Status'),
+    shipping_method: t('orders.qa.shippingMethod','Shipping Method'),
+    totals: t('orders.qa.totals','Totals Breakdown'),
+    processed_at: t('orders.qa.processedAt','Processed At'),
     financial: 'Financial Status',
     currency: 'Currency',
     discount: 'Discount Code',
@@ -1034,12 +1036,12 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'transfer') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Delivery Company</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.deliveryCompany','Delivery Company')}</label>
         <select defaultValue={o.delivery_company_id || ''} onChange={set('delivery_company_id')} className="input-field w-full">
-          <option value="">— None —</option>
+          <option value="">— {t('orders.none','None')} —</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">Save</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">{t('common.save','Save')}</button>
       </div>
     );
   }
@@ -1252,6 +1254,137 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
       {row('Customer', o.customer_name)}
       {row('Phone', o.customer_phone)}
       {row('Total', fmtMoney(o.total, cur))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CreateOrderModal — inline manual order creation (admin-side).
+// Lets the admin add a customer + pick products + set status without leaving
+// the orders page. POSTs to /manage/stores/:sid/orders.
+// ─────────────────────────────────────────────────────────────────────────────
+function CreateOrderModal({ storeId, onClose, onCreated }) {
+  const { t } = useTranslation();
+  const [products, setProducts] = useState([]);
+  const [searchP, setSearchP] = useState('');
+  const [items, setItems] = useState([]); // {product_id, name, price, quantity}
+  const [form, setForm] = useState({
+    customer_name: '', customer_phone: '', customer_email: '',
+    shipping_address: '', shipping_city: '', shipping_wilaya: '',
+    shipping_type: 'home', shipping_cost: 0, payment_method: 'cod',
+    notes: '', status: 'new_order',
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!storeId) return;
+    import('../../utils/api').then(m => {
+      m.productApi.getAll(storeId, { search: searchP }).then(r => setProducts(r.data?.products || [])).catch(() => {});
+    });
+  }, [storeId, searchP]);
+
+  const addItem = (p) => {
+    setItems(prev => {
+      const existing = prev.find(x => x.product_id === p.id);
+      if (existing) return prev.map(x => x.product_id === p.id ? { ...x, quantity: x.quantity + 1 } : x);
+      return [...prev, { product_id: p.id, name: p.name_en || p.name, price: parseFloat(p.price) || 0, quantity: 1 }];
+    });
+  };
+  const removeItem = (pid) => setItems(prev => prev.filter(x => x.product_id !== pid));
+  const setQty = (pid, q) => setItems(prev => prev.map(x => x.product_id === pid ? { ...x, quantity: Math.max(1, q) } : x));
+
+  const subtotal = items.reduce((s, x) => s + x.price * x.quantity, 0);
+  const total = subtotal + (parseFloat(form.shipping_cost) || 0);
+
+  const save = async () => {
+    if (!form.customer_name.trim() || !form.customer_phone.trim()) { toast.error(t('orders.fillCustomer', 'Customer name and phone are required')); return; }
+    if (items.length === 0) { toast.error(t('orders.addAtLeastOneItem', 'Add at least one product')); return; }
+    setSaving(true);
+    try {
+      await api.post(`/manage/stores/${storeId}/orders`, {
+        ...form,
+        items: items.map(x => ({ product_id: x.product_id, name: x.name, price: x.price, quantity: x.quantity })),
+        subtotal, total,
+      });
+      onCreated && onCreated();
+    } catch (err) {
+      toast.error(err.response?.data?.error || t('orders.createFailed', 'Failed to create order'));
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-3xl max-h-[95vh] overflow-y-auto p-5 sm:p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-black text-gray-900 dark:text-white">{t('orders.createOrder', 'Create Order')}</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-300"><X size={16} /></button>
+        </div>
+
+        {/* Customer */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <input className="input-field" placeholder={t('orders.customerName', 'Customer name *')} value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+          <input className="input-field" placeholder={t('orders.customerPhone', 'Phone *')} value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
+          <input className="input-field" placeholder={t('orders.customerEmail', 'Email (optional)')} value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
+          <input className="input-field" placeholder={t('orders.wilaya', 'Wilaya')} value={form.shipping_wilaya} onChange={e => setForm({ ...form, shipping_wilaya: e.target.value })} />
+          <input className="input-field" placeholder={t('orders.commune', 'Commune')} value={form.shipping_city} onChange={e => setForm({ ...form, shipping_city: e.target.value })} />
+          <input className="input-field" placeholder={t('orders.address', 'Address')} value={form.shipping_address} onChange={e => setForm({ ...form, shipping_address: e.target.value })} />
+        </div>
+
+        {/* Product picker */}
+        <div className="mb-3">
+          <input className="input-field" placeholder={t('orders.searchProducts', 'Search products to add…')} value={searchP} onChange={e => setSearchP(e.target.value)} />
+          {searchP && (
+            <div className="mt-1.5 max-h-40 overflow-y-auto border rounded-xl divide-y border-gray-100 dark:border-gray-700">
+              {products.slice(0, 10).map(p => (
+                <button key={p.id} onClick={() => addItem(p)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-left">
+                  <span className="text-sm text-gray-800 dark:text-gray-100 truncate">{p.name_en || p.name}</span>
+                  <span className="text-xs text-brand-500 font-bold">{parseFloat(p.price || 0).toLocaleString()} DZD</span>
+                </button>
+              ))}
+              {products.length === 0 && <p className="px-3 py-2 text-xs text-gray-400">{t('orders.noProducts', 'No products')}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Cart items */}
+        {items.length > 0 && (
+          <div className="border rounded-xl divide-y mb-4 border-gray-100 dark:border-gray-700">
+            {items.map(it => (
+              <div key={it.product_id} className="flex items-center gap-3 px-3 py-2">
+                <p className="flex-1 text-sm text-gray-800 dark:text-gray-100 truncate">{it.name}</p>
+                <input type="number" min={1} className="w-16 text-sm text-center border rounded-lg py-1 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100" value={it.quantity} onChange={e => setQty(it.product_id, parseInt(e.target.value) || 1)} />
+                <span className="text-xs text-brand-500 font-bold w-24 text-right">{(it.price * it.quantity).toLocaleString()} DZD</span>
+                <button onClick={() => removeItem(it.product_id)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Shipping + status */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <select className="input-field" value={form.shipping_type} onChange={e => setForm({ ...form, shipping_type: e.target.value })}>
+            <option value="home">{t('orders.homeDelivery', 'Home delivery')}</option>
+            <option value="desk">{t('orders.deskDelivery', 'Desk pickup')}</option>
+          </select>
+          <input type="number" className="input-field" placeholder={t('orders.shippingCost', 'Shipping cost')} value={form.shipping_cost} onChange={e => setForm({ ...form, shipping_cost: e.target.value })} />
+          <select className="input-field" value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value })}>
+            <option value="cod">COD</option>
+            <option value="ccp">CCP</option>
+            <option value="baridimob">BaridiMob</option>
+          </select>
+        </div>
+        <textarea className="input-field mb-3" rows={2} placeholder={t('orders.notes', 'Notes (optional)')} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+
+        <div className="flex items-center justify-between text-sm mb-4">
+          <span className="text-gray-500 dark:text-gray-400">{t('orders.total', 'Total')}</span>
+          <span className="text-xl font-black text-brand-500">{total.toLocaleString()} DZD</span>
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="btn-ghost px-4 py-2 text-sm">{t('orders.cancel', 'Cancel')}</button>
+          <button onClick={save} disabled={saving} className="btn-primary px-4 py-2 text-sm flex items-center gap-1.5">{saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}{t('orders.create', 'Create Order')}</button>
+        </div>
+      </div>
     </div>
   );
 }

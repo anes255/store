@@ -34,11 +34,49 @@ export default function TrackingPixels(){
     document.head.appendChild(s);
   });
 
+  // Format-level validation BEFORE we waste time loading scripts.
+  const formatValid=(id,v)=>{
+    if(!v)return false;
+    if(id==='facebook_pixel')return /^\d{14,17}$/.test(v);
+    if(id==='tiktok_pixel')return /^[A-Z0-9]{18,24}$/.test(v);
+    if(id==='google_analytics')return /^G-[A-Z0-9]{6,12}$/.test(v);
+    if(id==='snapchat_pixel')return /^[a-f0-9-]{30,40}$/i.test(v);
+    if(id==='google_sheets')return /^https?:\/\/script\.google\.com\//i.test(v);
+    return true;
+  };
+  // Reachability probe: load the vendor's pixel script for this ID and check
+  // the network actually returned a 2xx (or that the SDK reports the pixel
+  // as initialized). Anything that 404s / 0xx is a bad/unknown ID.
+  const probePixel=(id,val)=>new Promise(resolve=>{
+    let url=null;
+    if(id==='facebook_pixel')url=`https://www.facebook.com/tr?id=${encodeURIComponent(val)}&ev=PageView&noscript=1&_=${Date.now()}`;
+    else if(id==='tiktok_pixel')url=`https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${encodeURIComponent(val)}&lib=ttq&_=${Date.now()}`;
+    else if(id==='google_analytics')url=`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(val)}&_=${Date.now()}`;
+    else if(id==='snapchat_pixel')url=`https://tr.snapchat.com/p?p_id=${encodeURIComponent(val)}&_=${Date.now()}`;
+    if(!url){resolve({ok:true});return;}
+    // Use Image() for tracker pixels (they reply with image bytes), <script>
+    // for SDK URLs. Either way: onload → reachable, onerror → bad ID.
+    const isScript=id==='tiktok_pixel'||id==='google_analytics';
+    const el=isScript?document.createElement('script'):new window.Image();
+    const cleanup=()=>{try{el.parentNode&&el.parentNode.removeChild(el);}catch{}};
+    const timer=setTimeout(()=>{cleanup();resolve({ok:false,reason:'timeout'});},6000);
+    el.onload=()=>{clearTimeout(timer);cleanup();resolve({ok:true});};
+    el.onerror=()=>{clearTimeout(timer);cleanup();resolve({ok:false,reason:'unreachable'});};
+    if(isScript){el.async=true;el.src=url;document.head.appendChild(el);}else{el.src=url;}
+  });
+
   const testPixel=async(px)=>{
     const c=config[px.id]||{};
     const val=(c.value||'').trim();
     if(!val){toast.error('Enter a value first');return;}
+    if(!formatValid(px.id,val)){toast.error(`Invalid ${px.field} format`);return;}
     setTesting(px.id);
+    // Reachability probe first — distinguishes "format ok but unknown to vendor" from "real, working".
+    const probe=await probePixel(px.id,val);
+    if(!probe.ok){
+      toast.error(`${px.name}: ID not recognized by the vendor (${probe.reason||'unreachable'})`);
+      setTesting(null);return;
+    }
     try{
       if(px.id==='facebook_pixel'){
         if(!window.fbq){
