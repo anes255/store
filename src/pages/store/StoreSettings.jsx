@@ -599,7 +599,25 @@ export default function StoreSettings(){
         <div className={`w-11 h-6 rounded-full transition-colors relative ${on?'':'bg-gray-300'}`} style={on?{backgroundColor:px.color}:{}}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on?'translate-x-5':'translate-x-0.5'}`}/></div>
       </button>
     </div>
-    {on&&<div><label className="text-xs font-bold text-gray-500 uppercase">{px.field}</label><input className="input-field font-mono text-sm mt-1" placeholder={px.ph} value={c.value||''} onChange={e=>{const ntp={...tp,[px.id]:{...c,value:e.target.value}};setS({...s,tracking_pixels:ntp});}}/></div>}
+    {on&&<div><label className="text-xs font-bold text-gray-500 uppercase">{px.field}</label><input className="input-field font-mono text-sm mt-1" placeholder={px.ph} value={c.value||''} onChange={e=>{const ntp={...tp,[px.id]:{...c,value:e.target.value}};setS({...s,tracking_pixels:ntp});}}/>
+      <div className="flex gap-2 mt-2">
+        <button onClick={async()=>{if(!c.value){toast.error('Enter the '+px.field+' first');return;}try{await ownerApi.updateStore(currentStore.id,{tracking_pixels:s.tracking_pixels});toast.success(px.name+' applied ✓');}catch{toast.error('Failed to apply');}}} className="flex-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center justify-center gap-1" style={{backgroundColor:px.color,color:px.color==='#FFFC00'?'#000':'#fff'}}><Check size={12}/>Apply</button>
+        <button onClick={async()=>{
+          if(!c.value){toast.error('Enter the '+px.field+' first');return;}
+          const v=String(c.value).trim();
+          let ok=false,reason='';
+          // Format validation per provider
+          if(px.id==='facebook_pixel'){ok=/^\d{10,20}$/.test(v);reason=ok?'Format OK — Facebook accepts numeric IDs (10-20 digits)':'Invalid format. Facebook Pixel ID is 15-16 numeric digits.';}
+          else if(px.id==='tiktok_pixel'){ok=/^C[A-Z0-9]{15,30}$/i.test(v);reason=ok?'Format OK — TikTok pixel codes start with C':'Invalid format. TikTok Pixel ID starts with "C" followed by alphanumeric chars.';}
+          else if(px.id==='google_analytics'){ok=/^(G|UA|AW)-[A-Z0-9-]+$/i.test(v);reason=ok?'Format OK — GA4 (G-) / Universal (UA-) / Ads (AW-) accepted':'Invalid format. Should look like G-XXXXXXXXXX.';}
+          else if(px.id==='google_sheets'){ok=/^https?:\/\/script\.google\.com\//i.test(v);reason=ok?'URL format OK':'Invalid URL. Must be a script.google.com macro URL.';
+            if(ok){try{const r=await fetch(v,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true,timestamp:Date.now()})});reason+=' — request sent (no-cors prevents reading response, check your Sheet)';}catch(e){ok=false;reason='Request failed: '+e.message;}}}
+          else if(px.id==='snapchat_pixel'){ok=/^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(v)||/^[a-f0-9-]{8,}$/i.test(v);reason=ok?'Format OK':'Invalid format. Snapchat Pixel ID looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.';}
+          else{ok=v.length>3;reason=ok?'OK':'Value seems too short';}
+          if(ok)toast.success('✓ '+reason,{duration:5000});else toast.error('✗ '+reason,{duration:5000});
+        }} className="flex-1 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center justify-center gap-1"><Send size={12}/>Test</button>
+      </div>
+    </div>}
   </div>);})}</div></>}
 
 {sec==='subscription'&&<SubscriptionSection/>}

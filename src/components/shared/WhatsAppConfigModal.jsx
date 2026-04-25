@@ -510,10 +510,10 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
               </div>
             </div>
             <div className="flex items-center justify-center mb-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk?'bg-gray-700 text-gray-300':'bg-gray-100 text-gray-600'}`}>SYSTEM PREVIEW</span></div>
-            <div className="bg-[#e5ddd5] rounded-2xl p-3 min-h-[180px]" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
+            <div className="rounded-2xl p-3 min-h-[180px]" style={{backgroundColor:'#e5ddd5',backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
               <div className={`flex ${lang==='ar'?'flex-row-reverse':''}`}>
-                <div className="max-w-[90%] bg-[#dcf8c6] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:lang==='ar'?'rtl':'ltr'}}>
-                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-gray-900" style={{color:'#111827'}}>{preview(getTpl(previewStatus))||preview(WA_DEFAULT_TEMPLATES[lang]?.[previewStatus]||WA_DEFAULT_TEMPLATES.en?.[previewStatus]||'')||'(empty template)'}</p>
+                <div className="max-w-[90%] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{backgroundColor:'#dcf8c6',direction:lang==='ar'?'rtl':'ltr'}}>
+                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words" style={{color:'#000000'}}>{preview(getTpl(previewStatus))||preview(WA_DEFAULT_TEMPLATES[lang]?.[previewStatus]||WA_DEFAULT_TEMPLATES.en?.[previewStatus]||'')||'(empty template)'}</p>
                   <div className={`flex items-center gap-1 mt-1 ${lang==='ar'?'justify-start':'justify-end'}`}>
                     <span className="text-[9px] text-gray-500">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
                     <span className="text-emerald-500 text-[10px]">✓✓</span>
