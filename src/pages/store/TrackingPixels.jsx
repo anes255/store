@@ -44,26 +44,19 @@ export default function TrackingPixels(){
     if(id==='google_sheets')return /^https?:\/\/script\.google\.com\//i.test(v);
     return true;
   };
-  // Reachability probe: load the vendor's pixel script for this ID and check
-  // the network actually returned a 2xx (or that the SDK reports the pixel
-  // as initialized). Anything that 404s / 0xx is a bad/unknown ID.
-  const probePixel=(id,val)=>new Promise(resolve=>{
-    let url=null;
-    if(id==='facebook_pixel')url=`https://www.facebook.com/tr?id=${encodeURIComponent(val)}&ev=PageView&noscript=1&_=${Date.now()}`;
-    else if(id==='tiktok_pixel')url=`https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${encodeURIComponent(val)}&lib=ttq&_=${Date.now()}`;
-    else if(id==='google_analytics')url=`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(val)}&_=${Date.now()}`;
-    else if(id==='snapchat_pixel')url=`https://tr.snapchat.com/p?p_id=${encodeURIComponent(val)}&_=${Date.now()}`;
-    if(!url){resolve({ok:true});return;}
-    // Use Image() for tracker pixels (they reply with image bytes), <script>
-    // for SDK URLs. Either way: onload → reachable, onerror → bad ID.
-    const isScript=id==='tiktok_pixel'||id==='google_analytics';
-    const el=isScript?document.createElement('script'):new window.Image();
-    const cleanup=()=>{try{el.parentNode&&el.parentNode.removeChild(el);}catch{}};
-    const timer=setTimeout(()=>{cleanup();resolve({ok:false,reason:'timeout'});},6000);
-    el.onload=()=>{clearTimeout(timer);cleanup();resolve({ok:true});};
-    el.onerror=()=>{clearTimeout(timer);cleanup();resolve({ok:false,reason:'unreachable'});};
-    if(isScript){el.async=true;el.src=url;document.head.appendChild(el);}else{el.src=url;}
-  });
+  // Real validation goes through a backend proxy because browsers can't
+  // read cross-origin pixel responses (CORS). The /ai/pixels/verify route
+  // hits each vendor's check-existence endpoint server-side and reports
+  // whether the ID is actually known to them.
+  const probePixel=async(id,val)=>{
+    try{
+      const{api}=await import('../../utils/api');
+      const{data}=await api.post('/ai/pixels/verify',{type:id,value:val});
+      return data||{ok:false,reason:'No response'};
+    }catch(e){
+      return{ok:false,reason:e?.response?.data?.reason||e.message||'Network error'};
+    }
+  };
 
   const testPixel=async(px)=>{
     const c=config[px.id]||{};

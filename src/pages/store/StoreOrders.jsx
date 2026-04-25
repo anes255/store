@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { orderApi } from '../../utils/api';
@@ -625,40 +626,14 @@ export default function StoreOrders() {
             <span className="px-1 text-[10px] font-bold text-gray-500 tabular-nums">{Math.round(colScale*100)}%</span>
             <button onClick={() => setColScale(Math.min(1.5, +(colScale+0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">+</button>
           </div>
-          <div className="relative">
-            <button onClick={() => setColumnPickerOpen(v => !v)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-[11px] font-bold text-yellow-700 uppercase tracking-wider">
-              <Columns size={13}/>Columns<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500 text-white">{activeColumns.length}</span>
-            </button>
-            {columnPickerOpen && (
-              <div className="absolute right-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-2xl border border-gray-200 w-72 max-h-[70vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white p-3 border-b flex items-center justify-between">
-                  <p className="text-xs font-bold text-gray-700">Customize Columns</p>
-                  <button onClick={() => setColumnPickerOpen(false)} className="text-gray-400 hover:text-gray-700"><X size={14}/></button>
-                </div>
-                <div className="p-2">
-                  {activeColumns.map((key, idx) => {
-                    const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
-                    return (
-                      <div key={key} className="flex items-center gap-2 px-2 py-2 mb-1 bg-gray-50 rounded-lg">
-                        <GripVertical size={12} className="text-gray-300"/>
-                        <button onClick={() => moveColumn(key,-1)} disabled={idx===0} className="w-5 h-5 rounded bg-white disabled:opacity-30 flex items-center justify-center border border-gray-200"><ChevronUp size={10}/></button>
-                        <button onClick={() => moveColumn(key, 1)} disabled={idx===activeColumns.length-1} className="w-5 h-5 rounded bg-white disabled:opacity-30 flex items-center justify-center border border-gray-200"><ChevronDown size={10}/></button>
-                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{col.label}</span>
-                        <button onClick={() => toggleColumn(key)} className="text-emerald-500 hover:text-emerald-700"><Eye size={12}/></button>
-                      </div>
-                    );
-                  })}
-                  <div className="border-t my-2"/>
-                  {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
-                    <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded-lg text-left">
-                      <Square size={12} className="text-gray-300"/>
-                      <span className="text-xs text-gray-600 flex-1 truncate">{col.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <ColumnsPicker
+            open={columnPickerOpen}
+            setOpen={setColumnPickerOpen}
+            activeColumns={activeColumns}
+            ALL_COLUMNS={ALL_COLUMNS}
+            toggleColumn={toggleColumn}
+            moveColumn={moveColumn}
+          />
           <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
             <Plus size={13}/>Create Order
           </button>
@@ -1107,17 +1082,34 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'address') {
+    // Best-effort wilaya-number lookup from the wilaya name when the column
+    // wasn't filled in (older orders had the name only).
+    const wnFromName = (() => {
+      try {
+        const n = String(o.shipping_wilaya || '').trim().toLowerCase();
+        if (!n) return '';
+        // 58 wilayas — minimal map; expand as needed.
+        const M = { 'adrar':'01','chlef':'02','laghouat':'03','oum el bouaghi':'04','batna':'05','béjaïa':'06','bejaia':'06','biskra':'07','béchar':'08','bechar':'08','blida':'09','bouira':'10','tamanrasset':'11','tébessa':'12','tebessa':'12','tlemcen':'13','tiaret':'14','tizi ouzou':'15','alger':'16','algiers':'16','djelfa':'17','jijel':'18','sétif':'19','setif':'19','saïda':'20','saida':'20','skikda':'21','sidi bel abbès':'22','sidi bel abbes':'22','annaba':'23','guelma':'24','constantine':'25','médéa':'26','medea':'26','mostaganem':'27','msila':'28','m’sila':'28','mascara':'29','ouargla':'30','oran':'31','el bayadh':'32','illizi':'33','bordj bou arréridj':'34','boumerdès':'35','boumerdes':'35','el tarf':'36','tindouf':'37','tissemsilt':'38','el oued':'39','khenchela':'40','souk ahras':'41','tipaza':'42','mila':'43','aïn defla':'44','ain defla':'44','naâma':'45','naama':'45','aïn témouchent':'46','ain temouchent':'46','ghardaïa':'47','ghardaia':'47','relizane':'48','timimoun':'49','bordj badji mokhtar':'50','ouled djellal':'51','béni abbès':'52','beni abbes':'52','in salah':'53','in guezzam':'54','touggourt':'55','djanet':'56','el m\'ghair':'57','el meghaier':'57','el menia':'58' };
+        return M[n] || '';
+      } catch { return ''; }
+    })();
     return wrap(
       <div className="space-y-3">
         <label className="text-[10px] font-bold text-gray-400 uppercase">Street</label>
         <input defaultValue={o.shipping_address || ''} onChange={set('shipping_address')} className="input-field w-full"/>
         <div className="grid grid-cols-2 gap-2">
           <div><label className="text-[10px] font-bold text-gray-400 uppercase">City (Commune)</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className="input-field w-full"/></div>
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">Wilaya</label><input defaultValue={o.shipping_wilaya || ''} onChange={set('shipping_wilaya')} className="input-field w-full"/></div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase">Wilaya</label>
+            <input defaultValue={o.shipping_wilaya || ''} onChange={set('shipping_wilaya')} className="input-field w-full"/>
+            {(o.shipping_wilaya_code || wnFromName) && (
+              <p className="text-[10px] text-gray-400 mt-1">N°: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{o.shipping_wilaya_code || wnFromName}</span></p>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div><label className="text-[10px] font-bold text-gray-400 uppercase">Zip</label><input defaultValue={o.shipping_zip || ''} onChange={set('shipping_zip')} className="input-field w-full font-mono"/></div>
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">N° Wilaya</label><input defaultValue={o.shipping_wilaya_code || ''} onChange={set('shipping_wilaya_code')} className="input-field w-full font-mono"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">N° Wilaya</label><input defaultValue={o.shipping_wilaya_code || wnFromName || ''} onChange={set('shipping_wilaya_code')} className="input-field w-full font-mono" placeholder="01-58"/></div>
         </div>
         <button onClick={save} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">Save Address</button>
       </div>
@@ -1386,5 +1378,68 @@ function CreateOrderModal({ storeId, onClose, onCreated }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Columns picker — portal-rendered so it works inside parents that create
+// containing blocks (header backdrop-blur, transformed wrappers, etc.).
+// ─────────────────────────────────────────────────────────────────────────────
+function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn, moveColumn }) {
+  const btnRef = useRef(null);
+  const [anchor, setAnchor] = useState(null);
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const update = () => {
+      const r = btnRef.current?.getBoundingClientRect(); if (!r) return;
+      setAnchor({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [open]);
+  return (
+    <>
+      <button ref={btnRef} onClick={() => setOpen(v => !v)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-[11px] font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-wider">
+        <Columns size={13} />Columns<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500 text-white">{activeColumns.length}</span>
+      </button>
+      {open && anchor && createPortal(
+        <>
+          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div
+            className="fixed bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto z-[101]"
+            style={{ top: anchor.top, right: anchor.right, width: Math.min(288, window.innerWidth - 16) }}
+          >
+            <div className="sticky top-0 bg-white dark:bg-gray-900 p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Customize Columns</p>
+              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={14} /></button>
+            </div>
+            <div className="p-2">
+              {activeColumns.map((key, idx) => {
+                const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
+                return (
+                  <div key={key} className="flex items-center gap-2 px-2 py-2 mb-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <GripVertical size={12} className="text-gray-300 dark:text-gray-500" />
+                    <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-5 h-5 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={10} /></button>
+                    <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-5 h-5 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={10} /></button>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{col.label}</span>
+                    <button onClick={() => toggleColumn(key)} className="text-emerald-500 hover:text-emerald-700"><Eye size={12} /></button>
+                  </div>
+                );
+              })}
+              <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
+              {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
+                <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-left">
+                  <Square size={12} className="text-gray-300 dark:text-gray-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400 flex-1 truncate">{col.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+    </>
   );
 }

@@ -558,18 +558,18 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center"><Plus size={10}/></button>
                       </div>
                     </div>
-                    <div className="text-right"><p className="font-bold text-sm">{(item.price * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
+                    <div className="text-right"><p className="font-bold text-sm text-gray-900 dark:text-gray-100">{(item.price * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>
                   );
                 })}
               </div>
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
-              <div className="space-y-2 border-t pt-4">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span className="font-semibold">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Shipping</span><span className="font-semibold">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>
-                {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">Discount</span><span className="text-emerald-600 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
-                <div className="flex justify-between font-extrabold text-xl pt-2 border-t"><span>Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
-                {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
+              <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Subtotal</span><span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>
+                {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Discount</span><span className="text-emerald-600 dark:text-emerald-400 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
+                <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200 dark:border-gray-700"><span className="text-gray-900 dark:text-gray-100">Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
+                {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 dark:text-emerald-400 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
               </div>
               {store?.order_notes && <div className="mt-4"><label className="input-label text-xs">Order Notes</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder="Special instructions..."/></div>}
               <button onClick={placeOrder} disabled={loading || items.length === 0} className={`w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all ${store?.sticky_checkout?'sm:sticky sm:bottom-4':''}`} style={{backgroundColor: pc}}>
