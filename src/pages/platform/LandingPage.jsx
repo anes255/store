@@ -20,11 +20,11 @@ export default function LandingPage() {
     { icon: Smartphone, title: t('landing.f7Title','Mobile Optimized'), desc: t('landing.f7Desc','Every store is perfectly responsive on all devices.') },
     { icon: Shield, title: t('landing.f8Title','Secure & Reliable'), desc: t('landing.f8Desc','SSL encryption, DDoS protection, and 99.9% uptime.') },
   ];
-  // Brand name now comes from super-admin platform identity (platform_settings.site_name).
-  // Fallback to "KyoMarket" only until the API response arrives.
-  const FALLBACK_BRAND='KyoMarket';
+  // Brand name comes exclusively from super-admin platform identity
+  // (platform_settings.site_name). No hard-coded fallback name is shown —
+  // the spot stays empty until /platform/info responds.
   const cachedInfo = (() => { try { const c = JSON.parse(localStorage.getItem('platform_info_cache') || 'null'); return c && typeof c === 'object' ? c : null; } catch { return null; } })();
-  const [info, setInfo] = useState(cachedInfo || { site_name: FALLBACK_BRAND });
+  const [info, setInfo] = useState(cachedInfo || { site_name: '' });
   const [infoLoaded, setInfoLoaded] = useState(!!cachedInfo);
   const [blocks, setBlocks] = useState([]);
   const [hasCustom, setHasCustom] = useState(false);
@@ -37,13 +37,13 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    document.title=info.site_name||FALLBACK_BRAND;
+    if(info.site_name) document.title=info.site_name;
     getPlatformInfo().then(r => {
-      // Use the super-admin's configured site name (platform identity). Fallback if empty.
-      const resolvedName = (r.data && (r.data.site_name||r.data.siteName||r.data.name)) || FALLBACK_BRAND;
+      // Use the super-admin's configured site name only — no fallback name.
+      const resolvedName = (r.data && (r.data.site_name||r.data.siteName||r.data.name)) || '';
       setInfo({ ...r.data, site_name: resolvedName });
       try { localStorage.setItem('platform_info_cache', JSON.stringify({ ...r.data, site_name: resolvedName })); } catch {}
-      document.title=resolvedName;
+      if(resolvedName) document.title=resolvedName;
       if(r.data.favicon){
         let link=document.querySelector("link[rel~='icon']");
         if(!link){link=document.createElement('link');link.rel='icon';document.head.appendChild(link);}
@@ -296,7 +296,7 @@ export default function LandingPage() {
       <section className="py-24 px-6">
         <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-brand-500 via-purple-600 to-brand-700 rounded-3xl p-12 md:p-16 relative overflow-hidden">
           <h2 className="text-3xl md:text-5xl font-extrabold text-white relative z-10">{t('landing.readyTitle','Ready to Start Selling?')}</h2>
-          <p className="mt-4 text-white/70 text-lg relative z-10">{t('landing.readySubtitle','Join thousands of merchants already growing with')} {info.site_name}.</p>
+          <p className="mt-4 text-white/70 text-lg relative z-10">{t('landing.readySubtitle','Join thousands of merchants already growing with')}{info.site_name?` ${info.site_name}.`:'.'}</p>
           <Link to="/register" className="mt-8 inline-flex items-center gap-2 px-8 py-4 bg-white text-brand-600 font-bold rounded-xl hover:bg-gray-100 transition-all shadow-2xl relative z-10 group">{t('landing.getStartedFree','Get Started Free')}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
         </div>
       </section>
@@ -309,7 +309,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
-            <span className="text-xl font-extrabold text-gray-900">{info.site_name}</span>
+            {info.site_name && <span className="text-xl font-extrabold text-gray-900">{info.site_name}</span>}
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.pricing')}</a></>}
@@ -325,8 +325,8 @@ export default function LandingPage() {
 
       <footer className="border-t border-gray-200 py-12 px-6 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center"><ShoppingBag size={16} className="text-white" /></div><span className="font-bold text-gray-900">{info.site_name}</span></div>
-          <p className="text-sm text-gray-400">© {new Date().getFullYear()} {info.site_name}. All rights reserved.</p>
+          <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center"><ShoppingBag size={16} className="text-white" /></div>{info.site_name && <span className="font-bold text-gray-900">{info.site_name}</span>}</div>
+          <p className="text-sm text-gray-400">© {new Date().getFullYear()}{info.site_name?` ${info.site_name}.`:'.'} All rights reserved.</p>
           <Link to="/admin/login" className="text-xs text-gray-200 hover:text-gray-400 select-none" aria-hidden="true">·</Link>
         </div>
       </footer>
