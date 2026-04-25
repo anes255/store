@@ -31,10 +31,64 @@ export default function SmartReviews(){
     }catch{toast.error(t('storePage.aiModerationFailed','AI moderation failed'));}
   };
 
+  // Bulk auto-moderate every pending review without admin clicks.
+  const[autoRunning,setAutoRunning]=useState(false);
+  const[autoMode,setAutoMode]=useState(()=>localStorage.getItem('smartReviews.autoMode')==='1');
+  useEffect(()=>{localStorage.setItem('smartReviews.autoMode',autoMode?'1':'0');},[autoMode]);
+
+  const aiModerateAll=async()=>{
+    const pending=reviews.filter(r=>!r.is_approved&&!r.is_rejected);
+    if(!pending.length){toast(t('storePage.nothingToModerate','Nothing to moderate'));return;}
+    if(!confirm(t('storePage.confirmAutoModerate','Auto-moderate {{n}} pending reviews with AI? Reviews scoring 70+ will be approved, others rejected.',{n:pending.length}).replace('{{n}}',pending.length)))return;
+    setAutoRunning(true);
+    let ok=0,fail=0;
+    for(const r of pending){
+      try{
+        const{data}=await aiApi.moderateReview({content:r.content||'',rating:r.rating||5});
+        if(data.score>=70)await api.patch(`/manage/stores/${currentStore.id}/reviews/${r.id}/approve`,{ai_moderation_score:data.score,ai_moderation_reason:data.reason});
+        else await api.patch(`/manage/stores/${currentStore.id}/reviews/${r.id}/reject`,{ai_moderation_score:data.score,ai_moderation_reason:data.reason});
+        ok++;
+      }catch{fail++;}
+    }
+    setAutoRunning(false);
+    toast.success(t('storePage.autoModerateDone','Done: {{ok}} processed, {{fail}} failed').replace('{{ok}}',ok).replace('{{fail}}',fail));
+    load();
+  };
+
+  // Background auto-mode: when admin enables it, every new pending review is
+  // moderated automatically the next time the page polls or refreshes.
+  useEffect(()=>{
+    if(!autoMode||loading||autoRunning)return;
+    const pending=reviews.filter(r=>!r.is_approved&&!r.is_rejected&&r.ai_moderation_score==null);
+    if(!pending.length)return;
+    (async()=>{
+      setAutoRunning(true);
+      for(const r of pending){
+        try{
+          const{data}=await aiApi.moderateReview({content:r.content||'',rating:r.rating||5});
+          if(data.score>=70)await api.patch(`/manage/stores/${currentStore.id}/reviews/${r.id}/approve`,{ai_moderation_score:data.score,ai_moderation_reason:data.reason});
+          else await api.patch(`/manage/stores/${currentStore.id}/reviews/${r.id}/reject`,{ai_moderation_score:data.score,ai_moderation_reason:data.reason});
+        }catch{}
+      }
+      setAutoRunning(false);
+      load();
+    })();
+  },[autoMode,reviews,loading]);
+
   return(<DashboardLayout>
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div><h1 className="text-2xl font-bold">{t('storePage.smartReviewsTitle','Smart Reviews')}</h1><p className="text-sm text-gray-400 mt-1">{t('storePage.smartReviewsSubtitle','AI-powered review moderation')}</p></div>
-      <button onClick={load} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <label className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer text-xs font-bold ${autoMode?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-gray-200 bg-white text-gray-600'}`}>
+          <input type="checkbox" checked={autoMode} onChange={e=>setAutoMode(e.target.checked)} className="w-4 h-4 rounded text-emerald-600"/>
+          <Sparkles size={14}/>{t('storePage.autoModerate','Auto-moderate new reviews')}
+        </label>
+        <button onClick={aiModerateAll} disabled={autoRunning} className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-brand-500 text-white text-xs font-bold flex items-center gap-2 hover:shadow-lg disabled:opacity-50">
+          {autoRunning?<div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Sparkles size={14}/>}
+          {autoRunning?t('storePage.aiRunning','Running…'):t('storePage.aiModerateAll','AI Moderate All Pending')}
+        </button>
+        <button onClick={load} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>
+      </div>
     </div>
 
     <div className="grid grid-cols-5 gap-4 mb-6">

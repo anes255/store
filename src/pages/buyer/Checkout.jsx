@@ -129,7 +129,20 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
   const validateCoupon = async () => {
     if (!form.coupon_code) return;
-    try { const { data } = await storeApi.validateCoupon(storeSlug, { code: form.coupon_code, subtotal }); setCouponDiscount(data.discount); toast.success(`-${data.discount.toLocaleString()} DZD`); }
+    // Per-product coupons: match the entered code against any item's product coupon_code.
+    const code = String(form.coupon_code).trim().toUpperCase();
+    let total = 0;
+    for (const it of items) {
+      const pCode = (it.coupon_code || '').toString().trim().toUpperCase();
+      const pPct = parseFloat(it.coupon_discount_percent) || 0;
+      const pActive = !!it.coupon_active;
+      if (pActive && pCode && pCode === code && pPct > 0) {
+        total += ((it.price || 0) * (it.quantity || 1)) * (pPct / 100);
+      }
+    }
+    if (total > 0) { setCouponDiscount(Math.round(total)); toast.success(`-${Math.round(total).toLocaleString()} ${store?.currency||'DZD'}`); return; }
+    // Fall back to legacy store-wide coupon endpoint if it exists.
+    try { const { data } = await storeApi.validateCoupon(storeSlug, { code, subtotal }); setCouponDiscount(data.discount); toast.success(`-${data.discount.toLocaleString()} ${store?.currency||'DZD'}`); }
     catch { toast.error('Invalid coupon'); setCouponDiscount(0); }
   };
 

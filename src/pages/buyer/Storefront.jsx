@@ -991,7 +991,7 @@ export default function Storefront() {
       <footer className="bg-white border-t border-gray-100 py-8 px-4 mt-8">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-sm text-gray-400">{store.footer_text || `© ${new Date().getFullYear()} ${store.name}. All rights reserved.`}</p>
-          <p className="text-xs text-gray-300 mt-1">Powered by KyoMarket</p>
+          <p className="text-xs text-gray-300 mt-1">Powered by MakretDZ</p>
         </div>
       </footer>
 

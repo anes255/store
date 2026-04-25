@@ -1,4 +1,5 @@
 import React,{useState,useRef,useEffect,useMemo} from 'react';
+import {createPortal} from 'react-dom';
 import {aiApi} from '../../utils/api';
 import {useAdminTheme} from '../../hooks/useStore';
 import {MessageCircle,Phone,Send,X,Save,Clock,ShoppingCart,QrCode,RefreshCw,Wifi,WifiOff,Bell,ChevronDown,Eye,CheckCircle2,XCircle,Truck,Package,RotateCcw,Hourglass,PhoneOff,Search,Calendar,Check} from 'lucide-react';
@@ -199,7 +200,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   const[savedToast,setSavedToast]=useState(false);
   const dk=useAdminTheme(s=>s.mode==='dark');
 
-  useEffect(()=>{if(show&&initialConfig)setCfg({...initialConfig});if(show)setLang(initialConfig?.wa_language||'fr');},[show,initialConfig]);
+  useEffect(()=>{if(show&&initialConfig)setCfg({...initialConfig});if(show){const lg=String(initialConfig?.wa_language||'fr').slice(0,2).toLowerCase();setLang(['en','fr','ar'].includes(lg)?lg:'fr');}},[show,initialConfig]);
   useEffect(()=>{if(show&&storeId&&!waStatus)checkStatus();},[show,storeId]);
   useEffect(()=>{if(!show||!storeId)return;loadStats();loadRecent();const id=setInterval(loadStats,30000);return()=>clearInterval(id);},[show,storeId]);
 
@@ -210,7 +211,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   // Fall back to the bundled default template when the admin hasn't customised
   // this status yet — keeps the textarea + preview from being blank on first
   // open and matches the message the backend would actually send.
-  const getTpl=(st)=>{const t=getTemplates();return t?.[lang]?.[st]??WA_DEFAULT_TEMPLATES[lang]?.[st]??'';};
+  const getTpl=(st)=>{const t=getTemplates();const v=t?.[lang]?.[st];if(typeof v==='string'&&v.trim())return v;return WA_DEFAULT_TEMPLATES[lang]?.[st]||WA_DEFAULT_TEMPLATES.en?.[st]||'';};
   const setTpl=(st,val)=>{const t=getTemplates();if(!t[lang])t[lang]={};t[lang][st]=val;setV('wa_templates',JSON.stringify(t));};
   const getEnabled=(st)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; return e[st]!==false;}catch{return true;}};
   const setEnabled=(st,val)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; e[st]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
@@ -512,7 +513,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             <div className="bg-[#e5ddd5] rounded-2xl p-3 min-h-[180px]" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
               <div className={`flex ${lang==='ar'?'flex-row-reverse':''}`}>
                 <div className="max-w-[90%] bg-[#dcf8c6] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:lang==='ar'?'rtl':'ltr'}}>
-                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-gray-900">{preview(getTpl(previewStatus))||'(empty template)'}</p>
+                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-gray-900" style={{color:'#111827'}}>{preview(getTpl(previewStatus))||preview(WA_DEFAULT_TEMPLATES[lang]?.[previewStatus]||WA_DEFAULT_TEMPLATES.en?.[previewStatus]||'')||'(empty template)'}</p>
                   <div className={`flex items-center gap-1 mt-1 ${lang==='ar'?'justify-start':'justify-end'}`}>
                     <span className="text-[9px] text-gray-500">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
                     <span className="text-emerald-500 text-[10px]">✓✓</span>

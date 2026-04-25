@@ -1,6 +1,6 @@
 import React,{Suspense,lazy,useEffect,useState,useRef}from'react';import{Routes,Route,Navigate,useNavigate,useParams,useLocation}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
 
-// The platform brand name is permanently "KyoMarket". The document title is
+// The platform brand name is permanently "MakretDZ". The document title is
 // hard-locked and never overridden by the API, even if platform_settings
 // still contains the legacy "MultiStorePlatform" value. Only the favicon is
 // allowed to be customised through the admin settings.
@@ -24,7 +24,7 @@ function PlatformMeta(){
   const cached=useRef(null);
   useEffect(()=>{
     const apply=(fav)=>{
-      document.title='KyoMarket';
+      document.title='MakretDZ';
       // Remove any existing icon links first to defeat browser caching of
       // the previous store's favicon, then inject a fresh one.
       document.querySelectorAll("link[rel~='icon'],link[rel='shortcut icon']").forEach(el=>el.parentNode&&el.parentNode.removeChild(el));
@@ -47,13 +47,13 @@ function PlatformMeta(){
       const fav=d.favicon||d.site_logo||'';
       cached.current=fav;
       apply(fav);
-    }).catch(()=>{document.title='KyoMarket';});
+    }).catch(()=>{document.title='MakretDZ';});
   },[location.pathname]);
   return null;
 }
 
 // Detect custom domain → redirect to correct store
-const PLATFORM_HOSTS=['localhost','127.0.0.1','kyomarket.com','www.kyomarket.com'];
+const PLATFORM_HOSTS=['localhost','127.0.0.1','makretdz.com','www.makretdz.com','kyomarket.com','www.kyomarket.com'];
 function CustomDomainRedirect(){
   const nav=useNavigate();
   const[checked,setChecked]=useState(false);

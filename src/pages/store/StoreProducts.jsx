@@ -4,7 +4,7 @@ import { productApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList, Tag } from 'lucide-react';
 
 export default function StoreProducts() {
   const { t } = useTranslation();
@@ -37,7 +37,7 @@ export default function StoreProducts() {
   const toggleAll = () => setSelectedItems(prev => prev.size === products.length ? new Set() : new Set(products.map(p => p.id)));
   const clearSelection = () => setSelectedItems(new Set());
 
-  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[]};
+  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false};
   const [form, setForm] = useState({...empty});
 
   const loadProducts = async () => {
@@ -121,7 +121,7 @@ export default function StoreProducts() {
   const openEdit = (p) => {
     setEditing(p);
     let vars = p.variants||[]; if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];} if(!Array.isArray(vars))vars=[];
-    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars});
+    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active});
     setShowModal(true);
   };
 
@@ -274,6 +274,28 @@ export default function StoreProducts() {
                   <p className="text-[11px] text-amber-600">{t('storePage.allowOversellDesc','Customers can still buy this product even if stock reaches 0')}</p>
                 </div>
               </label>
+
+              {/* ═══════ COUPON ═══════ */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="input-label text-xs flex items-center gap-1 mb-0"><Tag size={14}/>{t('storePage.couponLabel','Coupon (discount code for this product)')}</label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.coupon_active} onChange={e=>setForm({...form,coupon_active:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"/>
+                    <span className="text-xs font-bold text-gray-600">{form.coupon_active?(t('storePage.couponActive','Active')):(t('storePage.couponInactive','Inactive'))}</span>
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="input-label text-xs">{t('storePage.couponCode','Coupon Code')}</label>
+                    <input className="input-field uppercase font-mono" placeholder="SAVE10" value={form.coupon_code} onChange={e=>setForm({...form,coupon_code:e.target.value.toUpperCase()})} disabled={!form.coupon_active}/>
+                  </div>
+                  <div>
+                    <label className="input-label text-xs">{t('storePage.couponDiscountPercent','Discount %')}</label>
+                    <input type="number" min="0" max="100" step="0.5" className="input-field" placeholder="10" value={form.coupon_discount_percent} onChange={e=>setForm({...form,coupon_discount_percent:e.target.value})} disabled={!form.coupon_active}/>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-2">{t('storePage.couponHint','At checkout, if the buyer enters this code, the percentage is removed from this product\'s price.')}</p>
+              </div>
 
               {/* Images */}
               <div>
