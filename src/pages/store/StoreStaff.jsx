@@ -41,7 +41,7 @@ const ROLE_PRESETS = {};
 
 export default function StoreStaff() {
   const { t } = useTranslation();
-  const { currentStore } = useStoreManagement();
+  const { currentStore, stores } = useStoreManagement();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -50,7 +50,7 @@ export default function StoreStaff() {
   const [customRoles, setCustomRoles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('custom_roles_' + (currentStore?.id || '')) || '[]'); } catch { return []; }
   });
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: '', permissions: [] });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: '', permissions: [], assigned_store_ids: [] });
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] });
   const [platformTemplates, setPlatformTemplates] = useState([]);
 
@@ -121,15 +121,26 @@ export default function StoreStaff() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', email: '', phone: '', password: '', role: '', permissions: [] });
+    setForm({ name: '', email: '', phone: '', password: '', role: '', permissions: [], assigned_store_ids: currentStore?.id ? [currentStore.id] : [] });
     setShowModal(true);
   };
 
   const openEdit = (s) => {
     setEditing(s);
     const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : (allRoles[s.role]?.permissions || []);
-    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', role: s.role || '', permissions: [...perms] });
+    const assigned = Array.isArray(s.assigned_store_ids) && s.assigned_store_ids.length ? s.assigned_store_ids : (currentStore?.id ? [currentStore.id] : []);
+    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', role: s.role || '', permissions: [...perms], assigned_store_ids: [...assigned] });
     setShowModal(true);
+  };
+
+  const toggleAssignedStore = (id) => {
+    if (id === currentStore?.id) return; // current store always required
+    setForm(prev => ({
+      ...prev,
+      assigned_store_ids: prev.assigned_store_ids.includes(id)
+        ? prev.assigned_store_ids.filter(x => x !== id)
+        : [...prev.assigned_store_ids, id],
+    }));
   };
 
   const selectRole = (key) => {
@@ -155,7 +166,10 @@ export default function StoreStaff() {
       // If the admin skipped role selection but picked permissions, save a
       // generic "custom" role so the card doesn't display "select role".
       const effectiveRole = form.role || (form.permissions.length ? 'custom' : 'viewer');
-      const payload = { ...form, role: effectiveRole, permissions: JSON.stringify(form.permissions) };
+      const assignedIds = Array.isArray(form.assigned_store_ids) && form.assigned_store_ids.length
+        ? Array.from(new Set([...form.assigned_store_ids, currentStore.id]))
+        : [currentStore.id];
+      const payload = { ...form, role: effectiveRole, permissions: JSON.stringify(form.permissions), assigned_store_ids: assignedIds };
       if (!payload.password) delete payload.password;
       if (editing) {
         await ownerApi.updateStaff(currentStore.id, editing.id, payload);
@@ -339,6 +353,40 @@ export default function StoreStaff() {
                 <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
                 <div><label className="input-label">{editing ? t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)') : t('storePage.passwordRequired','Password *')}</label><input type="password" className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
               </div>
+
+              {/* Multi-store assignment — only when admin owns more than one store */}
+              {Array.isArray(stores) && stores.length > 1 && (
+                <div>
+                  <label className="input-label">{t('storePage.assignedStores','Stores this user can access')}</label>
+                  <p className="text-[11px] text-gray-400 mb-2">{t('storePage.assignedStoresHelp','Pick which of your stores this staff member can manage. Current store is always included.')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {stores.map(s => {
+                      const checked = form.assigned_store_ids.includes(s.id) || s.id === currentStore?.id;
+                      const locked = s.id === currentStore?.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => toggleAssignedStore(s.id)}
+                          disabled={locked}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
+                            checked
+                              ? 'border-brand-500 bg-brand-50 text-brand-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          } ${locked ? 'opacity-80 cursor-not-allowed' : ''}`}
+                          title={locked ? t('storePage.currentStoreLocked','Current store is always assigned') : ''}
+                        >
+                          {s.logo
+                            ? <img src={s.logo} alt="" className="w-5 h-5 rounded object-cover" />
+                            : <div className="w-5 h-5 rounded bg-brand-100 flex items-center justify-center text-[10px] text-brand-600 font-bold">{(s.name || 'S')[0]}</div>}
+                          <span className="truncate max-w-[140px]">{s.name}</span>
+                          {checked && <CheckCircle size={12} className="text-brand-500" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Role selection */}
               <div>

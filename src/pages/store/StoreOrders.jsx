@@ -7,7 +7,7 @@ import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer } from 'lucide-react';
 
 // All columns available to toggle / reorder.
 const ALL_COLUMNS = [
@@ -82,10 +82,18 @@ export default function StoreOrders() {
   const { currentStore } = useStoreManagement();
   const location = useLocation();
 
+  // When this page is mounted at /dashboard/preparing, lock the filter to
+  // "preparing" so only orders currently being prepared are visible.
+  const isPreparingPage = location.pathname === '/dashboard/preparing';
+
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(isPreparingPage ? 'preparing' : 'all');
+  // Force the filter back to "preparing" whenever the route is the
+  // preparing page (defends against stale state when navigating between
+  // dashboard tabs).
+  useEffect(() => { if (isPreparingPage && filter !== 'preparing') setFilter('preparing'); }, [isPreparingPage, filter]);
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -239,6 +247,71 @@ export default function StoreOrders() {
   const pageCount = Math.max(1, Math.ceil(totalShown / ps));
   const pageOrders = pageSize === 0 ? filteredOrders : filteredOrders.slice((page-1)*ps, page*ps);
   useEffect(() => { if (page > pageCount) setPage(1); }, [pageCount, page]);
+
+  // Open a print-friendly window with one ticket per selected order so the
+  // user can hand them to the warehouse / delivery driver. Uses window.print()
+  // after the document has rendered.
+  const printOrders = (rows) => {
+    if (!rows.length) return;
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const ticket = (o) => {
+      const items = (() => {
+        let it = o.items; if (typeof it === 'string') try { it = JSON.parse(it); } catch { it = []; }
+        return Array.isArray(it) ? it : [];
+      })();
+      const itemsHtml = items.map(i => `<tr><td>${esc(i.product_name || i.name || '')}${i.variant_name ? ` — ${esc(i.variant_name)}` : ''}</td><td style="text-align:center">${esc(i.quantity || 1)}</td><td style="text-align:right">${fmtMoney(i.price, o.currency)}</td></tr>`).join('');
+      return `
+        <div class="ticket">
+          <div class="hdr">
+            <div>
+              <div class="store">${esc(currentStore?.name || '')}</div>
+              <div class="meta">Order <b>${esc(o.order_number)}</b> · ${esc(new Date(o.created_at).toLocaleString())}</div>
+            </div>
+            <div class="status">${esc(statusConfig[o.status]?.label || o.status)}</div>
+          </div>
+          <div class="cust">
+            <div><b>${esc(o.customer_name || '')}</b></div>
+            <div>${esc(o.customer_phone || '')}</div>
+            <div>${esc(o.shipping_wilaya || '')}${o.shipping_city ? ', ' + esc(o.shipping_city) : ''}</div>
+            ${o.shipping_address ? `<div>${esc(o.shipping_address)}</div>` : ''}
+          </div>
+          <table class="items"><thead><tr><th>Product</th><th>Qty</th><th>Price</th></tr></thead><tbody>${itemsHtml || '<tr><td colspan="3" style="text-align:center;color:#999">No items</td></tr>'}</tbody></table>
+          <div class="totals">
+            <div><span>Shipping</span><b>${fmtMoney(o.shipping_cost, o.currency)}</b></div>
+            <div class="total"><span>Total</span><b>${fmtMoney(o.total, o.currency)}</b></div>
+          </div>
+          ${o.tracking_number ? `<div class="track">Tracking: <b>${esc(o.tracking_number)}</b>${o.delivery_company_name ? ` · ${esc(o.delivery_company_name)}` : ''}</div>` : ''}
+          ${o.notes ? `<div class="notes">Notes: ${esc(o.notes)}</div>` : ''}
+        </div>`;
+    };
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Orders — Print</title>
+      <style>
+        *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111}
+        body{margin:0;padding:16px;background:#fff}
+        .ticket{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px;page-break-after:always}
+        .ticket:last-child{page-break-after:auto}
+        .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:10px;margin-bottom:10px}
+        .store{font-size:18px;font-weight:800}
+        .meta{font-size:11px;color:#666;margin-top:2px}
+        .status{font-size:10px;font-weight:800;background:#111;color:#fff;padding:4px 8px;border-radius:999px;letter-spacing:.5px}
+        .cust{font-size:13px;line-height:1.5;margin-bottom:10px}
+        table.items{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
+        table.items th{background:#f5f5f5;text-align:left;padding:6px;border-bottom:1px solid #ddd;font-size:10px;text-transform:uppercase;color:#555}
+        table.items td{padding:6px;border-bottom:1px solid #f0f0f0}
+        .totals{font-size:12px;border-top:1px dashed #ccc;padding-top:8px}
+        .totals div{display:flex;justify-content:space-between;padding:2px 0}
+        .totals .total{font-size:15px;font-weight:800;border-top:1px solid #111;margin-top:4px;padding-top:6px}
+        .track{margin-top:8px;font-size:11px;color:#444}
+        .notes{margin-top:6px;font-size:11px;color:#666;font-style:italic}
+        @media print{body{padding:0}.ticket{border:none;border-radius:0}}
+      </style>
+      </head><body>${rows.map(ticket).join('')}
+      <script>window.onload=function(){setTimeout(function(){window.print();},250);};</script>
+      </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { toast.error('Allow pop-ups to print orders'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  };
 
   const exportCsv = (rows) => {
     const csv = ['Order,Customer,Phone,Wilaya,Commune,Status,Shipping,Total,Date',
@@ -461,23 +534,33 @@ export default function StoreOrders() {
   return (
     <DashboardLayout>
       {/* Status tabs row */}
-      <div className="mb-3 overflow-x-auto -mx-1 px-1">
-        <div className="flex items-center gap-2 w-max sm:w-auto sm:flex-wrap">
-          {filters.map(f => {
-            const isActive = filter === f.key;
-            const sc = statusConfig[f.key];
-            const count = f.key === 'all' ? total : orders.filter(o => f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
-            const base = sc ? sc.color : 'bg-gray-200';
-            return (
-              <button key={f.key} onClick={() => setFilter(f.key)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? `${base} text-white border-transparent shadow` : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                {f.label}
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
-              </button>
-            );
-          })}
+      {isPreparingPage ? (
+        <div className="mb-3 flex items-center gap-2">
+          <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-purple-500 text-white shadow flex items-center gap-1.5">
+            <Hourglass size={11} /> Preparing
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/25">({orders.filter(o => o.status === 'preparing' || o.status === 'under_preparation').length})</span>
+          </span>
+          <span className="text-[11px] text-gray-400">Showing only orders currently being prepared.</span>
         </div>
-      </div>
+      ) : (
+        <div className="mb-3 overflow-x-auto -mx-1 px-1">
+          <div className="flex items-center gap-2 w-max sm:w-auto sm:flex-wrap">
+            {filters.map(f => {
+              const isActive = filter === f.key;
+              const sc = statusConfig[f.key];
+              const count = f.key === 'all' ? total : orders.filter(o => f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
+              const base = sc ? sc.color : 'bg-gray-200';
+              return (
+                <button key={f.key} onClick={() => setFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? `${base} text-white border-transparent shadow` : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                  {f.label}
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filters card */}
       <div className="glass-card-solid p-4 mb-4">
@@ -485,7 +568,7 @@ export default function StoreOrders() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Status</label>
-            <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field !py-2 text-sm w-full">
+            <select value={filter} onChange={e => setFilter(e.target.value)} disabled={isPreparingPage} title={isPreparingPage ? 'Locked to Preparing on this page' : ''} className={`input-field !py-2 text-sm w-full ${isPreparingPage ? 'opacity-60 cursor-not-allowed' : ''}`}>
               <option value="all">All statuses</option>
               {allStatuses.map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
             </select>
@@ -654,6 +737,7 @@ export default function StoreOrders() {
           <span className="text-sm font-bold">{selectedItems.size} selected</span>
           <div className="w-px h-5 bg-gray-600"/>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold"><Download size={12}/>Export</button>
+          <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold"><Printer size={12}/>Print</button>
           <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold"><Trash2 size={12}/>Delete</button>
           <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg"><X size={14}/></button>
         </div>

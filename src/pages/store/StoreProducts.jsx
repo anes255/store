@@ -37,7 +37,7 @@ export default function StoreProducts() {
   const toggleAll = () => setSelectedItems(prev => prev.size === products.length ? new Set() : new Set(products.map(p => p.id)));
   const clearSelection = () => setSelectedItems(new Set());
 
-  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[]};
+  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[]};
   const [form, setForm] = useState({...empty});
 
   const loadProducts = async () => {
@@ -121,7 +121,7 @@ export default function StoreProducts() {
   const openEdit = (p) => {
     setEditing(p);
     let vars = p.variants||[]; if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];} if(!Array.isArray(vars))vars=[];
-    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars});
+    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars});
     setShowModal(true);
   };
 
@@ -250,8 +250,9 @@ export default function StoreProducts() {
                 <textarea className="input-field" rows={3} value={form.description_en} onChange={set('description_en')} placeholder={t('storePage.productDescriptionPlaceholder','Product description...')}/>
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div><label className="input-label text-xs">{t('storePage.price','Price')} *</label><input type="number" className="input-field" value={form.price} onChange={set('price')}/></div>
+                <div><label className="input-label text-xs">{t('storePage.buyingPrice','Buying Price')}</label><input type="number" className="input-field" placeholder="0" value={form.cost_price} onChange={set('cost_price')}/></div>
                 <div><label className="input-label text-xs">{t('storePage.comparePrice','Compare Price')}</label><input type="number" className="input-field" value={form.compare_at_price} onChange={set('compare_at_price')}/></div>
                 <div><label className="input-label text-xs">{t('storePage.stock','Stock')}</label><input type="number" className="input-field" value={form.stock_quantity} onChange={set('stock_quantity')}/></div>
                 <div><label className="input-label text-xs">{t('storePage.sku','SKU')}</label><input className="input-field" value={form.sku} onChange={set('sku')}/></div>

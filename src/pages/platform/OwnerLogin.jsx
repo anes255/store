@@ -19,11 +19,11 @@ export default function OwnerLogin() {
   const [storePicker, setStorePicker] = useState(null); // {owner, token, stores} when multi-store owner signs in
   // Pull the platform branding (logo/favicon/site name) so the login screen
   // reflects whatever the super-admin has configured.
-  const [brand, setBrand] = useState({ logo: '', favicon: '', name: 'KyoMarket' });
+  const [brand, setBrand] = useState({ logo: '', favicon: '', name: 'MakretDZ' });
   useEffect(() => {
     getPlatformInfo().then(r => {
       const d = r.data || {};
-      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || 'KyoMarket' });
+      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || 'MakretDZ' });
     }).catch(() => {});
   }, []);
 
