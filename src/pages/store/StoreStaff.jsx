@@ -397,11 +397,23 @@ export default function StoreStaff() {
                 </div>
               </div>
 
-              {/* Multi-store assignment — only when admin owns more than one store */}
-              {Array.isArray(stores) && stores.length > 1 && (
-                <div>
-                  <label className="input-label">{t('storePage.assignedStores','Stores this user can access')}</label>
-                  <p className="text-[11px] text-gray-400 mb-2">{t('storePage.assignedStoresHelp','Pick which of your stores this staff member can manage. Current store is always included.')}</p>
+              {/* Multi-store assignment — always rendered so the admin can see
+                  exactly which stores the user can access. */}
+              <div>
+                <label className="input-label">{t('storePage.assignedStores','Stores this user can access')}</label>
+                <p className="text-[11px] text-gray-400 mb-2">{t('storePage.assignedStoresHelp','Pick which of your stores this staff member can manage. Current store is always included.')}</p>
+                {(!Array.isArray(stores) || stores.length <= 1) ? (
+                  <div className="flex flex-wrap gap-2">
+                    <span className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-brand-500 bg-brand-50 text-brand-700 text-xs font-bold">
+                      {currentStore?.logo
+                        ? <img src={currentStore.logo} alt="" className="w-5 h-5 rounded object-cover" />
+                        : <div className="w-5 h-5 rounded bg-brand-100 flex items-center justify-center text-[10px] text-brand-600 font-bold">{(currentStore?.name || 'S')[0]}</div>}
+                      <span className="truncate max-w-[180px]">{currentStore?.name || t('storePage.thisStore','This store')}</span>
+                      <CheckCircle size={12} className="text-brand-500" />
+                    </span>
+                    <span className="text-[11px] text-gray-400 self-center">{t('storePage.onlyOneStore','You only have one store — create more to assign multi-store access.')}</span>
+                  </div>
+                ) : (
                   <div className="flex flex-wrap gap-2">
                     {stores.map(s => {
                       const checked = form.assigned_store_ids.includes(s.id) || s.id === currentStore?.id;
@@ -428,8 +440,8 @@ export default function StoreStaff() {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Role selection */}
               <div>
