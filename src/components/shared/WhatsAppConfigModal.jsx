@@ -72,7 +72,41 @@ const WA_DEFAULT_TEMPLATES={
   ar:{new_order:'مرحبا {customer_name}! استلمنا طلبك #{order_number} من {store_name}. المبلغ: {total} {currency}.',confirmed:'مرحبا {customer_name}! تم تأكيد طلبك #{order_number} من {store_name}. المبلغ: {total} {currency}.',under_preparation:'مرحبا {customer_name}! طلبك #{order_number} قيد التحضير في {store_name}.',shipped:'أخبار سارة {customer_name}! تم شحن طلبك #{order_number}. رقم التتبع: {tracking_number}. التوصيل عبر {delivery_company}.',delivered:'تم تسليم طلبك #{order_number}! شكرا لتسوقك من {store_name}!',cancelled:'مرحبا {customer_name}، تم إلغاء طلبك #{order_number} من {store_name}. إذا كان هذا خطأ، تواصل معنا.',awaiting:'مرحبا {customer_name}، طلبك #{order_number} في انتظار التأكيد.',failed_call_1:'مرحبا {customer_name}، حاولنا الاتصال بك بخصوص الطلب #{order_number}. يرجى معاودة الاتصال.',failed_call_2:'مرحبا {customer_name}، هذه المحاولة الثانية للاتصال بك بخصوص الطلب #{order_number}. يرجى الرد.',failed_call_3:'عزيزي {customer_name}، لم نتمكن من الوصول إليك بخصوص الطلب #{order_number}. قد يتم إلغاء طلبك.',returned:'مرحبا {customer_name}، تم إرجاع طلبك #{order_number}. تواصل مع {store_name} لمزيد من التفاصيل.',abandoned_cart:'مرحبا {customer_name}! تركت {item_count} منتج(ات) في سلتك في {store_name}. أكمل طلبك هنا: {cart_url}'}
 };
 
-export {WA_STATUSES,WA_STATUS_LABELS,WA_TIMING_OPTIONS,WA_CART_TIMING,WA_VARS,WA_CART_VARS,WA_DEFAULT_TEMPLATES};
+// ─────────────────────────────────────────────────────────────────────────────
+// Localized variable aliases.
+// Each English token (e.g. {customer_name}) gets an AR/FR alias built from
+// its translated label with spaces → underscores: {اسم_العميل}, {Nom_du_client}
+// The textarea stores whichever form the admin clicked, and `resolveAliases`
+// rewrites them back to the English token before field substitution. The
+// backend does the same, so messages send correctly regardless of language.
+// ─────────────────────────────────────────────────────────────────────────────
+function localizedToken(englishToken, lang){
+  const lbl=WA_VAR_LABELS[englishToken]?.[lang];
+  if(!lbl||lang==='en')return englishToken;
+  return '{'+lbl.replace(/\s+/g,'_')+'}';
+}
+function buildAliasMap(){
+  const map={};
+  for(const[eng,labels]of Object.entries(WA_VAR_LABELS)){
+    for(const lg of ['ar','fr']){
+      const lbl=labels[lg];
+      if(!lbl)continue;
+      const alias='{'+lbl.replace(/\s+/g,'_')+'}';
+      if(alias!==eng)map[alias]=eng;
+    }
+  }
+  return map;
+}
+const ALIAS_MAP=buildAliasMap();
+function resolveAliases(msg){
+  if(!msg)return msg;
+  for(const[alias,eng]of Object.entries(ALIAS_MAP)){
+    if(msg.includes(alias))msg=msg.split(alias).join(eng);
+  }
+  return msg;
+}
+
+export {WA_STATUSES,WA_STATUS_LABELS,WA_TIMING_OPTIONS,WA_CART_TIMING,WA_VARS,WA_CART_VARS,WA_DEFAULT_TEMPLATES,ALIAS_MAP,resolveAliases,localizedToken};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Single status row — collapsed pill view + inline editor when expanded.
@@ -133,10 +167,13 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
             <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5 flex items-center gap-1`}><Clock size={11}/>{lang==='ar'?'وقت الإرسال بعد تغيير الحالة':lang==='fr'?'Envoyer après changement de statut':'Send time after status change'}</p>
             <select className={`text-xs ${inp} rounded-lg px-3 py-2 font-medium border w-full sm:w-auto`} value={timing} onChange={e=>onTiming(e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select>
           </div>
-          {/* Variables */}
+          {/* Variables — clicking inserts the localized token (e.g. {اسم_العميل}
+              in Arabic, {Nom_du_client} in French) so the message reads in the
+              admin's language. Backend / preview resolve aliases back to the
+              canonical English token before substitution. */}
           <div>
             <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang==='ar'?'إدراج متغير':lang==='fr'?'Insérer une variable':'Insert variable'}</p>
-            <div className="flex flex-wrap gap-1">{WA_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;return(<button key={v} type="button" onClick={()=>onTemplate((template||'')+v)} title={v+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{lbl}</button>);})}</div>
+            <div className="flex flex-wrap gap-1">{WA_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;const tok=localizedToken(v,lang);return(<button key={v} type="button" onClick={()=>onTemplate((template||'')+tok)} title={tok+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{lbl}</button>);})}</div>
           </div>
         </div>
       )}
@@ -170,7 +207,10 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
 
   // ── Template / status helpers (preserve existing data shape) ───────────────
   const getTemplates=()=>{try{return cfg.wa_templates?JSON.parse(typeof cfg.wa_templates==='string'?cfg.wa_templates:JSON.stringify(cfg.wa_templates)):{};}catch{return{};}};
-  const getTpl=(st)=>{const t=getTemplates();return t?.[lang]?.[st]??'';};
+  // Fall back to the bundled default template when the admin hasn't customised
+  // this status yet — keeps the textarea + preview from being blank on first
+  // open and matches the message the backend would actually send.
+  const getTpl=(st)=>{const t=getTemplates();return t?.[lang]?.[st]??WA_DEFAULT_TEMPLATES[lang]?.[st]??'';};
   const setTpl=(st,val)=>{const t=getTemplates();if(!t[lang])t[lang]={};t[lang][st]=val;setV('wa_templates',JSON.stringify(t));};
   const getEnabled=(st)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; return e[st]!==false;}catch{return true;}};
   const setEnabled=(st,val)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; e[st]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
@@ -178,7 +218,9 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   const setTiming=(st,val)=>{try{const tm=cfg.wa_timing?JSON.parse(typeof cfg.wa_timing==='string'?cfg.wa_timing:JSON.stringify(cfg.wa_timing)):{}; tm[st]=val;setV('wa_timing',JSON.stringify(tm));}catch{}};
 
   // Render the template with example values so the preview looks real.
-  const preview=(tpl)=>{let m=tpl||'';const now=new Date();
+  // First map any localized variable aliases (Arabic/French) back to their
+  // canonical English tokens so the substitution catches them.
+  const preview=(tpl)=>{let m=resolveAliases(tpl||'');const now=new Date();
     m=m.replace(/\{store_name\}/g,cfg.name||cfg.store_name||'My Store');
     m=m.replace(/\{order_number\}/g,'100254');
     m=m.replace(/\{customer_name\}/g,'Ahmed Benali');
