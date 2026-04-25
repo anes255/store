@@ -153,9 +153,19 @@ export default function DashboardLayout({children}){
   const{user,logout}=useAuthStore();const{currentStore,setCurrentStore,stores,setStores}=useStoreManagement();
   const[storeSwitchOpen,setStoreSwitchOpen]=useState(false);
   // Load owner's store list if empty (e.g. after page refresh).
+  // Staff: skip the API call (they can't list owner stores) but seed `stores`
+  // from the login response which already returned every store they were
+  // assigned to, so the store switcher works for multi-store staff.
   useEffect(()=>{
-    if(!user||user.is_staff)return;
+    if(!user)return;
     if(Array.isArray(stores)&&stores.length>0)return;
+    if(user.is_staff){
+      try{
+        const cached=JSON.parse(localStorage.getItem('staff_stores')||'[]');
+        if(Array.isArray(cached)&&cached.length)setStores(cached);
+      }catch{}
+      return;
+    }
     import('../../utils/api').then(m=>{m.ownerApi.getStores().then(r=>{if(Array.isArray(r.data))setStores(r.data);}).catch(()=>{});});
   },[user]);// eslint-disable-line
   const planCtx = usePlanFeatures();
@@ -420,7 +430,7 @@ export default function DashboardLayout({children}){
         })()}
       </nav>
       <div className={`border-t p-3 ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400">{t('sidebar.adminRole','Admin')}</p></div>}</div>
+        <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?(user.staff_role_label||String(user.staff_role||'').replace(/^tpl_/,'').replace(/^st_/,'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.staffRole','Staff')):t('sidebar.adminRole','Admin')}</p></div>}</div>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
@@ -486,8 +496,11 @@ export default function DashboardLayout({children}){
           </div>
           {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● {t('sidebar.live','Live')}</span>}
           {/* Header store switcher: shows a "+" when the owner has only one
-              store (quick way to create a second), and a dropdown when 2+. */}
-          {!user?.is_staff&&Array.isArray(stores)&&(
+              store (quick way to create a second), and a dropdown when 2+.
+              Staff don't get the "+" (they can't create stores), but if they
+              were assigned to multiple stores by their admin they DO get the
+              dropdown so they can switch between assigned stores. */}
+          {Array.isArray(stores)&&(user?.is_staff?stores.length>1:true)&&(
             <div className="relative">
               {stores.length<=1?(
                 <button onClick={()=>navigate('/dashboard?new_store=1')} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title={t('sidebar.createStore','Create a store')}>
@@ -516,9 +529,9 @@ export default function DashboardLayout({children}){
                           {sel&&<Check size={12} style={{color:pc}}/>}
                         </button>
                       );})}
-                      <button onClick={()=>{setStoreSwitchOpen(false);navigate('/dashboard?new_store=1');}} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark?'border-gray-700 text-brand-400 hover:bg-gray-800':'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
+                      {!user?.is_staff&&<button onClick={()=>{setStoreSwitchOpen(false);navigate('/dashboard?new_store=1');}} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark?'border-gray-700 text-brand-400 hover:bg-gray-800':'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
                         <Plus size={12}/>{t('sidebar.createAnotherStore','Create another store')}
-                      </button>
+                      </button>}
                     </div>
                   </>)}
                 </>
@@ -529,7 +542,7 @@ export default function DashboardLayout({children}){
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
           <div className="hidden md:block"><LanguageSwitcher/></div>
-          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-700'}`}>{t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
+          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||String(user.staff_role||'').replace(/^tpl_/,'').replace(/^st_/,'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.staffRole','Staff')):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
       </header>
       <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`}>

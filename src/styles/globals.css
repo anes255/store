@@ -160,10 +160,13 @@ html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{ba
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
 
-/* Orders horizontal scroll — natural touch/pointer pan, no visible scrollbar. */
-.orders-hscroll{overflow-x:auto !important;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
-.orders-hscroll::-webkit-scrollbar{display:none;height:0;width:0;}
-.orders-hscroll-clean{-ms-overflow-style:none;}
+/* Orders horizontal scroll — touch/pointer pan AND a visible thick scrollbar for mouse users. */
+.orders-hscroll{overflow-x:auto !important;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#9ca3af #f3f4f6;}
+.orders-hscroll::-webkit-scrollbar{height:14px;width:14px;background:#f3f4f6;}
+.orders-hscroll::-webkit-scrollbar-track{background:#f3f4f6;border-radius:8px;margin:0 4px;}
+.orders-hscroll::-webkit-scrollbar-thumb{background:#9ca3af;border-radius:8px;border:3px solid #f3f4f6;min-width:60px;}
+.orders-hscroll::-webkit-scrollbar-thumb:hover{background:#6b7280;}
+.orders-hscroll::-webkit-scrollbar-thumb:active{background:#4b5563;}
 .orders-hscroll-clean *{user-select:none;}
 .orders-hscroll-clean:active{cursor:grabbing !important;}
 

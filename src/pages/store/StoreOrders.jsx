@@ -224,6 +224,7 @@ export default function StoreOrders() {
     { key: 'preparing',     label: 'Preparing' },
     { key: 'ready',         label: 'Ready' },
     { key: 'shipped',       label: 'Shipped' },
+    { key: 'delivered',     label: 'Delivered' },
   ];
 
   const filteredOrders = useMemo(() => {
@@ -515,9 +516,10 @@ export default function StoreOrders() {
       </div>
 
       {/* Orders header */}
-      <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-        <h1 className="text-xl sm:text-2xl font-black text-gray-900">Orders</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <h1 className="text-xl sm:text-2xl font-black text-gray-900 shrink-0">Orders</h1>
+        <div className="overflow-x-auto -mx-1 px-1 flex-1 min-w-0">
+        <div className="flex items-center gap-2 w-max">
           <button onClick={() => exportCsv(filteredOrders)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <Download size={13}/>Export
           </button>
@@ -574,6 +576,7 @@ export default function StoreOrders() {
           <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
             <Plus size={13}/>Create Order
           </button>
+        </div>
         </div>
       </div>
 

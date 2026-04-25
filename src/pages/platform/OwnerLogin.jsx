@@ -43,9 +43,13 @@ export default function OwnerLogin() {
       }
       setAuth(data.owner, data.token, 'store_owner');
       setStores(data.stores);
-      // If the owner has several stores, show a picker so they choose which
-      // one to manage before navigating.
-      if ((data.stores || []).length > 1 && !data.owner.is_staff) {
+      // Cache stores for staff so DashboardLayout can rehydrate them after a
+      // page refresh (staff can't refetch via /owner/stores like owners do).
+      try{if(data.owner?.is_staff)localStorage.setItem('staff_stores',JSON.stringify(data.stores||[]));}catch{}
+      // If the user has several stores, show a picker so they choose which
+      // one to manage before navigating. Applies to owners AND staff with
+      // multi-store assignments.
+      if ((data.stores || []).length > 1) {
         setStorePicker({ owner: data.owner, stores: data.stores });
         setLoading(false);
         return;
