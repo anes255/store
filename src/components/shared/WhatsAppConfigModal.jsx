@@ -1,15 +1,28 @@
-import React,{useState,useRef,useEffect} from 'react';
+import React,{useState,useRef,useEffect,useMemo} from 'react';
 import {aiApi} from '../../utils/api';
 import {useAdminTheme} from '../../hooks/useStore';
-import {MessageCircle,Phone,Send,X,Save,Clock,ShoppingCart,QrCode,RefreshCw,Wifi,WifiOff} from 'lucide-react';
+import {MessageCircle,Phone,Send,X,Save,Clock,ShoppingCart,QrCode,RefreshCw,Wifi,WifiOff,Bell,ChevronDown,Eye,CheckCircle2,XCircle,Truck,Package,RotateCcw,Hourglass,PhoneOff,Search,Calendar,Check} from 'lucide-react';
 
 const WA_STATUSES=['new_order','confirmed','under_preparation','shipped','delivered','cancelled','awaiting','failed_call_1','failed_call_2','failed_call_3','returned'];
-const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirmé',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En préparation',ar:'قيد التحضير'},shipped:{en:'Shipped',fr:'Expédié',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livré',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annulé',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Failed Call 1',fr:'Appel échoué 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Failed Call 2',fr:'Appel échoué 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Failed Call 3',fr:'Appel échoué 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourné',ar:'مرتجع'}};
+const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirmé',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En préparation',ar:'قيد التحضير'},shipped:{en:'Shipped',fr:'Expédié',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livré',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annulé',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Call Failed 1',fr:'Appel échoué 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Call Failed 2',fr:'Appel échoué 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Call Failed 3',fr:'Appel échoué 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourné',ar:'مرتجع'}};
+// Per-status meta: dot color, soft bg, lucide icon for the row leading icon
+const WA_STATUS_META={
+  new_order:{color:'#3b82f6',bg:'bg-blue-50 text-blue-600',Icon:Bell},
+  confirmed:{color:'#10b981',bg:'bg-emerald-50 text-emerald-600',Icon:CheckCircle2},
+  under_preparation:{color:'#8b5cf6',bg:'bg-purple-50 text-purple-600',Icon:Package},
+  shipped:{color:'#f97316',bg:'bg-orange-50 text-orange-600',Icon:Truck},
+  delivered:{color:'#10b981',bg:'bg-emerald-50 text-emerald-600',Icon:Check},
+  cancelled:{color:'#9ca3af',bg:'bg-gray-100 text-gray-500',Icon:XCircle},
+  awaiting:{color:'#9ca3af',bg:'bg-gray-100 text-gray-500',Icon:Hourglass},
+  failed_call_1:{color:'#ec4899',bg:'bg-pink-50 text-pink-600',Icon:PhoneOff},
+  failed_call_2:{color:'#a855f7',bg:'bg-purple-50 text-purple-600',Icon:PhoneOff},
+  failed_call_3:{color:'#ef4444',bg:'bg-red-50 text-red-600',Icon:PhoneOff},
+  returned:{color:'#ef4444',bg:'bg-red-50 text-red-600',Icon:RotateCcw},
+};
 const WA_TIMING_OPTIONS=[{v:'immediately',en:'Immediately',fr:'Immédiatement',ar:'فورا'},{v:'5min',en:'After 5 min',fr:'Après 5 min',ar:'بعد 5 دقائق'},{v:'15min',en:'After 15 min',fr:'Après 15 min',ar:'بعد 15 دقيقة'},{v:'30min',en:'After 30 min',fr:'Après 30 min',ar:'بعد 30 دقيقة'},{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'2hours',en:'After 2 hours',fr:'Après 2 heures',ar:'بعد ساعتين'}];
 const WA_CART_TIMING=[{v:'1hour',en:'After 1 hour',fr:'Après 1 heure',ar:'بعد ساعة'},{v:'3hours',en:'After 3 hours',fr:'Après 3 heures',ar:'بعد 3 ساعات'},{v:'6hours',en:'After 6 hours',fr:'Après 6 heures',ar:'بعد 6 ساعات'},{v:'12hours',en:'After 12 hours',fr:'Après 12 heures',ar:'بعد 12 ساعة'},{v:'24hours',en:'After 24 hours',fr:'Après 24 heures',ar:'بعد 24 ساعة'}];
 const WA_VARS=['{store_name}','{order_number}','{customer_name}','{customer_phone}','{total}','{total_price}','{subtotal}','{shipping_cost}','{shipping_price}','{shipping_method}','{discount}','{currency}','{shipping_address}','{shipping_city}','{shipping_wilaya}','{shipping_zip}','{wilaya_fr}','{wilaya_ar}','{commune_fr}','{commune_ar}','{payment_method}','{tracking_number}','{tracking_link}','{tracking_URL}','{delivery_company}','{shipping_company}','{delivery_office_name}','{delivery_office_map}','{delivery_office_address}','{order_date}','{order_time}','{item_count}','{product_name}','{product_price}','{products_list}','{product_list}','{variant}','{quantity}','{store_phone}','{store_email}'];
 const WA_CART_VARS=['{store_name}','{cart_url}','{item_count}','{customer_name}','{customer_phone}','{total}','{currency}','{product_list}'];
-// Translatable labels for each variable — shown as tooltip + replaces the raw placeholder name in UI
 const WA_VAR_LABELS={
   '{store_name}':{en:'Store name',fr:'Nom du magasin',ar:'اسم المتجر'},
   '{order_number}':{en:'Order number',fr:'N° de commande',ar:'رقم الطلب'},
@@ -44,7 +57,7 @@ const WA_VAR_LABELS={
   '{tracking_link}':{en:'Tracking link',fr:'Lien de suivi',ar:'رابط التتبع'},
   '{tracking_URL}':{en:'Tracking URL',fr:'URL de suivi',ar:'رابط التتبع'},
   '{shipping_company}':{en:'Shipping company',fr:'Société de livraison',ar:'شركة الشحن'},
-  '{delivery_office_name}':{en:'Delivery office name',fr:'Nom du bureau de livraison',ar:'اسم مكتب التسليم'},
+  '{delivery_office_name}':{en:'Delivery office name',fr:'Nom du bureau',ar:'اسم مكتب التسليم'},
   '{delivery_office_map}':{en:'Delivery office map',fr:'Carte du bureau',ar:'خريطة مكتب التسليم'},
   '{delivery_office_address}':{en:'Delivery office address',fr:'Adresse du bureau',ar:'عنوان مكتب التسليم'},
   '{product_name}':{en:'Product name',fr:'Nom du produit',ar:'اسم المنتج'},
@@ -61,42 +74,121 @@ const WA_DEFAULT_TEMPLATES={
 
 export {WA_STATUSES,WA_STATUS_LABELS,WA_TIMING_OPTIONS,WA_CART_TIMING,WA_VARS,WA_CART_VARS,WA_DEFAULT_TEMPLATES};
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Single status row — collapsed pill view + inline editor when expanded.
+// ─────────────────────────────────────────────────────────────────────────────
+function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemplate,onTest,onPreview,dk,t1,t2,t3,inp,varBtn,expanded,onExpand}){
+  const meta=WA_STATUS_META[status]||{color:'#6b7280',bg:'bg-gray-100 text-gray-500',Icon:Bell};
+  const Icon=meta.Icon;
+  const isRtl=lang==='ar';
+  const labelLocal=WA_STATUS_LABELS[status]?.[lang]||status;
+  const labelEn=WA_STATUS_LABELS[status]?.en||status;
+  const hasTpl=!!(template||'').trim();
+  return(
+    <div className={`rounded-2xl border ${dk?'border-gray-700 bg-gray-800/40':'border-gray-100 bg-white'} overflow-hidden`}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${meta.bg} shrink-0`}><Icon size={16}/></div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-sm font-bold ${t1}`} dir={isRtl?'rtl':'ltr'}>{lang==='ar'?`${labelLocal} ${labelEn.toUpperCase()}`:labelLocal}</span>
+            {!enabled&&<span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase">Disabled</span>}
+          </div>
+          <p className={`text-[11px] ${t3} truncate`}>{hasTpl?(template.length>60?template.slice(0,60)+'…':template):'No template set'}</p>
+        </div>
+        <button type="button" onClick={(e)=>{e.stopPropagation();onPreview();}} title="Preview" className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>Preview</button>
+        <button type="button" onClick={(e)=>{e.stopPropagation();onTest();}} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>Test</button>
+        <span className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:enabled?meta.color:'#d1d5db'}}/>
+        <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} aria-label="Expand">
+          <ChevronDown size={16} className={`transition-transform ${expanded?'rotate-180':''}`}/>
+        </button>
+      </div>
+      {expanded&&(
+        <div className={`px-4 pb-4 pt-1 border-t ${dk?'border-gray-700':'border-gray-100'} space-y-3`}>
+          {/* Notification message */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className={`text-[10px] font-bold ${t3} uppercase`}>{lang==='ar'?'رسالة الإشعار':lang==='fr'?'Message de notification':'Notification Message'} ({lang.toUpperCase()})</p>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={onPreview} className="text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1"><Eye size={11}/>{lang==='ar'?'مثال الرسالة':lang==='fr'?'Exemple':'Example'}</button>
+              </div>
+            </div>
+            <textarea
+              className={`w-full ${inp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all`}
+              rows={4}
+              value={template||''}
+              onChange={e=>onTemplate(e.target.value)}
+              placeholder={lang==='ar'?'اكتب نص الإشعار هنا.':lang==='fr'?'Écrivez le texte de notification ici.':'Write the notification text here.'}
+              style={{direction:isRtl?'rtl':'ltr'}}
+              disabled={!enabled}
+            />
+            <div className="flex items-center justify-between mt-1">
+              <p className={`text-[10px] ${t3}`}>{(template||'').length} characters</p>
+              <div className="flex items-center gap-2">
+                <label className={`flex items-center gap-1.5 text-[11px] ${t2}`}><input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500" checked={enabled} onChange={e=>onToggle(e.target.checked)}/>{lang==='ar'?'مفعّل':lang==='fr'?'Activé':'Enabled'}</label>
+              </div>
+            </div>
+          </div>
+          {/* Send time */}
+          <div>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5 flex items-center gap-1`}><Clock size={11}/>{lang==='ar'?'وقت الإرسال بعد تغيير الحالة':lang==='fr'?'Envoyer après changement de statut':'Send time after status change'}</p>
+            <select className={`text-xs ${inp} rounded-lg px-3 py-2 font-medium border w-full sm:w-auto`} value={timing} onChange={e=>onTiming(e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select>
+          </div>
+          {/* Variables */}
+          <div>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang==='ar'?'إدراج متغير':lang==='fr'?'Insérer une variable':'Insert variable'}</p>
+            <div className="flex flex-wrap gap-1">{WA_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;return(<button key={v} type="button" onClick={()=>onTemplate((template||'')+v)} title={v+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{lbl}</button>);})}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────────────────────────
 export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,onSave}){
   const[cfg,setCfg]=useState({});
   const[lang,setLang]=useState('fr');
-  const[activeStatus,setActiveStatus]=useState('confirmed');
+  const[expanded,setExpanded]=useState(null); // currently expanded status key
   const[waStatus,setWaStatus]=useState(null);
   const[waLoading,setWaLoading]=useState(false);
   const[waError,setWaError]=useState(null);
-  const msgRef=useRef(null);
+  const[showQR,setShowQR]=useState(false);
+  const[stats,setStats]=useState({sent_today:0,success_rate:100,delivered:0,failed:0});
+  const[recent,setRecent]=useState([]);
+  const[recentFilter,setRecentFilter]=useState({status:'all',type:'all',from:'',to:'',q:'',pageSize:25});
+  const[previewStatus,setPreviewStatus]=useState(null);
+  const[savedToast,setSavedToast]=useState(false);
   const dk=useAdminTheme(s=>s.mode==='dark');
 
-  useEffect(()=>{if(show&&initialConfig)setCfg({...initialConfig});},[show,initialConfig]);
+  useEffect(()=>{if(show&&initialConfig)setCfg({...initialConfig});if(show)setLang(initialConfig?.wa_language||'fr');},[show,initialConfig]);
   useEffect(()=>{if(show&&storeId&&!waStatus)checkStatus();},[show,storeId]);
+  useEffect(()=>{if(!show||!storeId)return;loadStats();loadRecent();const id=setInterval(loadStats,30000);return()=>clearInterval(id);},[show,storeId]);
 
   const setV=(k,v)=>setCfg(p=>({...p,[k]:v}));
 
-  // Template helpers
+  // ── Template / status helpers (preserve existing data shape) ───────────────
   const getTemplates=()=>{try{return cfg.wa_templates?JSON.parse(typeof cfg.wa_templates==='string'?cfg.wa_templates:JSON.stringify(cfg.wa_templates)):{};}catch{return{};}};
-  const getTpl=(st)=>{const t=getTemplates();return t?.[lang]?.[st]||WA_DEFAULT_TEMPLATES[lang]?.[st]||'';};
+  const getTpl=(st)=>{const t=getTemplates();return t?.[lang]?.[st]??'';};
   const setTpl=(st,val)=>{const t=getTemplates();if(!t[lang])t[lang]={};t[lang][st]=val;setV('wa_templates',JSON.stringify(t));};
   const getEnabled=(st)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; return e[st]!==false;}catch{return true;}};
   const setEnabled=(st,val)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; e[st]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
   const getTiming=(st)=>{try{const tm=cfg.wa_timing?JSON.parse(typeof cfg.wa_timing==='string'?cfg.wa_timing:JSON.stringify(cfg.wa_timing)):{}; return tm[st]||'immediately';}catch{return 'immediately';}};
   const setTiming=(st,val)=>{try{const tm=cfg.wa_timing?JSON.parse(typeof cfg.wa_timing==='string'?cfg.wa_timing:JSON.stringify(cfg.wa_timing)):{}; tm[st]=val;setV('wa_timing',JSON.stringify(tm));}catch{}};
 
-  const insertVar=(v)=>{const ta=msgRef.current;if(!ta)return;const start=ta.selectionStart;const end=ta.selectionEnd;const cur=getTpl(activeStatus);const nv=cur.substring(0,start)+v+cur.substring(end);setTpl(activeStatus,nv);setTimeout(()=>{ta.focus();ta.selectionStart=ta.selectionEnd=start+v.length;},50);};
-
+  // Render the template with example values so the preview looks real.
   const preview=(tpl)=>{let m=tpl||'';const now=new Date();
     m=m.replace(/\{store_name\}/g,cfg.name||cfg.store_name||'My Store');
     m=m.replace(/\{order_number\}/g,'100254');
-    m=m.replace(/\{customer_name\}/g,'Ahmed');
+    m=m.replace(/\{customer_name\}/g,'Ahmed Benali');
     m=m.replace(/\{customer_phone\}/g,'+213 555 12 34 56');
-    m=m.replace(/\{total\}/g,'3,500');
-    m=m.replace(/\{subtotal\}/g,'3,200');
-    m=m.replace(/\{shipping_cost\}/g,'300');
+    m=m.replace(/\{total\}/g,'9,600');
+    m=m.replace(/\{subtotal\}/g,'9,000');
+    m=m.replace(/\{shipping_cost\}/g,'600');
+    m=m.replace(/\{shipping_price\}/g,'600');
     m=m.replace(/\{discount\}/g,'0');
-    m=m.replace(/\{currency\}/g,cfg.currency||'DZD');
+    m=m.replace(/\{currency\}/g,cfg.currency||'دج');
     m=m.replace(/\{shipping_address\}/g,'12 Rue Didouche');
     m=m.replace(/\{shipping_city\}/g,'Alger');
     m=m.replace(/\{shipping_wilaya\}/g,'Alger');
@@ -108,133 +200,288 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
     m=m.replace(/\{item_count\}/g,'3');
     m=m.replace(/\{order_date\}/g,now.toLocaleDateString(lang==='ar'?'ar-DZ':lang==='fr'?'fr-DZ':'en-GB'));
     m=m.replace(/\{order_time\}/g,now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
-    m=m.replace(/\{product_list\}/g,lang==='ar'?'• حذاء رياضي × 1\n• قميص × 2':lang==='fr'?'• Baskets × 1\n• Chemise × 2':'• Sneakers × 1\n• Shirt × 2');
+    m=m.replace(/\{product_list\}/g,lang==='ar'?'• Whatch (Black / 40-41 / Synthetic) X 2 - 01\n• Dji (Gray / 43-44 / Mesh) X 1 - 02':lang==='fr'?'• Whatch (Black / 40-41 / Synthetic) X 2\n• Dji (Gray / 43-44 / Mesh) X 1':'• Whatch (Black / 40-41 / Synthetic) X 2\n• Dji (Gray / 43-44 / Mesh) X 1');
     m=m.replace(/\{store_phone\}/g,cfg.phone||cfg.store_phone||'+213 550 00 00 00');
     m=m.replace(/\{store_email\}/g,cfg.email||cfg.store_email||'contact@store.com');
     return m;};
-  // Send a real test WA message to a phone number the admin enters
+
+  // ── Test send / connection ─────────────────────────────────────────────────
   const[testPhone,setTestPhone]=useState('');
   const[testSending,setTestSending]=useState(false);
-  const sendTest=async()=>{
+  const sendTest=async(forceStatus)=>{
     if(!storeId){alert('Save store first');return;}
     const phone=(testPhone||'').trim();
-    if(!phone){alert('Enter a test phone number');return;}
-    if(!waStatus?.connected){alert('WhatsApp is not connected — scan the QR first.');return;}
+    if(!phone){alert(lang==='ar'?'أدخل رقم الهاتف للاختبار':lang==='fr'?'Entrez un numéro de test':'Enter a test phone number');return;}
+    if(!waStatus?.connected){alert(lang==='ar'?'WhatsApp غير متصل':lang==='fr'?'WhatsApp non connecté':'WhatsApp is not connected — scan the QR first.');return;}
     setTestSending(true);
     try{
-      const msg=preview(getTpl(activeStatus));
-      // Attempt known endpoints - backend may accept any of these shapes
+      const st=forceStatus||expanded||'confirmed';
+      const msg=preview(getTpl(st));
       let ok=false;
-      try{await aiApi.waSendTest?.(storeId,{phone,message:msg,language:lang});ok=true;}catch(e){/* try fallback */}
+      try{await aiApi.waSendTest?.(storeId,{phone,message:msg,language:lang});ok=true;}catch{}
       if(!ok){
-        try{
-          const{api}=await import('../../utils/api');
-          await api.post(`/ai/wa/${storeId}/send-test`,{phone,message:msg,language:lang});
-          ok=true;
-        }catch(e){throw e;}
+        const{api}=await import('../../utils/api');
+        await api.post(`/ai/wa/${storeId}/send-test`,{phone,message:msg,language:lang});
       }
-      alert('Test message sent to '+phone+' !');
+      alert((lang==='ar'?'أُرسلت رسالة الاختبار إلى ':lang==='fr'?'Test envoyé à ':'Test sent to ')+phone);
     }catch(e){alert('Test failed: '+(e?.response?.data?.error||e.message||'unknown'));}
     setTestSending(false);
   };
 
-  const startConnection=async()=>{if(!storeId)return;setWaLoading(true);setWaError(null);try{const{data}=await aiApi.waQrStart(storeId);if(data.qr||data.connected){setWaStatus(data);setWaLoading(false);return;}for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,2000));try{const{data:st}=await aiApi.waQrStatus(storeId);setWaStatus(st);if(st.qr||st.connected){setWaLoading(false);return;}}catch{}}setWaError('QR is taking a while. Try again.');}catch(e){setWaError(e.response?.data?.error||e.message);}setWaLoading(false);};
-  const disconnect=async()=>{if(!storeId)return;try{await aiApi.waQrDisconnect(storeId);setWaStatus({status:'disconnected',connected:false});}catch{}};
+  const startConnection=async()=>{if(!storeId)return;setWaLoading(true);setWaError(null);setShowQR(true);try{const{data}=await aiApi.waQrStart(storeId);if(data.qr||data.connected){setWaStatus(data);setWaLoading(false);return;}for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,2000));try{const{data:st}=await aiApi.waQrStatus(storeId);setWaStatus(st);if(st.qr||st.connected){setWaLoading(false);return;}}catch{}}setWaError('QR is taking a while. Try again.');}catch(e){setWaError(e.response?.data?.error||e.message);}setWaLoading(false);};
+  const disconnect=async()=>{if(!storeId)return;try{await aiApi.waQrDisconnect(storeId);setWaStatus({status:'disconnected',connected:false});setShowQR(false);}catch{}};
   const checkStatus=async()=>{if(!storeId)return;try{const{data}=await aiApi.waQrStatus(storeId);setWaStatus(data);}catch{setWaStatus({status:'not_started',connected:false});}};
 
-  const isRtl=lang==='ar';
+  // Backend stats / recent activity (best-effort — fall back to zeros if not implemented).
+  const loadStats=async()=>{
+    try{
+      const{api}=await import('../../utils/api');
+      const{data}=await api.get(`/ai/wa/${storeId}/stats`);
+      if(data)setStats({sent_today:data.sent_today||0,success_rate:data.success_rate??100,delivered:data.delivered||0,failed:data.failed||0});
+    }catch{}
+  };
+  const loadRecent=async()=>{
+    try{
+      const{api}=await import('../../utils/api');
+      const{data}=await api.get(`/ai/wa/${storeId}/recent?limit=50`);
+      if(Array.isArray(data?.messages))setRecent(data.messages);
+    }catch{}
+  };
 
-  const handleSave=()=>{if(onSave)onSave(cfg);onClose();};
+  const isRtl=lang==='ar';
+  const handleSaveAll=()=>{if(onSave)onSave(cfg);setSavedToast(true);setTimeout(()=>setSavedToast(false),2200);};
+  const handleSaveAndClose=()=>{if(onSave)onSave(cfg);onClose();};
+
+  const filteredRecent=useMemo(()=>{
+    let rows=[...recent];
+    if(recentFilter.status!=='all')rows=rows.filter(r=>r.status===recentFilter.status);
+    if(recentFilter.type!=='all')rows=rows.filter(r=>r.type===recentFilter.type);
+    if(recentFilter.q){const q=recentFilter.q.toLowerCase();rows=rows.filter(r=>(r.recipient||'').toLowerCase().includes(q)||(r.message||'').toLowerCase().includes(q));}
+    if(recentFilter.from){const f=new Date(recentFilter.from).getTime();rows=rows.filter(r=>new Date(r.created_at).getTime()>=f);}
+    if(recentFilter.to){const tEnd=new Date(recentFilter.to).getTime()+86400000;rows=rows.filter(r=>new Date(r.created_at).getTime()<=tEnd);}
+    return rows.slice(0,recentFilter.pageSize);
+  },[recent,recentFilter]);
 
   if(!show)return null;
 
-  const b=dk?'bg-gray-800':'bg-white';
-  const b2=dk?'bg-gray-900':'bg-gray-50';
-  const br=dk?'border-gray-700':'border-gray-100';
-  const br2=dk?'border-gray-600':'border-gray-200';
+  // Theme tokens
+  const b=dk?'bg-gray-900':'bg-[#fafafa]';
+  const card=dk?'bg-gray-800 border-gray-700':'bg-white border-gray-100';
   const t1=dk?'text-white':'text-gray-900';
   const t2=dk?'text-gray-300':'text-gray-700';
   const t3=dk?'text-gray-400':'text-gray-400';
-  const inp=dk?'bg-gray-700 border-gray-600 text-white placeholder-gray-400':'bg-white border-gray-200 text-gray-900';
-  const pill=dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200';
-  const card=dk?'bg-gray-700 border-gray-600':'bg-white border-gray-100';
+  const inp=dk?'bg-gray-800 border-gray-700 text-white placeholder-gray-500':'bg-white border-gray-200 text-gray-900';
   const varBtn=dk?'bg-gray-700 border-gray-600 text-emerald-400 hover:bg-gray-600':'bg-white border-gray-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300';
-  const cartBg=dk?'bg-purple-900/30':'bg-purple-50';
-  const cartVar=dk?'bg-gray-700 border-purple-500/40 text-purple-300 hover:bg-gray-600':'bg-white border-purple-200 text-purple-700 hover:bg-purple-50';
-  const cartInp=dk?'bg-gray-700 border-purple-500/40 text-white placeholder-gray-400':'bg-white border-purple-200';
-  const connBox=dk?'bg-gray-700 border-gray-600':'bg-white border-gray-200';
 
-  return(<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
-    <div className={`${b} rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col`} onClick={e=>e.stopPropagation()}>
-      {/* Header */}
-      <div className={`px-4 sm:px-6 py-4 border-b ${br} flex items-center justify-between shrink-0`}>
-        <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center"><MessageCircle size={20} className="text-white"/></div><div><h2 className={`font-black text-lg ${t1}`}>WhatsApp Configuration</h2><p className={`text-xs ${t3}`}>Configure automated messages for every order status</p></div></div>
-        <div className="flex items-center gap-2">
-          <div className={`flex ${dk?'bg-gray-700':'bg-gray-100'} rounded-xl p-1 gap-0.5`}>{[{c:'fr',l:'FR',f:'🇫🇷'},{c:'ar',l:'AR',f:'🇩🇿'},{c:'en',l:'EN',f:'🇬🇧'}].map(lg=>(<button key={lg.c} onClick={()=>{setLang(lg.c);setV('wa_language',lg.c);}} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${lang===lg.c?(dk?'bg-gray-600 shadow text-white':'bg-white shadow text-gray-900'):(dk?'text-gray-400 hover:text-gray-200':'text-gray-500 hover:text-gray-700')}`}><span>{lg.f}</span>{lg.l}</button>))}</div>
-          <button onClick={onClose} className={`w-8 h-8 rounded-lg ${dk?'hover:bg-gray-700 text-gray-300':'hover:bg-gray-100'} flex items-center justify-center`}><X size={18}/></button>
-        </div>
-      </div>
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto"><div className="flex flex-col lg:flex-row">
-        {/* LEFT: WhatsApp Preview */}
-        <div className={`lg:w-[340px] shrink-0 p-4 sm:p-5 ${b2} border-b lg:border-b-0 lg:border-r ${br}`}>
-          <p className={`text-[10px] font-bold ${t3} uppercase mb-3`}>Message Preview</p>
-          <div className="bg-[#0b141a] rounded-2xl overflow-hidden shadow-xl max-w-[300px] mx-auto">
-            <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">{(cfg.name||cfg.store_name||'S')[0]?.toUpperCase()}</div><div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{cfg.name||cfg.store_name||'My Store'}</p><p className="text-[10px] text-emerald-400">online</p></div><Phone size={16} className="text-gray-400"/></div>
-            <div className="p-3 min-h-[280px] max-h-[350px] overflow-y-auto" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
-              <div className={`flex ${isRtl?'flex-row-reverse':''} mb-2`}><div className="max-w-[85%]"><div className="bg-[#005c4b] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:isRtl?'rtl':'ltr'}}><p className="text-white text-[13px] leading-relaxed whitespace-pre-wrap break-words">{preview(getTpl(activeStatus))||'Configure a message template...'}</p><div className={`flex items-center gap-1 mt-1 ${isRtl?'justify-start':'justify-end'}`}><span className="text-[10px] text-emerald-200">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><span className="text-emerald-300 text-[10px]">✓✓</span></div></div></div></div>
-            </div>
-            <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">Type a message</span></div><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div></div>
-          </div>
-          <p className={`text-[10px] ${t3} text-center mt-2`}>Preview updates in real-time as you type</p>
-          {/* Connection Status */}
-          <div className={`mt-4 p-3 rounded-xl border ${connBox}`}>
-            <div className="flex items-center justify-between mb-2"><p className={`text-xs font-bold ${t2}`}>Connection</p>{waStatus?.connected?<span className="flex items-center gap-1 text-xs font-bold text-emerald-600"><Wifi size={12}/>Connected</span>:<span className={`flex items-center gap-1 text-xs font-bold ${t3}`}><WifiOff size={12}/>Disconnected</span>}</div>
-            {waStatus?.connected?(<button onClick={disconnect} className={`w-full py-2 ${dk?'bg-red-900/30 text-red-400':'bg-red-50 text-red-600'} rounded-lg text-xs font-bold hover:opacity-80 transition-colors`}>Disconnect</button>):waStatus?.qr?(<div className="text-center"><img src={waStatus.qr.startsWith('data:')?waStatus.qr:`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/><p className={`text-[10px] ${t3} mt-1`}>Scan with WhatsApp</p><button onClick={startConnection} className="mt-2 text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={12}/>Refresh QR</button></div>):(<div><button onClick={startConnection} disabled={waLoading} className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">{waLoading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<QrCode size={14}/>}{waLoading?'Connecting...':'Connect WhatsApp'}</button>{waError&&<p className="text-xs text-red-500 mt-2 text-center">{waError}</p>}</div>)}
-          </div>
-        </div>
-        {/* RIGHT: Configuration */}
-        <div className="flex-1 min-w-0 p-4 sm:p-5 space-y-4">
-          <div><p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>Order Status Templates</p><div className="flex flex-wrap gap-1.5">{WA_STATUSES.map(st=>(<button key={st} onClick={()=>setActiveStatus(st)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${activeStatus===st?'bg-emerald-500 text-white shadow-sm':pill} ${!getEnabled(st)?'opacity-50':''}`}>{WA_STATUS_LABELS[st]?.[lang]||st}</button>))}</div></div>
-          {/* Active Status Config */}
-          <div className={`${b2} rounded-xl p-4 space-y-3`}>
-            <div className="flex items-center justify-between">
-              <h4 className={`font-bold text-sm ${t1} flex items-center gap-2`}><span className={`w-2 h-2 rounded-full ${getEnabled(activeStatus)?'bg-emerald-500':'bg-gray-300'}`}/>{WA_STATUS_LABELS[activeStatus]?.[lang]||activeStatus}</h4>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5"><Clock size={14} className={t3}/><select className={`text-xs ${inp} rounded-lg px-2 py-1.5 font-medium border`} value={getTiming(activeStatus)} onChange={e=>setTiming(activeStatus,e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div>
-                <div className={`w-10 rounded-full cursor-pointer ${getEnabled(activeStatus)?'bg-emerald-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setEnabled(activeStatus,!getEnabled(activeStatus))}><div className={`absolute bg-white rounded-full shadow transition-transform ${getEnabled(activeStatus)?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div>
+  return(
+    <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div className={`${b} w-full sm:rounded-3xl max-w-5xl max-h-[100vh] sm:max-h-[95vh] overflow-hidden shadow-2xl flex flex-col`} onClick={e=>e.stopPropagation()}>
+        {/* ─── Header ─── */}
+        <div className={`px-5 py-4 border-b ${dk?'border-gray-800 bg-gray-900':'border-gray-100 bg-white'} flex items-center justify-between gap-3 shrink-0`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0"><MessageCircle size={18} className="text-white"/></div>
+            <div className="min-w-0">
+              <h2 className={`font-extrabold text-base sm:text-lg ${t1} truncate`}>WhatsApp Order Notifications</h2>
+              <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                <span className={`flex items-center gap-1 font-semibold ${waStatus?.connected?'text-emerald-600':t3}`}><span className={`w-1.5 h-1.5 rounded-full ${waStatus?.connected?'bg-emerald-500':'bg-gray-400'}`}/>{waStatus?.connected?'Active':'Inactive'}</span>
+                <span className={t3}>·</span>
+                <span className={`font-semibold ${waStatus?.connected?'text-emerald-600':t3}`}>Server {waStatus?.connected?'Connected':'Disconnected'}</span>
               </div>
             </div>
-            <div><p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang==='ar'?'إدراج متغير':lang==='fr'?'Insérer une variable':'Insert Variable'}</p><div className="flex flex-wrap gap-1">{WA_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;return(<button key={v} onClick={()=>insertVar(v)} title={v+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{lbl}</button>);})}</div></div>
-            <div><textarea ref={msgRef} className={`w-full ${inp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all`} rows={4} value={getTpl(activeStatus)} onChange={e=>setTpl(activeStatus,e.target.value)} placeholder="Type your message template..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!getEnabled(activeStatus)}/><div className="flex items-center justify-between mt-1"><p className={`text-[10px] ${t3}`}>{getTpl(activeStatus).length} characters</p><button onClick={()=>setTpl(activeStatus,WA_DEFAULT_TEMPLATES[lang]?.[activeStatus]||'')} className="text-[10px] text-emerald-600 font-bold hover:underline">{lang==='ar'?'إعادة تعيين للافتراضي':lang==='fr'?'Réinitialiser':'Reset to default'}</button></div></div>
-            {/* Test Message */}
-            <div className={`${dk?'bg-emerald-900/20 border border-emerald-500/30':'bg-emerald-50 border border-emerald-200'} rounded-xl p-3 mt-2`}>
-              <p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>{lang==='ar'?'إرسال رسالة تجريبية':lang==='fr'?'Envoyer un message test':'Send Test Message'}</p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input className={`flex-1 ${inp} border rounded-lg px-3 py-2 text-sm font-mono`} value={testPhone} onChange={e=>setTestPhone(e.target.value)} placeholder={lang==='ar'?'+213 5XX XX XX XX':lang==='fr'?'Téléphone de test (+213...)':'Test phone (+213...)'}/>
-                <button onClick={sendTest} disabled={testSending||!waStatus?.connected} className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap">
-                  {testSending?<div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Send size={12}/>}
-                  {testSending?(lang==='ar'?'جارٍ الإرسال...':lang==='fr'?'Envoi...':'Sending...'):(lang==='ar'?'إرسال اختبار':lang==='fr'?'Envoyer test':'Send Test')}
-                </button>
-              </div>
-              <p className={`text-[10px] ${t3} mt-1.5`}>{lang==='ar'?`سيتم الإرسال بلغتك المختارة: ${lang.toUpperCase()} واستخدام قالب ${WA_STATUS_LABELS[activeStatus]?.ar}`:lang==='fr'?`Envoyé dans votre langue (${lang.toUpperCase()}) avec le template "${WA_STATUS_LABELS[activeStatus]?.fr}"`:`Will send in ${lang.toUpperCase()} using the "${WA_STATUS_LABELS[activeStatus]?.en}" template.`}</p>
-            </div>
           </div>
-          {/* All Statuses Overview */}
-          <div><p className={`text-[10px] font-bold ${t3} uppercase mb-2`}>All Status Overview</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">{WA_STATUSES.map(st=>(<div key={st} onClick={()=>setActiveStatus(st)} className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${activeStatus===st?(dk?'border-emerald-400 bg-emerald-900/20':'border-emerald-400 bg-emerald-50'):card+' hover:border-gray-300'}`}><div className="flex items-center gap-2 min-w-0"><div className={`w-2 h-2 rounded-full shrink-0 ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'}`}/><span className={`text-xs font-medium ${t2} truncate`}>{WA_STATUS_LABELS[st]?.[lang]||st}</span></div><div className="flex items-center gap-1.5 shrink-0"><span className={`text-[9px] ${t3} font-medium`}>{WA_TIMING_OPTIONS.find(o=>o.v===getTiming(st))?.[lang]||'Immediately'}</span><div className={`w-7 h-4 rounded-full ${getEnabled(st)?'bg-emerald-500':'bg-gray-300'} relative`} onClick={e=>{e.stopPropagation();setEnabled(st,!getEnabled(st));}}><div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform ${getEnabled(st)?'translate-x-3.5':'translate-x-0.5'}`} style={{top:2}}/></div></div></div>))}</div></div>
-          {/* Abandoned Cart */}
-          <div className={`${cartBg} rounded-xl p-4 space-y-3`}>
-            <div className="flex items-center justify-between"><div className="flex items-center gap-2"><ShoppingCart size={16} className="text-purple-600"/><h4 className={`font-bold text-sm ${t1}`}>Abandoned Cart Recovery</h4></div><div className="flex items-center gap-3"><div className="flex items-center gap-1.5"><Clock size={14} className={t3}/><select className={`text-xs ${inp} border rounded-lg px-2 py-1.5 font-medium`} value={cfg.wa_abandoned_cart_timing||'3hours'} onChange={e=>setV('wa_abandoned_cart_timing',e.target.value)}>{WA_CART_TIMING.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select></div><div className={`w-10 rounded-full cursor-pointer ${cfg.wa_abandoned_cart_enabled?'bg-purple-500':'bg-gray-300'} relative transition-colors`} style={{height:22}} onClick={()=>setV('wa_abandoned_cart_enabled',!cfg.wa_abandoned_cart_enabled)}><div className={`absolute bg-white rounded-full shadow transition-transform ${cfg.wa_abandoned_cart_enabled?'translate-x-5':'translate-x-0.5'}`} style={{width:18,height:18,top:2}}/></div></div></div>
-            <div className="flex flex-wrap gap-1">{WA_CART_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;return(<button key={v} onClick={()=>{const cur=cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||'';setV('wa_abandoned_cart_msg',cur+v);}} title={v+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${cartVar}`}>{lbl}</button>);})}</div>
-            <textarea className={`w-full ${cartInp} border rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-purple-300 focus:border-purple-400 outline-none transition-all`} rows={3} value={cfg.wa_abandoned_cart_msg||WA_DEFAULT_TEMPLATES[lang]?.abandoned_cart||''} onChange={e=>setV('wa_abandoned_cart_msg',e.target.value)} placeholder="Abandoned cart message..." style={{direction:isRtl?'rtl':'ltr'}} disabled={!cfg.wa_abandoned_cart_enabled}/>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className={`flex ${dk?'bg-gray-800':'bg-gray-100'} rounded-xl p-1 gap-0.5`}>
+              {[{c:'ar',l:'العربية'},{c:'fr',l:'Français'},{c:'en',l:'English'}].map(lg=>(
+                <button key={lg.c} onClick={()=>{setLang(lg.c);setV('wa_language',lg.c);}} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${lang===lg.c?(dk?'bg-gray-700 text-white shadow':'bg-white text-gray-900 shadow'):(dk?'text-gray-400':'text-gray-500 hover:text-gray-700')}`}>{lg.l}</button>
+              ))}
+            </div>
+            <button onClick={onClose} className={`w-8 h-8 rounded-lg flex items-center justify-center ${dk?'hover:bg-gray-800 text-gray-300':'hover:bg-gray-100 text-gray-500'}`}><X size={18}/></button>
           </div>
         </div>
-      </div></div>
-      {/* Footer */}
-      <div className={`px-4 sm:px-6 py-3 border-t ${br} flex items-center justify-between shrink-0 ${b2}`}>
-        <p className={`text-[10px] ${t3}`}>Changes are saved when you click Save & Close</p>
-        <div className="flex items-center gap-2"><button onClick={onClose} className={`px-4 py-2 text-xs font-bold ${dk?'text-gray-400 hover:text-gray-200':'text-gray-500 hover:text-gray-700'}`}>Close</button><button onClick={handleSave} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 flex items-center gap-1.5"><Save size={14}/>Save & Close</button></div>
+
+        {/* ─── Body ─── */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+          {/* ── Connect WhatsApp Business (QR Code) ── */}
+          <div className={`rounded-2xl border ${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`w-8 h-8 rounded-xl ${dk?'bg-gray-700':'bg-gray-50'} flex items-center justify-center`}><QrCode size={16} className="text-gray-500"/></div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-bold text-sm ${t1}`}>Connect WhatsApp Business (QR Code)</p>
+                {waStatus?.connected?(
+                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5"><Check size={11}/>Connected for automated messages {waStatus.phone&&<span className={`font-mono ${t3}`}>· {waStatus.phone}</span>}</p>
+                ):(
+                  <p className={`text-[11px] ${t3}`}>Scan the QR with WhatsApp on your phone to connect.</p>
+                )}
+              </div>
+              {waStatus?.connected?(
+                <button onClick={disconnect} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"><WifiOff size={11}/>Disconnect</button>
+              ):(
+                <button onClick={startConnection} disabled={waLoading} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-1">{waLoading?<RefreshCw size={11} className="animate-spin"/>:<QrCode size={11}/>}Connect</button>
+              )}
+            </div>
+            {/* QR display when starting */}
+            {showQR&&waStatus?.qr&&!waStatus?.connected&&(
+              <div className="text-center mb-3">
+                <img src={waStatus.qr.startsWith('data:')?waStatus.qr:`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/>
+                <p className={`text-[10px] ${t3} mt-1`}>Scan with WhatsApp → Settings → Linked Devices</p>
+                <button onClick={startConnection} className="mt-1 text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={11}/>Refresh QR</button>
+              </div>
+            )}
+            {/* Quick send test message bar */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input className={`flex-1 ${inp} border rounded-xl px-3 py-2 text-sm font-mono`} value={testPhone} onChange={e=>setTestPhone(e.target.value)} placeholder="+213 5XX XX XX XX"/>
+              <input readOnly value={lang==='ar'?'رسالة اختبار سريعة':lang==='fr'?'Message test rapide':'Quick send test message'} className={`flex-1 ${inp} border rounded-xl px-3 py-2 text-sm`}/>
+              <button onClick={()=>sendTest()} disabled={testSending||!waStatus?.connected} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0">
+                {testSending?<RefreshCw size={12} className="animate-spin"/>:<Send size={12}/>}Test Send
+              </button>
+            </div>
+            <p className={`text-[10px] ${t3} mt-2`}>Automatically sent to each customer when their order status changes. The session is saved locally and does not require re-linking.</p>
+            {waError&&<p className="text-[11px] text-red-500 mt-1">{waError}</p>}
+          </div>
+
+          {/* ── Stats row ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              {label:'SENT TODAY',value:stats.sent_today,color:'#3b82f6'},
+              {label:'SUCCESS RATE',value:`${stats.success_rate}%`,color:'#10b981'},
+              {label:'DELIVERED',value:stats.delivered,color:'#10b981'},
+              {label:'FAILED',value:stats.failed,color:'#ef4444'},
+            ].map(s=>(
+              <div key={s.label} className={`rounded-2xl border ${card} p-3.5 relative`}>
+                <span className="absolute top-3 right-3 w-2 h-2 rounded-full" style={{backgroundColor:s.color}}/>
+                <p className={`text-[10px] font-bold ${t3} uppercase tracking-wider`}>{s.label}</p>
+                <p className={`text-2xl font-extrabold ${t1} mt-1`}>{s.value}</p>
+                <p className={`text-[10px] ${t3} mt-0.5`}>{s.label==='SENT TODAY'?'Total messages sent today':s.label==='SUCCESS RATE'?'Delivery success rate':s.label==='DELIVERED'?'Lifetime delivered messages':'Retrying automatically'}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Message Template Settings ── */}
+          <div className={`rounded-2xl border ${card} p-4`}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`w-8 h-8 rounded-xl ${dk?'bg-gray-700':'bg-gray-50'} flex items-center justify-center`}><Bell size={15} className="text-emerald-500"/></div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-bold text-sm ${t1}`}>Message Template Settings</p>
+                <p className={`text-[11px] ${t3}`}>Sent automatically when order status changes</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {WA_STATUSES.map(st=>(
+                <StatusRow
+                  key={st}
+                  status={st}
+                  lang={lang}
+                  enabled={getEnabled(st)}
+                  timing={getTiming(st)}
+                  template={getTpl(st)}
+                  onToggle={(v)=>setEnabled(st,v)}
+                  onTiming={(v)=>setTiming(st,v)}
+                  onTemplate={(v)=>setTpl(st,v)}
+                  onTest={()=>sendTest(st)}
+                  onPreview={()=>setPreviewStatus(st)}
+                  dk={dk} t1={t1} t2={t2} t3={t3} inp={inp} varBtn={varBtn}
+                  expanded={expanded===st}
+                  onExpand={()=>setExpanded(expanded===st?null:st)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ── Recent activity ── */}
+          <div className={`rounded-2xl border ${card} p-4`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-xl ${dk?'bg-gray-700':'bg-gray-50'} flex items-center justify-center`}><RefreshCw size={14} className="text-gray-500"/></div>
+                <div>
+                  <p className={`font-bold text-sm ${t1}`}>Recent Activity</p>
+                  <p className={`text-[11px] ${t3}`}>Last 50 messages sent to customers</p>
+                </div>
+              </div>
+              <button onClick={loadRecent} className={`p-1.5 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={13}/></button>
+            </div>
+            {/* Filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
+              <select className={`text-[11px] ${inp} border rounded-lg px-2 py-1.5`} value={recentFilter.status} onChange={e=>setRecentFilter(p=>({...p,status:e.target.value}))}>
+                <option value="all">All statuses</option>
+                {WA_STATUSES.map(s=><option key={s} value={s}>{WA_STATUS_LABELS[s]?.en||s}</option>)}
+              </select>
+              <select className={`text-[11px] ${inp} border rounded-lg px-2 py-1.5`} value={recentFilter.type} onChange={e=>setRecentFilter(p=>({...p,type:e.target.value}))}>
+                <option value="all">All types</option>
+                <option value="auto">Auto</option>
+                <option value="test">Test</option>
+                <option value="manual">Manual</option>
+              </select>
+              <div className="relative col-span-1"><Calendar size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input type="date" className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} value={recentFilter.from} onChange={e=>setRecentFilter(p=>({...p,from:e.target.value}))}/></div>
+              <div className="relative col-span-1"><Calendar size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input type="date" className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} value={recentFilter.to} onChange={e=>setRecentFilter(p=>({...p,to:e.target.value}))}/></div>
+              <div className="relative col-span-1"><Search size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} placeholder="Search code…" value={recentFilter.q} onChange={e=>setRecentFilter(p=>({...p,q:e.target.value}))}/></div>
+              <select className={`text-[11px] ${inp} border rounded-lg px-2 py-1.5`} value={recentFilter.pageSize} onChange={e=>setRecentFilter(p=>({...p,pageSize:Number(e.target.value)}))}>
+                {[10,25,50,100].map(n=><option key={n} value={n}>{n} results</option>)}
+              </select>
+            </div>
+            {filteredRecent.length===0?(
+              <div className={`text-center py-8 text-[12px] ${t3}`}>No messages yet — send a test or wait for an order.</div>
+            ):(
+              <div className="overflow-x-auto -mx-2">
+                <table className="w-full text-xs">
+                  <thead className={`${dk?'text-gray-400':'text-gray-500'} text-[10px] uppercase`}>
+                    <tr><th className="text-left px-2 py-2">When</th><th className="text-left px-2 py-2">To</th><th className="text-left px-2 py-2">Status</th><th className="text-left px-2 py-2">Result</th></tr>
+                  </thead>
+                  <tbody>
+                    {filteredRecent.map((m,i)=>(
+                      <tr key={i} className={`border-t ${dk?'border-gray-700':'border-gray-100'}`}>
+                        <td className={`px-2 py-2 ${t3}`}>{new Date(m.created_at).toLocaleString()}</td>
+                        <td className={`px-2 py-2 font-mono ${t2}`}>{m.recipient}</td>
+                        <td className="px-2 py-2"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${WA_STATUS_META[m.status]?.bg||'bg-gray-100 text-gray-500'}`}>{WA_STATUS_LABELS[m.status]?.en||m.status||'—'}</span></td>
+                        <td className="px-2 py-2"><span className={`text-[10px] font-bold ${m.status==='sent'||m.delivered?'text-emerald-600':'text-red-500'}`}>{m.delivered||m.status==='sent'?'Delivered':'Failed'}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="h-16"/>{/* spacer for fixed footer */}
+        </div>
+
+        {/* ─── Footer ─── */}
+        <div className={`px-4 sm:px-6 py-3 border-t ${dk?'border-gray-800 bg-gray-900':'border-gray-100 bg-white'} flex items-center justify-end gap-2 shrink-0`}>
+          {savedToast&&(
+            <span className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-[11px] font-bold"><Check size={12}/>{Object.keys(getTemplates()[lang]||{}).length} templates saved</span>
+          )}
+          <button onClick={handleSaveAll} className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 flex items-center gap-1.5"><Save size={13}/>Save All</button>
+          <button onClick={handleSaveAndClose} className={`px-4 py-2 rounded-xl text-xs font-bold ${dk?'bg-gray-700 text-white hover:bg-gray-600':'bg-gray-900 text-white hover:bg-black'}`}>Save & Close</button>
+        </div>
       </div>
+
+      {/* ─── Preview popup ─── */}
+      {previewStatus&&(
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setPreviewStatus(null)}>
+          <div className={`${dk?'bg-gray-800':'bg-white'} rounded-3xl p-5 w-full max-w-sm shadow-2xl relative`} onClick={e=>e.stopPropagation()}>
+            <button onClick={()=>setPreviewStatus(null)} className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center ${dk?'hover:bg-gray-700 text-gray-300':'hover:bg-gray-100 text-gray-500'}`}><X size={16}/></button>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center"><MessageCircle size={14} className="text-white"/></div>
+              <div className="min-w-0">
+                <p className={`text-sm font-bold ${t1}`}>{lang==='ar'?'إشعار':lang==='fr'?'Notification':'Notification'} · {WA_STATUS_LABELS[previewStatus]?.[lang]||previewStatus}</p>
+                <p className={`text-[10px] ${t3}`}>WhatsApp Preview</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center mb-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk?'bg-gray-700 text-gray-300':'bg-gray-100 text-gray-600'}`}>SYSTEM PREVIEW</span></div>
+            <div className="bg-[#e5ddd5] rounded-2xl p-3 min-h-[180px]" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
+              <div className={`flex ${lang==='ar'?'flex-row-reverse':''}`}>
+                <div className="max-w-[90%] bg-[#dcf8c6] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{direction:lang==='ar'?'rtl':'ltr'}}>
+                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-gray-900">{preview(getTpl(previewStatus))||'(empty template)'}</p>
+                  <div className={`flex items-center gap-1 mt-1 ${lang==='ar'?'justify-start':'justify-end'}`}>
+                    <span className="text-[9px] text-gray-500">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                    <span className="text-emerald-500 text-[10px]">✓✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className={`text-center text-[10px] ${t3} mt-2`}>Preview generated with sample data</p>
+          </div>
+        </div>
+      )}
     </div>
-  </div>);
+  );
 }
