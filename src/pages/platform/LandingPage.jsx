@@ -317,7 +317,7 @@ export default function LandingPage() {
             <Link to="/login" className="text-sm font-semibold text-gray-700 hover:text-brand-600">{t('nav.login')}</Link>
             <Link to="/register" className="btn-primary text-sm !py-2.5 !px-5">{t('nav.signup')}</Link>
           </div>
-          <div className="md:hidden flex items-center gap-3"><LanguageSwitcher /><Link to="/register" className="btn-primary text-xs !py-2 !px-4">{t('nav.signup')}</Link></div>
+          <div className="md:hidden flex items-center gap-2"><LanguageSwitcher /><Link to="/login" className="text-xs font-semibold text-gray-700 hover:text-brand-600 px-2">{t('nav.login')}</Link><Link to="/register" className="btn-primary text-xs !py-2 !px-4">{t('nav.signup')}</Link></div>
         </div>
       </nav>
 
