@@ -140,6 +140,18 @@ export default function TrackingPixels(){
                 <h3 className={`font-bold text-sm ${t1}`}>{px.name}</h3>
                 <p className={`text-xs ${t2} line-clamp-1`}>{px.desc}</p>
               </div>
+              {/* Always-visible test button — fires a test event immediately so
+                  the user can verify the pixel works without enabling/saving. */}
+              <button
+                onClick={()=>testPixel(px)}
+                disabled={testing===px.id||!c.value}
+                title={!c.value?'Enable & enter ID first':'Send a test event'}
+                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{backgroundColor:px.color}}
+              >
+                {testing===px.id?<Loader2 size={11} className="animate-spin"/>:<Send size={11}/>}
+                {testing===px.id?'Testing':'Test'}
+              </button>
               <button onClick={()=>toggle(px.id)} className="shrink-0">
                 {on?<ToggleRight size={28} style={{color:px.color}}/>:<ToggleLeft size={28} className="text-gray-400"/>}
               </button>

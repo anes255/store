@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/shared/DashboardLayout';
-import { Shield, Zap, Lock, ArrowRight, FileText, Truck, ExternalLink, Copy, KeyRound, PlugZap, CheckCircle2 } from 'lucide-react';
+import { Shield, Zap, Lock, ArrowRight, Truck, KeyRound, PlugZap, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Step-specific destinations so the workflow cards are also clickable.
@@ -16,12 +16,6 @@ const STEP_LINKS = {
 export default function HowToConnect() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-
-  const openDocs = () => {
-    // Open the developer documentation in a new tab. The link can be moved
-    // to a platform-info field later if the super admin wants to override it.
-    window.open('https://docs.makretdz.com/integrations', '_blank', 'noopener,noreferrer');
-  };
 
   const goMarketplace = () => navigate('/dashboard/shipping-partners');
   const goWilayas = () => navigate('/dashboard/shipping-wilayas');
@@ -79,14 +73,6 @@ export default function HowToConnect() {
             );
           })}
 
-          <button
-            type="button"
-            onClick={openDocs}
-            className="w-full py-3 bg-gray-900 hover:bg-black text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors mt-3"
-          >
-            <FileText size={16} />{t('storePage.developerDocumentation', 'Developer Documentation')}
-            <ExternalLink size={14} className="opacity-70" />
-          </button>
         </div>
 
         {/* Shipping workflow */}
