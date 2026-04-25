@@ -170,6 +170,10 @@ html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{ba
 .orders-hscroll-clean *{user-select:none;}
 .orders-hscroll-clean:active{cursor:grabbing !important;}
 
+/* Hide scrollbars on header rows that scroll horizontally on mobile */
+.no-scrollbar::-webkit-scrollbar{display:none;height:0;width:0;}
+.no-scrollbar{scrollbar-width:none;-ms-overflow-style:none;}
+
 /* Row density — admin-controlled order box size. */
 .orders-row-compact td,.orders-row-compact th{padding-top:.35rem !important;padding-bottom:.35rem !important;}
 .orders-row-compact td{font-size:.78em;}

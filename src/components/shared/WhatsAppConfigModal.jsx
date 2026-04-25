@@ -211,7 +211,9 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   // Fall back to the bundled default template when the admin hasn't customised
   // this status yet — keeps the textarea + preview from being blank on first
   // open and matches the message the backend would actually send.
-  const getTpl=(st)=>{const t=getTemplates();const v=t?.[lang]?.[st];if(typeof v==='string'&&v.trim())return v;return WA_DEFAULT_TEMPLATES[lang]?.[st]||WA_DEFAULT_TEMPLATES.en?.[st]||'';};
+  // Returns the user's saved template (even if empty so the admin can clear it),
+  // falling back to the bundled default ONLY when the key has never been set.
+  const getTpl=(st)=>{const t=getTemplates();const v=t?.[lang]?.[st];if(typeof v==='string')return v;return WA_DEFAULT_TEMPLATES[lang]?.[st]||WA_DEFAULT_TEMPLATES.en?.[st]||'';};
   const setTpl=(st,val)=>{const t=getTemplates();if(!t[lang])t[lang]={};t[lang][st]=val;setV('wa_templates',JSON.stringify(t));};
   const getEnabled=(st)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; return e[st]!==false;}catch{return true;}};
   const setEnabled=(st,val)=>{try{const e=cfg.wa_enabled_statuses?JSON.parse(typeof cfg.wa_enabled_statuses==='string'?cfg.wa_enabled_statuses:JSON.stringify(cfg.wa_enabled_statuses)):{}; e[st]=val;setV('wa_enabled_statuses',JSON.stringify(e));}catch{}};
@@ -222,30 +224,65 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   // First map any localized variable aliases (Arabic/French) back to their
   // canonical English tokens so the substitution catches them.
   const preview=(tpl)=>{let m=resolveAliases(tpl||'');const now=new Date();
-    m=m.replace(/\{store_name\}/g,cfg.name||cfg.store_name||'My Store');
-    m=m.replace(/\{order_number\}/g,'100254');
-    m=m.replace(/\{customer_name\}/g,'Ahmed Benali');
-    m=m.replace(/\{customer_phone\}/g,'+213 555 12 34 56');
-    m=m.replace(/\{total\}/g,'9,600');
-    m=m.replace(/\{subtotal\}/g,'9,000');
-    m=m.replace(/\{shipping_cost\}/g,'600');
-    m=m.replace(/\{shipping_price\}/g,'600');
-    m=m.replace(/\{discount\}/g,'0');
-    m=m.replace(/\{currency\}/g,cfg.currency||'دج');
-    m=m.replace(/\{shipping_address\}/g,'12 Rue Didouche');
-    m=m.replace(/\{shipping_city\}/g,'Alger');
-    m=m.replace(/\{shipping_wilaya\}/g,'Alger');
-    m=m.replace(/\{shipping_zip\}/g,'16000');
-    m=m.replace(/\{payment_method\}/g,'COD');
-    m=m.replace(/\{tracking_number\}/g,'TR-98421');
-    m=m.replace(/\{delivery_company\}/g,'Yalidine');
-    m=m.replace(/\{cart_url\}/g,'https://store.com/cart/abc');
-    m=m.replace(/\{item_count\}/g,'3');
-    m=m.replace(/\{order_date\}/g,now.toLocaleDateString(lang==='ar'?'ar-DZ':lang==='fr'?'fr-DZ':'en-GB'));
-    m=m.replace(/\{order_time\}/g,now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
-    m=m.replace(/\{product_list\}/g,lang==='ar'?'• Whatch (Black / 40-41 / Synthetic) X 2 - 01\n• Dji (Gray / 43-44 / Mesh) X 1 - 02':lang==='fr'?'• Whatch (Black / 40-41 / Synthetic) X 2\n• Dji (Gray / 43-44 / Mesh) X 1':'• Whatch (Black / 40-41 / Synthetic) X 2\n• Dji (Gray / 43-44 / Mesh) X 1');
-    m=m.replace(/\{store_phone\}/g,cfg.phone||cfg.store_phone||'+213 550 00 00 00');
-    m=m.replace(/\{store_email\}/g,cfg.email||cfg.store_email||'contact@store.com');
+    // Localized example values per chosen language so the preview reads naturally.
+    const wilayaName=lang==='ar'?'الجزائر':'Alger';
+    const communeName=lang==='ar'?'باب الواد':lang==='fr'?'Bab El Oued':'Bab El Oued';
+    const customerName=lang==='ar'?'أحمد بن علي':'Ahmed Benali';
+    const productList=lang==='ar'
+      ?'• ساعة (أسود / 40-41 / صناعي) × 2\n• حذاء (رمادي / 43-44) × 1'
+      :lang==='fr'
+        ?'• Montre (Noir / 40-41 / Synthétique) × 2\n• Chaussure (Gris / 43-44) × 1'
+        :'• Watch (Black / 40-41 / Synthetic) × 2\n• Shoe (Gray / 43-44) × 1';
+    const productName=lang==='ar'?'ساعة كلاسيكية':lang==='fr'?'Montre classique':'Classic Watch';
+    const variantStr=lang==='ar'?'أسود / 40-41':lang==='fr'?'Noir / 40-41':'Black / 40-41';
+    const paymentLbl=lang==='ar'?'الدفع عند الاستلام':lang==='fr'?'Paiement à la livraison':'Cash on Delivery';
+    const shippingMethod=lang==='ar'?'إلى المنزل':lang==='fr'?'À domicile':'Home delivery';
+    const officeName=lang==='ar'?'مكتب يلدين باب الواد':lang==='fr'?'Bureau Yalidine Bab El Oued':'Yalidine Office Bab El Oued';
+    const officeAddr=lang==='ar'?'شارع ديدوش 12، باب الواد':lang==='fr'?'12 Rue Didouche, Bab El Oued':'12 Rue Didouche, Bab El Oued';
+    const subs={
+      store_name:cfg.name||cfg.store_name||'My Store',
+      order_number:'100254',
+      customer_name:customerName,
+      customer_phone:'+213 555 12 34 56',
+      total:'9,600',
+      total_price:'9,600',
+      subtotal:'9,000',
+      shipping_cost:'600',
+      shipping_price:'600',
+      shipping_method:shippingMethod,
+      discount:'0',
+      currency:cfg.currency||(lang==='ar'?'دج':'DZD'),
+      shipping_address:lang==='ar'?'شارع ديدوش 12':'12 Rue Didouche',
+      shipping_city:communeName,
+      shipping_wilaya:wilayaName,
+      shipping_zip:'16000',
+      wilaya_fr:'Alger',
+      wilaya_ar:'الجزائر',
+      commune_fr:'Bab El Oued',
+      commune_ar:'باب الواد',
+      payment_method:paymentLbl,
+      tracking_number:'TR-98421',
+      tracking_link:'https://track.yalidine.dz/TR-98421',
+      tracking_URL:'https://track.yalidine.dz/TR-98421',
+      delivery_company:'Yalidine',
+      shipping_company:'Yalidine',
+      delivery_office_name:officeName,
+      delivery_office_map:'https://maps.google.com/?q=36.7755,3.0594',
+      delivery_office_address:officeAddr,
+      cart_url:'https://store.com/cart/abc',
+      item_count:'3',
+      product_name:productName,
+      product_price:'4,800',
+      products_list:productList,
+      product_list:productList,
+      variant:variantStr,
+      quantity:'2',
+      order_date:now.toLocaleDateString(lang==='ar'?'ar-DZ':lang==='fr'?'fr-DZ':'en-GB'),
+      order_time:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      store_phone:cfg.phone||cfg.store_phone||'+213 550 00 00 00',
+      store_email:cfg.email||cfg.store_email||'contact@store.com',
+    };
+    for(const[k,v]of Object.entries(subs)){m=m.split('{'+k+'}').join(v);}
     return m;};
 
   // ── Test send / connection ─────────────────────────────────────────────────
@@ -513,7 +550,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             <div className="rounded-2xl p-3 min-h-[180px]" style={{backgroundColor:'#e5ddd5',backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
               <div className={`flex ${lang==='ar'?'flex-row-reverse':''}`}>
                 <div className="max-w-[90%] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{backgroundColor:'#dcf8c6',direction:lang==='ar'?'rtl':'ltr'}}>
-                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words" style={{color:'#000000'}}>{preview(getTpl(previewStatus))||preview(WA_DEFAULT_TEMPLATES[lang]?.[previewStatus]||WA_DEFAULT_TEMPLATES.en?.[previewStatus]||'')||'(empty template)'}</p>
+                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words" style={{color:'#000000'}}>{preview(getTpl(previewStatus))||(lang==='ar'?'(قالب فارغ)':lang==='fr'?'(modèle vide)':'(empty template)')}</p>
                   <div className={`flex items-center gap-1 mt-1 ${lang==='ar'?'justify-start':'justify-end'}`}>
                     <span className="text-[9px] text-gray-500">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
                     <span className="text-emerald-500 text-[10px]">✓✓</span>

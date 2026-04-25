@@ -1030,16 +1030,18 @@ export default function PlatformAdminDashboard(){
     <div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/80'}`}>
       <Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} isDark={isDark} pc={pc} pl={generatePalette(pc)}/>
       <main className="flex-1 lg:ml-56 min-w-0">
-        <header className={`sticky top-0 z-10 backdrop-blur-xl border-b px-3 md:px-8 py-3 flex items-center justify-between gap-2 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white border-gray-100'}`}>
-          <div className="flex items-center gap-2 min-w-0">
+        <header className={`sticky top-0 z-10 backdrop-blur-xl border-b px-3 md:px-8 py-3 flex items-center gap-2 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white border-gray-100'}`}>
+          <div className="flex items-center gap-2 shrink-0">
             <button onClick={()=>setSidebarOpen(true)} className={`lg:hidden p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>
-            <span className={`text-sm font-bold truncate ${isDark?'text-gray-200':'text-gray-700'}`}><span className="hidden sm:inline">{t('admin.platformAdministration','Platform Administration')}</span><span className="sm:hidden">{t('admin.superAdmin','Super Admin')}</span></span>
+            <span className={`text-sm font-bold truncate max-w-[120px] sm:max-w-none ${isDark?'text-gray-200':'text-gray-700'}`}><span className="hidden sm:inline">{t('admin.platformAdministration','Platform Administration')}</span><span className="sm:hidden">{t('admin.superAdmin','Super Admin')}</span></span>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
-            <NotificationsBell isDark={isDark} pc={pc}/>
-            <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
-            <LanguageSwitcher/>
-            <span className="hidden md:flex px-3 py-1 rounded-full text-[10px] font-bold items-center gap-1" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
+          <div className="flex-1 min-w-0 overflow-x-auto" style={{scrollbarWidth:'none'}}>
+            <div className="flex items-center justify-end gap-1.5 md:gap-3 w-max ml-auto">
+              <NotificationsBell isDark={isDark} pc={pc}/>
+              <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
+              <LanguageSwitcher/>
+              <span className="px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0" style={{backgroundColor:pc+'15',color:pc}}><span className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/>{t('admin.superAdminBadge','SUPER ADMIN')}</span>
+            </div>
           </div>
         </header>
         <div className="p-3 sm:p-4 md:p-8">
