@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Sun, Moon, Palette, Check, X, ChevronDown } from 'lucide-react';
 
@@ -154,10 +155,25 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
     </div>
   );
 
+  // Render the compact dropdown via a portal so the `fixed` backdrop isn't
+  // trapped inside an ancestor that creates a containing block (e.g. the
+  // header's `backdrop-blur`). Without this, outside-clicks on the page
+  // never reach the close handler.
+  const btnRef = useRef(null);
+  const [anchor, setAnchor] = useState(null);
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const update = () => { const r = btnRef.current?.getBoundingClientRect(); if (r) setAnchor({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) }); };
+    update();
+    window.addEventListener('resize', update); window.addEventListener('scroll', update, true);
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [open]);
+
   if (compact) {
     return (
       <div className="relative">
         <button
+          ref={btnRef}
           onClick={() => setOpen(!open)}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
             isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -167,12 +183,15 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           <Palette size={13} />
           <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
-        {open && (
+        {open && anchor && createPortal(
           <>
-            <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
-            <div className={`absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl border z-[70] p-4 ${
-              isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
-            }`}>
+            <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+            <div
+              className={`fixed w-80 rounded-2xl shadow-2xl border z-[101] p-4 ${
+                isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
+              }`}
+              style={{ top: anchor.top, right: anchor.right }}
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   <Palette size={14} className="inline mr-1.5" style={{ color: primaryColor }} />
@@ -184,7 +203,8 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
               </div>
               {content}
             </div>
-          </>
+          </>,
+          document.body
         )}
       </div>
     );

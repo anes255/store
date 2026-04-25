@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { platformApi } from '../../utils/api';
@@ -12,12 +13,29 @@ import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu,Bell,Gift,Clock} from 'lucide-react';
 
+// Hook: track a button's bounding rect so a portal-rendered popover
+// positions itself relative to the viewport (escapes header's
+// `backdrop-blur` containing block, so outside-clicks land on the backdrop).
+function useAnchorRect(open){
+  const ref=useRef(null);
+  const[anchor,setAnchor]=useState(null);
+  useLayoutEffect(()=>{
+    if(!open||!ref.current)return;
+    const update=()=>{const r=ref.current?.getBoundingClientRect();if(r)setAnchor({top:r.bottom+8,right:Math.max(8,window.innerWidth-r.right)});};
+    update();
+    window.addEventListener('resize',update);window.addEventListener('scroll',update,true);
+    return()=>{window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
+  },[open]);
+  return[ref,anchor];
+}
+
 function NotificationsBell({isDark,pc}){
   const nav=useNavigate();
   const[open,setOpen]=useState(false);
   const[items,setItems]=useState([]);
   const[unread,setUnread]=useState(0);
   const[loading,setLoading]=useState(false);
+  const[btnRef,anchor]=useAnchorRect(open);
   const load=()=>{setLoading(true);platformApi.getNotifications().then(r=>{setItems(r.data?.notifications||[]);setUnread(r.data?.unread||0);}).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[]);
   const markRead=async(id)=>{try{await platformApi.markNotificationRead(id);load();}catch{}};
@@ -35,13 +53,13 @@ function NotificationsBell({isDark,pc}){
   const click=(n)=>{if(!n.is_read)markRead(n.id);if(n.link){setOpen(false);nav(n.link);}};
   return(
     <div className="relative">
-      <button onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Notifications">
+      <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Notifications">
         <Bell size={18}/>
         {unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unread>99?'99+':unread}</span>}
       </button>
-      {open&&(<>
-        <div className="fixed inset-0 z-[60]" onClick={()=>setOpen(false)}/>
-        <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-[70] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+      {open&&anchor&&createPortal(<>
+        <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
+        <div className={`fixed w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-[101] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`} style={{top:anchor.top,right:anchor.right}}>
           <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div>
               <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Notifications</div>
@@ -72,7 +90,7 @@ function NotificationsBell({isDark,pc}){
             </div>
           )}
         </div>
-      </>)}
+      </>,document.body)}
     </div>
   );
 }
@@ -83,6 +101,7 @@ function ExpiringSubscriptionsBell({isDark,pc}){
   const [loading,setLoading]=useState(false);
   const [extending,setExtending]=useState(null);
   const [daysMap,setDaysMap]=useState({});
+  const [btnRef,anchor]=useAnchorRect(open);
   const load=()=>{setLoading(true);platformApi.getExpiringSubscriptions().then(r=>setItems(r.data?.owners||[])).catch(()=>setItems([])).finally(()=>setLoading(false));};
   useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[]);
   const extend=async(ownerId)=>{
@@ -96,14 +115,14 @@ function ExpiringSubscriptionsBell({isDark,pc}){
   const urgentCount=items.filter(i=>i.hours_remaining<=24).length;
   return(
     <div className="relative">
-      <button onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Expiring subscriptions">
+      <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Expiring subscriptions">
         <Bell size={18}/>
         {urgentCount>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{urgentCount}</span>}
       </button>
-      {open&&(
+      {open&&anchor&&createPortal(
         <>
-          <div className="fixed inset-0 z-[60]" onClick={()=>setOpen(false)}/>
-          <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-[70] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+          <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
+          <div className={`fixed w-[calc(100vw-24px)] sm:w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-[101] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`} style={{top:anchor.top,right:anchor.right}}>
             <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
               <div>
                 <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Expiring Subscriptions</div>
@@ -141,7 +160,7 @@ function ExpiringSubscriptionsBell({isDark,pc}){
             )}
           </div>
         </>
-      )}
+      ,document.body)}
     </div>
   );
 }
