@@ -40,8 +40,8 @@ function NotificationsBell({isDark,pc}){
         {unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unread>99?'99+':unread}</span>}
       </button>
       {open&&(<>
-        <div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>
-        <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+        <div className="fixed inset-0 z-[60]" onClick={()=>setOpen(false)}/>
+        <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-[70] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
           <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div>
               <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Notifications</div>
@@ -102,8 +102,8 @@ function ExpiringSubscriptionsBell({isDark,pc}){
       </button>
       {open&&(
         <>
-          <div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>
-          <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
+          <div className="fixed inset-0 z-[60]" onClick={()=>setOpen(false)}/>
+          <div className={`absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-[70] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
               <div>
                 <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Expiring Subscriptions</div>

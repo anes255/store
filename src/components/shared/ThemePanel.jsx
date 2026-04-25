@@ -169,8 +169,8 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
         </button>
         {open && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <div className={`absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl border z-50 p-4 ${
+            <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
+            <div className={`absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl border z-[70] p-4 ${
               isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
             }`}>
               <div className="flex items-center justify-between mb-3">
