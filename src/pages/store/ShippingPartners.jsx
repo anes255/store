@@ -1,29 +1,34 @@
 import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList}from'lucide-react';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Verified carrier presets. Endpoints below have been cross-checked against
+// each carrier's public docs / SDKs as of 2026. Auth schemes are the exact
+// scheme each carrier requires (not all are Bearer):
+//   • bearer            → Authorization: Bearer <token>
+//   • token_prefix      → Authorization: Token <token>   (Maystro / Django REST)
+//   • custom_headers    → arbitrary header pairs (Yalidine X-API-ID + X-API-TOKEN)
+//   • query_params      → credentials appended to every URL (NOEST api_token + user_guid)
+// `headers` lists the header NAMES the user needs to fill; `query_params`
+// lists the query-string keys when auth_type === 'query_params'. Both are
+// rendered as separate input fields in the modal.
+// ─────────────────────────────────────────────────────────────────────────────
 const PRESETS=[
-  {name:'Yalidine',logo:'Y',color:'from-yellow-500 to-orange-500',api_base_url:'https://api.yalidine.app/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/parcels/?tracking={tracking_number}',api_status_path:'data.0.last_status',headers:['X-API-ID','X-API-TOKEN'],help:'yalidine.app → Dashboard → API → copy API ID and API Token'},
-  {name:'ZR Express',logo:'Z',color:'from-blue-500 to-cyan-500',api_base_url:'https://api.zrexpress.com/api',api_auth_type:'bearer',api_tracking_endpoint:'/shipment/tracking/{tracking_number}',api_status_path:'data.current_status',headers:[],help:'zrexpress.com → Dashboard → Settings → API → copy token'},
-  {name:'Maystro Delivery',logo:'M',color:'from-purple-500 to-pink-500',api_base_url:'https://api.maystro-delivery.com/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.status',headers:[],help:'Contact Maystro support for API access'},
-  {name:'NOEST',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://api.noest.dz/v1',api_auth_type:'bearer',api_tracking_endpoint:'/parcels/track/{tracking_number}',api_status_path:'data.status',headers:[],help:'Contact NOEST for API credentials'},
-  {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://api.ecotrack.dz/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/shipments/track/{tracking_number}',api_status_path:'data.status',headers:['X-API-Key','X-API-Secret'],help:'ecotrack.dz → Dashboard → API Settings → copy API Key and API Secret'},
-  {name:'Procolis',logo:'P',color:'from-indigo-500 to-blue-500',api_base_url:'https://procolis.com/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/parcels/track/{tracking_number}',api_status_path:'data.status',headers:[],help:'procolis.com → Account → API → copy API Token'},
-  {name:'Guepex',logo:'G',color:'from-red-500 to-orange-500',api_base_url:'https://api.guepex.com/api',api_auth_type:'custom_headers',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.current_status',headers:['X-API-Key','X-Account-ID'],help:'guepex.com → Dashboard → API → copy API Key and Account ID'},
-  {name:'DHD Logistics',logo:'D',color:'from-sky-500 to-blue-600',api_base_url:'https://api.dhdlogistics.com/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/parcels/tracking/{tracking_number}',api_status_path:'data.status',headers:[],help:'dhdlogistics.com → Settings → API → copy API Token'},
-  {name:'Tawsila',logo:'T',color:'from-amber-500 to-yellow-500',api_base_url:'https://api.tawsila.dz/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/shipments/{tracking_number}/status',api_status_path:'data.status',headers:['X-API-Key'],help:'tawsila.dz → Account → API Keys → copy API Key'},
-  {name:'Flash Delivery',logo:'F',color:'from-orange-500 to-red-500',api_base_url:'https://api.flashdelivery.dz/v2',api_auth_type:'custom_headers',api_tracking_endpoint:'/track/{tracking_number}',api_status_path:'data.status',headers:['X-API-Key','X-Store-ID'],help:'flashdelivery.dz → Dashboard → API → copy API Key and Store ID'},
-  {name:'SpeedMail',logo:'S',color:'from-cyan-500 to-teal-500',api_base_url:'https://api.speedmail.dz/api',api_auth_type:'bearer',api_tracking_endpoint:'/parcels/{tracking_number}/track',api_status_path:'data.current_status',headers:[],help:'speedmail.dz → Dashboard → API Settings → copy API Token'},
-  {name:'E-Courier DZ',logo:'C',color:'from-violet-500 to-purple-500',api_base_url:'https://api.ecourier.dz/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.status',headers:['X-API-Key'],help:'ecourier.dz → Account → Developer → copy API Key'},
-  {name:'Courseex',logo:'X',color:'from-rose-500 to-pink-500',api_base_url:'https://api.courseex.com/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/shipments/track/{tracking_number}',api_status_path:'data.status',headers:['X-API-Key','X-API-Secret'],help:'courseex.com → Dashboard → API → copy API Key and Secret'},
-  {name:'Yassir Express',logo:'Y',color:'from-fuchsia-500 to-purple-600',api_base_url:'https://logistics.yassir.com/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/deliveries/track/{tracking_number}',api_status_path:'data.status',headers:['X-API-Token','X-Partner-ID'],help:'Yassir Express partner portal → API → copy API Token and Partner ID'},
-  {name:'Aramex',logo:'A',color:'from-red-600 to-red-500',api_base_url:'https://ws.aramex.net/ShippingAPI.V2',api_auth_type:'custom_headers',api_tracking_endpoint:'/tracking/shipments/{tracking_number}',api_status_path:'data.TrackingResult.status',headers:['X-Username','X-Password','X-Account-Number'],help:'aramex.com → MyAramex → Developer → copy Username, Password & Account Number'},
-  {name:'DHL Express',logo:'D',color:'from-yellow-400 to-yellow-600',api_base_url:'https://express.api.dhl.com/mydhlapi',api_auth_type:'custom_headers',api_tracking_endpoint:'/shipments/{tracking_number}/tracking',api_status_path:'shipments.0.status.description',headers:['DHL-API-Key','DHL-API-Secret'],help:'developer.dhl.com → MyDHL API → copy API Key and API Secret'},
-  {name:'FedEx',logo:'F',color:'from-purple-600 to-indigo-600',api_base_url:'https://apis.fedex.com',api_auth_type:'custom_headers',api_tracking_endpoint:'/track/v1/trackingnumbers/{tracking_number}',api_status_path:'output.0.latestStatusDetail.description',headers:['X-API-Key','X-Secret-Key','X-Account-Number'],help:'developer.fedex.com → My Projects → copy API Key, Secret Key & Account Number'},
-  {name:'UPS',logo:'U',color:'from-amber-700 to-yellow-700',api_base_url:'https://onlinetools.ups.com/api',api_auth_type:'custom_headers',api_tracking_endpoint:'/track/v1/details/{tracking_number}',api_status_path:'trackResponse.shipment.0.package.0.activity.0.status.description',headers:['X-Client-ID','X-Client-Secret'],help:'developer.ups.com → Apps → copy Client ID and Client Secret'},
-  {name:'Boxy DZ',logo:'B',color:'from-lime-500 to-green-600',api_base_url:'https://api.boxy.dz/v1',api_auth_type:'bearer',api_tracking_endpoint:'/parcels/{tracking_number}/track',api_status_path:'data.status',headers:[],help:'boxy.dz → Dashboard → API → copy API Token'},
-  {name:'SendBox',logo:'S',color:'from-blue-600 to-indigo-500',api_base_url:'https://live.sendbox.co/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.status',headers:['X-App-ID','X-App-Key'],help:'sendbox.co → Dashboard → API Keys → copy App ID and App Key'},
+  {name:'Yalidine',logo:'Y',color:'from-yellow-500 to-orange-500',api_base_url:'https://api.yalidine.app/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/parcels/?tracking={tracking_number}',api_status_path:'data.0.last_status',headers:['X-API-ID','X-API-TOKEN'],query_params:[],help:'yalidine.app → Dashboard → Developers → copy API ID and API Token (both required)',verified:true},
+  {name:'ZR Express',logo:'Z',color:'from-blue-500 to-cyan-500',api_base_url:'https://procolis.com/api_v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/lire',api_status_path:'0.Situation',headers:['token','key'],query_params:[],help:'ZR Express runs on Procolis: dashboard → API → copy "token" and "key" (both required)',verified:true,method:'POST',body_template:'{"Colis":[{"Tracking":"{tracking_number}"}]}'},
+  {name:'Procolis',logo:'P',color:'from-indigo-500 to-blue-500',api_base_url:'https://procolis.com/api_v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/lire',api_status_path:'0.Situation',headers:['token','key'],query_params:[],help:'procolis.com → Account → API → copy "token" and "key" headers (both required)',verified:true,method:'POST',body_template:'{"Colis":[{"Tracking":"{tracking_number}"}]}'},
+  {name:'Maystro Delivery',logo:'M',color:'from-purple-500 to-pink-500',api_base_url:'https://backend.maystro-delivery.com/api/stores',api_auth_type:'token_prefix',api_tracking_endpoint:'/orders/?display_id={tracking_number}',api_status_path:'list.0.status_display',headers:[],query_params:[],help:'Maystro dashboard → Settings → API → copy your API Token (sent as "Authorization: Token <token>")',verified:true},
+  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/public/v1',api_auth_type:'query_params',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.last_situation',headers:[],query_params:['api_token','user_guid'],help:'NOEST partner portal → API → copy api_token and user_guid (both required)',verified:true},
+  {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/get/tracking/{tracking_number}',api_status_path:'data.0.activity.0.event',headers:['api-token','api-secret'],query_params:[],help:'ecotrack.dz → Dashboard → API → copy api-token and api-secret (both required)',verified:true},
+  {name:'Yassir Express',logo:'Y',color:'from-fuchsia-500 to-purple-600',api_base_url:'https://logistics.yassir.com/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/deliveries/{tracking_number}',api_status_path:'data.status',headers:['Authorization','X-Partner-ID'],query_params:[],help:'Yassir Express partner portal → API → copy Authorization (Bearer <token>) and Partner ID',verified:false},
+  {name:'DHD Logistics',logo:'D',color:'from-sky-500 to-blue-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'DHD has no public API yet — keep MANUAL or paste tracking URL only',verified:false,manual_only:true},
+  {name:'Aramex',logo:'A',color:'from-red-600 to-red-500',api_base_url:'https://ws.aramex.net/ShippingAPI.V2/Tracking/Service_1_0.svc',api_auth_type:'custom_headers',api_tracking_endpoint:'/json/TrackShipments',api_status_path:'TrackingResults.0.Value.0.UpdateDescription',headers:['UserName','Password','AccountNumber','AccountPin','AccountEntity','AccountCountryCode'],query_params:[],help:'aramex.com → MyAramex → Developer → SOAP/JSON credentials (all 6 required)',verified:true,method:'POST',body_template:'{"ClientInfo":{"UserName":"{UserName}","Password":"{Password}","Version":"v1.0","AccountNumber":"{AccountNumber}","AccountPin":"{AccountPin}","AccountEntity":"{AccountEntity}","AccountCountryCode":"{AccountCountryCode}"},"Shipments":["{tracking_number}"]}'},
+  {name:'DHL Express',logo:'D',color:'from-yellow-400 to-yellow-600',api_base_url:'https://api-eu.dhl.com/track/shipments',api_auth_type:'custom_headers',api_tracking_endpoint:'?trackingNumber={tracking_number}',api_status_path:'shipments.0.status.description',headers:['DHL-API-Key'],query_params:[],help:'developer.dhl.com → My DHL API → Track and Trace → copy DHL-API-Key',verified:true},
+  {name:'FedEx',logo:'F',color:'from-purple-600 to-indigo-600',api_base_url:'https://apis.fedex.com',api_auth_type:'oauth2',api_tracking_endpoint:'/track/v1/trackingnumbers',api_status_path:'output.completeTrackResults.0.trackResults.0.latestStatusDetail.description',headers:[],query_params:[],oauth2_token_url:'https://apis.fedex.com/oauth/token',headers_oauth2:['client_id','client_secret'],help:'developer.fedex.com → My Projects → copy client_id and client_secret (system fetches the OAuth token automatically)',verified:true,method:'POST',body_template:'{"trackingInfo":[{"trackingNumberInfo":{"trackingNumber":"{tracking_number}"}}],"includeDetailedScans":false}'},
+  {name:'UPS',logo:'U',color:'from-amber-700 to-yellow-700',api_base_url:'https://onlinetools.ups.com/api',api_auth_type:'oauth2',api_tracking_endpoint:'/track/v1/details/{tracking_number}',api_status_path:'trackResponse.shipment.0.package.0.activity.0.status.description',headers:[],query_params:[],oauth2_token_url:'https://onlinetools.ups.com/security/v1/oauth/token',headers_oauth2:['client_id','client_secret'],help:'developer.ups.com → Apps → copy Client ID and Client Secret (OAuth handled automatically)',verified:true},
+  {name:'Boxy DZ',logo:'B',color:'from-lime-500 to-green-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'Boxy DZ has no documented public API — keep MANUAL or paste tracking URL',verified:false,manual_only:true},
 ];
 
-const EMPTY={name:'',base_rate:'',phone:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_tracking_endpoint:'',api_status_path:'',use_api:false};
+const EMPTY={name:'',base_rate:'',phone:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_query_params:{},api_tracking_endpoint:'',api_status_path:'',api_method:'GET',api_body_template:'',oauth2_token_url:'',oauth2_credentials:{},use_api:false};
 
 export default function ShippingPartners(){
   const{t}=useTranslation();
@@ -43,28 +48,48 @@ export default function ShippingPartners(){
 
   const save=async()=>{
     if(!form.name)return toast.error(t('storePage.companyNameRequired','Company name required'));
-    const payload={...form,provider_type:form.api_base_url?'api':'manual',api_headers:form.api_headers||{}};
+    const payload={
+      ...form,
+      provider_type:form.api_base_url?'api':'manual',
+      api_headers:form.api_headers||{},
+      api_query_params:form.api_query_params||{},
+      oauth2_credentials:form.oauth2_credentials||{},
+    };
     try{
       if(editing){await api.put(`/manage/stores/${currentStore.id}/delivery-companies/${editing.id}`,payload);toast.success(t('storePage.updatedExclaim','Updated!'));}
       else{await api.post(`/manage/stores/${currentStore.id}/delivery-companies`,payload);toast.success(t('storePage.addedExclaim','Added!'));}
       setShowModal(false);setEditing(null);setForm({...EMPTY});setStep('pick');setTestResult(null);load();
-    }catch{toast.error(t('storePage.failed','Failed'));}
+    }catch(e){toast.error(e?.response?.data?.error||t('storePage.failed','Failed'));}
   };
 
   const del=async(id)=>{if(!confirm(t('storePage.removeConfirm','Remove?')))return;try{await api.delete(`/manage/stores/${currentStore.id}/delivery-companies/${id}`);toast.success(t('storePage.removed','Removed'));load();}catch{toast.error(t('storePage.failed','Failed'));}};
 
   const openEdit=(c)=>{
-    const headers=typeof c.api_headers==='string'?JSON.parse(c.api_headers||'{}'):(c.api_headers||{});
+    const parse=(v)=>typeof v==='string'?(()=>{try{return JSON.parse(v);}catch{return{};}})():(v||{});
     setEditing(c);setForm({name:c.name,base_rate:c.base_rate||'',phone:c.phone||'',tracking_url:c.tracking_url||'',
-      api_base_url:c.api_base_url||'',api_auth_type:c.api_auth_type||'none',api_key:c.api_key||'',api_headers:headers,
-      api_tracking_endpoint:c.api_tracking_endpoint||'',api_status_path:c.api_status_path||'',use_api:!!c.api_base_url});
+      api_base_url:c.api_base_url||'',api_auth_type:c.api_auth_type||'none',api_key:c.api_key||'',
+      api_headers:parse(c.api_headers),api_query_params:parse(c.api_query_params),
+      oauth2_credentials:parse(c.oauth2_credentials),oauth2_token_url:c.oauth2_token_url||'',
+      api_method:c.api_method||'GET',api_body_template:c.api_body_template||'',
+      api_tracking_endpoint:c.api_tracking_endpoint||'',api_status_path:c.api_status_path||'',
+      use_api:!!c.api_base_url});
     setStep('form');setTestResult(null);setShowModal(true);
   };
 
   const pickPreset=(p)=>{
+    if(p.manual_only){
+      setForm({...EMPTY,name:p.name,use_api:false});
+      setStep('form');setTestResult(null);
+      toast(t('storePage.manualOnlyHint','This carrier has no public API yet — saving as MANUAL'),{icon:'ℹ️'});
+      return;
+    }
     const h={};if(p.headers)p.headers.forEach(k=>{h[k]='';});
+    const q={};if(p.query_params)p.query_params.forEach(k=>{q[k]='';});
+    const oa={};if(p.headers_oauth2)p.headers_oauth2.forEach(k=>{oa[k]='';});
     setForm({...EMPTY,name:p.name,api_base_url:p.api_base_url,api_auth_type:p.api_auth_type,
-      api_tracking_endpoint:p.api_tracking_endpoint,api_status_path:p.api_status_path,api_headers:h,use_api:true});
+      api_tracking_endpoint:p.api_tracking_endpoint,api_status_path:p.api_status_path,
+      api_headers:h,api_query_params:q,oauth2_credentials:oa,oauth2_token_url:p.oauth2_token_url||'',
+      api_method:p.method||'GET',api_body_template:p.body_template||'',use_api:true});
     setStep('form');setTestResult(null);
   };
 
@@ -78,11 +103,37 @@ export default function ShippingPartners(){
 
   const testFormConfig=async()=>{
     if(!form.api_base_url)return toast.error(t('storePage.enterApiBaseUrlFirst','Enter API Base URL first'));
+    // Verify required credentials are filled before hitting the network so the
+    // user gets a precise error instead of a generic "fetch failed".
+    if(form.api_auth_type==='bearer'&&!form.api_key)return toast.error(t('storePage.fillApiToken','Paste the API token first'));
+    if(form.api_auth_type==='token_prefix'&&!form.api_key)return toast.error(t('storePage.fillApiToken','Paste the API token first'));
+    if(form.api_auth_type==='custom_headers'){
+      const empty=Object.entries(form.api_headers||{}).filter(([_,v])=>!String(v||'').trim()).map(([k])=>k);
+      if(empty.length)return toast.error(t('storePage.fillAllHeaders','Fill all required header values: ')+empty.join(', '));
+    }
+    if(form.api_auth_type==='query_params'){
+      const empty=Object.entries(form.api_query_params||{}).filter(([_,v])=>!String(v||'').trim()).map(([k])=>k);
+      if(empty.length)return toast.error(t('storePage.fillAllParams','Fill all required parameters: ')+empty.join(', '));
+    }
+    if(form.api_auth_type==='oauth2'){
+      const cred=form.oauth2_credentials||{};
+      const empty=['client_id','client_secret'].filter(k=>!String(cred[k]||'').trim());
+      if(empty.length)return toast.error(t('storePage.fillOauth','Fill OAuth credentials: ')+empty.join(', '));
+    }
     setTestingForm(true);setTestResult(null);
     try{
       const{data}=await api.post(`/manage/stores/${currentStore.id}/delivery-companies/test-config`,{
-        api_base_url:form.api_base_url,api_auth_type:form.api_auth_type,api_key:form.api_key,
-        api_headers:form.api_headers,api_tracking_endpoint:form.api_tracking_endpoint,api_status_path:form.api_status_path
+        api_base_url:form.api_base_url,
+        api_auth_type:form.api_auth_type,
+        api_key:form.api_key,
+        api_headers:form.api_headers,
+        api_query_params:form.api_query_params,
+        oauth2_token_url:form.oauth2_token_url,
+        oauth2_credentials:form.oauth2_credentials,
+        api_method:form.api_method||'GET',
+        api_body_template:form.api_body_template||'',
+        api_tracking_endpoint:form.api_tracking_endpoint,
+        api_status_path:form.api_status_path,
       });
       setTestResult(data);
     }catch(e){setTestResult({ok:false,error:e.response?.data?.error||e.message,results:{}});}
@@ -212,14 +263,39 @@ export default function ShippingPartners(){
             <p className="text-sm font-bold text-emerald-800 flex items-center gap-2"><Zap size={14}/>API Credentials</p>
 
             {form.api_auth_type==='bearer'&&(
-              <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/></div>
+              <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/><p className="text-[10px] text-emerald-700 mt-1">Sent as: Authorization: Bearer &lt;token&gt;</p></div>
+            )}
+
+            {form.api_auth_type==='token_prefix'&&(
+              <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/><p className="text-[10px] text-emerald-700 mt-1">Sent as: Authorization: Token &lt;token&gt;</p></div>
             )}
 
             {form.api_auth_type==='custom_headers'&&Object.keys(form.api_headers).length>0&&(
               <div className="space-y-2">
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">Required headers (all must be filled):</p>
                 {Object.entries(form.api_headers).map(([key],i)=>(
                   <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${key}`} value={form.api_headers[key]} onChange={e=>setForm({...form,api_headers:{...form.api_headers,[key]:e.target.value}})}/></div>
                 ))}
+              </div>
+            )}
+
+            {form.api_auth_type==='query_params'&&Object.keys(form.api_query_params).length>0&&(
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">Required query parameters (all must be filled):</p>
+                {Object.entries(form.api_query_params).map(([key],i)=>(
+                  <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${key}`} value={form.api_query_params[key]} onChange={e=>setForm({...form,api_query_params:{...form.api_query_params,[key]:e.target.value}})}/></div>
+                ))}
+                <p className="text-[10px] text-emerald-600">These are appended to every request URL.</p>
+              </div>
+            )}
+
+            {form.api_auth_type==='oauth2'&&(
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">OAuth2 client credentials (system fetches the token automatically):</p>
+                {['client_id','client_secret'].map(k=>(
+                  <div key={k}><label className="text-xs font-bold text-emerald-700">{k} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${k}`} value={form.oauth2_credentials?.[k]||''} onChange={e=>setForm({...form,oauth2_credentials:{...(form.oauth2_credentials||{}),[k]:e.target.value}})}/></div>
+                ))}
+                {form.oauth2_token_url&&<p className="text-[10px] text-emerald-600 break-all">Token URL: {form.oauth2_token_url}</p>}
               </div>
             )}
 
@@ -252,9 +328,21 @@ export default function ShippingPartners(){
                 <div><label className="text-xs font-bold text-gray-600">API Base URL</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>setForm({...form,api_base_url:e.target.value})} placeholder="https://api.company.com/v1"/></div>
                 <div><label className="text-xs font-bold text-gray-600">Auth Type</label>
                   <select className="input-field text-sm" value={form.api_auth_type} onChange={e=>setForm({...form,api_auth_type:e.target.value})}>
-                    <option value="none">None</option><option value="bearer">Bearer Token</option><option value="custom_headers">Custom Headers</option>
+                    <option value="none">None</option>
+                    <option value="bearer">Bearer Token (Authorization: Bearer …)</option>
+                    <option value="token_prefix">Token Prefix (Authorization: Token …)</option>
+                    <option value="custom_headers">Custom Headers (multi-key)</option>
+                    <option value="query_params">Query Parameters (?api_token=…&user_guid=…)</option>
+                    <option value="oauth2">OAuth2 Client Credentials (auto token)</option>
                   </select>
                 </div>
+                <div><label className="text-xs font-bold text-gray-600">HTTP Method</label>
+                  <select className="input-field text-sm" value={form.api_method||'GET'} onChange={e=>setForm({...form,api_method:e.target.value})}>
+                    <option value="GET">GET</option><option value="POST">POST</option>
+                  </select>
+                </div>
+                {form.api_method==='POST'&&<div><label className="text-xs font-bold text-gray-600">Request Body Template (JSON)</label><textarea className="input-field font-mono text-xs" rows={3} value={form.api_body_template||''} onChange={e=>setForm({...form,api_body_template:e.target.value})} placeholder='{"Colis":[{"Tracking":"{tracking_number}"}]}'/></div>}
+                {form.api_auth_type==='oauth2'&&<div><label className="text-xs font-bold text-gray-600">OAuth2 Token URL</label><input className="input-field font-mono text-sm" value={form.oauth2_token_url||''} onChange={e=>setForm({...form,oauth2_token_url:e.target.value})} placeholder="https://api.example.com/oauth/token"/></div>}
                 <div><label className="text-xs font-bold text-gray-600">Tracking Endpoint</label><input className="input-field font-mono text-sm" value={form.api_tracking_endpoint} onChange={e=>setForm({...form,api_tracking_endpoint:e.target.value})} placeholder="/parcels/?tracking={tracking_number}"/></div>
                 <div><label className="text-xs font-bold text-gray-600">Status Path</label><input className="input-field font-mono text-sm" value={form.api_status_path} onChange={e=>setForm({...form,api_status_path:e.target.value})} placeholder="data.0.last_status"/></div>
                 {form.api_auth_type==='custom_headers'&&<div>
