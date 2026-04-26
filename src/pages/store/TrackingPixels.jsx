@@ -62,14 +62,17 @@ export default function TrackingPixels(){
     const c=config[px.id]||{};
     const val=(c.value||'').trim();
     if(!val){toast.error('Enter a value first');return;}
-    if(!formatValid(px.id,val)){toast.error(`Invalid ${px.field} format`);return;}
+    if(!formatValid(px.id,val)){toast.error(`✗ ${px.name}: invalid ${px.field} format`);return;}
     setTesting(px.id);
-    // Reachability probe first — distinguishes "format ok but unknown to vendor" from "real, working".
+    // REAL connection test — backend hits the vendor and reports whether the
+    // ID is actually recognized end-to-end. Display the vendor's reason to
+    // the admin so they know why a check passed or failed.
     const probe=await probePixel(px.id,val);
     if(!probe.ok){
-      toast.error(`${px.name}: ID not recognized by the vendor (${probe.reason||'unreachable'})`);
+      toast.error(`✗ ${px.name}: ${probe.reason||'vendor rejected this ID'}`,{duration:6000});
       setTesting(null);return;
     }
+    toast.success(`✓ ${px.name}: ${probe.reason||'verified with vendor'}`,{duration:5000});
     try{
       if(px.id==='facebook_pixel'){
         if(!window.fbq){

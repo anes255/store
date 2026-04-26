@@ -4,7 +4,7 @@ import { ownerApi, publicRoleTemplatesApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { UserPlus, X, Shield, Eye, Package, CreditCard, CheckCircle, Edit, Trash2, ToggleLeft, ToggleRight, Plus, Settings, ChevronDown } from 'lucide-react';
+import { UserPlus, X, Shield, Eye, Package, CreditCard, CheckCircle, Edit, Trash2, ToggleLeft, ToggleRight, Plus, Settings, ChevronDown, Store as StoreIcon } from 'lucide-react';
 
 // All granular permissions available in the system
 const ALL_PERMISSIONS = [
@@ -47,6 +47,9 @@ export default function StoreStaff() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showRoleCreator, setShowRoleCreator] = useState(false);
+  // Pop-out store picker (button-driven, not chips) — opens a list of every
+  // store the admin owns so they can tick the ones the team member can sign in to.
+  const [storePickerOpen, setStorePickerOpen] = useState(false);
   const [customRoles, setCustomRoles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('custom_roles_' + (currentStore?.id || '')) || '[]'); } catch { return []; }
   });
@@ -397,50 +400,39 @@ export default function StoreStaff() {
                 </div>
               </div>
 
-              {/* Multi-store assignment — always rendered so the admin can see
-                  exactly which stores the user can access. */}
+              {/* Stores this user can access — opens a popup list of stores
+                  associated with the admin so they can pick one or many. */}
               <div>
                 <label className="input-label">{t('storePage.assignedStores','Stores this user can access')}</label>
-                <p className="text-[11px] text-gray-400 mb-2">{t('storePage.assignedStoresHelp','Pick which of your stores this staff member can manage. Current store is always included.')}</p>
-                {(!Array.isArray(stores) || stores.length <= 1) ? (
-                  <div className="flex flex-wrap gap-2">
-                    <span className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-brand-500 bg-brand-50 text-brand-700 text-xs font-bold">
-                      {currentStore?.logo
-                        ? <img src={currentStore.logo} alt="" className="w-5 h-5 rounded object-cover" />
-                        : <div className="w-5 h-5 rounded bg-brand-100 flex items-center justify-center text-[10px] text-brand-600 font-bold">{(currentStore?.name || 'S')[0]}</div>}
-                      <span className="truncate max-w-[180px]">{currentStore?.name || t('storePage.thisStore','This store')}</span>
-                      <CheckCircle size={12} className="text-brand-500" />
-                    </span>
-                    <span className="text-[11px] text-gray-400 self-center">{t('storePage.onlyOneStore','You only have one store — create more to assign multi-store access.')}</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {stores.map(s => {
-                      const checked = form.assigned_store_ids.includes(s.id) || s.id === currentStore?.id;
-                      const locked = s.id === currentStore?.id;
-                      return (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => toggleAssignedStore(s.id)}
-                          disabled={locked}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                            checked
-                              ? 'border-brand-500 bg-brand-50 text-brand-700'
-                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                          } ${locked ? 'opacity-80 cursor-not-allowed' : ''}`}
-                          title={locked ? t('storePage.currentStoreLocked','Current store is always assigned') : ''}
-                        >
-                          {s.logo
-                            ? <img src={s.logo} alt="" className="w-5 h-5 rounded object-cover" />
-                            : <div className="w-5 h-5 rounded bg-brand-100 flex items-center justify-center text-[10px] text-brand-600 font-bold">{(s.name || 'S')[0]}</div>}
-                          <span className="truncate max-w-[140px]">{s.name}</span>
-                          {checked && <CheckCircle size={12} className="text-brand-500" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <p className="text-[11px] text-gray-400 mb-2">{t('storePage.assignedStoresHelp','Pick which of your stores this staff member can sign in to.')}</p>
+                {(() => {
+                  const allIds = Array.isArray(stores) ? stores.map(s => s.id) : [];
+                  const picked = Array.from(new Set([
+                    ...(form.assigned_store_ids || []),
+                    ...(currentStore?.id ? [currentStore.id] : []),
+                  ])).filter(id => allIds.includes(id) || id === currentStore?.id);
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setStorePickerOpen(true)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-brand-400 hover:bg-brand-50/40 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <StoreIcon size={16} className="text-brand-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">
+                            {picked.length} {picked.length === 1 ? t('storePage.storeSingular','store') : t('storePage.storePlural','stores')} {t('storePage.selected','selected')}
+                          </p>
+                          <p className="text-[11px] text-gray-400 truncate">
+                            {picked.slice(0, 3).map(id => (stores || []).find(s => s.id === id)?.name || (id === currentStore?.id ? currentStore?.name : '')).filter(Boolean).join(' · ')}
+                            {picked.length > 3 ? ` +${picked.length - 3}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-bold shrink-0">{t('storePage.choose','Choose')}</span>
+                    </button>
+                  );
+                })()}
               </div>
 
               {/* Role selection */}
@@ -550,6 +542,84 @@ export default function StoreStaff() {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowRoleCreator(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
               <button onClick={addCustomRole} className="btn-primary flex-1">{t('storePage.createRole','Create Role')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Stores access picker modal ───
+          Shown when admin clicks "Choose" inside the staff modal. Lists every
+          store the admin owns; ticking adds it to assigned_store_ids. The
+          current store is always implicitly included. */}
+      {storePickerOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setStorePickerOpen(false)}>
+          <div className="bg-white rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center"><StoreIcon size={16} className="text-brand-500" /></div>
+                <div>
+                  <h2 className="text-base font-extrabold text-gray-900">{t('storePage.chooseStoresTitle','Choose stores this user can access')}</h2>
+                  <p className="text-[11px] text-gray-400">{t('storePage.chooseStoresHelp','Tick the stores this team member is allowed to sign in to.')}</p>
+                </div>
+              </div>
+              <button onClick={() => setStorePickerOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X size={16} /></button>
+            </div>
+            {(!Array.isArray(stores) || stores.length === 0) ? (
+              <p className="text-sm text-gray-500 py-8 text-center">{t('storePage.noStoresFound','No stores found.')}</p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('storePage.yourStores','Your stores')}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, assigned_store_ids: stores.map(s => s.id) }))}
+                      className="text-[11px] text-brand-600 font-bold hover:underline"
+                    >{t('storePage.selectAll','Select all')}</button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, assigned_store_ids: currentStore?.id ? [currentStore.id] : [] }))}
+                      className="text-[11px] text-gray-500 font-bold hover:underline"
+                    >{t('storePage.clear','Clear')}</button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {stores.map(s => {
+                    const checked = form.assigned_store_ids.includes(s.id) || s.id === currentStore?.id;
+                    const locked = s.id === currentStore?.id;
+                    return (
+                      <label
+                        key={s.id}
+                        className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${
+                          checked
+                            ? 'border-brand-500 bg-brand-50'
+                            : 'border-gray-100 hover:border-gray-200'
+                        } ${locked ? 'opacity-90 cursor-not-allowed' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={locked}
+                          onChange={() => toggleAssignedStore(s.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                        />
+                        {s.logo
+                          ? <img src={s.logo} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                          : <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold">{(s.name || 'S')[0]}</div>}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-900 truncate">{s.name}</p>
+                          <p className="text-[11px] text-gray-400 truncate">/{s.slug}{locked ? ` · ${t('storePage.currentStoreLocked','current store')}` : ''}</p>
+                        </div>
+                        {checked && <CheckCircle size={16} className="text-brand-500" />}
+                      </label>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setStorePickerOpen(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
+              <button onClick={() => setStorePickerOpen(false)} className="btn-primary flex-1">{t('storePage.done','Done')}</button>
             </div>
           </div>
         </div>
