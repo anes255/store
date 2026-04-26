@@ -25,6 +25,9 @@ export default function TrackingPixels(){
   const[config,setConfig]=useState({});
   const[saving,setSaving]=useState(false);
   const[testing,setTesting]=useState(null);
+  // Map of pixel.id → {ok, reason, ts} from the latest verify call so the
+  // result stays visible after the toast disappears.
+  const[verifyResults,setVerifyResults]=useState({});
 
   // Dynamically load a script and resolve when ready
   const loadScript=(src,id)=>new Promise((resolve,reject)=>{
@@ -46,15 +49,22 @@ export default function TrackingPixels(){
   };
   // Real validation goes through a backend proxy because browsers can't
   // read cross-origin pixel responses (CORS). The /ai/pixels/verify route
-  // hits each vendor's check-existence endpoint server-side and reports
-  // whether the ID is actually known to them.
+  // hits each vendor's check-existence endpoint server-side, sends a real
+  // test event where possible, and reports the actual vendor verdict.
   const probePixel=async(id,val)=>{
     try{
       const{api}=await import('../../utils/api');
-      const{data}=await api.post('/ai/pixels/verify',{type:id,value:val});
-      return data||{ok:false,reason:'No response'};
+      const r=await api.post('/ai/pixels/verify',{type:id,value:val});
+      const d=r?.data||{};
+      console.log('[pixel verify]',id,val,'→',d);
+      return d;
     }catch(e){
-      return{ok:false,reason:e?.response?.data?.reason||e.message||'Network error'};
+      const status=e?.response?.status;
+      const reason=e?.response?.data?.reason||e?.response?.data?.error||e.message||'Network error';
+      console.error('[pixel verify] failed',{status,reason,err:e});
+      // Distinguish backend not deployed (404) from actual rejection.
+      if(status===404)return{ok:false,reason:'Backend route not deployed yet — wait a minute and retry'};
+      return{ok:false,reason};
     }
   };
 
@@ -65,14 +75,14 @@ export default function TrackingPixels(){
     if(!formatValid(px.id,val)){toast.error(`✗ ${px.name}: invalid ${px.field} format`);return;}
     setTesting(px.id);
     // REAL connection test — backend hits the vendor and reports whether the
-    // ID is actually recognized end-to-end. Display the vendor's reason to
-    // the admin so they know why a check passed or failed.
+    // ID is actually recognized end-to-end.
     const probe=await probePixel(px.id,val);
+    setVerifyResults(prev=>({...prev,[px.id]:{ok:!!probe.ok,reason:probe.reason||'',ts:Date.now()}}));
     if(!probe.ok){
-      toast.error(`✗ ${px.name}: ${probe.reason||'vendor rejected this ID'}`,{duration:6000});
+      toast.error(`✗ ${px.name}: ${probe.reason||'vendor rejected this ID'}`,{duration:8000});
       setTesting(null);return;
     }
-    toast.success(`✓ ${px.name}: ${probe.reason||'verified with vendor'}`,{duration:5000});
+    toast.success(`✓ ${px.name}: ${probe.reason||'verified with vendor'}`,{duration:6000});
     try{
       if(px.id==='facebook_pixel'){
         if(!window.fbq){
@@ -206,6 +216,14 @@ export default function TrackingPixels(){
                   {testing===px.id?<Loader2 size={12} className="animate-spin"/>:<Send size={12}/>}
                   {testing===px.id?'Testing...':'Send Test Event'}
                 </button>}
+                {/* Persistent verify-result badge so the admin sees the
+                    real result of the last live check against the vendor. */}
+                {verifyResults[px.id]&&(
+                  <div className={`mt-2 flex items-start gap-2 px-3 py-2 rounded-lg border text-[11px] ${verifyResults[px.id].ok?(dk?'bg-emerald-900/20 border-emerald-500/40 text-emerald-300':'bg-emerald-50 border-emerald-200 text-emerald-700'):(dk?'bg-red-900/20 border-red-500/40 text-red-300':'bg-red-50 border-red-200 text-red-700')}`}>
+                    <span className="font-bold">{verifyResults[px.id].ok?'✓ Verified':'✗ Failed'}</span>
+                    <span className="opacity-90">{verifyResults[px.id].reason||(verifyResults[px.id].ok?'pixel reachable':'vendor rejected this ID')}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
