@@ -449,17 +449,18 @@ export default function StoreSettings(){
   useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
   const[s,setS]=useState({});const[sec,setSec]=useState(typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details');const[loading,setLoading]=useState(false);
   const[staff,setStaff]=useState([]);const[wilayas,setWilayas]=useState([]);const[showRole,setShowRole]=useState(null);
-  const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[]});
+  const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[],is_active:true});
   // Pop-out store picker for the Create User modal — opens a list of every
   // store the admin owns so they can tick the ones the team member can sign in to.
   const[sfStorePickerOpen,setSfStorePickerOpen]=useState(false);
   // Admin-only editor for an existing team member (name/email/phone/password/role)
   const[editStaff,setEditStaff]=useState(null);
-  const openEditStaff=(x)=>{setEditStaff({id:x.id,name:x.name||'',email:x.email||'',phone:x.phone||'',password:'',role:x.role||(x.role_template_id?'tpl_'+x.role_template_id:'')});};
+  const openEditStaff=(x)=>{setEditStaff({id:x.id,name:x.name||'',email:x.email||'',phone:x.phone||'',password:'',confirmPassword:'',avatar:x.avatar||'',role:x.role||(x.role_template_id?'tpl_'+x.role_template_id:''),is_active:x.is_active!==false});};
   const saveEditStaff=async()=>{
     try{
       if(!editStaff?.id)return;
-      const payload={name:editStaff.name,email:editStaff.email,phone:editStaff.phone};
+      if(editStaff.password&&editStaff.password!==editStaff.confirmPassword)return toast.error(t('storePage.passwordsDontMatch','Passwords do not match'));
+      const payload={name:editStaff.name,email:editStaff.email,phone:editStaff.phone,is_active:editStaff.is_active!==false,avatar:editStaff.avatar||null};
       if(editStaff.password)payload.password=editStaff.password;
       if(editStaff.role){payload.role=editStaff.role;
         if(editStaff.role.startsWith('tpl_')){const tpl=platformTemplates.find(t=>String(t.id)===editStaff.role.slice(4));if(tpl)payload.permissions=JSON.stringify(tpl.permissions||[]);payload.role_template_id=editStaff.role;}
@@ -558,7 +559,7 @@ export default function StoreSettings(){
     await api.post(`/owner/stores/${currentStore.id}/staff`,payload);
     toast.success(t('storePage.added','Added!'));
     setShowStaff(false);
-    setSf({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[]});
+    setSf({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[],is_active:true});
     loadData();
   }catch(e){console.error('[addStaff]',e?.response?.status,e?.response?.data,e);toast.error(e?.response?.data?.error||e?.response?.data?.message||`Failed (${e?.response?.status||'network'})`);}};
   const saveProfile=async()=>{setProfileLoading(true);try{await ownerApi.updateProfile({full_name:profile.full_name,phone:profile.phone});toast.success(t('storePage.profileUpdated','Profile updated!'));}catch{toast.error(t('storePage.failed','Failed'));}setProfileLoading(false);};
@@ -854,21 +855,72 @@ export default function StoreSettings(){
     </>)}
     <WhatsAppConfigModal show={showWaModal} onClose={()=>setShowWaModal(false)} storeId={currentStore?.id} initialConfig={s} onSave={(cfg)=>{setS(cfg);save();}}/>
     {showRole&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowRole(null)}><div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between mb-6"><h2 className="text-xl font-bold">Role: {roles[showRole]?.label}</h2><button onClick={()=>setShowRole(null)} className="text-gray-400 hover:text-gray-600">✕</button></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{[['Orders',['View Dashboard','View Orders','Manage Orders','Delete Orders','Confirm Orders','Prepare Orders']],['Products',['View Products','Manage Products','Delete Products']],['Customers',['View Customers','Manage Customers']]].map(([cat,perms])=>(<div key={cat}><h4 className="font-bold text-xs text-gray-500 uppercase mb-2">{cat}</h4>{perms.map(p=>{const has=roles[showRole]?.perms.includes(p);return(<label key={p} className="flex items-center gap-2 mb-1.5"><div className={`w-5 h-5 rounded flex items-center justify-center text-white text-xs ${has?'bg-brand-500':'bg-gray-200'}`}>{has&&<Check size={12}/>}</div><span className="text-sm text-gray-700">{p}</span></label>);})}</div>))}</div><button onClick={()=>setShowRole(null)} className="btn-primary w-full mt-6">Close</button></div></div>}
-    {editStaff&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3" onClick={()=>setEditStaff(null)}><div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
-      <div className="flex items-center justify-between mb-4 sm:mb-6"><h2 className="text-xl font-bold">Edit Team Member</h2><button onClick={()=>setEditStaff(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div>
-      <div className="space-y-3">
-        <div><label className="input-label">Name</label><input className="input-field" value={editStaff.name} onChange={e=>setEditStaff({...editStaff,name:e.target.value})}/></div>
-        <div><label className="input-label">Email</label><input className="input-field" value={editStaff.email} onChange={e=>setEditStaff({...editStaff,email:e.target.value})}/></div>
-        <div><label className="input-label">Phone</label><input className="input-field" value={editStaff.phone} onChange={e=>setEditStaff({...editStaff,phone:e.target.value})}/></div>
-        <div><label className="input-label">New Password <span className="text-xs text-gray-400 font-normal">(leave empty to keep current)</span></label><input type="password" className="input-field" value={editStaff.password} onChange={e=>setEditStaff({...editStaff,password:e.target.value})}/></div>
-        <div><label className="input-label">Role</label><select className="input-field" value={editStaff.role} onChange={e=>setEditStaff({...editStaff,role:e.target.value})}>
-          <option value="">— Select role —</option>
-          <optgroup label="Platform Roles">{platformTemplates.map(tpl=>{const lang=(document.documentElement.lang||'en').slice(0,2);const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||'Role';return(<option key={'tpl_'+tpl.id} value={'tpl_'+tpl.id}>{name}</option>);})}</optgroup>
-          {storeRoles.length>0&&<optgroup label="My Store Roles">{storeRoles.map(tpl=><option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}</optgroup>}
-        </select></div>
+    {editStaff && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3" onClick={()=>setEditStaff(null)}>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('storePage.editTeamMember','Edit Team Member')}</h2>
+            <button onClick={()=>setEditStaff(null)} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500"><X size={16}/></button>
+          </div>
+          <div className="space-y-3">
+            {/* Profile photo */}
+            <div>
+              <label className="input-label">{t('storePage.profilePhoto','Profile Photo')}</label>
+              <div className="flex items-center gap-3">
+                {editStaff.avatar
+                  ? <img src={editStaff.avatar} alt="" className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-gray-700"/>
+                  : <div className="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-500/20 flex items-center justify-center text-brand-500 font-bold text-lg shrink-0">{(editStaff.name||'?')[0]?.toUpperCase()}</div>}
+                <div className="flex-1">
+                  <input type="file" accept="image/*" onChange={e=>{
+                    const f=e.target.files?.[0];if(!f)return;
+                    if(f.size>3*1024*1024)return toast.error(t('storePage.imageTooLarge','Image too large (max 3MB)'));
+                    const r=new FileReader();r.onload=()=>setEditStaff(p=>({...p,avatar:r.result}));r.readAsDataURL(f);
+                  }} className="text-xs text-gray-500"/>
+                  {editStaff.avatar&&<button type="button" onClick={()=>setEditStaff({...editStaff,avatar:''})} className="block text-[11px] text-red-500 mt-1 hover:underline">{t('storePage.removePhoto','Remove photo')}</button>}
+                </div>
+              </div>
+            </div>
+
+            {/* Active / Inactive — gated immediately so admins can suspend
+                a team member without deleting their account. */}
+            <label className={`flex items-center justify-between gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${editStaff.is_active!==false?'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10':'border-gray-200 dark:border-gray-700'}`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${editStaff.is_active!==false?'bg-emerald-500 text-white':'bg-gray-200 text-gray-500'}`}>
+                  {editStaff.is_active!==false?<Check size={16}/>:<Lock size={16}/>}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-white">{editStaff.is_active!==false?t('storePage.statusActive','Active'):t('storePage.statusInactive','Inactive')}</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">{editStaff.is_active!==false?t('storePage.canSignIn','Can sign in and use granted permissions'):t('storePage.cannotSignIn','Account is suspended — sign-in blocked')}</p>
+                </div>
+              </div>
+              <input type="checkbox" checked={editStaff.is_active!==false} onChange={e=>setEditStaff({...editStaff,is_active:e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-emerald-500"/>
+            </label>
+
+            <div><label className="input-label">{t('storePage.name','Name')}</label><input className="input-field" value={editStaff.name} onChange={e=>setEditStaff({...editStaff,name:e.target.value})}/></div>
+            <div><label className="input-label">{t('storePage.email','Email')}</label><input className="input-field" value={editStaff.email} onChange={e=>setEditStaff({...editStaff,email:e.target.value})}/></div>
+            <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={editStaff.phone} onChange={e=>setEditStaff({...editStaff,phone:e.target.value})}/></div>
+            <div><label className="input-label">{t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)')}</label><input type="password" className="input-field" value={editStaff.password} onChange={e=>setEditStaff({...editStaff,password:e.target.value})}/></div>
+            {editStaff.password && (
+              <div>
+                <label className="input-label">{t('storePage.confirmPassword','Confirm Password')}</label>
+                <input type="password" className="input-field" value={editStaff.confirmPassword||''} onChange={e=>setEditStaff({...editStaff,confirmPassword:e.target.value})}/>
+                {editStaff.confirmPassword&&editStaff.password!==editStaff.confirmPassword&&(
+                  <p className="mt-1 text-xs text-red-500">{t('storePage.passwordsDontMatch','Passwords do not match')}</p>
+                )}
+              </div>
+            )}
+            <div><label className="input-label">{t('storePage.role','Role')}</label>
+              <select className="input-field" value={editStaff.role} onChange={e=>setEditStaff({...editStaff,role:e.target.value})}>
+                <option value="">— {t('storePage.selectRole','Select role')} —</option>
+                <optgroup label={t('storePage.platformRoles','Platform Roles')}>{platformTemplates.map(tpl=>{const lang=(document.documentElement.lang||'en').slice(0,2);const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||'Role';return(<option key={'tpl_'+tpl.id} value={'tpl_'+tpl.id}>{name}</option>);})}</optgroup>
+                {storeRoles.length>0&&<optgroup label={t('storePage.myStoreRoles','My Store Roles')}>{storeRoles.map(tpl=><option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}</optgroup>}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-5"><button onClick={()=>setEditStaff(null)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button><button onClick={saveEditStaff} className="btn-primary flex-1">{t('storePage.save','Save')}</button></div>
+        </div>
       </div>
-      <div className="flex gap-2 mt-5"><button onClick={()=>setEditStaff(null)} className="btn-ghost flex-1">Cancel</button><button onClick={saveEditStaff} className="btn-primary flex-1">Save</button></div>
-    </div></div>}
+    )}
     {showStaff && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3" onClick={()=>setShowStaff(false)}>
         <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
@@ -907,6 +959,20 @@ export default function StoreSettings(){
                 <p className="mt-1 text-xs text-red-500">{t('storePage.passwordsDontMatch','Passwords do not match')}</p>
               )}
             </div>
+
+            {/* Active / Inactive — toggle to suspend the account without deletion. */}
+            <label className={`flex items-center justify-between gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${sf.is_active!==false?'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10':'border-gray-200 dark:border-gray-700'}`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${sf.is_active!==false?'bg-emerald-500 text-white':'bg-gray-200 text-gray-500'}`}>
+                  {sf.is_active!==false?<Check size={16}/>:<Lock size={16}/>}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-white">{sf.is_active!==false?t('storePage.statusActive','Active'):t('storePage.statusInactive','Inactive')}</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">{sf.is_active!==false?t('storePage.canSignIn','Can sign in immediately'):t('storePage.cannotSignIn','Sign-in disabled')}</p>
+                </div>
+              </div>
+              <input type="checkbox" checked={sf.is_active!==false} onChange={e=>setSf({...sf,is_active:e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-emerald-500"/>
+            </label>
 
             {/* Stores access — opens a popup list of every store the admin owns. */}
             <div>
