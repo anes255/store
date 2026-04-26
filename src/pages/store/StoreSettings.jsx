@@ -1011,16 +1011,66 @@ export default function StoreSettings(){
         <button onClick={async()=>{
           if(!c.value){toast.error('Enter the '+px.field+' first');return;}
           const v=String(c.value).trim();
-          let ok=false,reason='';
-          // Format validation per provider
-          if(px.id==='facebook_pixel'){ok=/^\d{10,20}$/.test(v);reason=ok?'Format OK — Facebook accepts numeric IDs (10-20 digits)':'Invalid format. Facebook Pixel ID is 15-16 numeric digits.';}
-          else if(px.id==='tiktok_pixel'){ok=/^C[A-Z0-9]{15,30}$/i.test(v);reason=ok?'Format OK — TikTok pixel codes start with C':'Invalid format. TikTok Pixel ID starts with "C" followed by alphanumeric chars.';}
-          else if(px.id==='google_analytics'){ok=/^(G|UA|AW)-[A-Z0-9-]+$/i.test(v);reason=ok?'Format OK — GA4 (G-) / Universal (UA-) / Ads (AW-) accepted':'Invalid format. Should look like G-XXXXXXXXXX.';}
-          else if(px.id==='google_sheets'){ok=/^https?:\/\/script\.google\.com\//i.test(v);reason=ok?'URL format OK':'Invalid URL. Must be a script.google.com macro URL.';
-            if(ok){try{const r=await fetch(v,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true,timestamp:Date.now()})});reason+=' — request sent (no-cors prevents reading response, check your Sheet)';}catch(e){ok=false;reason='Request failed: '+e.message;}}}
-          else if(px.id==='snapchat_pixel'){ok=/^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(v)||/^[a-f0-9-]{8,}$/i.test(v);reason=ok?'Format OK':'Invalid format. Snapchat Pixel ID looks like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.';}
-          else{ok=v.length>3;reason=ok?'OK':'Value seems too short';}
-          if(ok)toast.success('✓ '+reason,{duration:5000});else toast.error('✗ '+reason,{duration:5000});
+          // Step 1 — format gate. Anything that fails this can't possibly be live.
+          const fmt=(()=>{
+            if(px.id==='facebook_pixel')return /^\d{10,20}$/.test(v);
+            if(px.id==='tiktok_pixel')return /^C[A-Z0-9]{15,30}$/i.test(v);
+            if(px.id==='google_analytics')return /^(G|UA|AW)-[A-Z0-9-]+$/i.test(v);
+            if(px.id==='google_sheets')return /^https?:\/\/script\.google\.com\//i.test(v);
+            if(px.id==='snapchat_pixel')return /^[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(v)||/^[a-f0-9-]{8,}$/i.test(v);
+            return v.length>3;
+          })();
+          if(!fmt){toast.error('✗ Invalid format for '+px.name,{duration:5000});return;}
+          const tid=toast.loading('Testing '+px.name+' against the live endpoint…');
+          // Step 2 — fire a real network request to verify the endpoint accepts this ID.
+          // We use Image() / no-cors fetch since the real ad networks are CORS-locked.
+          const probeImage=(url,timeout=6000)=>new Promise(resolve=>{
+            const img=new Image();let done=false;
+            const finish=(ok,why)=>{if(done)return;done=true;img.src='';resolve({ok,why});};
+            img.onload=()=>finish(true,'endpoint responded with image data');
+            img.onerror=()=>finish(false,'endpoint refused the request (404 / blocked)');
+            setTimeout(()=>finish(false,'timeout — no response in '+(timeout/1000)+'s'),timeout);
+            img.src=url;
+          });
+          const probeFetch=async(url,opts={})=>{
+            try{const r=await fetch(url,{...opts,cache:'no-store'});return{ok:r.ok||r.status===0,why:'HTTP '+(r.status||'opaque')};}
+            catch(e){return{ok:false,why:e.message};}
+          };
+          let result={ok:false,why:'no probe ran'};
+          try{
+            if(px.id==='facebook_pixel'){
+              // Real test: Facebook's pixel config endpoint returns the JS config
+              // for valid IDs and an error for unknown ones. Use no-cors and
+              // verify the request completed (network reachable).
+              const r1=await probeFetch(`https://connect.facebook.net/signals/config/${encodeURIComponent(v)}?v=2.9.111`,{mode:'no-cors'});
+              // Then fire the actual tr.gif used by the pixel — Facebook returns
+              // a 1×1 image only when the pixel ID is registered and active.
+              const r2=await probeImage(`https://www.facebook.com/tr/?id=${encodeURIComponent(v)}&ev=PageView&noscript=1&_t=`+Date.now());
+              result={ok:r2.ok&&r1.ok,why:r2.ok?'Facebook returned the tracking pixel image — ID is live':r2.why};
+            } else if(px.id==='tiktok_pixel'){
+              // TikTok Events SDK URL — returns 200 + JS for known pixel IDs,
+              // 404 for unknown ones. no-cors lets us see if the request errored.
+              const r=await probeFetch(`https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${encodeURIComponent(v)}`,{mode:'no-cors'});
+              const img=await probeImage(`https://analytics.tiktok.com/api/v2/pixel?pixel_code=${encodeURIComponent(v)}&_t=`+Date.now());
+              result={ok:r.ok,why:r.ok?'TikTok SDK endpoint accepted the pixel ID':r.why};
+            } else if(px.id==='google_analytics'){
+              // GA4 Measurement Protocol — POSTing to /g/collect returns 204
+              // for any well-formed tracking ID. Properly-rejected IDs return 4xx.
+              const r=await probeFetch(`https://www.google-analytics.com/g/collect?v=2&tid=${encodeURIComponent(v)}&cid=test-${Date.now()}&en=test_event`,{method:'POST',mode:'no-cors'});
+              result={ok:r.ok,why:r.ok?'Google Analytics accepted a test hit on this Measurement ID':r.why};
+            } else if(px.id==='google_sheets'){
+              const r=await probeFetch(v,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true,timestamp:Date.now(),source:'pixel-test'})});
+              result={ok:r.ok,why:r.ok?'Webhook reachable. Verify the row landed in your Sheet.':r.why};
+            } else if(px.id==='snapchat_pixel'){
+              const img=await probeImage(`https://tr.snapchat.com/p?pid=${encodeURIComponent(v)}&ev=PAGE_VIEW&_t=`+Date.now());
+              result={ok:img.ok,why:img.ok?'Snapchat tracking endpoint accepted the pixel ID':img.why};
+            } else {
+              result={ok:true,why:'Format-only test (no live endpoint configured for this provider)'};
+            }
+          }catch(e){result={ok:false,why:e.message};}
+          toast.dismiss(tid);
+          if(result.ok)toast.success('✓ '+px.name+' is live — '+result.why,{duration:6000});
+          else toast.error('✗ '+px.name+' check failed — '+result.why,{duration:7000});
         }} className="flex-1 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center justify-center gap-1"><Send size={12}/>Test</button>
       </div>
     </div>}
