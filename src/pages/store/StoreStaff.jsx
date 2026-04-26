@@ -4,7 +4,24 @@ import { ownerApi, publicRoleTemplatesApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { UserPlus, X, Shield, Eye, Package, CreditCard, CheckCircle, Edit, Trash2, ToggleLeft, ToggleRight, Plus, Settings, ChevronDown, Store as StoreIcon } from 'lucide-react';
+import { UserPlus, X, Shield, Eye, Package, CreditCard, CheckCircle, Edit, Trash2, ToggleLeft, ToggleRight, Plus, Settings, ChevronDown, Store as StoreIcon, Activity, Clock } from 'lucide-react';
+
+// Pick a friendly emoji for a role based on its name keywords. Admins can
+// create any custom role, so we match the role's display name (or template
+// English name) against common job-title words. Falls back to a generic 👤.
+function roleEmoji(label = '') {
+  const s = String(label).toLowerCase();
+  if (/(manager|gerant|gérant|مدير)/.test(s)) return '👑';
+  if (/(prepar|prépar|محضر|preparer)/.test(s)) return '📦';
+  if (/(confirm|مؤكد)/.test(s)) return '✅';
+  if (/(account|comptab|محاسب|finance|cashier)/.test(s)) return '💰';
+  if (/(marketing|marketer|سوق)/.test(s)) return '📣';
+  if (/(deliver|livr|توصيل|courier|driver)/.test(s)) return '🚚';
+  if (/(support|service|دعم)/.test(s)) return '🎧';
+  if (/(viewer|observ|read|اطلاع|مشاهد)/.test(s)) return '👀';
+  if (/(custom)/.test(s)) return '⚙️';
+  return '👤';
+}
 
 // All granular permissions available in the system
 const ALL_PERMISSIONS = [
@@ -53,7 +70,8 @@ export default function StoreStaff() {
   const [customRoles, setCustomRoles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('custom_roles_' + (currentStore?.id || '')) || '[]'); } catch { return []; }
   });
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '', role: '', permissions: [], assigned_store_ids: [] });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '', role: '', permissions: [], assigned_store_ids: [], is_active: true });
+  const [showActivity, setShowActivity] = useState(null); // staff member shown in activity log modal
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] });
   const [platformTemplates, setPlatformTemplates] = useState([]);
 
@@ -124,7 +142,7 @@ export default function StoreStaff() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '', role: '', permissions: [], assigned_store_ids: currentStore?.id ? [currentStore.id] : [] });
+    setForm({ name: '', email: '', phone: '', password: '', confirmPassword: '', avatar: '', role: '', permissions: [], assigned_store_ids: currentStore?.id ? [currentStore.id] : [], is_active: true });
     setShowModal(true);
   };
 
@@ -132,7 +150,7 @@ export default function StoreStaff() {
     setEditing(s);
     const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : (allRoles[s.role]?.permissions || []);
     const assigned = Array.isArray(s.assigned_store_ids) && s.assigned_store_ids.length ? s.assigned_store_ids : (currentStore?.id ? [currentStore.id] : []);
-    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', confirmPassword: '', avatar: s.avatar || '', role: s.role || '', permissions: [...perms], assigned_store_ids: [...assigned] });
+    setForm({ name: s.name, email: s.email, phone: s.phone || '', password: '', confirmPassword: '', avatar: s.avatar || '', role: s.role || '', permissions: [...perms], assigned_store_ids: [...assigned], is_active: s.is_active !== false });
     setShowModal(true);
   };
 
@@ -174,7 +192,7 @@ export default function StoreStaff() {
         ? Array.from(new Set([...form.assigned_store_ids, currentStore.id]))
         : [currentStore.id];
       const { confirmPassword, ...rest } = form; void confirmPassword;
-      const payload = { ...rest, role: effectiveRole, permissions: JSON.stringify(form.permissions), assigned_store_ids: assignedIds };
+      const payload = { ...rest, role: effectiveRole, permissions: JSON.stringify(form.permissions), assigned_store_ids: assignedIds, is_active: form.is_active !== false };
       if (!payload.password) delete payload.password;
       if (editing) {
         await ownerApi.updateStaff(currentStore.id, editing.id, payload);
@@ -295,13 +313,18 @@ export default function StoreStaff() {
             const Icon = role.icon || Shield;
             const perms = s.permissions ? (typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions) : (role.permissions || []);
             return (
-              <div key={s.id} className={`glass-card-solid p-4 sm:p-5 ${!s.is_active ? 'opacity-50' : ''}`}>
+              <div key={s.id} className={`glass-card-solid p-4 sm:p-5 ${!s.is_active ? 'opacity-60 grayscale' : ''}`}>
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                    <span className="text-lg font-bold text-brand-500">{s.name[0]?.toUpperCase()}</span>
-                  </div>
+                  {s.avatar
+                    ? <img src={s.avatar} alt="" className="w-14 h-14 rounded-2xl object-cover border border-gray-200 shrink-0"/>
+                    : <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-100 to-purple-100 flex items-center justify-center shrink-0 text-2xl">{roleEmoji(role.label || s.role)}</div>}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{s.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-gray-900 truncate">{s.name}</h3>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${s.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                        {s.is_active ? '🟢 ' + t('storePage.active','Active') : '🔴 ' + t('storePage.inactive','Inactive')}
+                      </span>
+                    </div>
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 ${role.color}`}>
                       <Icon size={10} />{(role.label || s.role || 'ROLE').toString().toUpperCase()}
                     </span>
@@ -318,6 +341,7 @@ export default function StoreStaff() {
                   >
                     <Edit size={13}/>{t('storePage.edit','Edit')}
                   </button>
+                  <button onClick={() => setShowActivity(s)} className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg" title={t('storePage.activityLog','Activity log')}><Activity size={14} className="text-blue-500"/></button>
                   <button onClick={() => handleToggleActive(s)} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg" title={s.is_active ? t('storePage.deactivate','Deactivate') : t('storePage.activate','Activate')}>
                     {s.is_active ? <ToggleRight size={16} className="text-emerald-500" /> : <ToggleLeft size={16} className="text-gray-400" />}
                   </button>
@@ -369,6 +393,19 @@ export default function StoreStaff() {
                   )}
                 </div>
               )}
+
+              {/* Active / Inactive — admin can toggle account access on/off */}
+              <div>
+                <label className="input-label">{t('storePage.accountStatus','Account Status')}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setForm({ ...form, is_active: true })} className={`p-3 rounded-xl border-2 text-left transition-all ${form.is_active ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <div className="flex items-center gap-2"><span className="text-xl">🟢</span><div><p className="font-bold text-sm text-gray-900">{t('storePage.active','Active')}</p><p className="text-[10px] text-gray-400">{t('storePage.activeDesc','Can sign in and use the dashboard')}</p></div></div>
+                  </button>
+                  <button type="button" onClick={() => setForm({ ...form, is_active: false })} className={`p-3 rounded-xl border-2 text-left transition-all ${!form.is_active ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <div className="flex items-center gap-2"><span className="text-xl">🔴</span><div><p className="font-bold text-sm text-gray-900">{t('storePage.inactive','Inactive')}</p><p className="text-[10px] text-gray-400">{t('storePage.inactiveDesc','Login disabled, data preserved')}</p></div></div>
+                  </button>
+                </div>
+              </div>
 
               {/* Profile photo — uploaded as a base64 data URL so any backend
                   that stores the column already handles it without setup. */}
@@ -443,13 +480,25 @@ export default function StoreStaff() {
                     {t('storePage.noRolesYet','No roles defined yet. Tick permissions below — a "Custom" role will be saved automatically.')}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {Object.entries(allRoles).map(([key, cfg]) => {
-                      const Icon = cfg.icon;
+                      const emoji = roleEmoji(cfg.label || key);
+                      const isSelected = form.role === key;
+                      const permCount = (cfg.permissions || []).length;
                       return (
-                        <button key={key} onClick={() => selectRole(key)} className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all ${form.role === key ? 'border-brand-500 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                          <div className={`w-8 h-8 rounded-lg ${cfg.color} flex items-center justify-center shrink-0`}><Icon size={14} /></div>
-                          <div className="min-w-0"><p className="font-semibold text-sm capitalize truncate">{cfg.label || key}</p><p className="text-[10px] text-gray-400 line-clamp-1">{cfg.desc}</p></div>
+                        <button key={key} onClick={() => selectRole(key)} className={`group relative flex flex-col gap-2 p-4 rounded-2xl border-2 text-left transition-all overflow-hidden ${isSelected ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-purple-50 shadow-md scale-[1.02]' : 'border-gray-100 hover:border-brand-200 hover:bg-gray-50'}`}>
+                          {isSelected && <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-[11px]"><CheckCircle size={12}/></span>}
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-2xl shrink-0">{emoji}</div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-sm text-gray-900 truncate">{cfg.label || key}</p>
+                              <p className="text-[10px] text-gray-500 line-clamp-1">{cfg.desc}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isSelected ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600'}`}>{permCount} {t('storePage.permsShort','perms')}</span>
+                            {cfg._platform && <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600">{t('storePage.platformBadge','PLATFORM')}</span>}
+                          </div>
                         </button>
                       );
                     })}
@@ -620,6 +669,56 @@ export default function StoreStaff() {
             <div className="flex gap-2 mt-5">
               <button onClick={() => setStorePickerOpen(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
               <button onClick={() => setStorePickerOpen(false)} className="btn-primary flex-1">{t('storePage.done','Done')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity log modal */}
+      {showActivity && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3" onClick={() => setShowActivity(null)}>
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold flex items-center gap-2"><Activity size={18} className="text-blue-500"/>{t('storePage.activityLog','Activity Log')}</h2>
+              <button onClick={() => setShowActivity(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button>
+            </div>
+            <div className="flex items-center gap-3 mb-5 p-3 bg-gradient-to-br from-brand-50 to-purple-50 rounded-2xl">
+              {showActivity.avatar
+                ? <img src={showActivity.avatar} className="w-12 h-12 rounded-2xl object-cover" alt=""/>
+                : <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-2xl shadow-sm">{roleEmoji(allRoles[showActivity.role]?.label || showActivity.role)}</div>}
+              <div className="min-w-0">
+                <p className="font-bold text-gray-900 truncate">{showActivity.name}</p>
+                <p className="text-[11px] text-gray-500 truncate">{showActivity.email || showActivity.phone || '—'}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 bg-gray-50 rounded-xl flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0"><CheckCircle size={14} className="text-emerald-600"/></div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-gray-900">{t('storePage.accountCreated','Account created')}</p>
+                  <p className="text-[11px] text-gray-500">{showActivity.created_at ? new Date(showActivity.created_at).toLocaleString() : '—'}</p>
+                </div>
+              </div>
+              {showActivity.last_login_at && (
+                <div className="p-3 bg-gray-50 rounded-xl flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0"><Clock size={14} className="text-blue-600"/></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900">{t('storePage.lastSignIn','Last sign-in')}</p>
+                    <p className="text-[11px] text-gray-500">{new Date(showActivity.last_login_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              )}
+              <div className="p-3 bg-gray-50 rounded-xl flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${showActivity.is_active?'bg-emerald-100':'bg-red-100'}`}>{showActivity.is_active?'🟢':'🔴'}</div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-gray-900">{showActivity.is_active ? t('storePage.statusActive','Account is active') : t('storePage.statusInactive','Account is inactive')}</p>
+                  <p className="text-[11px] text-gray-500">{showActivity.is_active ? t('storePage.canSignIn','User can sign in to the dashboard') : t('storePage.signInDisabled','Sign-in is disabled')}</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-400 text-center mt-2">{t('storePage.activityNote','Detailed action log (orders, edits, deletions) will appear here once the audit trail is enabled on the backend.')}</p>
+            </div>
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setShowActivity(null)} className="btn-ghost flex-1">{t('storePage.close','Close')}</button>
             </div>
           </div>
         </div>

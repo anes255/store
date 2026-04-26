@@ -126,6 +126,7 @@ export const ownerApi = {
   markNotifRead: (storeId, nid) => api.patch(`/owner/stores/${storeId}/notifications/${nid}/read`),
   markAllRead: (storeId) => api.patch(`/owner/stores/${storeId}/notifications/read-all`),
   clearRead: (storeId) => api.delete(`/owner/stores/${storeId}/notifications`),
+  deleteNotification: (storeId, nid) => api.delete(`/owner/stores/${storeId}/notifications/${nid}`),
   // Subscription
   getSubscription: () => api.get('/owner/subscription'),
   paySubscription: (data) => api.post('/owner/subscription/pay', data),

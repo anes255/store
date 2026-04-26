@@ -170,20 +170,31 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
   }, [open]);
 
   if (compact) {
+    // In modeOnly mode (used on the storefront header), clicking the button
+    // toggles light/dark directly without opening the panel.
+    const handleClick = () => {
+      if (modeOnly) {
+        onModeChange(isDark ? 'light' : 'dark');
+        return;
+      }
+      setOpen(!open);
+    };
     return (
       <div className="relative">
         <button
           ref={btnRef}
-          onClick={() => setOpen(!open)}
+          onClick={handleClick}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
             isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
+          aria-label={modeOnly?(isDark?'Switch to light mode':'Switch to dark mode'):'Theme'}
+          title={modeOnly?(isDark?'Switch to light':'Switch to dark'):'Theme'}
         >
-          <div className="w-3.5 h-3.5 rounded-full border border-white/30" style={{ backgroundColor: primaryColor }} />
+          {modeOnly?(isDark?<Sun size={14}/>:<Moon size={14}/>):(<><div className="w-3.5 h-3.5 rounded-full border border-white/30" style={{ backgroundColor: primaryColor }} />
           <Palette size={13} />
-          <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} /></>)}
         </button>
-        {open && anchor && createPortal(
+        {!modeOnly && open && anchor && createPortal(
           <>
             <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
             <div

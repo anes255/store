@@ -318,7 +318,6 @@ function CartRecoveryConfig({ store, onSaved }) {
                 <select value={cfg.cart_recovery_channel} onChange={e=>setCfg({...cfg,cart_recovery_channel:e.target.value})} className="input-field mt-1">
                   <option value="whatsapp">WhatsApp</option>
                   <option value="email">Email</option>
-                  <option value="sms">SMS</option>
                 </select>
               </div>
             </div>

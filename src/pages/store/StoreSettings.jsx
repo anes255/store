@@ -404,10 +404,25 @@ export default function StoreSettings(){
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);
   const loadData=()=>{if(!currentStore?.id)return;api.get(`/owner/stores/${currentStore.id}/staff`).then(r=>setStaff(r.data)).catch(()=>{});api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>setWilayas(Array.isArray(r.data)?r.data:(r.data?.wilayas||[]))).catch(()=>setWilayas([]));};
   const loadProfile=async()=>{try{const{data}=await ownerApi.getProfile();setProfile(data);setNewUsername(data.username||'');setNewEmail(data.email||'');}catch(e){}};
-  const save=async()=>{setLoading(true);try{const{data}=await ownerApi.updateStore(currentStore.id,s);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch{toast.error(t('storePage.failed','Failed'));}setLoading(false);};
+  const save=async()=>{setLoading(true);try{const{data}=await ownerApi.updateStore(currentStore.id,s);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch(e){const msg=e?.response?.data?.error||e?.message||t('storePage.failed','Failed');toast.error(typeof msg==='string'?msg:t('storePage.failed','Failed'));}setLoading(false);};
   const set=(k)=>(e)=>setS({...s,[k]:e.target.type==='checkbox'?e.target.checked:e.target.value});
   const setV=(k,v)=>setS({...s,[k]:v});
-  const imgUp=(field,sz=400)=>(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{const i=new window.Image();i.onload=()=>{const c=document.createElement('canvas');c.width=sz;c.height=sz;c.getContext('2d').drawImage(i,0,0,sz,sz);setS({...s,[field]:c.toDataURL('image/jpeg',0.7)});toast.success(t('storePage.uploaded','Uploaded!'));};i.src=r.result;};r.readAsDataURL(f);};
+  const imgUp=(field,sz=400)=>(e)=>{const f=e.target.files?.[0];if(!f)return;
+    if(f.size>5*1024*1024){toast.error(t('storePage.imageTooLarge','Image too large (max 5 MB)'));return;}
+    const r=new FileReader();
+    r.onload=()=>{const i=new window.Image();i.onload=()=>{
+      // Preserve aspect ratio: scale longest edge to `sz`, fit width/height proportionally.
+      const ratio=Math.min(sz/i.width,sz/i.height,1);
+      const w=Math.round(i.width*ratio),h=Math.round(i.height*ratio);
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(i,0,0,w,h);
+      // Lower quality for cover images to keep payload small
+      const q=field==='cover_image'?0.6:0.7;
+      setS({...s,[field]:c.toDataURL('image/jpeg',q)});
+      toast.success(t('storePage.uploaded','Uploaded!'));
+    };i.onerror=()=>toast.error('Bad image');i.src=r.result;};
+    r.onerror=()=>toast.error('Read failed');
+    r.readAsDataURL(f);};
   const seedW=async()=>{try{await api.post(`/manage/stores/${currentStore.id}/shipping-wilayas/seed`);loadData();}catch{}};
   // Auto-seed the 58 Algerian wilayas the first time the store reaches the
   // shipping section with an empty list — no manual button required.

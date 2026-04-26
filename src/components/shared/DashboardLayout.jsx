@@ -225,20 +225,54 @@ function NotifBell(){
   
   const timeAgo=(d)=>{const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';};
   const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
-  
+  const[selected,setSelected]=React.useState(new Set());
+  const[selectMode,setSelectMode]=React.useState(false);
+  const toggleSelected=(id)=>setSelected(p=>{const n=new Set(p);if(n.has(id))n.delete(id);else n.add(id);return n;});
+  const removeOne=async(id)=>{
+    try{const{ownerApi}=await import('../../utils/api');
+      if(ownerApi.deleteNotification){await ownerApi.deleteNotification(currentStore.id,id);}
+      else{// optimistic local-only fallback if backend route is missing
+        setNotifs(prev=>prev.filter(n=>n.id!==id));return;}
+      load();
+    }catch{setNotifs(prev=>prev.filter(n=>n.id!==id));}
+  };
+  const removeSelected=async()=>{
+    if(!selected.size)return;
+    if(!confirm('Delete '+selected.size+' notification'+(selected.size>1?'s':'')+'?'))return;
+    for(const id of Array.from(selected))await removeOne(id);
+    setSelected(new Set());setSelectMode(false);
+  };
+  const removeAll=async()=>{
+    if(!notifs.length)return;
+    if(!confirm('Delete all notifications?'))return;
+    for(const n of notifs)await removeOne(n.id);
+  };
+
   return(<div ref={wrapRef} className="relative flex items-center gap-1">
     {!pushOk&&<button onClick={enablePush} className="px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔 Enable</button>}
     <button ref={btnRef} onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
-    {/* Render the dropdown through a portal so its `fixed` backdrop isn't
-        trapped inside the header's `backdrop-blur` containing block — that
-        was preventing outside-clicks from reaching the close handler. */}
     {open&&anchor&&createPortal(<>
       <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
-      <div className="fixed w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[101] overflow-hidden" style={{top:anchor.top,right:anchor.right}}>
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between"><h3 className="font-bold text-sm">Notifications</h3>{unread>0&&<button onClick={markAll} className="text-xs text-brand-500 cursor-pointer hover:underline">Mark all read</button>}</div>
-        <div className="max-h-72 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,20).map(n=>(
-          <div key={n.id} onClick={()=>openNotif(n)} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${!n.is_read?'bg-brand-50/30':''}`}>
-            <div className="flex items-start gap-2"><span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span><div className="flex-1 min-w-0"><p className="text-sm text-gray-800 font-medium truncate">{n.title}</p>{n.message&&<p className="text-xs text-gray-400 truncate">{n.message}</p>}<p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(n.created_at)}</p></div>{!n.is_read&&<span className="w-2 h-2 bg-brand-500 rounded-full mt-1.5 shrink-0"/>}</div>
+      <div className="fixed w-[min(92vw,22rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[101] overflow-hidden" style={{top:anchor.top,right:anchor.right}}>
+        <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+          <h3 className="font-bold text-sm flex-1">Notifications</h3>
+          {selectMode?(<>
+            <button onClick={()=>{setSelected(new Set(notifs.map(n=>n.id)));}} className="text-[11px] text-gray-500 hover:underline">All</button>
+            <button onClick={removeSelected} disabled={!selected.size} className="text-[11px] font-bold text-red-500 disabled:text-gray-300 hover:underline">Delete{selected.size?` (${selected.size})`:''}</button>
+            <button onClick={()=>{setSelectMode(false);setSelected(new Set());}} className="text-[11px] text-gray-500 hover:underline">Cancel</button>
+          </>):(<>
+            {notifs.length>0&&<button onClick={()=>setSelectMode(true)} className="text-[11px] text-gray-500 hover:underline">Select</button>}
+            {unread>0&&<button onClick={markAll} className="text-[11px] text-brand-500 hover:underline">Mark read</button>}
+            {notifs.length>0&&<button onClick={removeAll} className="text-[11px] text-red-500 hover:underline">Clear</button>}
+          </>)}
+        </div>
+        <div className="max-h-80 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,30).map(n=>(
+          <div key={n.id} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer flex items-start gap-2 ${!n.is_read?'bg-brand-50/30':''}`} onClick={()=>{if(selectMode){toggleSelected(n.id);return;}openNotif(n);}}>
+            {selectMode && <input type="checkbox" checked={selected.has(n.id)} onChange={()=>toggleSelected(n.id)} onClick={e=>e.stopPropagation()} className="mt-1 w-4 h-4 rounded border-gray-300 text-brand-500"/>}
+            <span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span>
+            <div className="flex-1 min-w-0"><p className="text-sm text-gray-800 font-medium truncate">{n.title}</p>{n.message&&<p className="text-xs text-gray-400 truncate">{n.message}</p>}<p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(n.created_at)}</p></div>
+            {!n.is_read&&<span className="w-2 h-2 bg-brand-500 rounded-full mt-1.5 shrink-0"/>}
+            {!selectMode && <button onClick={(e)=>{e.stopPropagation();removeOne(n.id);}} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 shrink-0" title="Remove"><X size={14}/></button>}
           </div>
         ))}</div>
         <button onClick={()=>setOpen(false)} className="w-full p-3 text-center text-xs text-gray-400 hover:bg-gray-50 border-t">Close</button>
@@ -254,7 +288,7 @@ const DEFAULT_ITEMS = [
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'},{to:'/dashboard/orders-archive',label:'sidebar.ordersArchive'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
-    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'},{to:'/dashboard/ai-intelligence',label:'sidebar.aiIntelligence'}]},
+    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
   {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
     {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
@@ -644,7 +678,7 @@ export default function DashboardLayout({children}){
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`hidden sm:inline-flex p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
-          <div className="hidden md:block"><LanguageSwitcher/></div>
+          <LanguageSwitcher/>
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
         </div>
         </div>
