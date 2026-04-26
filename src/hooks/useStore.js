@@ -30,9 +30,45 @@ export const useStoreManagement = create((set) => ({
   stores: [],
 
   setCurrentStore: (store) => {
-    localStorage.setItem('currentStore', JSON.stringify(store));
-    localStorage.setItem('currentStoreId', store?.id);
-    localStorage.setItem('currentStoreSlug', store?.slug);
+    // Strip heavy fields (base64 images, builder JSON, raw config) before
+    // persisting. localStorage has a 5–10MB cap and stores with uploaded
+    // logos/banners/page-builder content easily exceed it. We keep the full
+    // object in memory but only persist the slim version.
+    try {
+      if (store && typeof store === 'object') {
+        const slim = { ...store };
+        // Drop base64 dataURIs (images embedded as `data:image/...`); keep URL strings.
+        const isHeavy = (v) => typeof v === 'string' && (v.startsWith('data:') || v.length > 4000);
+        for (const k of ['logo','logo_url','favicon','favicon_url','cover_image','banner_url','baridimob_qr','offer_bg']) {
+          if (isHeavy(slim[k])) delete slim[k];
+        }
+        // Drop bulky structured fields
+        delete slim.page_builder;
+        delete slim.landing_blocks;
+        // The expanded `config` already duplicates many keys; keep it but trim heavy ones.
+        if (slim.config && typeof slim.config === 'object') {
+          const cfg = { ...slim.config };
+          for (const k of Object.keys(cfg)) { if (isHeavy(cfg[k])) delete cfg[k]; }
+          delete cfg.page_builder;
+          delete cfg.landing_blocks;
+          slim.config = cfg;
+        }
+        const json = JSON.stringify(slim);
+        // Final guard: if even the slim version is huge, persist only id+slug+name.
+        if (json.length > 2_000_000) {
+          localStorage.setItem('currentStore', JSON.stringify({ id: store.id, slug: store.slug, name: store.name||store.store_name }));
+        } else {
+          localStorage.setItem('currentStore', json);
+        }
+      } else {
+        localStorage.removeItem('currentStore');
+      }
+    } catch (e) {
+      // Quota or other failure — drop persisted copy so we don't loop, keep in-memory.
+      try { localStorage.removeItem('currentStore'); } catch {}
+    }
+    if (store?.id) localStorage.setItem('currentStoreId', store.id);
+    if (store?.slug) localStorage.setItem('currentStoreSlug', store.slug);
     set({ currentStore: store });
   },
 
