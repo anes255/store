@@ -156,6 +156,11 @@ html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{ba
 .buyer-theme-dark input,.buyer-theme-dark textarea,.buyer-theme-dark select{background-color:#1a2140;color:#f3f4f6;border-color:#2d3566;}
 .buyer-theme-dark .bg-white\/95{background-color:rgba(26,33,64,0.95) !important;}
 .buyer-theme-dark .shadow-md,.buyer-theme-dark .shadow-lg,.buyer-theme-dark .shadow-xl{box-shadow:0 10px 30px rgba(0,0,0,0.5) !important;}
+/* Storefront header has its own inline bg/text color (uses primary_color); the
+   global dark-mode text overrides above were stomping on the white title.
+   Force the header text to remain readable on the brand-coloured bar. */
+.buyer-theme-dark header [data-store-name],
+.buyer-theme-dark header .store-header-title{color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;text-shadow:0 1px 2px rgba(0,0,0,0.25);}
 
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
