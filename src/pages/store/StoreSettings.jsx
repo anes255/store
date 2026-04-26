@@ -6,7 +6,7 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import WhatsAppConfigModal,{WA_STATUSES,WA_STATUS_LABELS} from '../../components/shared/WhatsAppConfigModal';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2 } from 'lucide-react';
+import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag } from 'lucide-react';
 import { ALL_PERMISSIONS, PERM_GROUPS } from '../../utils/permissions';
 
 const themes=[{id:'classic',name:'Classic Store',desc:'PROFESSIONAL & CLEAN',c:'#7C3AED'},{id:'nova-dark',name:'Nova Dark',desc:'FUTURISTIC & SLEEK',c:'#8B5CF6'},{id:'enterprise',name:'Enterprise',desc:'DENSE & FUNCTIONAL',c:'#3B82F6'},{id:'ocean-bloom',name:'Ocean Bloom',desc:'SOFT & FRIENDLY',c:'#06B6D4'},{id:'nzxt-pro',name:'NZXT Pro',desc:'HIGH CONTRAST',c:'#A855F7'},{id:'moonlight',name:'Moonlight',desc:'ETHEREAL & CALM',c:'#818CF8'}];
@@ -329,12 +329,15 @@ function CheckoutPreview({ s }) {
 }
 
 export default function StoreSettings(){
-  const{t}=useTranslation();const{currentStore,setCurrentStore}=useStoreManagement();const{user,logout}=useAuthStore();
+  const{t}=useTranslation();const{currentStore,setCurrentStore,stores:adminStores}=useStoreManagement();const{user,logout}=useAuthStore();
   const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
   useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
   const[s,setS]=useState({});const[sec,setSec]=useState(typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details');const[loading,setLoading]=useState(false);
   const[staff,setStaff]=useState([]);const[wilayas,setWilayas]=useState([]);const[showRole,setShowRole]=useState(null);
-  const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',role:''});
+  const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[]});
+  // Pop-out store picker for the Create User modal — opens a list of every
+  // store the admin owns so they can tick the ones the team member can sign in to.
+  const[sfStorePickerOpen,setSfStorePickerOpen]=useState(false);
   // Admin-only editor for an existing team member (name/email/phone/password/role)
   const[editStaff,setEditStaff]=useState(null);
   const openEditStaff=(x)=>{setEditStaff({id:x.id,name:x.name||'',email:x.email||'',phone:x.phone||'',password:'',role:x.role||(x.role_template_id?'tpl_'+x.role_template_id:'')});};
@@ -409,7 +412,25 @@ export default function StoreSettings(){
   // Auto-seed the 58 Algerian wilayas the first time the store reaches the
   // shipping section with an empty list — no manual button required.
   useEffect(()=>{if(currentStore?.id&&wilayas.length===0&&sec==='shipping')seedW();},[sec,currentStore?.id,wilayas.length]);
-  const addStaff=async()=>{try{if(!sf.name||!sf.password)return toast.error('Name and password required');const payload={...sf};if(sf.role&&sf.role.startsWith('tpl_')){const id=sf.role.slice(4);const tpl=platformTemplates.find(t=>String(t.id)===String(id));if(tpl)payload.permissions=JSON.stringify(tpl.permissions||[]);}await api.post(`/owner/stores/${currentStore.id}/staff`,payload);toast.success(t('storePage.added','Added!'));setShowStaff(false);setSf({name:'',email:'',phone:'',password:'',role:''});loadData();}catch(e){console.error('[addStaff]',e?.response?.status,e?.response?.data,e);toast.error(e?.response?.data?.error||e?.response?.data?.message||`Failed (${e?.response?.status||'network'})`);}};
+  const addStaff=async()=>{try{
+    if(!sf.name||!sf.password)return toast.error('Name and password required');
+    if(sf.password!==sf.confirmPassword)return toast.error(t('storePage.passwordsDontMatch','Passwords do not match'));
+    // Always include the current store + whatever extras were ticked.
+    const extras=Array.isArray(sf.assigned_store_ids)?sf.assigned_store_ids:[];
+    const assignedIds=Array.from(new Set([currentStore.id,...extras]));
+    const{confirmPassword,...rest}=sf;void confirmPassword;
+    const payload={...rest,assigned_store_ids:assignedIds};
+    if(sf.role&&sf.role.startsWith('tpl_')){
+      const id=sf.role.slice(4);
+      const tpl=platformTemplates.find(t=>String(t.id)===String(id));
+      if(tpl)payload.permissions=JSON.stringify(tpl.permissions||[]);
+    }
+    await api.post(`/owner/stores/${currentStore.id}/staff`,payload);
+    toast.success(t('storePage.added','Added!'));
+    setShowStaff(false);
+    setSf({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[]});
+    loadData();
+  }catch(e){console.error('[addStaff]',e?.response?.status,e?.response?.data,e);toast.error(e?.response?.data?.error||e?.response?.data?.message||`Failed (${e?.response?.status||'network'})`);}};
   const saveProfile=async()=>{setProfileLoading(true);try{await ownerApi.updateProfile({full_name:profile.full_name,phone:profile.phone});toast.success(t('storePage.profileUpdated','Profile updated!'));}catch{toast.error(t('storePage.failed','Failed'));}setProfileLoading(false);};
   const saveUsername=async()=>{try{await ownerApi.updateUsername({username:newUsername});setProfile({...profile,username:newUsername});setUsernameEdit(false);toast.success(t('storePage.usernameUpdated','Username updated!'));}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
   const saveEmail=async()=>{try{await ownerApi.updateEmail({email:newEmail,password:emailPw});setProfile({...profile,email:newEmail});setEmailEdit(false);setEmailPw('');toast.success(t('storePage.emailUpdated','Email updated!'));}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
@@ -662,6 +683,138 @@ export default function StoreSettings(){
       </div>
       <div className="flex gap-2 mt-5"><button onClick={()=>setEditStaff(null)} className="btn-ghost flex-1">Cancel</button><button onClick={saveEditStaff} className="btn-primary flex-1">Save</button></div>
     </div></div>}
-    {showStaff&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-3" onClick={()=>setShowStaff(false)}><div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}><h2 className="text-xl font-bold mb-4 sm:mb-6">Create User</h2><div className="space-y-3"><div><label className="input-label">Name</label><input className="input-field" value={sf.name} onChange={e=>setSf({...sf,name:e.target.value})}/></div><div><label className="input-label">Email</label><input className="input-field" value={sf.email} onChange={e=>setSf({...sf,email:e.target.value})}/></div><div><label className="input-label">Phone</label><input className="input-field" value={sf.phone} onChange={e=>setSf({...sf,phone:e.target.value})}/></div><div><label className="input-label">Password</label><input type="password" className="input-field" value={sf.password} onChange={e=>setSf({...sf,password:e.target.value})}/></div><div><label className="input-label">Role</label><select className="input-field" value={sf.role} onChange={e=>setSf({...sf,role:e.target.value})}><option value="">Select a role…</option>{platformTemplates.map(tpl=>{const lang=(document.documentElement.lang||'en').slice(0,2);const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||'Role';return(<option key={'tpl_'+tpl.id} value={'tpl_'+tpl.id}>{name}</option>);})}</select>{platformTemplates.length===0&&<p className="text-[10px] text-gray-400 mt-1">No roles defined by platform yet.</p>}</div></div><div className="flex gap-3 mt-6"><button onClick={()=>setShowStaff(false)} className="btn-ghost flex-1">Cancel</button><button onClick={addStaff} className="btn-primary flex-1">Create</button></div></div></div>}
+    {showStaff && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3" onClick={()=>setShowStaff(false)}>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 w-full max-w-md max-h-[95vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('storePage.createUser','Create User')}</h2>
+            <button onClick={()=>setShowStaff(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-300"><X size={16}/></button>
+          </div>
+          <div className="space-y-3">
+            {/* Profile photo */}
+            <div>
+              <label className="input-label">{t('storePage.profilePhoto','Profile Photo')}</label>
+              <div className="flex items-center gap-3">
+                {sf.avatar
+                  ? <img src={sf.avatar} alt="" className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-gray-700"/>
+                  : <div className="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-500/20 flex items-center justify-center text-brand-500 font-bold text-lg shrink-0">{(sf.name||'?')[0]?.toUpperCase()}</div>}
+                <div className="flex-1">
+                  <input type="file" accept="image/*" onChange={e=>{
+                    const f=e.target.files?.[0];if(!f)return;
+                    if(f.size>3*1024*1024)return toast.error(t('storePage.imageTooLarge','Image too large (max 3MB)'));
+                    const r=new FileReader();r.onload=()=>setSf(p=>({...p,avatar:r.result}));r.readAsDataURL(f);
+                  }} className="text-xs text-gray-500 dark:text-gray-400"/>
+                  {sf.avatar&&<button type="button" onClick={()=>setSf({...sf,avatar:''})} className="block text-[11px] text-red-500 mt-1 hover:underline">{t('storePage.removePhoto','Remove photo')}</button>}
+                </div>
+              </div>
+            </div>
+
+            <div><label className="input-label">{t('storePage.name','Name')} *</label><input className="input-field" value={sf.name} onChange={e=>setSf({...sf,name:e.target.value})}/></div>
+            <div><label className="input-label">{t('storePage.email','Email')}</label><input className="input-field" value={sf.email} onChange={e=>setSf({...sf,email:e.target.value})}/></div>
+            <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={sf.phone} onChange={e=>setSf({...sf,phone:e.target.value})}/></div>
+            <div><label className="input-label">{t('storePage.passwordRequired','Password *')}</label><input type="password" className="input-field" value={sf.password} onChange={e=>setSf({...sf,password:e.target.value})}/></div>
+            {/* Confirm password — must match the password above. */}
+            <div>
+              <label className="input-label">{t('storePage.confirmPassword','Confirm Password')} *</label>
+              <input type="password" className="input-field" value={sf.confirmPassword} onChange={e=>setSf({...sf,confirmPassword:e.target.value})}/>
+              {sf.confirmPassword&&sf.password!==sf.confirmPassword&&(
+                <p className="mt-1 text-xs text-red-500">{t('storePage.passwordsDontMatch','Passwords do not match')}</p>
+              )}
+            </div>
+
+            {/* Stores access — opens a popup list of every store the admin owns. */}
+            <div>
+              <label className="input-label">{t('storePage.assignedStores','Stores this user can access')}</label>
+              {(()=>{
+                const allIds=Array.isArray(adminStores)?adminStores.map(s=>s.id):[];
+                const picked=Array.from(new Set([...(sf.assigned_store_ids||[]),...(currentStore?.id?[currentStore.id]:[])])).filter(id=>allIds.includes(id)||id===currentStore?.id);
+                return(
+                  <button type="button" onClick={()=>setSfStorePickerOpen(true)} className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:bg-brand-50/40 dark:hover:bg-brand-500/10 transition-all text-left">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ShoppingBag size={16} className="text-brand-500 shrink-0"/>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{picked.length} {picked.length===1?t('storePage.storeSingular','store'):t('storePage.storePlural','stores')} {t('storePage.selected','selected')}</p>
+                        <p className="text-[11px] text-gray-400 truncate">{picked.slice(0,3).map(id=>(adminStores||[]).find(s=>s.id===id)?.name||(id===currentStore?.id?currentStore?.name:'')).filter(Boolean).join(' · ')}{picked.length>3?` +${picked.length-3}`:''}</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1.5 rounded-lg bg-brand-500 text-white text-xs font-bold shrink-0">{t('storePage.choose','Choose')}</span>
+                  </button>
+                );
+              })()}
+            </div>
+
+            <div>
+              <label className="input-label">{t('storePage.role','Role')}</label>
+              <select className="input-field" value={sf.role} onChange={e=>setSf({...sf,role:e.target.value})}>
+                <option value="">{t('storePage.selectRole','Select a role…')}</option>
+                {platformTemplates.map(tpl=>{const lang=(document.documentElement.lang||'en').slice(0,2);const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||'Role';return(<option key={'tpl_'+tpl.id} value={'tpl_'+tpl.id}>{name}</option>);})}
+              </select>
+              {platformTemplates.length===0&&<p className="text-[10px] text-gray-400 mt-1">{t('storePage.noRolesPlatform','No roles defined by platform yet.')}</p>}
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button onClick={()=>setShowStaff(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
+            <button onClick={addStaff} className="btn-primary flex-1">{t('storePage.create','Create')}</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Stores picker — opens from the "Choose" button inside the Create User modal */}
+    {sfStorePickerOpen && (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={()=>setSfStorePickerOpen(false)}>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-500/20 flex items-center justify-center"><ShoppingBag size={16} className="text-brand-500"/></div>
+              <div>
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">{t('storePage.chooseStoresTitle','Choose stores this user can access')}</h3>
+                <p className="text-[11px] text-gray-400">{t('storePage.chooseStoresHelp','Tick the stores this team member is allowed to sign in to.')}</p>
+              </div>
+            </div>
+            <button onClick={()=>setSfStorePickerOpen(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-300"><X size={16}/></button>
+          </div>
+          {(!Array.isArray(adminStores)||adminStores.length===0) ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">{t('storePage.noStoresFound','No stores found.')}</p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('storePage.yourStores','Your stores')}</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={()=>setSf(p=>({...p,assigned_store_ids:adminStores.map(s=>s.id)}))} className="text-[11px] text-brand-600 font-bold hover:underline">{t('storePage.selectAll','Select all')}</button>
+                  <button type="button" onClick={()=>setSf(p=>({...p,assigned_store_ids:currentStore?.id?[currentStore.id]:[]}))} className="text-[11px] text-gray-500 font-bold hover:underline">{t('storePage.clear','Clear')}</button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {adminStores.map(s=>{
+                  const checked=sf.assigned_store_ids.includes(s.id)||s.id===currentStore?.id;
+                  const locked=s.id===currentStore?.id;
+                  return(
+                    <label key={s.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${checked?'border-brand-500 bg-brand-50 dark:bg-brand-500/15':'border-gray-100 dark:border-gray-700 hover:border-gray-200'} ${locked?'opacity-90 cursor-not-allowed':''}`}>
+                      <input type="checkbox" checked={checked} disabled={locked} onChange={()=>{
+                        if(locked)return;
+                        setSf(p=>({...p,assigned_store_ids:p.assigned_store_ids.includes(s.id)?p.assigned_store_ids.filter(x=>x!==s.id):[...p.assigned_store_ids,s.id]}));
+                      }} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"/>
+                      {s.logo
+                        ? <img src={s.logo} alt="" className="w-10 h-10 rounded-xl object-cover"/>
+                        : <div className="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 font-bold">{(s.name||'S')[0]}</div>}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{s.name}</p>
+                        <p className="text-[11px] text-gray-400 truncate">/{s.slug}{locked?` · ${t('storePage.currentStoreLocked','current store')}`:''}</p>
+                      </div>
+                      {checked&&<Check size={16} className="text-brand-500"/>}
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          <div className="flex gap-2 mt-5">
+            <button onClick={()=>setSfStorePickerOpen(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
+            <button onClick={()=>setSfStorePickerOpen(false)} className="btn-primary flex-1">{t('storePage.done','Done')}</button>
+          </div>
+        </div>
+      </div>
+    )}
   </DashboardLayout>);
 }
