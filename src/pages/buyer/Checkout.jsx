@@ -141,6 +141,17 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       }
     }
     if (total > 0) { setCouponDiscount(Math.round(total)); toast.success(`-${Math.round(total).toLocaleString()} ${store?.currency||'DZD'}`); return; }
+    // Store-wide coupon configured in Checkout settings — applies to the
+    // whole subtotal when the buyer enters the matching code.
+    if (store?.store_coupon_active && (store?.store_coupon_code || '').toString().trim().toUpperCase() === code) {
+      const pct = parseFloat(store.store_coupon_discount_percent) || 0;
+      if (pct > 0) {
+        const off = Math.round(subtotal * (pct / 100));
+        setCouponDiscount(off);
+        toast.success(`-${off.toLocaleString()} ${store?.currency||'DZD'}`);
+        return;
+      }
+    }
     // Fall back to legacy store-wide coupon endpoint if it exists.
     try { const { data } = await storeApi.validateCoupon(storeSlug, { code, subtotal }); setCouponDiscount(data.discount); toast.success(`-${data.discount.toLocaleString()} ${store?.currency||'DZD'}`); }
     catch { toast.error('Invalid coupon'); setCouponDiscount(0); }
@@ -313,8 +324,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       <Shell {...shellProps}>
         <div className="min-h-[80vh] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-xl">
-            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{store.success_message || t('store.orderSuccess')}</h2>
+            {/* Admin-configured logo on top of the success message; falls back to a check icon. */}
+            {(store?.success_logo || store?.logo)
+              ? <img src={store.success_logo || store.logo} alt="" className="w-20 h-20 rounded-full object-cover mx-auto mb-6 shadow-md" />
+              : <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>}
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{store.success_title || store.success_message || t('store.orderSuccess')}</h2>
+            {store?.success_subtitle && <p className="text-gray-600 mb-2 whitespace-pre-line">{store.success_subtitle}</p>}
             <p className="text-gray-500 mb-4">Order #{orderSuccess.order_number}</p>
             {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
               <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-1.5 max-h-48 overflow-y-auto">

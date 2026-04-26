@@ -550,6 +550,60 @@ export default function StoreSettings(){
 {editRole&&<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={()=>setEditRole(null)}><div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="p-5 border-b flex items-center justify-between"><h3 className="font-bold text-lg">{editRole.id?'Edit Role':'New Role'}</h3><button onClick={()=>setEditRole(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div><div className="p-5 space-y-4"><div><label className="input-label">Role Name</label><input className="input-field" value={editRole.name} onChange={e=>setEditRole({...editRole,name:e.target.value})} placeholder="e.g. Shipping Manager"/></div><div><label className="input-label">Description</label><input className="input-field" value={editRole.description} onChange={e=>setEditRole({...editRole,description:e.target.value})} placeholder="Optional description"/></div><div><label className="input-label">Permissions ({editRole.permissions?.length||0}/{ALL_PERMISSIONS.length})</label><div className="space-y-3 mt-2">{PERM_GROUPS.map(group=>(<div key={group} className="p-3 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-500 uppercase mb-2">{group}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{ALL_PERMISSIONS.filter(p=>p.group===group).map(p=>{const on=(editRole.permissions||[]).includes(p.key);return(<label key={p.key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white"><input type="checkbox" checked={on} onChange={()=>togglePerm(p.key)}/><span className="text-sm text-gray-700">{p.label}</span></label>);})}</div></div>))}</div></div></div><div className="p-5 border-t flex justify-end gap-2"><button onClick={()=>setEditRole(null)} className="btn-ghost text-sm">Cancel</button><button onClick={saveRole} className="btn-primary text-sm flex items-center gap-1"><Save size={14}/>Save Role</button></div></div></div>}</>}
 
 {sec==='checkout'&&<div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6"><div className="space-y-4 min-w-0"><SH icon={ShoppingCart} title="Purchase Flow" subtitle="Optimize visitor to customer conversion." accent="purple"/>
+
+{/* Order success message + logo customization. Shown to the buyer right
+    after they place an order. Logo defaults to the store logo if unset. */}
+<div className="glass-card-solid p-4 sm:p-6 space-y-3">
+  <h3 className="font-bold flex items-center gap-2"><Check size={16} className="text-emerald-500"/>{t('storePage.successPageBlock','Order Success Page')}</h3>
+  <p className="text-[11px] text-gray-400">{t('storePage.successPageHelp','Customize what the buyer sees right after placing an order.')}</p>
+  <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-4 items-start">
+    <div>
+      <label className="input-label text-xs">{t('storePage.successLogo','Logo')}</label>
+      <div className="flex flex-col items-center gap-1">
+        {(s.success_logo||s.logo) ? (
+          <img src={s.success_logo||s.logo} alt="" className="w-20 h-20 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center"><Check size={26} className="text-emerald-600"/></div>
+        )}
+        <input type="file" accept="image/*" onChange={e=>{
+          const f=e.target.files?.[0];if(!f)return;
+          if(f.size>2*1024*1024){toast.error(t('storePage.imageTooLarge','Image too large'));return;}
+          const r=new FileReader();r.onload=()=>setV('success_logo',r.result);r.readAsDataURL(f);
+        }} className="text-[10px] text-gray-500 mt-1"/>
+        {s.success_logo&&<button type="button" onClick={()=>setV('success_logo','')} className="text-[10px] text-red-500 hover:underline">{t('storePage.removePhoto','Remove')}</button>}
+      </div>
+    </div>
+    <div className="space-y-2">
+      <div>
+        <label className="input-label text-xs">{t('storePage.successTitle','Title')}</label>
+        <input className="input-field" value={s.success_title||''} onChange={set('success_title')} placeholder={t('storePage.successTitlePh','Order placed successfully!')}/>
+      </div>
+      <div>
+        <label className="input-label text-xs">{t('storePage.successSubtitle','Subtitle / Message')}</label>
+        <textarea className="input-field" rows={3} value={s.success_subtitle||''} onChange={set('success_subtitle')} placeholder={t('storePage.successSubtitlePh','Thanks for your order — we will contact you shortly to confirm.')}/>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/* Store-wide coupon — applies a percentage discount to the cart total
+    when the buyer enters this code at checkout. Per-product coupons set
+    on individual products still apply on top. */}
+<div className="glass-card-solid p-4 sm:p-6 space-y-3">
+  <div className="flex items-center justify-between">
+    <h3 className="font-bold flex items-center gap-2"><Percent size={16} className="text-amber-500"/>{t('storePage.storeCoupon','Store-wide Coupon')}</h3>
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" checked={!!s.store_coupon_active} onChange={e=>setV('store_coupon_active',e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-amber-600"/>
+      <span className="text-xs font-bold text-gray-600">{s.store_coupon_active?t('storePage.couponActive','Active'):t('storePage.couponInactive','Inactive')}</span>
+    </label>
+  </div>
+  <p className="text-[11px] text-gray-400">{t('storePage.storeCouponHelp','One coupon code that works on every product in this store. Applied to the cart subtotal at checkout.')}</p>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div><label className="input-label text-xs">{t('storePage.couponCode','Code')}</label><input className="input-field uppercase font-mono" placeholder="SAVE10" value={s.store_coupon_code||''} onChange={e=>setV('store_coupon_code',e.target.value.toUpperCase())} disabled={!s.store_coupon_active}/></div>
+    <div><label className="input-label text-xs">{t('storePage.couponDiscountPercent','Discount %')}</label><input type="number" min="0" max="100" step="0.5" className="input-field" placeholder="10" value={s.store_coupon_discount_percent||''} onChange={set('store_coupon_discount_percent')} disabled={!s.store_coupon_active}/></div>
+  </div>
+</div>
+
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Lock size={16}/>Data Collection</h3><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">Full Name</p><p className="text-[10px] text-gray-400">Primary identifier</p></div><span className="badge badge-danger text-[10px]">REQUIRED</span></div><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">Phone Number</p><p className="text-[10px] text-gray-400">Delivery coordination</p></div><span className="badge badge-danger text-[10px]">REQUIRED</span></div><T label="Email Collection" desc="Automated invoice flow." checked={s.checkout_email} onChange={e=>setV('checkout_email',e.target.checked)}/></div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Zap size={16}/>Experience</h3><T label="Cart Drawer" desc="Side-cart on click." checked={s.cart_drawer} onChange={e=>setV('cart_drawer',e.target.checked)}/><T label="Order Notes" desc="Special instructions." checked={s.order_notes} onChange={e=>setV('order_notes',e.target.checked)}/><T label="Trust Signals" desc="Security badges." checked={s.trust_signals!==false} onChange={e=>setV('trust_signals',e.target.checked)}/><T label="Sticky Checkout" desc="Always visible Buy Now." checked={s.sticky_checkout} onChange={e=>setV('sticky_checkout',e.target.checked)}/><T label="Show Savings" desc="Highlight discounts." checked={s.show_savings} onChange={e=>setV('show_savings',e.target.checked)}/></div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-2"><Code size={16}/><h3 className="font-bold">Custom Scripts</h3></div><textarea className="input-field font-mono text-xs" rows={3} value={s.post_script||''} onChange={set('post_script')} placeholder="<script>...</script>"/><p className="text-[10px] text-gray-400">Runs on checkout page only.</p></div></div><div className="lg:sticky lg:top-4 lg:self-start"><CheckoutPreview s={s}/></div></div>}

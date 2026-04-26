@@ -85,17 +85,21 @@ export default function StoreOrders() {
   const location = useLocation();
 
   // When this page is mounted at /dashboard/preparing, lock the filter to
-  // "preparing" so only orders currently being prepared are visible.
+  // "preparing" so only orders currently being prepared are visible. The
+  // archive page is similarly locked to "archived".
   const isPreparingPage = location.pathname === '/dashboard/preparing';
+  const isArchivePage = location.pathname === '/dashboard/orders-archive';
 
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState(isPreparingPage ? 'preparing' : 'all');
-  // Force the filter back to "preparing" whenever the route is the
-  // preparing page (defends against stale state when navigating between
-  // dashboard tabs).
-  useEffect(() => { if (isPreparingPage && filter !== 'preparing') setFilter('preparing'); }, [isPreparingPage, filter]);
+  const [filter, setFilter] = useState(isPreparingPage ? 'preparing' : isArchivePage ? 'archived' : 'all');
+  // Force the filter back to "preparing"/"archived" whenever the route is
+  // one of those special pages (defends against stale state when navigating).
+  useEffect(() => {
+    if (isPreparingPage && filter !== 'preparing') setFilter('preparing');
+    else if (isArchivePage && filter !== 'archived') setFilter('archived');
+  }, [isPreparingPage, isArchivePage, filter]);
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -182,8 +186,16 @@ export default function StoreOrders() {
   const loadOrders = async () => {
     if (!currentStore?.id) return;
     try {
-      const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' ? undefined : filter, search });
-      setOrders(data.orders); setTotal(data.total);
+      // Preparing page must include both confirmed and preparing orders.
+      // Backend filters by exact status; we ask for "all" and filter client-side
+      // so confirmed/preparing/under_preparation appear together.
+      const wantPreparingBucket = filter === 'preparing';
+      const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' || wantPreparingBucket ? undefined : filter, search });
+      let rows = data.orders || [];
+      if (wantPreparingBucket) {
+        rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
+      }
+      setOrders(rows); setTotal(wantPreparingBucket ? rows.length : data.total);
     } catch {} finally { setLoading(false); }
   };
 
@@ -199,12 +211,20 @@ export default function StoreOrders() {
 
   const updateStatus = async (orderId, status) => {
     setUpdatingStatus(orderId + status);
+    // Optimistic UI: update the row in-place AND drop it from the current
+    // view if it no longer belongs to the active filter, so the admin sees
+    // the change reflected without reloading the page.
+    const fitsCurrentFilter = (s) => {
+      if (filter === 'all') return true;
+      if (filter === 'preparing') return ['confirmed','preparing','under_preparation'].includes(s);
+      return s === filter;
+    };
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o).filter(o => o.id !== orderId || fitsCurrentFilter(status)));
     try {
       await orderApi.updateStatus(currentStore.id, orderId, { status });
       toast.success(`Order → ${statusConfig[status]?.label || status}`);
-      loadOrders();
       if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Failed'); loadOrders(); /* roll back from server on failure */ }
     setUpdatingStatus(null);
   };
 

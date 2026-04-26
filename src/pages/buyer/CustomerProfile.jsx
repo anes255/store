@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
+import WILAYA_CITIES from '../../data/wilayaCities';
 import { useAuthStore, useCartStore, useWishlistStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import {
@@ -586,25 +587,37 @@ export default function CustomerProfile() {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
+                      {/* Wilaya & city now use the same dropdown list as the
+                          checkout page so the data lines up — placing an order
+                          later will pre-fill these fields automatically. */}
                       <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.city', 'City')}</label>
-                        <input
-                          className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all"
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.wilaya', 'Wilaya')}</label>
+                        <select
+                          className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 transition-all"
+                          style={{ '--tw-ring-color': pc + '55' }}
+                          value={form.wilaya}
+                          onChange={e => setForm({ ...form, wilaya: e.target.value, city: '' })}
+                        >
+                          <option value="" className="bg-gray-900">{t('store.wilaya', 'Wilaya')}</option>
+                          {Object.keys(WILAYA_CITIES).sort().map(w => (
+                            <option key={w} value={w} className="bg-gray-900">{w}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.city', 'City / Commune')}</label>
+                        <select
+                          className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 transition-all disabled:opacity-50"
                           style={{ '--tw-ring-color': pc + '55' }}
                           value={form.city}
                           onChange={e => setForm({ ...form, city: e.target.value })}
-                          placeholder={t('store.city', 'City')}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.wilaya', 'Wilaya')}</label>
-                        <input
-                          className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all"
-                          style={{ '--tw-ring-color': pc + '55' }}
-                          value={form.wilaya}
-                          onChange={e => setForm({ ...form, wilaya: e.target.value })}
-                          placeholder={t('store.wilaya', 'Wilaya')}
-                        />
+                          disabled={!form.wilaya}
+                        >
+                          <option value="" className="bg-gray-900">{t('store.selectCity', 'Select your commune…')}</option>
+                          {(WILAYA_CITIES[form.wilaya] || []).map(c => (
+                            <option key={c} value={c} className="bg-gray-900">{c}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     <button
