@@ -74,6 +74,78 @@ function LiveBadge({storeId}){
   );
 }
 
+// HeaderStoreSwitcher — anchored dropdown that opens directly under the
+// "storeq ▼" pill in the header. Portal-rendered so the blurred header
+// doesn't trap it inside its containing block.
+function HeaderStoreSwitcher({ open, setOpen, stores, currentStore, setCurrentStore, user, navigate, isDark, pc, t }) {
+  const btnRef = React.useRef(null);
+  const [anchor, setAnchor] = React.useState(null);
+  React.useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const update = () => {
+      const r = btnRef.current?.getBoundingClientRect(); if (!r) return;
+      const width = Math.min(288, window.innerWidth - 16);
+      // Pin the dropdown's LEFT edge to the button's left edge so it appears
+      // directly under it (not floating to the right of the page).
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+      setAnchor({ top: r.bottom + 6, left, width });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [open]);
+
+  const pickStore = (st) => {
+    setOpen(false);
+    if (currentStore?.id === st.id) return;
+    // Clear cached store data so the next page doesn't render with stale data.
+    try { localStorage.removeItem('storeCache_' + (currentStore?.slug || '')); } catch {}
+    try { localStorage.setItem('selected_store_id', st.id); } catch {}
+    setCurrentStore(st);
+    // Force a full reload so every page (orders, products, settings, etc.)
+    // refetches with the newly selected store.
+    setTimeout(() => { window.location.href = '/dashboard'; }, 50);
+  };
+
+  return (
+    <>
+      <button ref={btnRef} onClick={() => setOpen(!open)} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all max-w-[120px] sm:max-w-[180px] ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+        <Globe size={13} style={{ color: pc }} />
+        <span className="truncate">{currentStore?.name || t('sidebar.selectStore', 'Stores')}</span>
+        <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && anchor && createPortal(
+        <>
+          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div
+            className={`fixed rounded-2xl shadow-2xl border z-[101] p-2 max-h-[70vh] overflow-y-auto ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}
+            style={{ top: anchor.top, left: anchor.left, width: anchor.width }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1.5" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('sidebar.yourStores', 'Your Stores')}</p>
+            {(stores || []).map(st => {
+              const sel = currentStore?.id === st.id;
+              return (
+                <button key={st.id} type="button" onClick={() => pickStore(st)} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel ? (isDark ? 'bg-gray-800' : 'bg-brand-50') : (isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50')}`}>
+                  {st.logo ? <img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0" /> : <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: pc }}>{(st.name || 'S')[0]}</div>}
+                  <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
+                  {sel && <Check size={12} style={{ color: pc }} />}
+                </button>
+              );
+            })}
+            {!user?.is_staff && (
+              <button type="button" onClick={() => { setOpen(false); navigate('/dashboard?new_store=1'); }} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark ? 'border-gray-700 text-brand-400 hover:bg-gray-800' : 'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
+                <Plus size={12} />{t('sidebar.createAnotherStore', 'Create another store')}
+              </button>
+            )}
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  );
+}
+
 function NotifBell(){
   const[open,setOpen]=React.useState(false);
   const[notifs,setNotifs]=React.useState([]);
@@ -554,39 +626,18 @@ export default function DashboardLayout({children}){
                   <Plus size={13}/><span className="hidden sm:inline">{t('sidebar.newStore','New store')}</span>
                 </button>
               ):(
-                <>
-                  <button onClick={()=>setStoreSwitchOpen(!storeSwitchOpen)} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all max-w-[120px] sm:max-w-[180px] ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                    <Globe size={13} style={{color:pc}}/>
-                    <span className="truncate">{currentStore?.name||t('sidebar.selectStore','Stores')}</span>
-                    <ChevronDown size={11} className={`transition-transform ${storeSwitchOpen?'rotate-180':''}`}/>
-                  </button>
-                  {/* The header switcher used to open its own dropdown which
-                      led to two separate "stores list" UIs. Now it just opens
-                      the sidebar dropdown so there's a single place to switch. */}
-                  {storeSwitchOpen&&createPortal(
-                    <>
-                      <div className="fixed inset-0 z-[100]" onClick={()=>setStoreSwitchOpen(false)}/>
-                      <div className={`fixed top-16 right-3 sm:right-6 w-72 rounded-2xl shadow-2xl border z-[101] p-2 max-h-[70vh] overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
-                        <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1.5" style={{color:isDark?'#9ca3af':'#6b7280'}}>{t('sidebar.yourStores','Your Stores')}</p>
-                        {stores.map(st=>{const sel=currentStore?.id===st.id;return(
-                          <button key={st.id} onClick={()=>{
-                            if(currentStore?.id===st.id){setStoreSwitchOpen(false);return;}
-                            setCurrentStore(st);
-                            setStoreSwitchOpen(false);
-                            window.location.href='/dashboard';
-                          }} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
-                            {st.logo?<img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0"/>:<div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
-                            <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
-                            {sel&&<Check size={12} style={{color:pc}}/>}
-                          </button>
-                        );})}
-                        {!user?.is_staff&&<button onClick={()=>{setStoreSwitchOpen(false);navigate('/dashboard?new_store=1');}} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark?'border-gray-700 text-brand-400 hover:bg-gray-800':'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
-                          <Plus size={12}/>{t('sidebar.createAnotherStore','Create another store')}
-                        </button>}
-                      </div>
-                    </>,
-                    document.body
-                  )}
+                <HeaderStoreSwitcher
+                  open={storeSwitchOpen}
+                  setOpen={setStoreSwitchOpen}
+                  stores={stores}
+                  currentStore={currentStore}
+                  setCurrentStore={setCurrentStore}
+                  user={user}
+                  navigate={navigate}
+                  isDark={isDark}
+                  pc={pc}
+                  t={t}
+                />
                 </>
               )}
             </div>
