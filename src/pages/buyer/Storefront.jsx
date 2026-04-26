@@ -794,8 +794,18 @@ export default function Storefront() {
   const headerFont = store.header_font || 'Arial, sans-serif';
   const bodyTextColor = store.text_color || undefined;
 
+  // Owner-customised scrollbar (Settings → Customization → Scrollbar Studio).
+  const sb = store.scrollbar || {};
+  const sbCss = sb.enabled !== false ? `
+    .storefront-scope::-webkit-scrollbar,.storefront-scope *::-webkit-scrollbar{width:${sb.width??8}px;height:${sb.height??8}px;}
+    .storefront-scope::-webkit-scrollbar-track,.storefront-scope *::-webkit-scrollbar-track{background:${sb.track||'#f3f4f6'};border-radius:${sb.radius??8}px;}
+    .storefront-scope::-webkit-scrollbar-thumb,.storefront-scope *::-webkit-scrollbar-thumb{background:${sb.thumb||'#9ca3af'};border-radius:${sb.radius??8}px;}
+    .storefront-scope{scrollbar-width:${(sb.width??8)<3?'none':'thin'};scrollbar-color:${sb.thumb||'#9ca3af'} ${sb.track||'#f3f4f6'};}
+  ` : '';
+
   return (
-    <div className={`min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={bodyTextColor?{color:bodyTextColor}:undefined}>
+    <div className={`storefront-scope min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={bodyTextColor?{color:bodyTextColor}:undefined}>
+      {sbCss && <style>{sbCss}</style>}
       {/* ============ OFFER BANNER ============ */}
       {store.offer_enabled && <OfferBanner store={store}/>}
       {/* ============ HEADER ============ */}

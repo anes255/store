@@ -328,6 +328,121 @@ function CheckoutPreview({ s }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Scrollbar Studio — buyer-side scrollbar customization with quick presets,
+// dimensions (width / height), and colors (thumb / track). Saves to store
+// config; storefront reads these and renders matching CSS.
+// ─────────────────────────────────────────────────────────────────────────────
+function ScrollbarStudio({ s, setS, setV, t }) {
+  const cfg = s.scrollbar || {};
+  const setCfg = (k, v) => setS({ ...s, scrollbar: { ...(s.scrollbar||{}), [k]: v } });
+  const presets = {
+    default: { width: 8, height: 8, thumb: '#9ca3af', track: '#f3f4f6', radius: 8 },
+    minimal: { width: 4, height: 4, thumb: '#cbd5e1', track: 'transparent', radius: 2 },
+    bold:    { width: 14, height: 14, thumb: s.primary_color||'#7C3AED', track: '#e5e7eb', radius: 4 },
+    rounded: { width: 10, height: 10, thumb: s.primary_color||'#7C3AED', track: 'transparent', radius: 12 },
+  };
+  const applyPreset = (key) => setS({ ...s, scrollbar: { ...presets[key], preset: key, enabled: true } });
+  const isActive = (key) => cfg.preset === key;
+  const w = cfg.width ?? 8, h = cfg.height ?? 8;
+  const thumb = cfg.thumb || '#9ca3af';
+  const track = cfg.track || '#f3f4f6';
+  const radius = cfg.radius ?? 8;
+
+  return (
+    <div className="p-5 bg-gray-50 rounded-xl space-y-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2"><Sliders size={16} className="text-violet-500"/><h4 className="font-bold text-sm">{t('storePage.scrollbarStudio','Scrollbar Studio')}</h4></div>
+        <label className="flex items-center gap-2 text-xs font-bold text-gray-600">
+          <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-brand-500" checked={cfg.enabled!==false} onChange={e=>setCfg('enabled',e.target.checked)}/>
+          {t('storePage.advanced','Advanced')}
+        </label>
+      </div>
+
+      {/* Quick Presets */}
+      <div>
+        <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">⚡ {t('storePage.quickPresets','Quick Presets')}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {Object.keys(presets).map(k => {
+            const p = presets[k];
+            return (
+              <button key={k} onClick={()=>applyPreset(k)} className={`p-3 rounded-2xl border-2 text-center transition-all ${isActive(k)?'border-brand-500 bg-brand-50 scale-[1.03]':'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                <div className="flex items-center justify-center mb-1.5 h-7">
+                  <div className="rounded-full" style={{width:Math.max(4,p.width-2),height:24,backgroundColor:p.thumb,borderRadius:p.radius}}/>
+                </div>
+                <p className="text-[11px] font-bold text-gray-700 capitalize">{k}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dimensions */}
+      <div className="border-t border-gray-200 pt-3">
+        <p className="text-[10px] font-bold text-blue-500 uppercase mb-2">📐 {t('storePage.dimensions','Dimensions')}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center justify-between mb-1"><label className="text-[11px] font-bold text-gray-600">{t('storePage.widthVertical','Width (Vertical)')}</label><span className="text-[10px] font-mono font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{w}PX</span></div>
+            <input type="range" min="0" max="20" value={w} onChange={e=>setCfg('width',parseInt(e.target.value)||0)} className="w-full"/>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1"><label className="text-[11px] font-bold text-gray-600">{t('storePage.heightHorizontal','Height (Horizontal)')}</label><span className="text-[10px] font-mono font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{h}PX</span></div>
+            <input type="range" min="0" max="20" value={h} onChange={e=>setCfg('height',parseInt(e.target.value)||0)} className="w-full"/>
+          </div>
+          <div className="sm:col-span-2">
+            <div className="flex items-center justify-between mb-1"><label className="text-[11px] font-bold text-gray-600">{t('storePage.cornerRadius','Corner Radius')}</label><span className="text-[10px] font-mono font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{radius}PX</span></div>
+            <input type="range" min="0" max="20" value={radius} onChange={e=>setCfg('radius',parseInt(e.target.value)||0)} className="w-full"/>
+          </div>
+        </div>
+      </div>
+
+      {/* Colors */}
+      <div className="border-t border-gray-200 pt-3">
+        <p className="text-[10px] font-bold text-violet-500 uppercase mb-2">🎨 {t('storePage.colors','Colors')}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center justify-between mb-1"><label className="text-[11px] font-bold text-gray-600">{t('storePage.thumbColor','Thumb Color')}</label><button onClick={()=>setCfg('thumb','#9ca3af')} className="text-[10px] text-gray-400 hover:underline">{t('storePage.reset','Reset')}</button></div>
+            <div className="flex items-center gap-2">
+              <input type="color" value={thumb.startsWith('#')?thumb:'#9ca3af'} onChange={e=>setCfg('thumb',e.target.value)} className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer"/>
+              <input className="input-field !py-1.5 text-xs font-mono" value={thumb} onChange={e=>setCfg('thumb',e.target.value)} placeholder="#9ca3af"/>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1"><label className="text-[11px] font-bold text-gray-600">{t('storePage.trackColor','Track Color')}</label><button onClick={()=>setCfg('track','transparent')} className="text-[10px] text-gray-400 hover:underline">{t('storePage.reset','Reset')}</button></div>
+            <div className="flex items-center gap-2">
+              <input type="color" value={track==='transparent'?'#f3f4f6':track} onChange={e=>setCfg('track',e.target.value)} className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer"/>
+              <input className="input-field !py-1.5 text-xs font-mono" value={track} onChange={e=>setCfg('track',e.target.value)} placeholder="transparent"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Live preview strip */}
+      <div className="border-t border-gray-200 pt-3">
+        <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">{t('storePage.livePreview','Live Preview')}</p>
+        <div className="rounded-xl border-2 border-dashed border-gray-200 p-3 bg-white">
+          <div
+            style={{
+              maxHeight:120,overflow:'auto',padding:8,borderRadius:8,
+              scrollbarWidth: w<3?'none':'thin',
+              scrollbarColor: `${thumb} ${track}`,
+            }}
+          >
+            <style>{`
+              .sb-preview::-webkit-scrollbar{width:${w}px;height:${h}px;}
+              .sb-preview::-webkit-scrollbar-track{background:${track};border-radius:${radius}px;}
+              .sb-preview::-webkit-scrollbar-thumb{background:${thumb};border-radius:${radius}px;}
+            `}</style>
+            <div className="sb-preview" style={{maxHeight:100,overflow:'auto'}}>
+              {Array.from({length:18}).map((_,i)=>(<p key={i} className="text-xs text-gray-500 py-0.5">{t('storePage.scrollDemoLine','Scroll preview line')} {i+1} — sample content for the scrollbar.</p>))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StoreSettings(){
   const{t}=useTranslation();const{currentStore,setCurrentStore,stores:adminStores}=useStoreManagement();const{user,logout}=useAuthStore();
   const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
@@ -525,7 +640,9 @@ export default function StoreSettings(){
 <div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Type size={16}/><h4 className="font-bold text-sm">Store Name Font</h4></div><p className="text-[11px] text-gray-400">Select the font family used for your store name in the header.</p><div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[{l:'Inter',v:'Inter'},{l:'Poppins',v:'Poppins, sans-serif'},{l:'Playfair',v:'"Playfair Display", serif'},{l:'Georgia',v:'Georgia, serif'},{l:'Bebas Neue',v:'"Bebas Neue", sans-serif'},{l:'Montserrat',v:'Montserrat, sans-serif'},{l:'Oswald',v:'Oswald, sans-serif'},{l:'Lobster',v:'Lobster, cursive'},{l:'Roboto Mono',v:'"Roboto Mono", monospace'}].map(f=><button key={f.l} onClick={()=>setV('header_font',f.v)} className={`p-2 rounded-lg border-2 text-sm transition-all ${(s.header_font||'Inter')===f.v?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300 bg-white'}`} style={{fontFamily:f.v}}>{f.l}</button>)}</div></div>
 <div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Type size={16}/><h4 className="font-bold text-sm">{t('storePage.buttonText','Button Text')}</h4></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label className="input-label text-xs">{t('storePage.addToCart','Add to Cart')}</label><input className="input-field" value={s.btn_add_cart||t('storePage.addToCart','Add to Cart')} onChange={set('btn_add_cart')}/></div><div><label className="input-label text-xs">{t('storePage.orderNow','Order Now')}</label><input className="input-field" value={s.btn_order_now||t('storePage.orderNow','Order Now')} onChange={set('btn_order_now')}/></div></div></div>
 <div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><MessageSquare size={16}/><h4 className="font-bold text-sm">{t('storePage.storeMessages','Store Messages')}</h4></div><div><label className="input-label text-xs">{t('storePage.welcomeMessage','Welcome Message')}</label><textarea className="input-field" rows={2} value={s.welcome_message||''} onChange={set('welcome_message')}/></div><div><label className="input-label text-xs">{t('storePage.successMessage','Success Message')}</label><textarea className="input-field" rows={2} value={s.success_message||''} onChange={set('success_message')}/></div></div>
-<div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Tag size={16} className="text-red-500"/><h4 className="font-bold text-sm">Offer & Sale Branding</h4></div><T label="Enable Offer Banner" desc="Show promotional banner with countdown" checked={s.offer_enabled} onChange={set('offer_enabled')}/>{s.offer_enabled&&<><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label className="input-label text-xs">Offer Title</label><input className="input-field" value={s.offer_title||'Limited Offer'} onChange={set('offer_title')}/></div><div><label className="input-label text-xs">Discount Text</label><input className="input-field" value={s.offer_discount||'40% OFF'} onChange={set('offer_discount')}/></div></div><div className="grid grid-cols-3 gap-2 sm:gap-3"><div><label className="input-label text-xs">Timer Label</label><input className="input-field" value={s.offer_label||'Ends in:'} onChange={set('offer_label')}/></div><div><label className="input-label text-xs">Hours</label><input type="number" className="input-field" value={s.offer_hours||15} onChange={set('offer_hours')}/></div><div><label className="input-label text-xs">Minutes</label><input type="number" className="input-field" value={s.offer_minutes||33} onChange={set('offer_minutes')}/></div></div></>}</div></div></>}
+<div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Tag size={16} className="text-red-500"/><h4 className="font-bold text-sm">Offer & Sale Branding</h4></div><T label="Enable Offer Banner" desc="Show promotional banner with countdown" checked={s.offer_enabled} onChange={set('offer_enabled')}/>{s.offer_enabled&&<><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label className="input-label text-xs">Offer Title</label><input className="input-field" value={s.offer_title||'Limited Offer'} onChange={set('offer_title')}/></div><div><label className="input-label text-xs">Discount Text</label><input className="input-field" value={s.offer_discount||'40% OFF'} onChange={set('offer_discount')}/></div></div><div className="grid grid-cols-3 gap-2 sm:gap-3"><div><label className="input-label text-xs">Timer Label</label><input className="input-field" value={s.offer_label||'Ends in:'} onChange={set('offer_label')}/></div><div><label className="input-label text-xs">Hours</label><input type="number" className="input-field" value={s.offer_hours||15} onChange={set('offer_hours')}/></div><div><label className="input-label text-xs">Minutes</label><input type="number" className="input-field" value={s.offer_minutes||33} onChange={set('offer_minutes')}/></div></div></>}</div>
+<ScrollbarStudio s={s} setS={setS} setV={setV} t={t}/>
+</div></>}
 
 {sec==='dashboard-config'&&<div className="glass-card-solid p-4 sm:p-6"><SH icon={Layout} title="Command Center" subtitle="Configure your primary workflow hub." accent="brand"/><div className="mt-6 space-y-4"><div className="flex items-center gap-2"><Sliders size={16} className="text-brand-500"/><h4 className="font-bold text-sm">Module Visibility</h4></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><T label="Action Bar" desc="Quick-entry tools" checked={s.dash_action!==false} onChange={e=>setV('dash_action',e.target.checked)}/><T label="Telemetry" desc="Core financial metrics" checked={s.dash_telemetry!==false} onChange={e=>setV('dash_telemetry',e.target.checked)}/><T label="Pulse Charts" desc="Visual trend analysis" checked={s.dash_pulse!==false} onChange={e=>setV('dash_pulse',e.target.checked)}/><T label="Log Stream" desc="Real-time order data" checked={s.dash_log!==false} onChange={e=>setV('dash_log',e.target.checked)}/></div></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><div className="p-5 bg-gray-50 rounded-xl"><h4 className="font-bold text-sm mb-2">Greeting</h4><input className="input-field" value={s.dash_greeting||'Welcome back! 👋'} onChange={set('dash_greeting')}/><T label="Show Date" desc="Display system date" checked={s.dash_date!==false} onChange={e=>setV('dash_date',e.target.checked)}/></div><div className="p-5 bg-gray-50 rounded-xl"><h4 className="font-bold text-sm mb-2">Chart Type</h4><div className="flex gap-2 mb-2">{['AREA','LINE','BAR'].map(t=>(<button key={t} onClick={()=>setV('chart_type',t)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${(s.chart_type||'AREA')===t?'bg-brand-500 text-white':'bg-gray-200 text-gray-500'}`}>{t}</button>))}</div></div></div></div>}
 

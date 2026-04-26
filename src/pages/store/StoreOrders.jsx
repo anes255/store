@@ -289,13 +289,26 @@ export default function StoreOrders() {
     }));
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const variantText = (i) => {
-      // Variant info can be stored as variant_name string OR variant_info JSON
+      // Variant info can be stored many ways: variant_name string,
+      // variant_info JSON (string or jsonb-as-object), legacy `variant`,
+      // or a plain map like {color:'Black',size:'40-41'}.
       if (i.variant_name) return i.variant_name;
-      let v = i.variant_info || i.variant;
+      let v = i.variant_info ?? i.variant;
       if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return v; } }
       if (!v) return '';
-      if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? s.type[0].toUpperCase() + s.type.slice(1) + ': ' : ''}${s.name || s.value || ''}`).filter(Boolean).join(' · ');
-      if (v.name) return `${v.type ? v.type[0].toUpperCase() + v.type.slice(1) + ': ' : ''}${v.name}`;
+      const cap = (s) => typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s;
+      if (Array.isArray(v)) return v.map(x => typeof x === 'string' ? x : (x?.name || x?.value || '')).filter(Boolean).join(' · ');
+      if (Array.isArray(v.selections)) return v.selections.map(s => `${s.type ? cap(s.type) + ': ' : ''}${s.label || s.name || s.value || ''}`).filter(Boolean).join(' · ');
+      if (v.name || v.value || v.label) return `${v.type ? cap(v.type) + ': ' : ''}${v.label || v.name || v.value}`;
+      if (typeof v === 'object') {
+        const out = [];
+        for (const [k, val] of Object.entries(v)) {
+          if (val == null || typeof val === 'object') continue;
+          if (k === 'type' || k === 'sku' || k === 'price') continue;
+          out.push(`${cap(k)}: ${val}`);
+        }
+        return out.join(' · ');
+      }
       return '';
     };
     const ticket = (o, idx, total) => {
@@ -913,14 +926,27 @@ export default function StoreOrders() {
                 <div className="space-y-2">
                   {selectedOrder.items?.map((it,i) => {
                     // Pull every variant detail the order stored: variant_info
-                    // (legacy JSON), variant (cart-side object), or variant_name string.
-                    let v = it.variant_info || it.variant;
+                    // (legacy JSON), variant (cart-side object), variant_name string,
+                    // or a plain map like {color:'Black',size:'40-41'}.
+                    let v = it.variant_info ?? it.variant;
                     if (typeof v === 'string') { try { v = JSON.parse(v); } catch { v = { name: v }; } }
+                    const cap = (s) => typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s;
                     const variantBits = (() => {
-                      if (it.variant_name) return [it.variant_name];
+                      if (it.variant_name) return String(it.variant_name).split(/\s*[·,/]\s*/).filter(Boolean);
                       if (!v) return [];
-                      if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? s.type[0].toUpperCase() + s.type.slice(1) + ': ' : ''}${s.name || s.value || ''}`).filter(Boolean);
-                      if (v.name || v.value) return [`${v.type ? v.type[0].toUpperCase() + v.type.slice(1) + ': ' : ''}${v.name || v.value}`];
+                      if (Array.isArray(v)) return v.map(x => typeof x === 'string' ? x : (x?.name || x?.value || JSON.stringify(x))).filter(Boolean);
+                      if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? cap(s.type) + ': ' : ''}${s.label || s.name || s.value || ''}`).filter(Boolean);
+                      if (v.name || v.value || v.label) return [`${v.type ? cap(v.type) + ': ' : ''}${v.label || v.name || v.value}`];
+                      // Plain map like {color:'Black',size:'40-41',material:'Synthetic'}
+                      if (typeof v === 'object') {
+                        const out = [];
+                        for (const [k, val] of Object.entries(v)) {
+                          if (val == null || typeof val === 'object') continue;
+                          if (k === 'type' || k === 'sku' || k === 'price') continue;
+                          out.push(`${cap(k)}: ${val}`);
+                        }
+                        return out;
+                      }
                       return [];
                     })();
                     const colorSwatch = (() => {
