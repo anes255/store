@@ -588,6 +588,22 @@ export default function Storefront() {
     sessionStorage.setItem(k,'1');
     import('../../utils/api').then(({default:api})=>{api.post(`/storefront/${storeSlug}/visit`).catch(()=>{});});
   },[storeSlug]);
+
+  // Live-visitor heartbeat — pings the backend every 15s while the storefront
+  // is open so the admin dashboard's "Live (N)" badge reflects real activity.
+  useEffect(()=>{
+    if(!storeSlug)return;
+    let visitorId=sessionStorage.getItem('visitor_id');
+    if(!visitorId){visitorId=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('visitor_id',visitorId);}
+    const beat=()=>{
+      import('../../utils/api').then(({default:api})=>{
+        api.post(`/store/${storeSlug}/heartbeat`,{visitor_id:visitorId}).catch(()=>{});
+      });
+    };
+    beat();
+    const id=setInterval(beat,15000);
+    return ()=>clearInterval(id);
+  },[storeSlug]);
   const wishlist = wishlistStore.items.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
   const [products, setProducts] = useState([]);

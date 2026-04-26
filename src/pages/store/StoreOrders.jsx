@@ -273,62 +273,116 @@ export default function StoreOrders() {
   // Open a print-friendly window with one ticket per selected order so the
   // user can hand them to the warehouse / delivery driver. Uses window.print()
   // after the document has rendered.
-  const printOrders = (rows) => {
+  // Each row may not have its line-items pre-loaded (the list endpoint omits
+  // them), so we fetch the full detail for any missing order before rendering.
+  const printOrders = async (rows) => {
     if (!rows.length) return;
+    // Hydrate missing items by fetching the full order.
+    const hydrated = await Promise.all(rows.map(async o => {
+      let items = o.items;
+      if (typeof items === 'string') { try { items = JSON.parse(items); } catch { items = []; } }
+      if (!Array.isArray(items) || items.length === 0) {
+        try { const { data } = await orderApi.getOne(currentStore.id, o.id); items = data.items || []; o = { ...o, ...data, items }; }
+        catch {}
+      }
+      return { ...o, items: Array.isArray(items) ? items : [] };
+    }));
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const ticket = (o) => {
-      const items = (() => {
-        let it = o.items; if (typeof it === 'string') try { it = JSON.parse(it); } catch { it = []; }
-        return Array.isArray(it) ? it : [];
-      })();
-      const itemsHtml = items.map(i => `<tr><td>${esc(i.product_name || i.name || '')}${i.variant_name ? ` — ${esc(i.variant_name)}` : ''}</td><td style="text-align:center">${esc(i.quantity || 1)}</td><td style="text-align:right">${fmtMoney(i.price, o.currency)}</td></tr>`).join('');
+    const variantText = (i) => {
+      // Variant info can be stored as variant_name string OR variant_info JSON
+      if (i.variant_name) return i.variant_name;
+      let v = i.variant_info || i.variant;
+      if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return v; } }
+      if (!v) return '';
+      if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? s.type[0].toUpperCase() + s.type.slice(1) + ': ' : ''}${s.name || s.value || ''}`).filter(Boolean).join(' · ');
+      if (v.name) return `${v.type ? v.type[0].toUpperCase() + v.type.slice(1) + ': ' : ''}${v.name}`;
+      return '';
+    };
+    const ticket = (o, idx, total) => {
+      const items = o.items || [];
+      const itemsHtml = items.map(i => {
+        const vt = variantText(i);
+        const qty = parseInt(i.quantity) || 1;
+        const unit = parseFloat(i.unit_price ?? i.price) || 0;
+        return `<tr>
+          <td><div class="pname">${esc(i.product_name || i.name || '')}</div>${vt ? `<div class="pvar">${esc(vt)}</div>` : ''}${i.sku ? `<div class="psku">SKU: ${esc(i.sku)}</div>` : ''}</td>
+          <td style="text-align:center">${qty}</td>
+          <td style="text-align:right">${fmtMoney(unit, o.currency)}</td>
+          <td style="text-align:right"><b>${fmtMoney(unit * qty, o.currency)}</b></td>
+        </tr>`;
+      }).join('');
+      const wn = o.shipping_wilaya_code ? ` (${esc(o.shipping_wilaya_code)})` : '';
       return `
-        <div class="ticket">
-          <div class="hdr">
+        <section class="ticket">
+          <header class="hdr">
             <div>
               <div class="store">${esc(currentStore?.name || '')}</div>
-              <div class="meta">Order <b>${esc(o.order_number)}</b> · ${esc(new Date(o.created_at).toLocaleString())}</div>
+              <div class="meta">Order <b>${esc(o.order_number)}</b> · ${esc(new Date(o.created_at).toLocaleString())} · ${idx + 1}/${total}</div>
             </div>
             <div class="status">${esc(statusConfig[o.status]?.label || o.status)}</div>
+          </header>
+          <div class="cols">
+            <div class="cust">
+              <p class="lbl">Buyer</p>
+              <div><b>${esc(o.customer_name || '')}</b></div>
+              <div>${esc(o.customer_phone || '')}</div>
+              ${o.customer_email ? `<div>${esc(o.customer_email)}</div>` : ''}
+            </div>
+            <div class="ship">
+              <p class="lbl">Shipping</p>
+              <div>${esc(o.shipping_wilaya || '')}${wn}${o.shipping_city ? ', ' + esc(o.shipping_city) : ''}</div>
+              ${o.shipping_address ? `<div>${esc(o.shipping_address)}</div>` : ''}
+              ${o.shipping_zip ? `<div class="meta">Zip: ${esc(o.shipping_zip)}</div>` : ''}
+              <div class="meta">${esc(o.shipping_type || 'home')} delivery${o.delivery_company_name ? ' · ' + esc(o.delivery_company_name) : ''}</div>
+            </div>
           </div>
-          <div class="cust">
-            <div><b>${esc(o.customer_name || '')}</b></div>
-            <div>${esc(o.customer_phone || '')}</div>
-            <div>${esc(o.shipping_wilaya || '')}${o.shipping_city ? ', ' + esc(o.shipping_city) : ''}</div>
-            ${o.shipping_address ? `<div>${esc(o.shipping_address)}</div>` : ''}
-          </div>
-          <table class="items"><thead><tr><th>Product</th><th>Qty</th><th>Price</th></tr></thead><tbody>${itemsHtml || '<tr><td colspan="3" style="text-align:center;color:#999">No items</td></tr>'}</tbody></table>
+          <table class="items">
+            <thead><tr><th>Product / Variant</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
+            <tbody>${itemsHtml || '<tr><td colspan="4" style="text-align:center;color:#999">No items</td></tr>'}</tbody>
+          </table>
           <div class="totals">
+            <div><span>Subtotal</span><b>${fmtMoney(o.subtotal ?? (o.total - (o.shipping_cost || 0)), o.currency)}</b></div>
             <div><span>Shipping</span><b>${fmtMoney(o.shipping_cost, o.currency)}</b></div>
-            <div class="total"><span>Total</span><b>${fmtMoney(o.total, o.currency)}</b></div>
+            ${o.discount > 0 ? `<div><span>Discount</span><b>-${fmtMoney(o.discount, o.currency)}</b></div>` : ''}
+            <div class="total"><span>TOTAL</span><b>${fmtMoney(o.total, o.currency)}</b></div>
+            <div class="meta">Payment: ${esc((o.payment_method || 'cod').toUpperCase())}</div>
           </div>
           ${o.tracking_number ? `<div class="track">Tracking: <b>${esc(o.tracking_number)}</b>${o.delivery_company_name ? ` · ${esc(o.delivery_company_name)}` : ''}</div>` : ''}
           ${o.notes ? `<div class="notes">Notes: ${esc(o.notes)}</div>` : ''}
-        </div>`;
+        </section>`;
     };
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Orders — Print</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Orders — Print (${hydrated.length})</title>
       <style>
         *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111}
         body{margin:0;padding:16px;background:#fff}
-        .ticket{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px;page-break-after:always}
-        .ticket:last-child{page-break-after:auto}
-        .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:10px;margin-bottom:10px}
-        .store{font-size:18px;font-weight:800}
-        .meta{font-size:11px;color:#666;margin-top:2px}
-        .status{font-size:10px;font-weight:800;background:#111;color:#fff;padding:4px 8px;border-radius:999px;letter-spacing:.5px}
-        .cust{font-size:13px;line-height:1.5;margin-bottom:10px}
-        table.items{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
-        table.items th{background:#f5f5f5;text-align:left;padding:6px;border-bottom:1px solid #ddd;font-size:10px;text-transform:uppercase;color:#555}
-        table.items td{padding:6px;border-bottom:1px solid #f0f0f0}
-        .totals{font-size:12px;border-top:1px dashed #ccc;padding-top:8px}
-        .totals div{display:flex;justify-content:space-between;padding:2px 0}
-        .totals .total{font-size:15px;font-weight:800;border-top:1px solid #111;margin-top:4px;padding-top:6px}
-        .track{margin-top:8px;font-size:11px;color:#444}
-        .notes{margin-top:6px;font-size:11px;color:#666;font-style:italic}
-        @media print{body{padding:0}.ticket{border:none;border-radius:0}}
+        h1.title{font-size:14px;font-weight:800;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px;color:#555}
+        /* Single-page layout: tickets stack normally with no forced page-breaks
+           so the browser fits as many on one printed page as it can. */
+        .ticket{border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;page-break-inside:avoid}
+        .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:8px;margin-bottom:8px}
+        .store{font-size:16px;font-weight:800}
+        .meta{font-size:10px;color:#666;margin-top:2px}
+        .status{font-size:10px;font-weight:800;background:#111;color:#fff;padding:3px 8px;border-radius:999px;letter-spacing:.5px}
+        .lbl{font-size:9px;font-weight:800;text-transform:uppercase;color:#888;letter-spacing:.5px;margin:0 0 3px}
+        .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11.5px;line-height:1.45;margin-bottom:8px}
+        .cust b,.ship b{font-size:12.5px}
+        table.items{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
+        table.items th{background:#f5f5f5;text-align:left;padding:5px;border-bottom:1px solid #ddd;font-size:9px;text-transform:uppercase;color:#555}
+        table.items td{padding:5px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+        .pname{font-weight:600}
+        .pvar{font-size:10px;color:#666;margin-top:1px}
+        .psku{font-size:9px;color:#999;font-family:monospace}
+        .totals{font-size:11px;border-top:1px dashed #ccc;padding-top:6px}
+        .totals div{display:flex;justify-content:space-between;padding:1px 0}
+        .totals .total{font-size:13px;font-weight:800;border-top:1px solid #111;margin-top:3px;padding-top:5px}
+        .track{margin-top:6px;font-size:10px;color:#444}
+        .notes{margin-top:5px;font-size:10px;color:#666;font-style:italic}
+        @media print{body{padding:6mm}.ticket{border:1px solid #999}h1.title{display:none}}
       </style>
-      </head><body>${rows.map(ticket).join('')}
-      <script>window.onload=function(){setTimeout(function(){window.print();},250);};</script>
+      </head><body>
+        <h1 class="title">${hydrated.length} order${hydrated.length === 1 ? '' : 's'} · ${esc(currentStore?.name || '')} · ${esc(new Date().toLocaleString())}</h1>
+        ${hydrated.map((o, i) => ticket(o, i, hydrated.length)).join('')}
+        <script>window.onload=function(){setTimeout(function(){window.print();},300);};</script>
       </body></html>`;
     const w = window.open('', '_blank');
     if (!w) { toast.error('Allow pop-ups to print orders'); return; }
@@ -857,13 +911,42 @@ export default function StoreOrders() {
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">Items ({selectedOrder.items?.length || 0})</p>
                 <div className="space-y-2">
-                  {selectedOrder.items?.map((it,i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                      {it.product_image ? <img src={it.product_image} className="w-14 h-14 rounded-xl object-cover" alt=""/> : <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center"><Package size={20} className="text-gray-400"/></div>}
-                      <div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate">{it.product_name || it.name}</p><p className="text-xs text-gray-400">{it.quantity} x {parseFloat(it.unit_price||it.price||0).toLocaleString()} DZD</p></div>
-                      <p className="font-bold text-sm">{parseFloat(it.total_price||0).toLocaleString()} DZD</p>
-                    </div>
-                  ))}
+                  {selectedOrder.items?.map((it,i) => {
+                    // Pull every variant detail the order stored: variant_info
+                    // (legacy JSON), variant (cart-side object), or variant_name string.
+                    let v = it.variant_info || it.variant;
+                    if (typeof v === 'string') { try { v = JSON.parse(v); } catch { v = { name: v }; } }
+                    const variantBits = (() => {
+                      if (it.variant_name) return [it.variant_name];
+                      if (!v) return [];
+                      if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? s.type[0].toUpperCase() + s.type.slice(1) + ': ' : ''}${s.name || s.value || ''}`).filter(Boolean);
+                      if (v.name || v.value) return [`${v.type ? v.type[0].toUpperCase() + v.type.slice(1) + ': ' : ''}${v.name || v.value}`];
+                      return [];
+                    })();
+                    const colorSwatch = (() => {
+                      if (!v) return null;
+                      if (v.type === 'color' && v.value) return v.value;
+                      if (Array.isArray(v?.selections)) { const c = v.selections.find(s => s.type === 'color'); return c?.value || null; }
+                      return null;
+                    })();
+                    return (
+                      <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        {it.product_image ? <img src={it.product_image} className="w-14 h-14 rounded-xl object-cover shrink-0" alt=""/> : <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center shrink-0"><Package size={20} className="text-gray-400"/></div>}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm">{it.product_name || it.name}</p>
+                          {variantBits.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              {colorSwatch && <span className="w-3 h-3 rounded-full border border-gray-300 shrink-0" style={{backgroundColor: colorSwatch}}/>}
+                              {variantBits.map((b, j) => <span key={j} className="text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 rounded font-medium text-gray-700">{b}</span>)}
+                            </div>
+                          )}
+                          {it.sku && <p className="text-[10px] text-gray-400 font-mono mt-1">SKU: {it.sku}</p>}
+                          <p className="text-xs text-gray-400 mt-1">{it.quantity} × {parseFloat(it.unit_price||it.price||0).toLocaleString()} {selectedOrder.currency || 'DZD'}</p>
+                        </div>
+                        <p className="font-bold text-sm shrink-0">{parseFloat(it.total_price||((it.unit_price||it.price||0)*(it.quantity||1))).toLocaleString()} {selectedOrder.currency || 'DZD'}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

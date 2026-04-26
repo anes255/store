@@ -42,6 +42,38 @@ const PERM_GATE_MAP = {
   '/dashboard/domains': 'domains_manage',
 };
 
+// LiveBadge — shows the live "● Live" pill plus a count of buyers currently
+// browsing the store (polled every 15s from /store/:slug/live-visitors which
+// counts heartbeats from the storefront within the last 60 seconds).
+function LiveBadge({storeId}){
+  const {t} = useTranslation();
+  const [count, setCount] = React.useState(null);
+  React.useEffect(()=>{
+    if(!storeId)return;
+    let mounted = true;
+    const tick = async () => {
+      try{
+        const{api}=await import('../../utils/api');
+        const{data}=await api.get(`/store/by-id/${storeId}/live-visitors`);
+        if(mounted)setCount(data?.count ?? 0);
+      }catch{ if(mounted) setCount(null); }
+    };
+    tick();
+    const id = setInterval(tick, 15000);
+    return ()=>{ mounted = false; clearInterval(id); };
+  },[storeId]);
+  return (
+    <span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1.5" title={count!=null?`${count} buyer${count===1?'':'s'} browsing now`:''}>
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"/>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"/>
+      </span>
+      {t('sidebar.live','Live')}
+      {count!=null&&<span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/30 text-[9px] font-extrabold">{count}</span>}
+    </span>
+  );
+}
+
 function NotifBell(){
   const[open,setOpen]=React.useState(false);
   const[notifs,setNotifs]=React.useState([]);
@@ -391,9 +423,6 @@ export default function DashboardLayout({children}){
                   {sel&&<Check size={12} style={{color:pc}}/>}
                 </button>
               );})}
-              <Link to="/dashboard" onClick={()=>setStoreSwitchOpen(false)} className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-t ${isDark?'border-gray-700 text-gray-400 hover:bg-gray-800':'border-gray-100 text-gray-500 hover:bg-gray-50'}`}>
-                <Plus size={12}/>{t('sidebar.manageStores','Manage stores')}
-              </Link>
             </div>
           </>)}
         </div>
@@ -512,7 +541,7 @@ export default function DashboardLayout({children}){
               </div>);
             })()}
           </div>
-          {currentStore?.is_live!==false&&<span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1">● {t('sidebar.live','Live')}</span>}
+          {currentStore?.is_live!==false&&<LiveBadge storeId={currentStore?.id}/>}
           {/* Header store switcher: shows a "+" when the owner has only one
               store (quick way to create a second), and a dropdown when 2+.
               Staff don't get the "+" (they can't create stores), but if they
@@ -531,27 +560,33 @@ export default function DashboardLayout({children}){
                     <span className="truncate">{currentStore?.name||t('sidebar.selectStore','Stores')}</span>
                     <ChevronDown size={11} className={`transition-transform ${storeSwitchOpen?'rotate-180':''}`}/>
                   </button>
-                  {storeSwitchOpen&&(<>
-                    <div className="fixed inset-0 z-40" onClick={()=>setStoreSwitchOpen(false)}/>
-                    <div className={`absolute right-0 top-full mt-2 w-72 rounded-2xl shadow-2xl border z-50 p-2 max-h-[70vh] overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
-                      <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1.5" style={{color:isDark?'#9ca3af':'#6b7280'}}>{t('sidebar.yourStores','Your Stores')}</p>
-                      {stores.map(st=>{const sel=currentStore?.id===st.id;return(
-                        <button key={st.id} onClick={()=>{
-                          if(currentStore?.id===st.id){setStoreSwitchOpen(false);return;}
-                          setCurrentStore(st);
-                          setStoreSwitchOpen(false);
-                          window.location.href='/dashboard';
-                        }} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
-                          {st.logo?<img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0"/>:<div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
-                          <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
-                          {sel&&<Check size={12} style={{color:pc}}/>}
-                        </button>
-                      );})}
-                      {!user?.is_staff&&<button onClick={()=>{setStoreSwitchOpen(false);navigate('/dashboard?new_store=1');}} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark?'border-gray-700 text-brand-400 hover:bg-gray-800':'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
-                        <Plus size={12}/>{t('sidebar.createAnotherStore','Create another store')}
-                      </button>}
-                    </div>
-                  </>)}
+                  {/* The header switcher used to open its own dropdown which
+                      led to two separate "stores list" UIs. Now it just opens
+                      the sidebar dropdown so there's a single place to switch. */}
+                  {storeSwitchOpen&&createPortal(
+                    <>
+                      <div className="fixed inset-0 z-[100]" onClick={()=>setStoreSwitchOpen(false)}/>
+                      <div className={`fixed top-16 right-3 sm:right-6 w-72 rounded-2xl shadow-2xl border z-[101] p-2 max-h-[70vh] overflow-y-auto ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1.5" style={{color:isDark?'#9ca3af':'#6b7280'}}>{t('sidebar.yourStores','Your Stores')}</p>
+                        {stores.map(st=>{const sel=currentStore?.id===st.id;return(
+                          <button key={st.id} onClick={()=>{
+                            if(currentStore?.id===st.id){setStoreSwitchOpen(false);return;}
+                            setCurrentStore(st);
+                            setStoreSwitchOpen(false);
+                            window.location.href='/dashboard';
+                          }} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
+                            {st.logo?<img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0"/>:<div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
+                            <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
+                            {sel&&<Check size={12} style={{color:pc}}/>}
+                          </button>
+                        );})}
+                        {!user?.is_staff&&<button onClick={()=>{setStoreSwitchOpen(false);navigate('/dashboard?new_store=1');}} className={`w-full flex items-center gap-2 px-2 py-2 mt-1 rounded-lg text-xs border-t font-bold ${isDark?'border-gray-700 text-brand-400 hover:bg-gray-800':'border-gray-100 text-brand-600 hover:bg-brand-50'}`}>
+                          <Plus size={12}/>{t('sidebar.createAnotherStore','Create another store')}
+                        </button>}
+                      </div>
+                    </>,
+                    document.body
+                  )}
                 </>
               )}
             </div>

@@ -93,22 +93,8 @@ export default function CartRecovery() {
         <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center mb-3"><DollarSign size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">Lost Revenue</p><p className="text-xl font-black mt-1">{parseFloat(stats.lost_revenue || 0).toLocaleString()} DZD</p></div>
       </div>
 
-      {/* Automation sequences info */}
-      <div className="glass-card-solid p-6 mb-6">
-        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Zap size={16} className="text-brand-500"/>Automated Sequences</h3>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { time: '30 min', label: 'First Reminder', desc: 'Gentle nudge via preferred channel', icon: Clock, color: 'bg-blue-100 text-blue-600' },
-            { time: '6 hours', label: 'Follow Up', desc: 'Limited time urgency hook', icon: Zap, color: 'bg-purple-100 text-purple-600' },
-            { time: '24 hours', label: 'Final Chance', desc: 'Discount code incentive', icon: DollarSign, color: 'bg-emerald-100 text-emerald-600' },
-          ].map((seq, i) => (
-            <div key={i} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-              <div className={`w-10 h-10 rounded-xl ${seq.color} flex items-center justify-center shrink-0`}><seq.icon size={16}/></div>
-              <div><p className="font-bold text-sm text-gray-800">{seq.label}</p><p className="text-[10px] text-gray-400">After {seq.time}</p><p className="text-xs text-gray-500 mt-1">{seq.desc}</p></div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Automated sequences — admin-editable timing */}
+      <CartRecoveryConfig store={currentStore} onSaved={()=>load()} />
 
       {/* Abandoned carts list */}
       <div className="glass-card-solid p-6">
@@ -237,5 +223,112 @@ export default function CartRecovery() {
         );
       })()}
     </DashboardLayout>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CartRecoveryConfig — lets the admin set when each automated message fires
+// after the buyer abandons their cart. Persists to store.config via the
+// regular PUT /owner/stores/:sid endpoint (extra keys go into config JSONB).
+// ─────────────────────────────────────────────────────────────────────────────
+function CartRecoveryConfig({ store, onSaved }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [cfg, setCfg] = useState({
+    cart_recovery_enabled: store?.cart_recovery_enabled !== false,
+    cart_recovery_step1_minutes: store?.cart_recovery_step1_minutes ?? 30,
+    cart_recovery_step2_minutes: store?.cart_recovery_step2_minutes ?? 360,
+    cart_recovery_step3_minutes: store?.cart_recovery_step3_minutes ?? 1440,
+    cart_recovery_channel: store?.cart_recovery_channel || 'whatsapp',
+  });
+  React.useEffect(() => {
+    if (!store) return;
+    setCfg({
+      cart_recovery_enabled: store?.cart_recovery_enabled !== false,
+      cart_recovery_step1_minutes: store?.cart_recovery_step1_minutes ?? 30,
+      cart_recovery_step2_minutes: store?.cart_recovery_step2_minutes ?? 360,
+      cart_recovery_step3_minutes: store?.cart_recovery_step3_minutes ?? 1440,
+      cart_recovery_channel: store?.cart_recovery_channel || 'whatsapp',
+    });
+  }, [store?.id]);
+  const fmt = (m) => m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m/60)}h` : `${Math.round(m/1440)}d`;
+  const save = async () => {
+    if (!store?.id) return;
+    setSaving(true);
+    try {
+      const { ownerApi } = await import('../../utils/api');
+      await ownerApi.updateStore(store.id, cfg);
+      toast.success(t('storePage.savedConfig','Saved'));
+      setOpen(false);
+      onSaved && onSaved();
+    } catch (e) { toast.error(e?.response?.data?.error || 'Failed to save'); }
+    setSaving(false);
+  };
+  return (
+    <div className="glass-card-solid p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <Zap size={16} className="text-brand-500"/>{t('storePage.automatedSequences','Automated Sequences')}
+        </h3>
+        <button onClick={()=>setOpen(true)} className="btn-primary text-xs flex items-center gap-1.5">
+          <Edit3 size={12}/>{t('storePage.configureTimings','Configure Timings')}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { time: fmt(cfg.cart_recovery_step1_minutes), label: t('storePage.firstReminder','First Reminder'), desc: t('storePage.firstReminderDesc','Gentle nudge via preferred channel'), icon: Clock, color: 'bg-blue-100 text-blue-600' },
+          { time: fmt(cfg.cart_recovery_step2_minutes), label: t('storePage.followUp','Follow Up'), desc: t('storePage.followUpDesc','Limited time urgency hook'), icon: Zap, color: 'bg-purple-100 text-purple-600' },
+          { time: fmt(cfg.cart_recovery_step3_minutes), label: t('storePage.finalChance','Final Chance'), desc: t('storePage.finalChanceDesc','Discount code incentive'), icon: DollarSign, color: 'bg-emerald-100 text-emerald-600' },
+        ].map((seq, i) => (
+          <div key={i} className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+            <div className={`w-10 h-10 rounded-xl ${seq.color} flex items-center justify-center shrink-0`}><seq.icon size={16}/></div>
+            <div><p className="font-bold text-sm text-gray-800 dark:text-gray-100">{seq.label}</p><p className="text-[10px] text-gray-400">{t('storePage.afterX','After')} {seq.time}</p><p className="text-xs text-gray-500 mt-1">{seq.desc}</p></div>
+          </div>
+        ))}
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setOpen(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-lg shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">{t('storePage.recoveryTimings','Cart Recovery Timings')}</h3>
+              <button onClick={()=>setOpen(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500"><X size={16}/></button>
+            </div>
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer">
+                <input type="checkbox" checked={!!cfg.cart_recovery_enabled} onChange={e=>setCfg({...cfg,cart_recovery_enabled:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-brand-500"/>
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{t('storePage.enableAutoRecovery','Enable automatic recovery messages')}</span>
+              </label>
+              {[
+                { key: 'cart_recovery_step1_minutes', label: t('storePage.firstReminder','First Reminder'), defaultVal: 30 },
+                { key: 'cart_recovery_step2_minutes', label: t('storePage.followUp','Follow Up'), defaultVal: 360 },
+                { key: 'cart_recovery_step3_minutes', label: t('storePage.finalChance','Final Chance'), defaultVal: 1440 },
+              ].map(row => (
+                <div key={row.key}>
+                  <label className="text-xs font-bold text-gray-600 dark:text-gray-300">{row.label} — {t('storePage.delayMinutes','delay (minutes after cart abandoned)')}</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input type="number" min="1" max="20160" value={cfg[row.key]} onChange={e=>setCfg({...cfg,[row.key]:Math.max(1,parseInt(e.target.value)||row.defaultVal)})} className="input-field w-32"/>
+                    <span className="text-xs text-gray-400">≈ {fmt(cfg[row.key])}</span>
+                  </div>
+                </div>
+              ))}
+              <div>
+                <label className="text-xs font-bold text-gray-600 dark:text-gray-300">{t('storePage.preferredChannel','Preferred channel')}</label>
+                <select value={cfg.cart_recovery_channel} onChange={e=>setCfg({...cfg,cart_recovery_channel:e.target.value})} className="input-field mt-1">
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button onClick={()=>setOpen(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
+              <button onClick={save} disabled={saving} className="btn-primary flex-1">{saving ? t('storePage.saving','Saving…') : t('storePage.save','Save')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

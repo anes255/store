@@ -26,6 +26,8 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  // Lightbox: when set, an overlay shows that image full-screen.
+  const [lightboxIdx, setLightboxIdx] = useState(null);
   // Track selected variants per type so buyers can pick one from each group
   // e.g. { color: 2, size: 0 }
   const [selectedVariants, setSelectedVariants] = useState({});
@@ -237,9 +239,9 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden">
+            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} className="w-full h-full object-cover" alt=""/>
+                ? <img src={allImages[selectedImage]} className="w-full h-full object-cover transition-transform hover:scale-105" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
             </div>
             {allImages.length > 1 && (
@@ -352,7 +354,9 @@ export default function ProductDetail() {
                                 }`}
                                 style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}
                               >
-                                {v.name || v.value || 'Option'}
+                                {/* Always prefer the human-readable name; fall back to value
+                                    only when the admin didn't set one (and strip hex prefix). */}
+                                {v.name || (v.value && !/^#[0-9a-f]{3,8}$/i.test(v.value) ? v.value : 'Option')}
                                 {v.price_adjustment && parseFloat(v.price_adjustment) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">
                                     ({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})
@@ -428,6 +432,33 @@ export default function ProductDetail() {
       </div>
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
       {buyNowOpen && <Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/>}
+
+      {/* Image lightbox — clicking the main image (or a thumbnail when in
+          this overlay) shows it full-screen with prev/next arrows. */}
+      {lightboxIdx !== null && allImages[lightboxIdx] && (
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4" onClick={()=>setLightboxIdx(null)}>
+          <button onClick={(e)=>{e.stopPropagation();setLightboxIdx(null);}} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"><X size={20}/></button>
+          {allImages.length > 1 && (
+            <>
+              <button onClick={(e)=>{e.stopPropagation();setLightboxIdx((lightboxIdx-1+allImages.length)%allImages.length);}} className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl">‹</button>
+              <button onClick={(e)=>{e.stopPropagation();setLightboxIdx((lightboxIdx+1)%allImages.length);}} className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl">›</button>
+            </>
+          )}
+          <img
+            src={allImages[lightboxIdx]}
+            alt=""
+            className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            onClick={(e)=>e.stopPropagation()}
+          />
+          {allImages.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 bg-black/40 px-3 py-1.5 rounded-full">
+              {allImages.map((_,i)=>(
+                <button key={i} onClick={(e)=>{e.stopPropagation();setLightboxIdx(i);}} className={`w-2 h-2 rounded-full transition-all ${i===lightboxIdx?'bg-white w-6':'bg-white/40'}`}/>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
