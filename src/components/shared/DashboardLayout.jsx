@@ -638,7 +638,6 @@ export default function DashboardLayout({children}){
                   pc={pc}
                   t={t}
                 />
-                </>
               )}
             </div>
           )}
