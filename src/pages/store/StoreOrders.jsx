@@ -170,6 +170,19 @@ export default function StoreOrders() {
   // Admin column width / font-size multiplier.
   const [colScale, setColScale] = useState(() => parseFloat(localStorage.getItem('orders.colScale') || '1'));
   useEffect(() => { localStorage.setItem('orders.colScale', String(colScale)); }, [colScale]);
+  // Persisted per-column widths (px). Drag the right edge of any header cell
+  // to resize that column. Stored across reloads.
+  const [colWidths, setColWidths] = useState(() => { try { return JSON.parse(localStorage.getItem('orders.colWidths.v1') || '{}'); } catch { return {}; } });
+  useEffect(() => { try { localStorage.setItem('orders.colWidths.v1', JSON.stringify(colWidths)); } catch {} }, [colWidths]);
+  const [draggedCol, setDraggedCol] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+  // Reorder helper used by the drag handlers — moves "key" so it lands at "before".
+  const reorderColumns = (key, before) => setActiveColumns(prev => {
+    const i = prev.indexOf(key); if (i < 0) return prev;
+    const next = [...prev]; next.splice(i, 1);
+    let j = next.indexOf(before); if (j < 0) j = next.length;
+    next.splice(j, 0, key); return next;
+  });
   const densityRowCls = density === 'compact' ? 'orders-row-compact' : density === 'large' ? 'orders-row-large' : 'orders-row-normal';
 
   const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -771,12 +784,61 @@ export default function StoreOrders() {
             }}
           >
             <table className="" style={{ width: 'auto', minWidth: `${Math.max(1600, (activeColumns.length + 1) * 160 * colScale)}px`, tableLayout: 'auto', whiteSpace: 'nowrap' }}>
+              {/* colgroup so user-set column widths actually apply to body cells. */}
+              <colgroup>
+                <col style={{ width: 40 }} />
+                {activeColumns.map(k => <col key={k} style={colWidths[k] ? { width: `${colWidths[k]}px` } : undefined} />)}
+              </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
                   <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
                   {activeColumns.map(key => {
                     const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
-                    return <th key={key} className="px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{col.label}</th>;
+                    const w = colWidths[key];
+                    const isOver = dragOverCol === key;
+                    const isDragging = draggedCol === key;
+                    // Drag-resize: pointer-down on the right edge starts a width drag
+                    // tracked at window level so we don't lose it past the cell bounds.
+                    const startResize = (ev) => {
+                      ev.preventDefault(); ev.stopPropagation();
+                      const startX = ev.clientX;
+                      const th = ev.currentTarget.parentElement;
+                      const startW = th.getBoundingClientRect().width;
+                      const onMove = (e) => {
+                        const next = Math.max(60, Math.min(800, startW + (e.clientX - startX)));
+                        setColWidths(prev => ({ ...prev, [key]: Math.round(next) }));
+                      };
+                      const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; };
+                      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+                      document.body.style.cursor = 'col-resize';
+                    };
+                    return (
+                      <th
+                        key={key}
+                        draggable
+                        onDragStart={(e) => { setDraggedCol(key); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', key); } catch {} }}
+                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOverCol !== key) setDragOverCol(key); }}
+                        onDragLeave={() => { if (dragOverCol === key) setDragOverCol(null); }}
+                        onDrop={(e) => { e.preventDefault(); const src = draggedCol || (() => { try { return e.dataTransfer.getData('text/plain'); } catch { return null; } })(); if (src && src !== key) reorderColumns(src, key); setDraggedCol(null); setDragOverCol(null); }}
+                        onDragEnd={() => { setDraggedCol(null); setDragOverCol(null); }}
+                        className={`relative px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap select-none cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'opacity-40' : ''} ${isOver ? 'bg-brand-50 border-l-2 border-brand-500' : ''}`}
+                        style={w ? { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` } : undefined}
+                        title="Drag header to reorder · drag right edge to resize"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <GripVertical size={10} className="text-gray-300 group-hover:text-gray-500"/>
+                          {col.label}
+                        </span>
+                        {/* Right-edge resize handle */}
+                        <span
+                          onMouseDown={startResize}
+                          onClick={(e) => e.stopPropagation()}
+                          onDragStart={(e) => e.stopPropagation()}
+                          className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-brand-300/40"
+                          style={{ touchAction: 'none' }}
+                        />
+                      </th>
+                    );
                   })}
                 </tr>
               </thead>

@@ -443,6 +443,133 @@ function ScrollbarStudio({ s, setS, setV, t }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Role visual metadata: emoji + gradient colors keyed by the role's name.
+// The matcher is forgiving — both English and translated names work.
+// ─────────────────────────────────────────────────────────────────────────────
+function ROLE_META(name) {
+  const n = (name || '').toLowerCase();
+  if (/manager|gérant|مدير/i.test(n)) return { emoji: '👑', color1: '#7C3AED', color2: '#A78BFA' };
+  if (/preparer|préparateur|محضّر|prepar/i.test(n)) return { emoji: '📦', color1: '#F97316', color2: '#FB923C' };
+  if (/confirm|مؤكِّد|appel/i.test(n)) return { emoji: '📞', color1: '#3B82F6', color2: '#60A5FA' };
+  if (/account|comptable|محاسب|finance/i.test(n)) return { emoji: '💰', color1: '#10B981', color2: '#34D399' };
+  if (/viewer|observateur|مشاهد|view/i.test(n)) return { emoji: '👁️', color1: '#6B7280', color2: '#9CA3AF' };
+  if (/ship|deliver|توصيل|livr/i.test(n)) return { emoji: '🚚', color1: '#EF4444', color2: '#F87171' };
+  if (/marketing|market|تسويق/i.test(n)) return { emoji: '📣', color1: '#EC4899', color2: '#F472B6' };
+  if (/support|aide|دعم/i.test(n)) return { emoji: '💬', color1: '#06B6D4', color2: '#22D3EE' };
+  return { emoji: '⚙️', color1: '#6366F1', color2: '#818CF8' };
+}
+
+// Pretty labels for the most-impactful permissions, used to highlight the
+// "main functions" of each role on its card.
+const PERM_HIGHLIGHTS = {
+  manage_orders: 'Confirm & manage orders',
+  orders_edit: 'Confirm & manage orders',
+  orders_confirm: 'Confirm orders',
+  orders_prepare: 'Prepare orders',
+  orders_delete: 'Delete orders',
+  manage_products: 'Add / edit products',
+  products_edit: 'Add / edit products',
+  products_delete: 'Delete products',
+  stock_manage: 'Manage stock',
+  manage_customers: 'Manage customers',
+  customers_edit: 'Edit customers',
+  customers_blacklist: 'Blacklist customers',
+  view_analytics: 'View analytics',
+  analytics_view: 'View analytics',
+  finances_view: 'View finances',
+  finances_edit: 'Manage expenses',
+  manage_settings: 'Edit store settings',
+  settings_edit: 'Edit store settings',
+  staff_manage: 'Manage staff',
+  shipping_manage: 'Manage shipping',
+  reviews_manage: 'Moderate reviews',
+  domains_manage: 'Manage domains',
+  builder_edit: 'Edit page builder',
+};
+function highlightedPerms(perms) {
+  if (!Array.isArray(perms)) return [];
+  // Preserve admin order so the role's "first defined" perm leads.
+  return perms.map(k => PERM_HIGHLIGHTS[k]).filter(Boolean);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UsersActivityLog — shows the last N actions performed in this store.
+// Polls /owner/stores/:sid/activity-log every 30s.
+// ─────────────────────────────────────────────────────────────────────────────
+function UsersActivityLog({ storeId, isDark, t }) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(true);
+  const load = React.useCallback(async () => {
+    if (!storeId) return;
+    try {
+      const { default: api } = await import('../../utils/api');
+      const { data } = await api.get(`/owner/stores/${storeId}/activity-log?limit=30`);
+      setEntries(data?.entries || []);
+    } catch {} finally { setLoading(false); }
+  }, [storeId]);
+  useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, [load]);
+
+  const ICONS = {
+    order_status_change: { e: '🛒', c: 'bg-blue-100 text-blue-600' },
+    product_create: { e: '➕', c: 'bg-emerald-100 text-emerald-600' },
+    product_edit: { e: '✏️', c: 'bg-amber-100 text-amber-600' },
+    product_delete: { e: '🗑️', c: 'bg-red-100 text-red-600' },
+    settings_edit: { e: '⚙️', c: 'bg-purple-100 text-purple-600' },
+    staff_create: { e: '👤', c: 'bg-indigo-100 text-indigo-600' },
+    staff_edit: { e: '👤', c: 'bg-indigo-100 text-indigo-600' },
+    login: { e: '🔓', c: 'bg-gray-100 text-gray-600' },
+  };
+  const fmtAction = (a) => (a || 'action').replace(/_/g, ' ');
+  const timeAgo = (d) => { const s = Math.floor((Date.now() - new Date(d)) / 1000); if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return Math.floor(s / 86400) + 'd ago'; };
+
+  return (
+    <div className={`glass-card-solid p-4 sm:p-6 mb-4 ${isDark ? 'bg-gray-900' : ''}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg">📋</div>
+          <div>
+            <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Activity Log</p>
+            <p className="text-[11px] text-gray-400">Latest actions by your team</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={load} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={13} /></button>
+          <button onClick={() => setOpen(o => !o)} className="text-[11px] text-brand-500 font-bold hover:underline">{open ? 'Hide' : 'Show'}</button>
+        </div>
+      </div>
+      {open && (
+        loading ? (
+          <p className="text-xs text-gray-400 py-4 text-center">Loading…</p>
+        ) : entries.length === 0 ? (
+          <p className="text-xs text-gray-400 py-6 text-center">No activity yet — actions taken by you or your team will appear here.</p>
+        ) : (
+          <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+            {entries.map(e => {
+              const ic = ICONS[e.action] || { e: '📌', c: 'bg-gray-100 text-gray-600' };
+              return (
+                <div key={e.id} className={`flex items-start gap-3 p-2.5 rounded-xl ${isDark ? 'bg-gray-800 hover:bg-gray-700/50' : 'bg-gray-50 hover:bg-gray-100/70'} transition-colors`}>
+                  <div className={`w-8 h-8 rounded-lg ${ic.c} flex items-center justify-center text-base shrink-0`}>{ic.e}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[12px] ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      <span className="font-bold">{e.actor_name || 'Someone'}</span>
+                      <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> · {fmtAction(e.action)}</span>
+                      {e.target_id && <span className={`ml-1 font-mono text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{e.target_id}</span>}
+                    </p>
+                    {e.details && <p className="text-[10px] text-gray-400 truncate">{e.details}</p>}
+                  </div>
+                  <span className="text-[10px] text-gray-400 shrink-0 mt-1">{timeAgo(e.created_at)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 export default function StoreSettings(){
   const{t}=useTranslation();const{currentStore,setCurrentStore,stores:adminStores}=useStoreManagement();const{user,logout}=useAuthStore();
   const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
@@ -647,7 +774,10 @@ export default function StoreSettings(){
 
 {sec==='dashboard-config'&&<div className="glass-card-solid p-4 sm:p-6"><SH icon={Layout} title="Command Center" subtitle="Configure your primary workflow hub." accent="brand"/><div className="mt-6 space-y-4"><div className="flex items-center gap-2"><Sliders size={16} className="text-brand-500"/><h4 className="font-bold text-sm">Module Visibility</h4></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><T label="Action Bar" desc="Quick-entry tools" checked={s.dash_action!==false} onChange={e=>setV('dash_action',e.target.checked)}/><T label="Telemetry" desc="Core financial metrics" checked={s.dash_telemetry!==false} onChange={e=>setV('dash_telemetry',e.target.checked)}/><T label="Pulse Charts" desc="Visual trend analysis" checked={s.dash_pulse!==false} onChange={e=>setV('dash_pulse',e.target.checked)}/><T label="Log Stream" desc="Real-time order data" checked={s.dash_log!==false} onChange={e=>setV('dash_log',e.target.checked)}/></div></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><div className="p-5 bg-gray-50 rounded-xl"><h4 className="font-bold text-sm mb-2">Greeting</h4><input className="input-field" value={s.dash_greeting||'Welcome back! 👋'} onChange={set('dash_greeting')}/><T label="Show Date" desc="Display system date" checked={s.dash_date!==false} onChange={e=>setV('dash_date',e.target.checked)}/></div><div className="p-5 bg-gray-50 rounded-xl"><h4 className="font-bold text-sm mb-2">Chart Type</h4><div className="flex gap-2 mb-2">{['AREA','LINE','BAR'].map(t=>(<button key={t} onClick={()=>setV('chart_type',t)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${(s.chart_type||'AREA')===t?'bg-brand-500 text-white':'bg-gray-200 text-gray-500'}`}>{t}</button>))}</div></div></div></div>}
 
-{sec==='users'&&<><div className="glass-card-solid p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 mb-4"><span className="text-sm font-bold text-brand-600 border-b-2 border-brand-500 pb-2">Team Members</span><button onClick={()=>setShowStaff(true)} className="btn-primary text-xs flex items-center gap-1"><Plus size={14}/>Create New User</button></div>
+{sec==='users'&&<>
+{/* Activity log lives at the top so admins see what's happened most recently. */}
+<UsersActivityLog storeId={currentStore?.id} isDark={settingsIsDark} t={t}/>
+<div className="glass-card-solid p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 mb-4"><span className="text-sm font-bold text-brand-600 border-b-2 border-brand-500 pb-2">Team Members</span><button onClick={()=>setShowStaff(true)} className="btn-primary text-xs flex items-center gap-1"><Plus size={14}/>Create New User</button></div>
 {staff.length===0?<p className="text-center py-8 text-gray-400 text-sm">No team members yet</p>:
 <div className="space-y-2">{staff.map(x=>{
   // Prefer the full role string (tpl_<id> or <uuid>) so the select matches
@@ -679,7 +809,55 @@ export default function StoreSettings(){
   </div>);})}</div>}
 </div>
 <div className="glass-card-solid p-4 sm:p-6"><div className="flex items-center justify-between mb-4"><h3 className={`font-bold ${settingsIsDark?'text-gray-100':'text-gray-900'}`}>My Store Roles & Permissions</h3><button onClick={()=>setEditRole({name:'',description:'',permissions:[]})} className="btn-primary text-xs flex items-center gap-1"><Plus size={14}/>New Role</button></div><p className="text-[11px] text-gray-400 mb-4">Custom roles you define here affect only this store. They work alongside platform-defined roles.</p><div className="space-y-3">{storeRoles.length===0&&<p className={`text-sm ${settingsIsDark?'text-gray-400':'text-gray-500'}`}>No custom roles yet. Click "New Role" to create one.</p>}{storeRoles.map(tpl=>(<div key={tpl.id} className={`flex items-center justify-between p-4 rounded-xl ${settingsIsDark?'bg-gray-800 border border-gray-700':'bg-gray-50'}`}><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">{tpl.name?.[0]?.toUpperCase()}</div><div><p className={`font-bold ${settingsIsDark?'text-gray-100':'text-gray-800'}`}>{tpl.name} <span className="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">STORE</span></p><p className={`text-xs ${settingsIsDark?'text-gray-400':'text-gray-400'}`}>{tpl.description||`${(tpl.permissions||[]).length} permissions`}</p></div></div><div className="flex gap-1"><button onClick={()=>setEditRole({id:tpl.id,name:tpl.name,description:tpl.description||'',permissions:tpl.permissions||[]})} className="p-1.5 hover:bg-gray-200 rounded text-gray-500"><Edit2 size={14}/></button><button onClick={()=>deleteRole(tpl.id)} className="p-1.5 hover:bg-red-50 rounded text-red-400"><Trash2 size={14}/></button></div></div>))}</div>
-<div className="mt-6 pt-6 border-t border-gray-100"><h4 className="font-bold text-sm mb-3 text-gray-500">Platform-Defined Roles</h4><p className="text-[11px] text-gray-400 mb-3">Click "Customize" to copy a platform role into a store-scoped role you can edit.</p><div className="space-y-2">{platformTemplates.length===0&&<p className="text-sm text-gray-400">None defined yet.</p>}{platformTemplates.map(tpl=>{const lang=(document.documentElement.lang||'en').slice(0,2);const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||'Role';const desc=(tpl.description&&(tpl.description[lang]||tpl.description.en))||`${(tpl.permissions||[]).length} permissions`;return(<div key={'tpl_'+tpl.id} className={`flex items-center justify-between p-3 rounded-xl ${settingsIsDark?'bg-gray-800 border border-gray-700':'bg-gray-50'}`}><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-purple-500 flex items-center justify-center text-white font-bold text-sm">{name[0]?.toUpperCase()}</div><div><p className={`font-bold text-sm ${settingsIsDark?'text-gray-100':'text-gray-800'}`}>{name} <span className="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">PLATFORM</span></p><p className={`text-xs ${settingsIsDark?'text-gray-400':'text-gray-400'}`}>{desc}</p></div></div><div className="flex items-center gap-2"><span className={`text-xs font-medium ${settingsIsDark?'text-purple-300':'text-purple-500'}`}>{(tpl.permissions||[]).length} perms</span><button onClick={()=>customizePlatformRole(tpl)} className="btn-ghost text-xs flex items-center gap-1"><Edit2 size={12}/>Customize</button></div></div>);})}</div></div></div>
+<div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+  <h4 className={`font-bold text-sm mb-3 ${settingsIsDark?'text-gray-300':'text-gray-500'}`}>Platform-Defined Roles</h4>
+  <p className="text-[11px] text-gray-400 mb-4">Click "Customize" to copy a platform role into a store-scoped role you can edit.</p>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    {platformTemplates.length===0&&<p className="text-sm text-gray-400 col-span-full">None defined yet.</p>}
+    {platformTemplates.map(tpl=>{
+      const lang=(document.documentElement.lang||'en').slice(0,2);
+      const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||'Role';
+      const desc=(tpl.description&&(tpl.description[lang]||tpl.description.en))||'';
+      const meta=ROLE_META(name);
+      const perms=tpl.permissions||[];
+      const highlights=highlightedPerms(perms).slice(0,4);
+      return(
+        <div key={'tpl_'+tpl.id} className={`relative overflow-hidden rounded-2xl border ${settingsIsDark?'border-gray-700 bg-gray-800':'border-gray-100 bg-white'} transition-all hover:shadow-lg hover:-translate-y-0.5`}>
+          <div className="absolute inset-x-0 top-0 h-1.5" style={{background:`linear-gradient(90deg, ${meta.color1}, ${meta.color2})`}}/>
+          <div className="p-4">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-sm" style={{background:`linear-gradient(135deg, ${meta.color1}22, ${meta.color2}22)`,border:`1px solid ${meta.color1}33`}}>{meta.emoji}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className={`font-extrabold text-sm ${settingsIsDark?'text-white':'text-gray-900'} truncate`}>{name}</p>
+                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full text-white shrink-0" style={{background:meta.color1}}>PLATFORM</span>
+                </div>
+                {desc&&<p className={`text-[11px] mt-0.5 ${settingsIsDark?'text-gray-400':'text-gray-500'} line-clamp-2`}>{desc}</p>}
+                <p className="text-[10px] text-gray-400 mt-1 font-mono">{perms.length} permissions</p>
+              </div>
+            </div>
+            {highlights.length>0&&(
+              <div className="space-y-1 mb-3">
+                {highlights.map((h,i)=>(
+                  <div key={i} className="flex items-center gap-1.5 text-[11px]">
+                    <Check size={11} className="text-emerald-500 shrink-0"/>
+                    <span className={settingsIsDark?'text-gray-300':'text-gray-700'}>{h}</span>
+                  </div>
+                ))}
+                {perms.length>highlights.length&&(
+                  <p className="text-[10px] text-gray-400 ml-4">+{perms.length-highlights.length} more</p>
+                )}
+              </div>
+            )}
+            <button onClick={()=>customizePlatformRole(tpl)} className="w-full mt-1 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all" style={{background:`linear-gradient(135deg, ${meta.color1}, ${meta.color2})`}}>
+              <Edit2 size={12}/>Customize
+            </button>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div></div>
 {editRole&&<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={()=>setEditRole(null)}><div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="p-5 border-b flex items-center justify-between"><h3 className="font-bold text-lg">{editRole.id?'Edit Role':'New Role'}</h3><button onClick={()=>setEditRole(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div><div className="p-5 space-y-4"><div><label className="input-label">Role Name</label><input className="input-field" value={editRole.name} onChange={e=>setEditRole({...editRole,name:e.target.value})} placeholder="e.g. Shipping Manager"/></div><div><label className="input-label">Description</label><input className="input-field" value={editRole.description} onChange={e=>setEditRole({...editRole,description:e.target.value})} placeholder="Optional description"/></div><div><label className="input-label">Permissions ({editRole.permissions?.length||0}/{ALL_PERMISSIONS.length})</label><div className="space-y-3 mt-2">{PERM_GROUPS.map(group=>(<div key={group} className="p-3 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-500 uppercase mb-2">{group}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{ALL_PERMISSIONS.filter(p=>p.group===group).map(p=>{const on=(editRole.permissions||[]).includes(p.key);return(<label key={p.key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white"><input type="checkbox" checked={on} onChange={()=>togglePerm(p.key)}/><span className="text-sm text-gray-700">{p.label}</span></label>);})}</div></div>))}</div></div></div><div className="p-5 border-t flex justify-end gap-2"><button onClick={()=>setEditRole(null)} className="btn-ghost text-sm">Cancel</button><button onClick={saveRole} className="btn-primary text-sm flex items-center gap-1"><Save size={14}/>Save Role</button></div></div></div>}</>}
 
 {sec==='checkout'&&<div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6"><div className="space-y-4 min-w-0"><SH icon={ShoppingCart} title="Purchase Flow" subtitle="Optimize visitor to customer conversion." accent="purple"/>
