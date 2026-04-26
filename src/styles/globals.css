@@ -33,6 +33,77 @@ body{font-family:'DM Sans','Outfit',sans-serif;background:#FAFAFA;color:#1F2937;
   /* Fixed 90vh modals on phones end up clipped by the URL bar */
   .max-h-\[90vh\],.max-h-\[85vh\],.max-h-\[80vh\]{max-height:calc(100dvh - 1rem) !important;}
 }
+
+/* ═══ Universal responsive guardrails ═══
+   These rules apply to every page so content never gets mushed together when
+   the viewport shrinks, regardless of how individual screens were authored. */
+
+/* Any flex container's children must allow shrinking — fixes long labels that
+   force their siblings off-screen. */
+.flex > *,
+[class~="flex"] > *{min-width:0;}
+
+/* Multi-column grids without responsive breakpoints collapse on narrow screens
+   so each column has room to breathe. */
+@media (max-width: 639px){
+  /* Force 3+ column grids down to 1 column on phones unless the author
+     opted into a different breakpoint with sm:/md:/lg: prefixes. We can't
+     differentiate from CSS alone, so we target Tailwind's literal class
+     names. Any class that already includes a sm: variant is unaffected. */
+  .grid.grid-cols-2:not(.no-collapse),
+  .grid.grid-cols-3:not(.no-collapse),
+  .grid.grid-cols-4:not(.no-collapse),
+  .grid.grid-cols-5:not(.no-collapse),
+  .grid.grid-cols-6:not(.no-collapse){grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width: 419px){
+  .grid.grid-cols-3:not(.no-collapse),
+  .grid.grid-cols-4:not(.no-collapse),
+  .grid.grid-cols-5:not(.no-collapse),
+  .grid.grid-cols-6:not(.no-collapse){grid-template-columns:repeat(1,minmax(0,1fr));}
+}
+
+/* Long words / unbroken strings (like email addresses, URLs, slugs) wrap
+   instead of overflowing their parent. */
+.glass-card-solid p,.glass-card p,
+.glass-card-solid span,.glass-card span,
+.glass-card-solid a,.glass-card a,
+.glass-card-solid h1,.glass-card-solid h2,.glass-card-solid h3,.glass-card-solid h4,
+.glass-card h1,.glass-card h2,.glass-card h3,.glass-card h4{overflow-wrap:anywhere;word-break:normal;}
+
+/* Tables that aren't already wrapped in a custom horizontal scroller get one
+   automatically so wide column sets don't blow out the page width. */
+.glass-card-solid table:not(.no-auto-scroll),
+.glass-card table:not(.no-auto-scroll){max-width:100%;}
+
+/* Sticky headers are full-width — make their inner row shrink-friendly so
+   action buttons can horizontally scroll when there isn't room. */
+header > .max-w-7xl,
+header > .container,
+nav > .max-w-7xl{min-width:0;}
+
+/* Tabs / pill rows: when they break onto a second line, give them spacing so
+   they don't visually merge with the content below. */
+.tabs-row,[data-tabs]{gap:.5rem;flex-wrap:wrap;}
+
+/* Modals on phones should never exceed the visible viewport. The earlier
+   rule scoped this to specific Tailwind classes; this catches any modal that
+   uses `max-h-[XXvh]` or `h-[XXvh]`. */
+@media (max-width: 767px){
+  [class*="max-h-["][class*="vh]"]{max-height:calc(100dvh - 0.5rem) !important;}
+  [class*="h-["][class*="vh]"]{max-height:calc(100dvh - 0.5rem) !important;}
+  /* Card padding shrinks so content has more room. */
+  .glass-card-solid.p-6,.glass-card.p-6{padding:1rem !important;}
+  .glass-card-solid.p-8,.glass-card.p-8{padding:1.25rem !important;}
+}
+
+/* Any wrapper marked `.responsive-row` becomes a horizontally scrolling pill
+   strip below sm — handy for action button rows in page headers. */
+@media (max-width: 639px){
+  .responsive-row{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap !important;scrollbar-width:none;}
+  .responsive-row::-webkit-scrollbar{display:none;}
+  .responsive-row > *{flex-shrink:0;}
+}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:999px;}
 
 /* ═══ Dark mode overrides for admin dashboard content ═══

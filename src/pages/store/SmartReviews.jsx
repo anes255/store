@@ -91,7 +91,7 @@ export default function SmartReviews(){
       </div>
     </div>
 
-    <div className="grid grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.total','Total')}</p><p className="text-2xl font-black text-gray-900 mt-1">{stats.total||0}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-amber-500 uppercase">{t('storePage.pending','Pending')}</p><p className="text-2xl font-black text-amber-600 mt-1">{stats.pending||0}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.approvedLabel','Approved')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{stats.approved||0}</p></div>
