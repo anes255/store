@@ -76,6 +76,19 @@ function transferBadge(o) {
 }
 
 function fmtMoney(v, cur) { return `${parseFloat(v||0).toLocaleString()} ${cur||'DZD'}`; }
+
+// Wilaya name → 2-digit code lookup. Used by both the cell renderer and the
+// quick-action drawer so an order with only `shipping_wilaya` (name) still
+// shows N° Wilaya in the table.
+const WILAYA_NAME_TO_CODE = { 'adrar':'01','chlef':'02','laghouat':'03','oum el bouaghi':'04','batna':'05','béjaïa':'06','bejaia':'06','biskra':'07','béchar':'08','bechar':'08','blida':'09','bouira':'10','tamanrasset':'11','tébessa':'12','tebessa':'12','tlemcen':'13','tiaret':'14','tizi ouzou':'15','alger':'16','algiers':'16','djelfa':'17','jijel':'18','sétif':'19','setif':'19','saïda':'20','saida':'20','skikda':'21','sidi bel abbès':'22','sidi bel abbes':'22','annaba':'23','guelma':'24','constantine':'25','médéa':'26','medea':'26','mostaganem':'27','msila':'28','m’sila':'28','mascara':'29','ouargla':'30','oran':'31','el bayadh':'32','illizi':'33','bordj bou arréridj':'34','boumerdès':'35','boumerdes':'35','el tarf':'36','tindouf':'37','tissemsilt':'38','el oued':'39','khenchela':'40','souk ahras':'41','tipaza':'42','mila':'43','aïn defla':'44','ain defla':'44','naâma':'45','naama':'45','aïn témouchent':'46','ain temouchent':'46','ghardaïa':'47','ghardaia':'47','relizane':'48','timimoun':'49','bordj badji mokhtar':'50','ouled djellal':'51','béni abbès':'52','beni abbes':'52','in salah':'53','in guezzam':'54','touggourt':'55','djanet':'56','el m\'ghair':'57','el meghaier':'57','el menia':'58' };
+function wilayaCodeFor(o) {
+  if (!o) return '';
+  if (o.shipping_wilaya_code) return o.shipping_wilaya_code;
+  const n = String(o.shipping_wilaya || '').trim().toLowerCase();
+  if (n && WILAYA_NAME_TO_CODE[n]) return WILAYA_NAME_TO_CODE[n];
+  if (o.shipping_zip && /^\d{2}/.test(o.shipping_zip)) return o.shipping_zip.slice(0,2);
+  return '';
+}
 function waLink(phone) { if (!phone) return null; const clean = String(phone).replace(/[^\d+]/g,''); return `https://wa.me/${clean.replace(/^\+/,'')}`; }
 function copy(text) { try { navigator.clipboard.writeText(text); toast.success('Copied'); } catch { toast.error('Copy failed'); } }
 
@@ -487,8 +500,10 @@ export default function StoreOrders() {
         )}</td>;
       }
 
-      case 'wilaya_number':
-        return <td className="px-3 py-3">{cellBtn(o, 'address', <span className="font-mono text-xs text-gray-500">{o.shipping_wilaya_code || o.shipping_zip?.slice(0,2) || '—'}</span>)}</td>;
+      case 'wilaya_number': {
+        const code = wilayaCodeFor(o);
+        return <td className="px-3 py-3">{cellBtn(o, 'address', <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${code?'bg-emerald-50 text-emerald-700':'text-gray-400'}`}>{code || '—'}</span>)}</td>;
+      }
 
       case 'commune':
         return <td className="px-3 py-3">{cellBtn(o, 'address',
@@ -1184,17 +1199,31 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
 
   if (type === 'status') {
     return wrap(
-      <div className="grid grid-cols-2 gap-2">
-        {allStatuses.map(s => {
-          const sc = statusConfig[s];
-          const active = o.status === s;
-          return (
-            <button key={s} onClick={() => { onUpdateStatus(s); onClose(); }}
-              className={`py-2.5 rounded-xl text-xs font-bold ${active ? `${sc.color} text-white ring-2 ring-offset-2 ring-gray-300` : `${sc.bg} ${sc.text} hover:opacity-80`}`}>
-              {sc.label}
-            </button>
-          );
-        })}
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          {allStatuses.map(s => {
+            const sc = statusConfig[s];
+            const active = o.status === s;
+            return (
+              <button key={s} onClick={() => { onUpdateStatus(s); onClose(); }}
+                className={`py-2.5 rounded-xl text-xs font-bold ${active ? `${sc.color} text-white ring-2 ring-offset-2 ring-gray-300` : `${sc.bg} ${sc.text} hover:opacity-80`}`}>
+                {sc.label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Archive toggle — moves the order in/out of the archive vault */}
+        <button onClick={async () => {
+          try {
+            const{orderApi}=await import('../../utils/api');
+            await orderApi.archive(o.store_id || o.shop_id || '', o.id, !o.is_archived);
+            // The drawer's parent receives the change via onSaveField patch.
+            onSaveField(o.id, { is_archived: !o.is_archived });
+            onClose();
+          } catch {/* parent toast handles failures */}
+        }} className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${o.is_archived?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}>
+          {o.is_archived?'📤 Restore from archive':'📦 Archive order'}
+        </button>
       </div>
     );
   }

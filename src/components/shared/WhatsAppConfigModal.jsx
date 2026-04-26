@@ -133,7 +133,9 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
         <button type="button" onClick={(e)=>{e.stopPropagation();onPreview();}} title="Preview" className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>Preview</button>
         <button type="button" onClick={(e)=>{e.stopPropagation();onTest();}} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>Test</button>
         {/* The colored dot doubles as the on/off toggle for this status. */}
-        <button type="button" onClick={(e)=>{e.stopPropagation();onToggle(!enabled);}} title={enabled?'Click to disable':'Click to enable'} className="w-5 h-5 rounded-full shrink-0 ring-2 ring-transparent hover:ring-gray-300 transition-all" style={{backgroundColor:enabled?meta.color:'#d1d5db'}}/>
+        <button type="button" onClick={(e)=>{e.stopPropagation();onToggle(!enabled);}} title={enabled?'Click to disable':'Click to enable'} aria-label={enabled?'Disable':'Enable'} className="relative w-11 h-6 rounded-full shrink-0 transition-colors" style={{backgroundColor:enabled?meta.color:'#d1d5db'}}>
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${enabled?'translate-x-5':'translate-x-0.5'}`}/>
+        </button>
         <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} aria-label="Expand">
           <ChevronDown size={16} className={`transition-transform ${expanded?'rotate-180':''}`}/>
         </button>

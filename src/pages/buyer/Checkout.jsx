@@ -175,13 +175,13 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   };
 
   const placeOrder = async () => {
-    const emailRequired = store?.checkout_email === true;
-    // Field-specific errors so the message matches the actual missing field.
+    // All boxes are required. Field-specific errors so the message matches the
+    // actual missing field — buyer has to complete every input before checkout.
     if (!form.customer_name) return toast.error(t('checkout.errName', 'Please enter your name'));
     if (!form.customer_phone) return toast.error(t('checkout.errPhone', 'Please enter your phone number'));
     if (!isValidAlgerianPhone(form.customer_phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
-    if (emailRequired && !form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
-    if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
+    if (!form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
+    if (!/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
     if (!form.shipping_address) return toast.error(t('checkout.errAddress', 'Please enter your shipping address'));
     if (!form.shipping_wilaya) return toast.error(t('checkout.errWilaya', 'Please choose your wilaya'));
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
