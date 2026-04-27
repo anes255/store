@@ -1236,7 +1236,12 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
       const patch = { ...localPatch };
       const newCompany = patch.delivery_company_id || o.delivery_company_id;
       if (Object.keys(patch).length) onSaveField(patch);
-      if (newCompany && o.status !== 'shipped') onUpdateStatus('shipped');
+      // Status flip is deferred to the next tick so the company-id PATCH
+      // commits first; the status endpoint's notification logic reads the
+      // freshly-saved delivery_company_id when sending the WhatsApp template.
+      if (newCompany && o.status !== 'shipped') {
+        setTimeout(() => onUpdateStatus('shipped'), 250);
+      }
       onClose();
     };
     return wrap(
