@@ -306,8 +306,16 @@ export default function ShippingPartners(){
             </button>
 
             {testResult&&(
-              <div className={`p-3 rounded-xl text-sm font-bold ${testResult.ok?'bg-emerald-100 text-emerald-800 border border-emerald-300':'bg-red-50 text-red-700 border border-red-200'}`}>
-                {testResult.ok?'✅ Connection successful!':'❌ '+(testResult.error||'Connection failed')}
+              <div className={`p-3 rounded-xl text-sm space-y-2 ${testResult.ok?'bg-emerald-100 text-emerald-800 border border-emerald-300':'bg-red-50 text-red-700 border border-red-200'}`}>
+                <p className="font-bold">{testResult.ok?'✅ '+(testResult.message||'Connection verified'):'❌ '+(testResult.error||'Connection failed')}</p>
+                {testResult.url && <p className="text-[10px] font-mono opacity-70 break-all">URL: {testResult.url}</p>}
+                {testResult.results?.status_extraction?.message && <p className="text-[11px] opacity-80">📍 {testResult.results.status_extraction.message}</p>}
+                {testResult.sample && (
+                  <details className="text-[11px] opacity-80">
+                    <summary className="cursor-pointer">Show carrier response (first 240 chars)</summary>
+                    <pre className="mt-1 p-2 bg-white/60 rounded text-[10px] font-mono whitespace-pre-wrap break-all">{testResult.sample}</pre>
+                  </details>
+                )}
               </div>
             )}
           </div>)}
