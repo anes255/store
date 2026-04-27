@@ -260,26 +260,26 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </div>
           )}
 
-          {/* BaridiMob Payment */}
+          {/* BaridiPay Payment */}
           {paymentStep === 'baridimob' && (
             <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className="font-bold text-gray-900">BaridiMob Payment</h3><p className="text-xs text-gray-400">Pay via BaridiMob app</p></div></div>
+              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className="font-bold text-gray-900">BaridiPay Payment</h3><p className="text-xs text-gray-400">Pay via BaridiPay app</p></div></div>
               <div className="bg-emerald-50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between"><span className="text-sm text-gray-500">RIP Number</span><div className="flex items-center gap-2"><span className="font-mono font-bold">{store.baridimob_rip || 'N/A'}</span><button onClick={() => copyToClipboard(store.baridimob_rip || '')} className="p-1 hover:bg-emerald-100 rounded"><Copy size={14}/></button></div></div>
                 <div className="flex items-center justify-between"><span className="text-sm text-gray-500">Amount</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} DZD</span></div>
               </div>
-              {store.baridimob_qr && <div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">Scan to Pay</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiMob QR"/></div>}
+              {store.baridimob_qr && <div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">Scan to Pay</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
               <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs font-bold text-gray-500 mb-2">Steps:</p>
                 <ol className="text-xs text-gray-600 space-y-1">
-                  <li>1. Open BaridiMob app on your phone</li>
+                  <li>1. Open BaridiPay app on your phone</li>
                   {store.baridimob_qr ? <li>2. Scan the QR code above OR transfer to RIP manually</li> : <li>2. Go to "Transfer" → "Transfer to RIP"</li>}
                   <li>3. Enter the exact amount: {parseFloat(orderSuccess.total).toLocaleString()} DZD</li>
                   <li>4. Confirm and screenshot your receipt</li>
                 </ol>
               </div>
-              <div><label className="input-label text-xs">Transaction Reference</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="BaridiMob transaction ID"/></div>
+              <div><label className="input-label text-xs">Transaction Reference</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="BaridiPay transaction ID"/></div>
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-emerald-400 transition-colors" onClick={() => document.getElementById('receipt-upload').click()}>
-                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ Receipt uploaded</p></div> : <div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">Upload your BaridiMob receipt</p></div>}
+                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ Receipt uploaded</p></div> : <div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">Upload your BaridiPay receipt</p></div>}
               </div>
               <input id="receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
               <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>Submit Receipt <ArrowRight size={16}/></button>
@@ -293,7 +293,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-center">
                 <AlertTriangle size={32} className="mx-auto text-amber-500 mb-3"/>
                 <h3 className="font-bold text-amber-800 text-lg mb-2">Under Development</h3>
-                <p className="text-sm text-amber-700">Bank transfer payment is currently being set up. Please use CCP, BaridiMob, or Cash on Delivery for now.</p>
+                <p className="text-sm text-amber-700">Bank transfer payment is currently being set up. Please use CCP, BaridiPay, or Cash on Delivery for now.</p>
                 <p className="text-xs text-amber-600 mt-3">We apologize for the inconvenience. This feature will be available soon.</p>
               </div>
               <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="w-full py-3 rounded-xl font-bold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Back to Store</button>
@@ -356,7 +356,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const paymentMethods = [
     store.enable_cod && { key: 'cod', icon: Banknote, label: 'Cash on Delivery', desc: 'Pay in cash upon delivery', color: 'emerald' },
     store.enable_ccp && { key: 'ccp', icon: CreditCard, label: 'CCP Transfer', desc: `Transfer to CCP: ${store.ccp_account || ''}`, color: 'amber' },
-    store.enable_baridimob && { key: 'baridimob', icon: QrCode, label: 'BaridiMob', desc: 'Pay via BaridiMob app', color: 'green' },
+    store.enable_baridimob && { key: 'baridimob', icon: QrCode, label: 'BaridiPay', desc: 'Pay via BaridiPay app', color: 'green' },
     store.enable_chargily && { key: 'chargily', icon: Wifi, label: 'Edahabia / CIB Card', desc: 'Pay online with your bank card', color: 'brand' },
     store.enable_bank_transfer && { key: 'bank_transfer', icon: Building, label: 'Bank Transfer', desc: 'Under development', color: 'gray', disabled: true },
   ].filter(Boolean);

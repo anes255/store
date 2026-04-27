@@ -1229,6 +1229,16 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'transfer') {
+    // When the admin assigns a delivery company, also flip the order status
+    // to "shipped" via the dedicated status endpoint (which fires WhatsApp /
+    // email notifications). The PATCH only saves delivery_company_id.
+    const saveTransfer = () => {
+      const patch = { ...localPatch };
+      const newCompany = patch.delivery_company_id || o.delivery_company_id;
+      if (Object.keys(patch).length) onSaveField(patch);
+      if (newCompany && o.status !== 'shipped') onUpdateStatus('shipped');
+      onClose();
+    };
     return wrap(
       <div className="space-y-3">
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.deliveryCompany','Delivery Company')}</label>
@@ -1236,7 +1246,12 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
           <option value="">— {t('orders.none','None')} —</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">{t('common.save','Save')}</button>
+        {(localPatch.delivery_company_id || o.delivery_company_id) && o.status !== 'shipped' && (
+          <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+            ℹ️ {t('orders.autoShippedNote','Saving will also mark this order as SHIPPED.')}
+          </p>
+        )}
+        <button onClick={saveTransfer} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">{t('common.save','Save')}</button>
       </div>
     );
   }
@@ -1582,7 +1597,7 @@ function CreateOrderModal({ storeId, onClose, onCreated }) {
           <select className="input-field" value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value })}>
             <option value="cod">COD</option>
             <option value="ccp">CCP</option>
-            <option value="baridimob">BaridiMob</option>
+            <option value="baridimob">BaridiPay</option>
           </select>
         </div>
         <textarea className="input-field mb-3" rows={2} placeholder={t('orders.notes', 'Notes (optional)')} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />

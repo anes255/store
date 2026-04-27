@@ -1,13 +1,155 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import Checkout from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Full-screen image lightbox with zoom controls. Supports:
+//   • Click / wheel / +/- buttons to zoom in & out
+//   • Drag to pan when zoomed in
+//   • Double-click to fit / 200% toggle
+//   • Pinch zoom on touch devices
+//   • Arrow keys / on-screen arrows for prev/next
+// ─────────────────────────────────────────────────────────────────────────────
+function LightboxImage({ images, index, onClose, onChange }) {
+  const [scale, setScale] = useState(1);
+  const [origin, setOrigin] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+  const pinchStart = useRef(null);
+
+  useEffect(() => { setScale(1); setOrigin({ x: 0, y: 0 }); }, [index]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight' && images.length > 1) onChange((index + 1) % images.length);
+      else if (e.key === 'ArrowLeft' && images.length > 1) onChange((index - 1 + images.length) % images.length);
+      else if (e.key === '+' || e.key === '=') setScale(s => Math.min(5, +(s + 0.5).toFixed(2)));
+      else if (e.key === '-') setScale(s => Math.max(1, +(s - 0.5).toFixed(2)));
+      else if (e.key === '0') { setScale(1); setOrigin({ x: 0, y: 0 }); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [index, images.length, onClose, onChange]);
+
+  const onWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.25 : 0.25;
+    setScale(s => Math.max(1, Math.min(5, +(s + delta).toFixed(2))));
+  };
+
+  const onPointerDown = (e) => {
+    if (scale <= 1) return;
+    setDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, ox: origin.x, oy: origin.y };
+  };
+  const onPointerMove = (e) => {
+    if (!dragging) return;
+    setOrigin({
+      x: dragStart.current.ox + (e.clientX - dragStart.current.x),
+      y: dragStart.current.oy + (e.clientY - dragStart.current.y),
+    });
+  };
+  const onPointerUp = () => setDragging(false);
+
+  const onTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStart.current = { dist: Math.hypot(dx, dy), scale };
+    }
+  };
+  const onTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchStart.current) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const next = Math.max(1, Math.min(5, pinchStart.current.scale * (dist / pinchStart.current.dist)));
+      setScale(+next.toFixed(2));
+    }
+  };
+  const onTouchEnd = () => { pinchStart.current = null; };
+
+  const toggleZoom = () => {
+    if (scale > 1) { setScale(1); setOrigin({ x: 0, y: 0 }); }
+    else setScale(2);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center select-none"
+      onClick={onClose}
+      onWheel={onWheel}
+    >
+      {/* Top toolbar */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-2 py-1.5 z-10" onClick={e => e.stopPropagation()}>
+        <button onClick={() => setScale(s => Math.max(1, +(s - 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Zoom out (-)"><ZoomOut size={16}/></button>
+        <span className="text-white text-xs font-bold font-mono w-12 text-center tabular-nums">{Math.round(scale * 100)}%</span>
+        <button onClick={() => setScale(s => Math.min(5, +(s + 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Zoom in (+)"><ZoomIn size={16}/></button>
+        <span className="w-px h-5 bg-white/20"/>
+        <button onClick={() => { setScale(1); setOrigin({ x: 0, y: 0 }); }} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Reset (0)"><Maximize2 size={14}/></button>
+      </div>
+
+      <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10"><X size={20}/></button>
+
+      {images.length > 1 && (
+        <>
+          <button onClick={(e) => { e.stopPropagation(); onChange((index - 1 + images.length) % images.length); }} className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl z-10">‹</button>
+          <button onClick={(e) => { e.stopPropagation(); onChange((index + 1) % images.length); }} className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl z-10">›</button>
+        </>
+      )}
+
+      <div
+        className="w-full h-full flex items-center justify-center overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onDoubleClick={toggleZoom}
+        style={{ cursor: scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'zoom-in', touchAction: scale > 1 ? 'none' : 'auto' }}
+      >
+        <img
+          src={images[index]}
+          alt=""
+          loading="eager"
+          decoding="sync"
+          draggable={false}
+          className="max-w-[95vw] max-h-[90vh] rounded-2xl shadow-2xl"
+          style={{
+            transform: `translate(${origin.x}px, ${origin.y}px) scale(${scale})`,
+            transformOrigin: 'center center',
+            transition: dragging ? 'none' : 'transform 0.2s ease',
+            imageRendering: 'auto',
+            objectFit: 'contain',
+          }}
+        />
+      </div>
+
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 bg-black/40 px-3 py-1.5 rounded-full z-10" onClick={e => e.stopPropagation()}>
+          {images.map((_, i) => (
+            <button key={i} onClick={() => onChange(i)} className={`w-2 h-2 rounded-full transition-all ${i === index ? 'bg-white w-6' : 'bg-white/40'}`}/>
+          ))}
+        </div>
+      )}
+
+      <p className="absolute bottom-16 left-1/2 -translate-x-1/2 text-[10px] text-white/50 font-mono">
+        Scroll / +/- to zoom · drag to pan · double-click to toggle · Esc to close
+      </p>
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
@@ -239,17 +381,22 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} className="w-full h-full object-cover transition-transform hover:scale-105" alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="sync" className="w-full h-full object-contain bg-white transition-transform group-hover:scale-105" style={{imageRendering:'auto'}} alt=""/>
                 : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
+              {allImages[selectedImage] && (
+                <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  🔍 {t('product.clickToZoom','Click to zoom')}
+                </span>
+              )}
             </div>
             {allImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {allImages.map((img,i) => (
                   <button key={i} onClick={() => setSelectedImage(i)}
-                    className={`w-20 h-20 rounded-xl bg-gray-100 overflow-hidden shrink-0 border-2 transition-all ${selectedImage===i ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-gray-300'}`}>
-                    <img src={img} className="w-full h-full object-cover" alt=""/>
+                    className={`w-20 h-20 rounded-xl bg-white overflow-hidden shrink-0 border-2 transition-all ${selectedImage===i ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-gray-300'}`}>
+                    <img src={img} loading="lazy" className="w-full h-full object-contain" alt=""/>
                   </button>
                 ))}
               </div>
@@ -433,31 +580,14 @@ export default function ProductDetail() {
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
       {buyNowOpen && <Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/>}
 
-      {/* Image lightbox — clicking the main image (or a thumbnail when in
-          this overlay) shows it full-screen with prev/next arrows. */}
+      {/* Image lightbox — full-screen view with click/scroll/pinch zoom. */}
       {lightboxIdx !== null && allImages[lightboxIdx] && (
-        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4" onClick={()=>setLightboxIdx(null)}>
-          <button onClick={(e)=>{e.stopPropagation();setLightboxIdx(null);}} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"><X size={20}/></button>
-          {allImages.length > 1 && (
-            <>
-              <button onClick={(e)=>{e.stopPropagation();setLightboxIdx((lightboxIdx-1+allImages.length)%allImages.length);}} className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl">‹</button>
-              <button onClick={(e)=>{e.stopPropagation();setLightboxIdx((lightboxIdx+1)%allImages.length);}} className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl">›</button>
-            </>
-          )}
-          <img
-            src={allImages[lightboxIdx]}
-            alt=""
-            className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
-            onClick={(e)=>e.stopPropagation()}
-          />
-          {allImages.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 bg-black/40 px-3 py-1.5 rounded-full">
-              {allImages.map((_,i)=>(
-                <button key={i} onClick={(e)=>{e.stopPropagation();setLightboxIdx(i);}} className={`w-2 h-2 rounded-full transition-all ${i===lightboxIdx?'bg-white w-6':'bg-white/40'}`}/>
-              ))}
-            </div>
-          )}
-        </div>
+        <LightboxImage
+          images={allImages}
+          index={lightboxIdx}
+          onClose={()=>setLightboxIdx(null)}
+          onChange={setLightboxIdx}
+        />
       )}
     </div>
   );

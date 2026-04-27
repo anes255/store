@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useBuyerTheme } from '../../hooks/useStore';
 import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from './Checkout';
+import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 const DEFAULT_STATUS_COLORS = {
   new_order: 'bg-indigo-500/20 text-indigo-300',
   pending: 'bg-amber-500/20 text-amber-300',
@@ -152,13 +153,16 @@ export default function TrackOrder() {
 
       <header className="relative z-10 sticky top-0 bg-gray-900/70 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to={`/s/${storeSlug}`} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors"><ArrowLeft size={16} /></Link>
+          <Link to={`/s/${storeSlug}`} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors shrink-0"><ArrowLeft size={16} /></Link>
           {store.logo
-            ? <img src={store.logo} alt="" className="w-9 h-9 rounded-xl object-cover border border-white/10" />
-            : <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
+            ? <img src={store.logo} alt="" className="w-9 h-9 rounded-xl object-cover border border-white/10 shrink-0" />
+            : <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-extrabold truncate">{store.tracking_hero_title || t('track.title', 'Track your order')}</h1>
             <p className="text-[11px] text-gray-400 truncate">{store.name}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <LanguageSwitcher variant="header"/>
           </div>
         </div>
       </header>

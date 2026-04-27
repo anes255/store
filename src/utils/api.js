@@ -103,6 +103,7 @@ export const ownerApi = {
   updateEmail: (data) => api.put('/owner/email', data),
   updatePassword: (data) => api.put('/owner/password', data),
   toggleTwoFa: (data) => api.put('/owner/two-fa', data),
+  update2FA: (data) => api.put('/owner/two-fa', data),
   deleteAccount: (data) => api.delete('/owner/account', { data }),
   getStores: () => api.get('/owner/stores'),
   createStore: (data) => api.post('/owner/stores', data),

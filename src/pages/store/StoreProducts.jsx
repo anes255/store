@@ -47,7 +47,10 @@ export default function StoreProducts() {
   useEffect(()=>{loadProducts();},[currentStore?.id,search]);
 
   const toB64 = (file) => new Promise((res, rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
-  const compress = (b64, w=500, q=0.4) => new Promise((res) => { const img=new window.Image(); img.onload=()=>{ const c=document.createElement('canvas'); const ratio=Math.min(w/img.width,w/img.height,1); c.width=img.width*ratio; c.height=img.height*ratio; c.getContext('2d').drawImage(img,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',q)); }; img.src=b64; });
+  // Higher resolution + quality so product detail / lightbox stays crisp.
+  // 1600px on the longest edge keeps file size reasonable while looking good
+  // even at 2× retina zoom in the lightbox.
+  const compress = (b64, w=1600, q=0.88) => new Promise((res) => { const img=new window.Image(); img.onload=()=>{ const c=document.createElement('canvas'); const ratio=Math.min(w/img.width,w/img.height,1); c.width=Math.round(img.width*ratio); c.height=Math.round(img.height*ratio); const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(img,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',q)); }; img.src=b64; });
 
   const handleFiles = async (e) => {
     const files = Array.from(e.target?.files || []); if (!files.length) return;
