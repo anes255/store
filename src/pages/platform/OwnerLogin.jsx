@@ -6,7 +6,8 @@ import toast from 'react-hot-toast';
 import { ownerApi, platformApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check, Shield, RefreshCw } from 'lucide-react';
+import api from '../../utils/api';
 
 export default function OwnerLogin() {
   const { t } = useTranslation();
@@ -17,6 +18,11 @@ export default function OwnerLogin() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [storePicker, setStorePicker] = useState(null); // {owner, token, stores} when multi-store owner signs in
+  // Two-step verification challenge: when 2FA is enabled the API returns
+  // {requires_2fa,otp_token,method,masked} and we render a code prompt.
+  const [twoFa, setTwoFa] = useState(null); // {otp_token, method, masked}
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
   // Brand comes exclusively from the super-admin's platform settings.
   // Empty until /platform/info responds; render the name only once set.
   const [brand, setBrand] = useState({ logo: '', favicon: '', name: '' });
@@ -35,6 +41,12 @@ export default function OwnerLogin() {
     // Try store-owner login first
     try {
       const { data } = await ownerApi.login({ identifier, password });
+      if (data.requires_2fa) {
+        setTwoFa({ otp_token: data.otp_token, method: data.method, masked: data.masked });
+        toast.success(data.message || `Code sent to your ${data.method === 'email' ? 'email' : 'WhatsApp'}`);
+        setLoading(false);
+        return;
+      }
       if (data.redirect === '/admin/dashboard') {
         setAuth(data.owner, data.token, 'platform_admin');
         toast.success('Welcome, Super Admin!');
@@ -80,6 +92,37 @@ export default function OwnerLogin() {
       toast.error(err.response?.data?.error || 'Invalid credentials');
     }
     setLoading(false);
+  };
+
+  const verifyTwoFa = async () => {
+    if (!twoFaCode || twoFaCode.length < 6) return toast.error(t('auth.enter6Digit','Enter the 6-digit code'));
+    setTwoFaLoading(true);
+    try {
+      const { data } = await api.post('/owner/login/verify-2fa', { otp_token: twoFa.otp_token, code: twoFaCode });
+      setAuth(data.owner, data.token, 'store_owner');
+      setStores(data.stores);
+      try { if (data.owner?.is_staff) localStorage.setItem('staff_stores', JSON.stringify(data.stores || [])); } catch {}
+      if ((data.stores || []).length > 1) {
+        setStorePicker({ owner: data.owner, stores: data.stores });
+        setTwoFa(null); setTwoFaCode('');
+        setTwoFaLoading(false);
+        return;
+      }
+      if (data.stores.length > 0) setCurrentStore(data.stores[0]);
+      toast.success(`Welcome back, ${data.owner.name}!`);
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Invalid code');
+    }
+    setTwoFaLoading(false);
+  };
+
+  const resendTwoFa = async () => {
+    try {
+      const { data } = await api.post('/owner/login/resend-2fa', { otp_token: twoFa.otp_token });
+      setTwoFa({ otp_token: data.otp_token, method: data.method, masked: data.masked });
+      toast.success(t('auth.codeResent','Code resent'));
+    } catch (e) { toast.error(e.response?.data?.error || 'Failed to resend'); }
   };
 
   return (
@@ -137,6 +180,41 @@ export default function OwnerLogin() {
           </p>
         </div>
       </div>
+
+      {/* Two-step verification prompt — shown when /login responds with requires_2fa */}
+      {twoFa && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl">
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3"><Shield size={26} className="text-emerald-500" /></div>
+              <h2 className="text-xl font-extrabold text-gray-900">{t('auth.twoStepTitle','Two-step verification')}</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {twoFa.method === 'email'
+                  ? t('auth.twoStepEmailHelp','We sent a 6-digit code to {{m}}. Enter it below to finish signing in.').replace('{{m}}', twoFa.masked)
+                  : t('auth.twoStepWaHelp','We sent a 6-digit code to your WhatsApp ({{m}}). Enter it below to finish signing in.').replace('{{m}}', twoFa.masked)}
+              </p>
+            </div>
+            <input
+              autoFocus
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={twoFaCode}
+              onChange={(e) => setTwoFaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onKeyDown={(e) => e.key === 'Enter' && verifyTwoFa()}
+              className="input-field text-center text-3xl tracking-[0.6em] font-mono mb-3"
+              placeholder="------"
+            />
+            <button onClick={verifyTwoFa} disabled={twoFaLoading || twoFaCode.length !== 6} className="btn-primary w-full !py-3.5 mb-2 disabled:opacity-50">
+              {twoFaLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : t('auth.verifyAndContinue','Verify & continue')}
+            </button>
+            <div className="flex items-center justify-between text-xs">
+              <button onClick={() => { setTwoFa(null); setTwoFaCode(''); }} className="text-gray-500 hover:underline">{t('auth.cancel','Cancel')}</button>
+              <button onClick={resendTwoFa} className="text-brand-600 font-bold hover:underline flex items-center gap-1"><RefreshCw size={11} />{t('auth.resendCode','Resend code')}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Multi-store picker shown right after login for owners with 2+ stores */}
       {storePicker && (

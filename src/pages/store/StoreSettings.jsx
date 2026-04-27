@@ -692,7 +692,51 @@ export default function StoreSettings(){
   const saveProfile=async()=>{setProfileLoading(true);try{await ownerApi.updateProfile({full_name:profile.full_name,phone:profile.phone});toast.success(t('storePage.profileUpdated','Profile updated!'));}catch{toast.error(t('storePage.failed','Failed'));}setProfileLoading(false);};
   const saveUsername=async()=>{try{await ownerApi.updateUsername({username:newUsername});setProfile({...profile,username:newUsername});setUsernameEdit(false);toast.success(t('storePage.usernameUpdated','Username updated!'));}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
   const saveEmail=async()=>{try{await ownerApi.updateEmail({email:newEmail,password:emailPw});setProfile({...profile,email:newEmail});setEmailEdit(false);setEmailPw('');toast.success(t('storePage.emailUpdated','Email updated!'));}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
-  const changePassword=async()=>{if(pwForm.new_password!==pwForm.confirm_password)return toast.error(t('storePage.passwordsDontMatch','Passwords do not match'));try{await ownerApi.updatePassword({current_password:pwForm.current_password,new_password:pwForm.new_password});setPwForm({current_password:'',new_password:'',confirm_password:''});setShowPwSection(false);toast.success(t('storePage.passwordUpdated','Password updated!'));}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
+  // Two-step verification challenge for sensitive actions (password change /
+  // disabling 2FA / changing the 2FA method while it's already on).
+  const[twoFaChallenge,setTwoFaChallenge]=useState(null); // {purpose, otp_token, method, masked, code, working}
+  const requestTwoFa=async(purpose,onSuccessPayload)=>{
+    try{
+      const url=purpose==='password_change'?'/owner/password/request-2fa':'/owner/two-fa/request-2fa';
+      const{data}=await api.post(url);
+      setTwoFaChallenge({purpose,otp_token:data.otp_token,method:data.method,masked:data.masked,code:'',working:false,onSuccessPayload});
+      toast.success(`Code sent to your ${data.method==='email'?'email':'WhatsApp'}`);
+    }catch(e){toast.error(e?.response?.data?.error||'Failed to send code');}
+  };
+  const submitTwoFa=async()=>{
+    const ch=twoFaChallenge;if(!ch||ch.code.length<6)return toast.error('Enter the 6-digit code');
+    setTwoFaChallenge({...ch,working:true});
+    try{
+      if(ch.purpose==='password_change'){
+        await ownerApi.updatePassword({current_password:pwForm.current_password,new_password:pwForm.new_password,otp_token:ch.otp_token,code:ch.code});
+        setPwForm({current_password:'',new_password:'',confirm_password:''});
+        setShowPwSection(false);
+        toast.success(t('storePage.passwordUpdated','Password updated!'));
+      } else if(ch.purpose==='two_fa_change'){
+        const payload=ch.onSuccessPayload||{};
+        await ownerApi.update2FA({...payload,otp_token:ch.otp_token,code:ch.code});
+        setProfile(p=>({...p,...payload}));
+        toast.success(payload.enabled===false?t('storePage.twoFaDisabled','Two-step verification disabled'):t('storePage.twoFaSettingsSaved','Two-step verification settings saved'));
+      }
+      setTwoFaChallenge(null);
+    }catch(e){
+      toast.error(e?.response?.data?.error||'Verification failed');
+      setTwoFaChallenge(p=>p?{...p,working:false}:null);
+    }
+  };
+  const changePassword=async()=>{
+    if(pwForm.new_password!==pwForm.confirm_password)return toast.error(t('storePage.passwordsDontMatch','Passwords do not match'));
+    if(profile.two_fa_enabled){
+      // Send a code first, then prompt the admin for it before saving.
+      return requestTwoFa('password_change');
+    }
+    try{
+      await ownerApi.updatePassword({current_password:pwForm.current_password,new_password:pwForm.new_password});
+      setPwForm({current_password:'',new_password:'',confirm_password:''});
+      setShowPwSection(false);
+      toast.success(t('storePage.passwordUpdated','Password updated!'));
+    }catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}
+  };
   const deleteAccount=async()=>{try{await ownerApi.deleteAccount({password:deletePw});toast.success(t('storePage.accountDeleted','Account deleted'));logout();window.location.href='/';}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
 
   const T=({label,desc,checked,onChange})=>(<label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"><div><p className="font-medium text-sm text-gray-800">{label}</p>{desc&&<p className="text-xs text-gray-400 mt-0.5">{desc}</p>}</div><div className={`w-11 h-6 rounded-full transition-colors ${checked?'bg-brand-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${checked?'translate-x-5':'translate-x-0.5'}`}/></div><input type="checkbox" className="sr-only" checked={checked||false} onChange={onChange}/></label>);
@@ -1003,10 +1047,19 @@ export default function StoreSettings(){
       </div>
     )}
     <button onClick={async()=>{
+      // Reload current 2FA state from server before deciding flow.
+      let serverState={two_fa_enabled:!!profile.two_fa_enabled,two_fa_method:profile.two_fa_method||'whatsapp'};
+      try{const{data}=await ownerApi.getProfile();serverState={two_fa_enabled:!!data.two_fa_enabled,two_fa_method:data.two_fa_method||'whatsapp'};}catch{}
+      const wantEnabled=!!profile.two_fa_enabled;
+      const wantMethod=profile.two_fa_method||'whatsapp';
+      const needsCode=serverState.two_fa_enabled && (!wantEnabled || serverState.two_fa_method!==wantMethod);
+      if(needsCode){
+        // Send a code via the currently configured channel and prompt the admin.
+        return requestTwoFa('two_fa_change',{enabled:wantEnabled,method:wantMethod});
+      }
       try{
-        const{ownerApi}=await import('../../utils/api');
-        await ownerApi.update2FA({enabled:!!profile.two_fa_enabled,method:profile.two_fa_method||'whatsapp'});
-        toast.success(profile.two_fa_enabled?t('storePage.twoFaEnabled','Two-step verification enabled'):t('storePage.twoFaDisabled','Two-step verification disabled'));
+        await ownerApi.update2FA({enabled:wantEnabled,method:wantMethod});
+        toast.success(wantEnabled?t('storePage.twoFaEnabled','Two-step verification enabled'):t('storePage.twoFaDisabled','Two-step verification disabled'));
       }catch(e){toast.error(e?.response?.data?.error||t('storePage.failed','Failed'));}
     }} className="btn-primary text-xs w-full">{t('storePage.saveTwoStep','Save security settings')}</button>
   </div>
@@ -1332,6 +1385,49 @@ export default function StoreSettings(){
           <div className="flex gap-2 mt-5">
             <button onClick={()=>setSfStorePickerOpen(false)} className="btn-ghost flex-1">{t('storePage.cancel','Cancel')}</button>
             <button onClick={()=>setSfStorePickerOpen(false)} className="btn-primary flex-1">{t('storePage.done','Done')}</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Two-step verification challenge modal — shared by password change and
+        2FA disable / method-swap. The admin can't dismiss without entering
+        the code (or pressing Cancel which leaves settings unchanged). */}
+    {twoFaChallenge && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={()=>!twoFaChallenge.working&&setTwoFaChallenge(null)}>
+        <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="text-center mb-5">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3"><Shield size={26} className="text-emerald-500" /></div>
+            <h2 className="text-xl font-extrabold text-gray-900">{twoFaChallenge.purpose==='password_change'?t('storePage.confirmPasswordChange','Confirm password change'):t('storePage.confirmTwoFaChange','Confirm security change')}</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {twoFaChallenge.method==='email'
+                ? t('storePage.codeSentEmail','We sent a 6-digit code to {{m}}. Enter it to continue.').replace('{{m}}',twoFaChallenge.masked)
+                : t('storePage.codeSentWa','We sent a 6-digit code to your WhatsApp ({{m}}). Enter it to continue.').replace('{{m}}',twoFaChallenge.masked)}
+            </p>
+          </div>
+          <input
+            autoFocus
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            value={twoFaChallenge.code}
+            onChange={(e)=>setTwoFaChallenge({...twoFaChallenge,code:e.target.value.replace(/\D/g,'').slice(0,6)})}
+            onKeyDown={(e)=>e.key==='Enter'&&submitTwoFa()}
+            className="input-field text-center text-3xl tracking-[0.6em] font-mono mb-3"
+            placeholder="------"
+          />
+          <button onClick={submitTwoFa} disabled={twoFaChallenge.working||twoFaChallenge.code.length!==6} className="btn-primary w-full !py-3.5 mb-2 disabled:opacity-50">
+            {twoFaChallenge.working?<div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>:t('storePage.verifyAndContinue','Verify & continue')}
+          </button>
+          <div className="flex items-center justify-between text-xs">
+            <button onClick={()=>setTwoFaChallenge(null)} disabled={twoFaChallenge.working} className="text-gray-500 hover:underline disabled:opacity-50">{t('storePage.cancel','Cancel')}</button>
+            <button onClick={async()=>{
+              try{const url=twoFaChallenge.purpose==='password_change'?'/owner/password/request-2fa':'/owner/two-fa/request-2fa';
+                const{data}=await api.post(url);
+                setTwoFaChallenge({...twoFaChallenge,otp_token:data.otp_token,method:data.method,masked:data.masked,code:''});
+                toast.success(t('storePage.codeResent','Code resent'));
+              }catch(e){toast.error(e?.response?.data?.error||'Failed to resend');}
+            }} className="text-brand-600 font-bold hover:underline flex items-center gap-1"><RefreshCw size={11}/>{t('storePage.resendCode','Resend code')}</button>
           </div>
         </div>
       </div>
