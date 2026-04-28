@@ -855,10 +855,20 @@ export default function StoreApps() {
             const Icon = app.icon;
             const installed = isInstalled(app.slug);
             const colors = badgeColors[app.badge] || badgeColors.brand;
+            const busy = installing === app.slug;
+            // Activate / Deactivate handler — `handleInstall` toggles the
+            // app's is_active flag on the backend, so the same call works
+            // for both directions. Stop propagation so clicking the button
+            // doesn't also open the configure drawer.
+            const onToggle = (e) => {
+              e.stopPropagation();
+              if (app.comingSoon || busy) return;
+              handleInstall(app);
+            };
             return (
-              <button
+              <div
                 key={app.slug}
-                onClick={() => (app.slug==='whatsapp-recovery'||app.slug==='whatsapp-status')?setShowWaConfig(true):setTestPanel(app.slug)}
+                onClick={() => { if (app.comingSoon) return; (app.slug==='whatsapp-recovery'||app.slug==='whatsapp-status')?setShowWaConfig(true):setTestPanel(app.slug); }}
                 className={`glass-card-solid p-5 transition-all text-left w-full cursor-pointer hover:ring-2 ${app.colorHover} hover:shadow-lg ${installed ? 'ring-2 ' + colors.ring + ' bg-white' : ''} ${app.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-start gap-4">
@@ -870,15 +880,29 @@ export default function StoreApps() {
                       <h3 className="font-bold text-gray-900 text-sm truncate">{app.name}</h3>
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-2">{app.desc}</p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {installed && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">{t('storePage.active','ACTIVE')}</span>}
                       {!installed && !app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-500">{t('storePage.inactive','INACTIVE')}</span>}
                       {app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">{t('storePage.soon','SOON')}</span>}
+                      {/* Explicit Activate / Deactivate button right on the
+                          card so the admin doesn't need to open the modal
+                          just to flip the switch. */}
+                      {!app.comingSoon && (
+                        <button
+                          type="button"
+                          onClick={onToggle}
+                          disabled={busy}
+                          className={`ml-auto px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 ${installed ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200' : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'}`}
+                        >
+                          {busy ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"/> : (installed ? <span>●</span> : <span>○</span>)}
+                          {busy ? t('storePage.saving','Saving') : installed ? t('storePage.deactivateBtn','Deactivate') : t('storePage.activateBtn','Activate')}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-300 shrink-0 mt-1"/>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
