@@ -1667,35 +1667,54 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
       </button>
       {open && anchor && createPortal(
         <>
-          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[100] bg-black/40 sm:bg-transparent" onClick={() => setOpen(false)} />
+          {/* On mobile: bottom-sheet layout (full width, fixed at bottom, ~85vh)
+              so the user can comfortably scroll through every available column.
+              On sm+: anchored dropdown next to the Columns button. */}
           <div
-            className="fixed bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto z-[101]"
-            style={{ top: anchor.top, right: anchor.right, width: Math.min(288, window.innerWidth - 16) }}
+            className="fixed bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 z-[101] flex flex-col
+              inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto
+              rounded-t-3xl sm:rounded-2xl
+              max-h-[85vh] sm:max-h-[70vh]"
+            style={
+              window.innerWidth >= 640
+                ? { top: anchor.top, right: anchor.right, width: Math.min(288, window.innerWidth - 16) }
+                : undefined
+            }
+            onClick={e => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white dark:bg-gray-900 p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-              <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Customize Columns</p>
-              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={14} /></button>
+            <div className="sticky top-0 bg-white dark:bg-gray-900 p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+              {/* Drag-handle on mobile to indicate it's a bottom sheet */}
+              <span className="absolute left-1/2 -translate-x-1/2 top-1.5 w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600 sm:hidden"/>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mt-1 sm:mt-0">Customize Columns</p>
+              <button onClick={() => setOpen(false)} className="w-8 h-8 sm:w-auto sm:h-auto flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={16} /></button>
             </div>
-            <div className="p-2">
+            <div className="p-2 overflow-y-auto flex-1 overscroll-contain">
+              <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Active ({activeColumns.length})</p>
               {activeColumns.map((key, idx) => {
                 const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
                 return (
                   <div key={key} className="flex items-center gap-2 px-2 py-2 mb-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <GripVertical size={12} className="text-gray-300 dark:text-gray-500" />
-                    <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-5 h-5 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={10} /></button>
-                    <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-5 h-5 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={10} /></button>
+                    <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={12} /></button>
+                    <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={12} /></button>
                     <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{col.label}</span>
-                    <button onClick={() => toggleColumn(key)} className="text-emerald-500 hover:text-emerald-700"><Eye size={12} /></button>
+                    <button onClick={() => toggleColumn(key)} title="Hide" className="w-7 h-7 flex items-center justify-center rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Eye size={13} /></button>
                   </div>
                 );
               })}
               <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
+              <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Available</p>
               {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
-                <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-left">
-                  <Square size={12} className="text-gray-300 dark:text-gray-500" />
-                  <span className="text-xs text-gray-600 dark:text-gray-400 flex-1 truncate">{col.label}</span>
+                <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-left">
+                  <Square size={14} className="text-gray-300 dark:text-gray-500" />
+                  <span className="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate">{col.label}</span>
+                  <Plus size={13} className="text-brand-500"/>
                 </button>
               ))}
+              {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).length === 0 && (
+                <p className="px-2 py-3 text-[11px] text-gray-400 text-center">All columns are visible.</p>
+              )}
             </div>
           </div>
         </>,

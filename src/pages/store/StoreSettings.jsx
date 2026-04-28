@@ -499,14 +499,22 @@ function highlightedPerms(perms) {
 // ─────────────────────────────────────────────────────────────────────────────
 function UsersActivityLog({ storeId, isDark, t }) {
   const [entries, setEntries] = useState([]);
+  const [summary, setSummary] = useState([]);
+  const [view, setView] = useState('feed'); // 'feed' | 'payroll'
+  const [range, setRange] = useState('week'); // 'day' | 'week' | 'month'
+  const [expandedUser, setExpandedUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(true);
   const load = React.useCallback(async () => {
     if (!storeId) return;
     try {
       const { default: api } = await import('../../utils/api');
-      const { data } = await api.get(`/owner/stores/${storeId}/activity-log?limit=30`);
-      setEntries(data?.entries || []);
+      const [{ data: feed }, { data: sum }] = await Promise.all([
+        api.get(`/owner/stores/${storeId}/activity-log?limit=30`),
+        api.get(`/owner/stores/${storeId}/activity-log/summary`).catch(() => ({ data: { users: [] } })),
+      ]);
+      setEntries(feed?.entries || []);
+      setSummary(sum?.users || []);
     } catch {} finally { setLoading(false); }
   }, [storeId]);
   useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, [load]);
@@ -526,20 +534,86 @@ function UsersActivityLog({ storeId, isDark, t }) {
 
   return (
     <div className={`glass-card-solid p-4 sm:p-6 mb-4 ${isDark ? 'bg-gray-900' : ''}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg">📋</div>
-          <div>
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg shrink-0">📋</div>
+          <div className="min-w-0">
             <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Activity Log</p>
-            <p className="text-[11px] text-gray-400">Latest actions by your team</p>
+            <p className="text-[11px] text-gray-400 truncate">{view === 'feed' ? 'Latest actions by your team' : 'Per-user totals — use this for payroll'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* View switch: feed (raw entries) vs payroll (per-user totals) */}
+          <div className={`flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+            <button onClick={() => setView('feed')} className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${view === 'feed' ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 shadow-sm') : 'text-gray-500'}`}>Feed</button>
+            <button onClick={() => setView('payroll')} className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${view === 'payroll' ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 shadow-sm') : 'text-gray-500'}`}>Per User</button>
+          </div>
           <button onClick={load} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={13} /></button>
           <button onClick={() => setOpen(o => !o)} className="text-[11px] text-brand-500 font-bold hover:underline">{open ? 'Hide' : 'Show'}</button>
         </div>
       </div>
-      {open && (
+      {open && view === 'payroll' && (
+        loading ? (
+          <p className="text-xs text-gray-400 py-4 text-center">Loading…</p>
+        ) : summary.length === 0 ? (
+          <p className="text-xs text-gray-400 py-6 text-center">No team activity yet.</p>
+        ) : (
+          <div>
+            {/* Time-window selector for the count column */}
+            <div className="flex items-center gap-1 mb-3 text-[11px]">
+              <span className="text-gray-400 font-bold uppercase mr-1">Range:</span>
+              {[{k:'day',l:'Today'},{k:'week',l:'This week'},{k:'month',l:'This month'}].map(r => (
+                <button key={r.k} onClick={() => setRange(r.k)} className={`px-2 py-1 rounded-md font-bold transition-all ${range === r.k ? 'bg-brand-500 text-white' : (isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>{r.l}</button>
+              ))}
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {summary.map(u => {
+                const total = u[range] || 0;
+                const rolled = Object.entries(u.by_action || {}).filter(([, v]) => (v[range] || 0) > 0).sort((a, b) => (b[1][range] || 0) - (a[1][range] || 0));
+                const exp = expandedUser === u.actor_id;
+                const fmt = (a) => (a || '').replace(/_/g, ' ');
+                return (
+                  <div key={u.actor_id} className={`rounded-2xl border ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-gray-50'} overflow-hidden`}>
+                    <button onClick={() => setExpandedUser(exp ? null : u.actor_id)} className="w-full flex items-center gap-3 p-3 hover:bg-white/30 dark:hover:bg-white/5 text-left">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(u.actor_name || '?')[0]?.toUpperCase()}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'} truncate`}>{u.actor_name}</p>
+                        <p className="text-[10px] text-gray-400 truncate">{u.actor_role || 'Team member'}{u.last_at ? ` · last active ${new Date(u.last_at).toLocaleString()}` : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-gray-900'}`}>{total}</p>
+                          <p className="text-[9px] text-gray-400 uppercase">{range==='day'?'today':range==='week'?'this week':'this month'}</p>
+                        </div>
+                        <div className="hidden sm:flex flex-col items-end gap-0.5 text-[10px] text-gray-400">
+                          <span><b className={isDark?'text-gray-300':'text-gray-700'}>{u.day}</b> day</span>
+                          <span><b className={isDark?'text-gray-300':'text-gray-700'}>{u.week}</b> week</span>
+                          <span><b className={isDark?'text-gray-300':'text-gray-700'}>{u.month}</b> month</span>
+                        </div>
+                        <ChevronRight size={14} className={`text-gray-400 transition-transform ${exp?'rotate-90':''}`}/>
+                      </div>
+                    </button>
+                    {exp && rolled.length > 0 && (
+                      <div className={`px-3 pb-3 pt-1 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Action breakdown ({range})</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {rolled.map(([action, counts]) => (
+                            <div key={action} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-white dark:bg-gray-900 text-[11px]">
+                              <span className={isDark?'text-gray-300':'text-gray-700'}>{fmt(action)}</span>
+                              <span className="font-mono font-bold text-brand-500">×{counts[range] || 0}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      )}
+      {open && view === 'feed' && (
         loading ? (
           <p className="text-xs text-gray-400 py-4 text-center">Loading…</p>
         ) : entries.length === 0 ? (
@@ -750,17 +824,20 @@ export default function StoreSettings(){
         <h1 className="page-header text-xl mb-4">{t('sidebar.settings')}</h1>
         <p className="text-xs text-gray-400 mb-4">{t('storePage.mobileSettingsHint','Tap any setting to open its dedicated page.')}</p>
         <div className="space-y-2">{secs.map(x=>{const I=x.icon;return(
-          <button key={x.id} onClick={()=>setSec(x.id)} className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 hover:border-brand-300 active:bg-brand-50 transition-all shadow-sm">
-            <div className="flex items-center gap-3 min-w-0"><div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><I size={20} className="text-brand-500"/></div><span className="font-bold text-gray-800 text-sm text-left truncate">{x.l}</span></div>
+          <button key={x.id} onClick={()=>setSec(x.id)} className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all shadow-sm ${settingsIsDark?'bg-gray-800 border-gray-700 hover:border-brand-500 active:bg-gray-700':'bg-white border-gray-100 hover:border-brand-300 active:bg-brand-50'}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${settingsIsDark?'bg-brand-500/15':'bg-brand-50'}`}><I size={20} className="text-brand-500"/></div>
+              <span className={`font-bold text-sm text-left truncate ${settingsIsDark?'text-gray-100':'text-gray-800'}`}>{x.l}</span>
+            </div>
             <ChevronRight size={18} className="text-gray-400 shrink-0"/>
           </button>
         );})}</div>
       </div>
     ):(<>
     {isMobile?(
-      <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 mb-4 bg-gray-50/95 backdrop-blur-sm border-b border-gray-100 flex items-center gap-2">
-        <button onClick={()=>setSec('')} className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shrink-0 hover:bg-gray-50 active:scale-95 transition-all"><ChevronLeft size={18}/></button>
-        <h1 className="font-black text-base flex-1 truncate">{activeSec?.l||t('sidebar.settings')}</h1>
+      <div className={`sticky top-0 z-20 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 mb-4 backdrop-blur-sm border-b flex items-center gap-2 ${settingsIsDark?'bg-gray-900/95 border-gray-800':'bg-gray-50/95 border-gray-100'}`}>
+        <button onClick={()=>setSec('')} className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 active:scale-95 transition-all ${settingsIsDark?'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700':'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><ChevronLeft size={18}/></button>
+        <h1 className={`font-black text-base flex-1 truncate ${settingsIsDark?'text-white':'text-gray-900'}`}>{activeSec?.l||t('sidebar.settings')}</h1>
         <button onClick={save} disabled={loading} className="btn-primary flex items-center gap-1.5 text-xs !px-3 !py-2 shrink-0">{loading?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={14}/>}Save</button>
       </div>
     ):(

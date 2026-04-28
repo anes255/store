@@ -30,7 +30,23 @@ const PRESETS=[
     create_body_template:'{"reference":"{order_id}","client":"{customer_name}","phone":"{customer_phone}","adresse":"{shipping_address}","wilaya_id":"{wilaya_code}","commune":"{shipping_city}","montant":"{total}","remarque":"{notes}","produit":"{product_list}","type_id":1,"poids":{weight},"stop_desk":{is_stopdesk_int},"stock":0,"quantite":{item_count}}'},
   {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/get/tracking/{tracking_number}',api_status_path:'data.0.activity.0.event',headers:['api-token','api-secret'],query_params:[],help:'ecotrack.dz → Dashboard → API → copy api-token and api-secret (both required)',verified:true},
   {name:'Yassir Express',logo:'Y',color:'from-fuchsia-500 to-purple-600',api_base_url:'https://logistics.yassir.com/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/deliveries/{tracking_number}',api_status_path:'data.status',headers:['Authorization','X-Partner-ID'],query_params:[],help:'Yassir Express partner portal → API → copy Authorization (Bearer <token>) and Partner ID',verified:false},
-  {name:'DHD Logistics',logo:'D',color:'from-sky-500 to-blue-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'DHD has no public API yet — keep MANUAL or paste tracking URL only',verified:false,manual_only:true},
+  // ─── DHD (Procolis-compatible) ──────────────────────────────────────────
+  // Public API: https://procolis.com/api_v1 (DHD uses the Procolis backend
+  // and lets agents pick a host; the partner portal lists the exact base
+  // URL for each merchant). Auth is two header fields: token + key.
+  {name:'DHD Livraison',logo:'D',color:'from-sky-500 to-blue-600',
+    api_base_url:'https://procolis.com/api_v1',
+    api_auth_type:'custom_headers',
+    api_tracking_endpoint:'/lire/{tracking_number}',
+    api_status_path:'data.0.Situation',
+    headers:['token','key'],query_params:[],
+    help:'DHD/Procolis partner portal → API → copy "token" and "key" (both required). If your DHD account uses a different base URL, edit it below.',
+    verified:true,
+    create_endpoint:'/add_colis',
+    create_method:'POST',
+    create_tracking_path:'data.0.Tracking',
+    // Procolis expects a Colis array. We send a single colis per order.
+    create_body_template:'{"Colis":[{"Tracking":"{order_id}","TypeLivraison":"{is_stopdesk_int}","TypeColis":"0","Confrimee":"","Client":"{customer_name}","MobileA":"{customer_phone}","MobileB":"","Adresse":"{shipping_address}","IDWilaya":"{wilaya_code}","Commune":"{shipping_city}","Total":"{total}","Note":"{notes}","TProduit":"{product_list}","id_Externe":"{order_id}","Source":""}]}'},
   {name:'Aramex',logo:'A',color:'from-red-600 to-red-500',api_base_url:'https://ws.aramex.net/ShippingAPI.V2/Tracking/Service_1_0.svc',api_auth_type:'custom_headers',api_tracking_endpoint:'/json/TrackShipments',api_status_path:'TrackingResults.0.Value.0.UpdateDescription',headers:['UserName','Password','AccountNumber','AccountPin','AccountEntity','AccountCountryCode'],query_params:[],help:'aramex.com → MyAramex → Developer → SOAP/JSON credentials (all 6 required)',verified:true,method:'POST',body_template:'{"ClientInfo":{"UserName":"{UserName}","Password":"{Password}","Version":"v1.0","AccountNumber":"{AccountNumber}","AccountPin":"{AccountPin}","AccountEntity":"{AccountEntity}","AccountCountryCode":"{AccountCountryCode}"},"Shipments":["{tracking_number}"]}'},
   {name:'DHL Express',logo:'D',color:'from-yellow-400 to-yellow-600',api_base_url:'https://api-eu.dhl.com/track/shipments',api_auth_type:'custom_headers',api_tracking_endpoint:'?trackingNumber={tracking_number}',api_status_path:'shipments.0.status.description',headers:['DHL-API-Key'],query_params:[],help:'developer.dhl.com → My DHL API → Track and Trace → copy DHL-API-Key',verified:true},
   {name:'FedEx',logo:'F',color:'from-purple-600 to-indigo-600',api_base_url:'https://apis.fedex.com',api_auth_type:'oauth2',api_tracking_endpoint:'/track/v1/trackingnumbers',api_status_path:'output.completeTrackResults.0.trackResults.0.latestStatusDetail.description',headers:[],query_params:[],oauth2_token_url:'https://apis.fedex.com/oauth/token',headers_oauth2:['client_id','client_secret'],help:'developer.fedex.com → My Projects → copy client_id and client_secret (system fetches the OAuth token automatically)',verified:true,method:'POST',body_template:'{"trackingInfo":[{"trackingNumberInfo":{"trackingNumber":"{tracking_number}"}}],"includeDetailedScans":false}'},

@@ -180,8 +180,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.customer_name) return toast.error(t('checkout.errName', 'Please enter your name'));
     if (!form.customer_phone) return toast.error(t('checkout.errPhone', 'Please enter your phone number'));
     if (!isValidAlgerianPhone(form.customer_phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
-    if (!form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
-    if (!/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
+    // Email is only required when the admin enabled "Email Collection" in
+    // Settings → Checkout. If the toggle is off (or the field is hidden),
+    // skip the requirement entirely. Format check still applies if filled.
+    const emailRequired = store?.checkout_email === true;
+    if (emailRequired && !form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
+    if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
     if (!form.shipping_address) return toast.error(t('checkout.errAddress', 'Please enter your shipping address'));
     if (!form.shipping_wilaya) return toast.error(t('checkout.errWilaya', 'Please choose your wilaya'));
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
@@ -451,22 +455,23 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   </div>
                 </div>
 
-                {/* Desk vs Home delivery toggle */}
+                {/* Desk vs Home delivery toggle. On mobile we stack the cards
+                    so the emoji + label + price never run out of room. */}
                 {selectedWilayaData && (
                   <div>
                     <label className="input-label mb-2">{t('checkout.deliveryType','Delivery Type')} *</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
                         { key: 'desk', label: t('checkout.deskDelivery','Desk / Relay Point'), price: parseFloat(selectedWilayaData.desk_delivery_price)||0, icon: '🏢' },
                         { key: 'home', label: t('checkout.homeDelivery','Home Delivery'), price: parseFloat(selectedWilayaData.home_delivery_price)||0, icon: '🏠' },
                       ].map(dt => {
                         const sel = form.shipping_type === dt.key;
                         return (
-                          <label key={dt.key} className={`flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
+                          <label key={dt.key} className={`flex items-center gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
                             <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => setForm(prev => ({ ...prev, shipping_type: dt.key }))} className="sr-only"/>
-                            <span className="text-xl">{dt.icon}</span>
-                            <div className="flex-1">
-                              <p className="font-bold text-sm text-gray-800">{dt.label}</p>
+                            <span className="text-xl shrink-0">{dt.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-gray-800 truncate">{dt.label}</p>
                               <p className="text-xs text-gray-400">1-3 {t('checkout.days','days')}</p>
                             </div>
                             <span className="font-extrabold text-sm" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
