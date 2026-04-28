@@ -20,14 +20,16 @@ const DEFAULT_STATUS_COLORS = {
   returned: 'bg-gray-600/40 text-gray-300',
 };
 
-// Visual pipeline steps (order-level lifecycle)
+// Visual pipeline steps (order-level lifecycle). Labels are looked up via
+// i18n at render time using these keys → falls back to the English defaults
+// when a translation is missing.
 const PIPELINE = [
-  { key: 'new_order', icon: Hash, defaultLabel: 'New' },
-  { key: 'confirmed', icon: Check, defaultLabel: 'Confirmed' },
-  { key: 'preparing', icon: Box, defaultLabel: 'Preparing' },
-  { key: 'ready', icon: Package, defaultLabel: 'Ready' },
-  { key: 'shipped', icon: Truck, defaultLabel: 'Shipped' },
-  { key: 'delivered', icon: Home, defaultLabel: 'Delivered' },
+  { key: 'new_order', icon: Hash,    defaultLabel: 'New',       i18n: 'track.stepNew' },
+  { key: 'confirmed', icon: Check,   defaultLabel: 'Confirmed', i18n: 'track.stepConfirmed' },
+  { key: 'preparing', icon: Box,     defaultLabel: 'Preparing', i18n: 'track.stepPreparing' },
+  { key: 'ready',     icon: Package, defaultLabel: 'Ready',     i18n: 'track.stepReady' },
+  { key: 'shipped',   icon: Truck,   defaultLabel: 'Shipped',   i18n: 'track.stepShipped' },
+  { key: 'delivered', icon: Home,    defaultLabel: 'Delivered', i18n: 'track.stepDelivered' },
 ];
 const FAIL = ['cancelled', 'returned', 'delivery_failed'];
 function stepIndexFor(status) {
@@ -117,7 +119,50 @@ export default function TrackOrder() {
     setLoading(false);
   };
 
-  const statusLabel = (s) => statusMap[s]?.label || (s || '').replace(/_/g, ' ');
+  // Order status pretty label: prefer the merchant's per-status template,
+  // then a built-in i18n key, then a humanised fallback of the raw status.
+  const STATUS_I18N = {
+    new_order: ['track.statusNewOrder','New Order'],
+    pending: ['track.statusPending','Pending'],
+    confirmed: ['track.statusConfirmed','Confirmed'],
+    preparing: ['track.statusPreparing','Preparing'],
+    under_preparation: ['track.statusPreparing','Preparing'],
+    ready: ['track.statusReady','Ready'],
+    shipped: ['track.statusShipped','Shipped'],
+    out_for_delivery: ['track.statusOutForDelivery','Out for delivery'],
+    in_transit: ['track.statusInTransit','In transit'],
+    at_center: ['track.statusAtCenter','At delivery center'],
+    picked_up: ['track.statusPickedUp','Picked up'],
+    awaiting_pickup: ['track.statusAwaitingPickup','Awaiting pickup'],
+    delivered: ['track.statusDelivered','Delivered'],
+    cancelled: ['track.statusCancelled','Cancelled'],
+    returned: ['track.statusReturned','Returned'],
+    delivery_failed: ['track.statusDeliveryFailed','Delivery failed'],
+    failed_call_1: ['track.statusFailedCall1','Call failed (1)'],
+    failed_call_2: ['track.statusFailedCall2','Call failed (2)'],
+    failed_call_3: ['track.statusFailedCall3','Call failed (3)'],
+  };
+  const statusLabel = (s) => {
+    if (statusMap[s]?.label) return statusMap[s].label;
+    const k = STATUS_I18N[s];
+    if (k) return t(k[0], k[1]);
+    return (s || '').replace(/_/g, ' ');
+  };
+  const PAYMENT_LABEL = {
+    cod: t('track.paymentCod','Cash on delivery'),
+    ccp: t('track.paymentCcp','CCP'),
+    baridimob: t('track.paymentBaridiPay','BaridiPay'),
+    bank_transfer: t('track.paymentBank','Bank transfer'),
+    chargily: t('track.paymentChargily','Card (Chargily)'),
+  };
+  const paymentLabel = (m) => PAYMENT_LABEL[m] || (m || 'cod').replace(/_/g,' ');
+  const PAYMENT_STATUS_LABEL = {
+    paid: t('track.paid','Paid'),
+    unpaid: t('track.unpaid','Unpaid'),
+    pending: t('track.pending','Pending'),
+    refunded: t('track.refunded','Refunded'),
+  };
+  const paymentStatusLabel = (s) => PAYMENT_STATUS_LABEL[s] || s || PAYMENT_STATUS_LABEL.unpaid;
   const statusChipStyle = (s) => {
     const cfg = statusMap[s];
     if (cfg?.color) return { backgroundColor: cfg.color + '33', color: cfg.color };
@@ -261,7 +306,7 @@ export default function TrackOrder() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
-                      {store.tracking_show_payment && <span className="uppercase flex items-center gap-1"><CreditCard size={10} />{(o.payment_method || 'cod').replace('_', ' ')}</span>}
+                      {store.tracking_show_payment && <span className="flex items-center gap-1"><CreditCard size={10} />{paymentLabel(o.payment_method)}</span>}
                       {store.tracking_show_items && items.length > 0 && <span className="flex items-center gap-1"><Package size={10} />{items.length} {items.length === 1 ? t('track.item', 'item') : t('track.items', 'items')}</span>}
                       {store.tracking_show_tracking_number && o.tracking_number && <span className="font-mono text-cyan-300 flex items-center gap-1"><Hash size={10} />{o.tracking_number}</span>}
                     </div>
@@ -289,7 +334,7 @@ export default function TrackOrder() {
                                   const done = i < idx;
                                   const active = i === idx;
                                   const cfg = statusMap[step.key];
-                                  const label = cfg?.label || step.defaultLabel;
+                                  const label = cfg?.label || t(step.i18n, step.defaultLabel);
                                   const color = active ? (cfg?.color || pc) : null;
                                   return (
                                     <div key={step.key} className="flex flex-col items-center flex-1 min-w-0">
@@ -350,7 +395,7 @@ export default function TrackOrder() {
                         {store.tracking_show_payment && (
                           <div className="rounded-xl bg-white/5 border border-white/5 p-3">
                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1"><Phone size={10} />{t('store.paymentContact', 'Payment & Contact')}</p>
-                            <p className="text-xs text-white/90 uppercase">{(o.payment_method || 'cod').replace('_', ' ')} · <span className={o.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}>{o.payment_status || 'unpaid'}</span></p>
+                            <p className="text-xs text-white/90">{paymentLabel(o.payment_method)} · <span className={o.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}>{paymentStatusLabel(o.payment_status)}</span></p>
                             <p className="text-[11px] text-gray-400 mt-1 font-mono">{o.customer_phone || ''}</p>
                             {o.customer_email && <p className="text-[11px] text-gray-400">{o.customer_email}</p>}
                           </div>

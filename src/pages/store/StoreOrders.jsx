@@ -269,6 +269,27 @@ export default function StoreOrders() {
     } catch { toast.error('Failed to save'); }
   };
 
+  // Dispatch order: create the parcel on the carrier's platform via API and
+  // save the returned tracking number. Status auto-flips to shipped server-side.
+  const dispatchOrder = async (orderId, deliveryCompanyId) => {
+    const tid = toast.loading(t('orders.pushingToCarrier','Pushing order to carrier…'));
+    try {
+      const { data } = await api.post(`/manage/stores/${currentStore.id}/orders/${orderId}/dispatch`, { delivery_company_id: deliveryCompanyId });
+      toast.dismiss(tid);
+      if (data?.tracking_number) toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
+      else toast.success(data?.message || t('orders.transferred','Order transferred'));
+      loadOrders();
+      if (selectedOrder?.id === orderId) { const { data: o } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(o); }
+    } catch (e) {
+      toast.dismiss(tid);
+      const carrier = e?.response?.data?.carrier_response;
+      const msg = e?.response?.data?.error || 'Carrier push failed';
+      const detail = carrier ? ' · ' + (typeof carrier === 'string' ? carrier.slice(0,80) : (carrier.message || carrier.error || JSON.stringify(carrier).slice(0,80))) : '';
+      toast.error(msg + detail, { duration: 7000 });
+      loadOrders();
+    }
+  };
+
   const filters = [
     { key: 'all',           label: 'All' },
     { key: 'new_order',     label: 'New' },
@@ -958,6 +979,7 @@ export default function StoreOrders() {
           onOpenFullDetail={() => { const id = quickAction.order.id; setQuickAction(null); viewOrder(id); }}
           onUpdateStatus={(status) => updateStatus(quickAction.order.id, status)}
           onSaveField={(patch) => saveOrderField(quickAction.order.id, patch)}
+          onDispatch={(dcId) => dispatchOrder(quickAction.order.id, dcId)}
           companies={companies}
           statusConfig={statusConfig}
           allStatuses={allStatuses}
@@ -1108,7 +1130,7 @@ export default function StoreOrders() {
 // ==========================================================================
 // Quick Action Drawer — one modal that switches on column type.
 // ==========================================================================
-function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, companies, statusConfig, allStatuses }) {
+function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, onDispatch, companies, statusConfig, allStatuses }) {
   const { t } = useTranslation();
   const { type, order: o } = action;
   const [localPatch, setLocalPatch] = useState({});
@@ -1229,19 +1251,18 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'transfer') {
-    // When the admin assigns a delivery company, also flip the order status
-    // to "shipped" via the dedicated status endpoint (which fires WhatsApp /
-    // email notifications). The PATCH only saves delivery_company_id.
-    const saveTransfer = () => {
+    // When the admin assigns a delivery company, push the order to the
+    // carrier's API (creating the parcel on their platform). The dispatch
+    // backend saves the tracking number it returns + flips status to shipped.
+    const saveTransfer = async () => {
       const patch = { ...localPatch };
       const newCompany = patch.delivery_company_id || o.delivery_company_id;
-      if (Object.keys(patch).length) onSaveField(patch);
-      // Status flip is deferred to the next tick so the company-id PATCH
-      // commits first; the status endpoint's notification logic reads the
-      // freshly-saved delivery_company_id when sending the WhatsApp template.
-      if (newCompany && o.status !== 'shipped') {
-        setTimeout(() => onUpdateStatus('shipped'), 250);
+      if (!newCompany) {
+        if (Object.keys(patch).length) onSaveField(patch);
+        onClose();
+        return;
       }
+      onDispatch?.(newCompany);
       onClose();
     };
     return wrap(
@@ -1251,12 +1272,12 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
           <option value="">— {t('orders.none','None')} —</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        {(localPatch.delivery_company_id || o.delivery_company_id) && o.status !== 'shipped' && (
-          <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
-            ℹ️ {t('orders.autoShippedNote','Saving will also mark this order as SHIPPED.')}
+        {(localPatch.delivery_company_id || o.delivery_company_id) && (
+          <p className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+            🚚 {t('orders.autoDispatchNote','Order will be created on the carrier\'s platform via API. Tracking number is saved automatically and status flips to SHIPPED.')}
           </p>
         )}
-        <button onClick={saveTransfer} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">{t('common.save','Save')}</button>
+        <button onClick={saveTransfer} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">{t('orders.transferAndPush','Transfer & push to carrier')}</button>
       </div>
     );
   }

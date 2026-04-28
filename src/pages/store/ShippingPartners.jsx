@@ -13,11 +13,21 @@ import React,{useState,useEffect} from'react';import{useTranslation}from'react-i
 // rendered as separate input fields in the modal.
 // ─────────────────────────────────────────────────────────────────────────────
 const PRESETS=[
-  {name:'Yalidine',logo:'Y',color:'from-yellow-500 to-orange-500',api_base_url:'https://api.yalidine.app/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/parcels/?tracking={tracking_number}',api_status_path:'data.0.last_status',headers:['X-API-ID','X-API-TOKEN'],query_params:[],help:'yalidine.app → Dashboard → Developers → copy API ID and API Token (both required)',verified:true},
-  {name:'ZR Express',logo:'Z',color:'from-blue-500 to-cyan-500',api_base_url:'https://procolis.com/api_v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/lire',api_status_path:'0.Situation',headers:['token','key'],query_params:[],help:'ZR Express runs on Procolis: dashboard → API → copy "token" and "key" (both required)',verified:true,method:'POST',body_template:'{"Colis":[{"Tracking":"{tracking_number}"}]}'},
-  {name:'Procolis',logo:'P',color:'from-indigo-500 to-blue-500',api_base_url:'https://procolis.com/api_v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/lire',api_status_path:'0.Situation',headers:['token','key'],query_params:[],help:'procolis.com → Account → API → copy "token" and "key" headers (both required)',verified:true,method:'POST',body_template:'{"Colis":[{"Tracking":"{tracking_number}"}]}'},
-  {name:'Maystro Delivery',logo:'M',color:'from-purple-500 to-pink-500',api_base_url:'https://backend.maystro-delivery.com/api/stores',api_auth_type:'token_prefix',api_tracking_endpoint:'/orders/?display_id={tracking_number}',api_status_path:'list.0.status_display',headers:[],query_params:[],help:'Maystro dashboard → Settings → API → copy your API Token (sent as "Authorization: Token <token>")',verified:true},
-  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/public/v1',api_auth_type:'query_params',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.last_situation',headers:[],query_params:['api_token','user_guid'],help:'NOEST partner portal → API → copy api_token and user_guid (both required)',verified:true},
+  {name:'Yalidine',logo:'Y',color:'from-yellow-500 to-orange-500',api_base_url:'https://api.yalidine.app/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/parcels/?tracking={tracking_number}',api_status_path:'data.0.last_status',headers:['X-API-ID','X-API-TOKEN'],query_params:[],help:'yalidine.app → Dashboard → Developers → copy API ID and API Token (both required)',verified:true,
+    create_endpoint:'/parcels/',create_method:'POST',create_tracking_path:'0.tracking',
+    create_body_template:'[{"order_id":"{order_id}","firstname":"{customer_firstname}","familyname":"{customer_lastname}","contact_phone":"{customer_phone}","address":"{shipping_address}","to_commune_name":"{shipping_city}","to_wilaya_name":"{shipping_wilaya}","product_list":"{product_list}","price":{total},"do_insurance":false,"declared_value":{total},"freeshipping":false,"is_stopdesk":{is_stopdesk},"has_exchange":0,"product_to_collect":null}]'},
+  {name:'ZR Express',logo:'Z',color:'from-blue-500 to-cyan-500',api_base_url:'https://procolis.com/api_v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/lire',api_status_path:'0.Situation',headers:['token','key'],query_params:[],help:'ZR Express runs on Procolis: dashboard → API → copy "token" and "key" (both required)',verified:true,method:'POST',body_template:'{"Colis":[{"Tracking":"{tracking_number}"}]}',
+    create_endpoint:'/add_colis',create_method:'POST',create_tracking_path:'Colis.0.Tracking',
+    create_body_template:'{"Colis":[{"Tracking":"{order_id}","TypeLivraison":"{is_stopdesk_int}","TypeColis":"0","Confrimee":"","Client":"{customer_name}","MobileA":"{customer_phone}","MobileB":"","Adresse":"{shipping_address}","IDWilaya":"{wilaya_code}","Commune":"{shipping_city}","Total":"{total}","Note":"{notes}","TProduit":"{product_list}","id_Externe":"{order_id}","Source":""}]}'},
+  {name:'Procolis',logo:'P',color:'from-indigo-500 to-blue-500',api_base_url:'https://procolis.com/api_v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/lire',api_status_path:'0.Situation',headers:['token','key'],query_params:[],help:'procolis.com → Account → API → copy "token" and "key" headers (both required)',verified:true,method:'POST',body_template:'{"Colis":[{"Tracking":"{tracking_number}"}]}',
+    create_endpoint:'/add_colis',create_method:'POST',create_tracking_path:'Colis.0.Tracking',
+    create_body_template:'{"Colis":[{"Tracking":"{order_id}","TypeLivraison":"{is_stopdesk_int}","TypeColis":"0","Confrimee":"","Client":"{customer_name}","MobileA":"{customer_phone}","MobileB":"","Adresse":"{shipping_address}","IDWilaya":"{wilaya_code}","Commune":"{shipping_city}","Total":"{total}","Note":"{notes}","TProduit":"{product_list}","id_Externe":"{order_id}","Source":""}]}'},
+  {name:'Maystro Delivery',logo:'M',color:'from-purple-500 to-pink-500',api_base_url:'https://backend.maystro-delivery.com/api/stores',api_auth_type:'token_prefix',api_tracking_endpoint:'/orders/?display_id={tracking_number}',api_status_path:'list.0.status_display',headers:[],query_params:[],help:'Maystro dashboard → Settings → API → copy your API Token (sent as "Authorization: Token <token>")',verified:true,
+    create_endpoint:'/orders/',create_method:'POST',create_tracking_path:'display_id',
+    create_body_template:'{"customer_name":"{customer_name}","customer_phone":"{customer_phone}","destination_text":"{shipping_address}","commune":"{shipping_city}","wilaya":"{shipping_wilaya}","product_price":{total},"products":[{"product_name":"{product_list}","quantity":{item_count},"product_id":""}],"display_id":"{order_id}","note_to_driver":"{notes}","express":false,"source":"api"}'},
+  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/public/v1',api_auth_type:'query_params',api_tracking_endpoint:'/tracking/{tracking_number}',api_status_path:'data.last_situation',headers:[],query_params:['api_token','user_guid'],help:'NOEST partner portal → API → copy api_token and user_guid (both required)',verified:true,
+    create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',
+    create_body_template:'{"reference":"{order_id}","client":"{customer_name}","phone":"{customer_phone}","adresse":"{shipping_address}","wilaya_id":"{wilaya_code}","commune":"{shipping_city}","montant":"{total}","remarque":"{notes}","produit":"{product_list}","type_id":1,"poids":{weight},"stop_desk":{is_stopdesk_int},"stock":0,"quantite":{item_count}}'},
   {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/get/tracking/{tracking_number}',api_status_path:'data.0.activity.0.event',headers:['api-token','api-secret'],query_params:[],help:'ecotrack.dz → Dashboard → API → copy api-token and api-secret (both required)',verified:true},
   {name:'Yassir Express',logo:'Y',color:'from-fuchsia-500 to-purple-600',api_base_url:'https://logistics.yassir.com/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/deliveries/{tracking_number}',api_status_path:'data.status',headers:['Authorization','X-Partner-ID'],query_params:[],help:'Yassir Express partner portal → API → copy Authorization (Bearer <token>) and Partner ID',verified:false},
   {name:'DHD Logistics',logo:'D',color:'from-sky-500 to-blue-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'DHD has no public API yet — keep MANUAL or paste tracking URL only',verified:false,manual_only:true},
@@ -28,7 +38,7 @@ const PRESETS=[
   {name:'Boxy DZ',logo:'B',color:'from-lime-500 to-green-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'Boxy DZ has no documented public API — keep MANUAL or paste tracking URL',verified:false,manual_only:true},
 ];
 
-const EMPTY={name:'',base_rate:'',phone:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_query_params:{},api_tracking_endpoint:'',api_status_path:'',api_method:'GET',api_body_template:'',oauth2_token_url:'',oauth2_credentials:{},use_api:false};
+const EMPTY={name:'',base_rate:'',phone:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_query_params:{},api_tracking_endpoint:'',api_status_path:'',api_method:'GET',api_body_template:'',oauth2_token_url:'',oauth2_credentials:{},api_create_endpoint:'',api_create_method:'POST',api_create_body_template:'',api_create_tracking_path:'',use_api:false};
 
 export default function ShippingPartners(){
   const{t}=useTranslation();
@@ -72,6 +82,8 @@ export default function ShippingPartners(){
       oauth2_credentials:parse(c.oauth2_credentials),oauth2_token_url:c.oauth2_token_url||'',
       api_method:c.api_method||'GET',api_body_template:c.api_body_template||'',
       api_tracking_endpoint:c.api_tracking_endpoint||'',api_status_path:c.api_status_path||'',
+      api_create_endpoint:c.api_create_endpoint||'',api_create_method:c.api_create_method||'POST',
+      api_create_body_template:c.api_create_body_template||'',api_create_tracking_path:c.api_create_tracking_path||'',
       use_api:!!c.api_base_url});
     setStep('form');setTestResult(null);setShowModal(true);
   };
@@ -89,7 +101,10 @@ export default function ShippingPartners(){
     setForm({...EMPTY,name:p.name,api_base_url:p.api_base_url,api_auth_type:p.api_auth_type,
       api_tracking_endpoint:p.api_tracking_endpoint,api_status_path:p.api_status_path,
       api_headers:h,api_query_params:q,oauth2_credentials:oa,oauth2_token_url:p.oauth2_token_url||'',
-      api_method:p.method||'GET',api_body_template:p.body_template||'',use_api:true});
+      api_method:p.method||'GET',api_body_template:p.body_template||'',
+      api_create_endpoint:p.create_endpoint||'',api_create_method:p.create_method||'POST',
+      api_create_body_template:p.create_body_template||'',api_create_tracking_path:p.create_tracking_path||'',
+      use_api:true});
     setStep('form');setTestResult(null);
   };
 
