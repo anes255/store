@@ -113,17 +113,30 @@ export default function TrackingOrders(){
     setSaving(false);
   };
 
+  // Translate raw status keys (e.g. "in_transit" → "In transit") with a
+  // proper i18n entry first, falling back to a humanized key.
+  const trStatus = (k) => {
+    if (!k) return '';
+    const key = String(k).toLowerCase();
+    const i18nKey = `statusMgmt.${key}`;
+    const looked = t(i18nKey, '');
+    if (looked && looked !== i18nKey) return looked;
+    return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   // ── Status templates state ──
+  // The default_label is shown when the admin hasn't customized this status,
+  // and the i18n_key lets the buyer-side track page translate the same row.
   const STATUS_BUILT_IN=[
-    {key:'new_order',default_label:'New',color:'#6366f1',is_builtin:true},
-    {key:'pending',default_label:'Pending',color:'#f59e0b',is_builtin:true},
-    {key:'confirmed',default_label:'Confirmed',color:'#3b82f6',is_builtin:true},
-    {key:'preparing',default_label:'Preparing',color:'#a855f7',is_builtin:true},
-    {key:'ready',default_label:'Ready',color:'#14b8a6',is_builtin:true},
-    {key:'shipped',default_label:'Shipped',color:'#f97316',is_builtin:true},
-    {key:'delivered',default_label:'Delivered',color:'#10b981',is_builtin:true},
-    {key:'cancelled',default_label:'Cancelled',color:'#ef4444',is_builtin:true},
-    {key:'returned',default_label:'Returned',color:'#6b7280',is_builtin:true},
+    {key:'new_order', default_label:t('statusMgmt.new','New'),                color:'#6366f1', is_builtin:true},
+    {key:'pending',   default_label:t('statusMgmt.pending','Pending'),        color:'#f59e0b', is_builtin:true},
+    {key:'confirmed', default_label:t('statusMgmt.confirmed','Confirmed'),    color:'#3b82f6', is_builtin:true},
+    {key:'preparing', default_label:t('statusMgmt.preparing','Preparing'),    color:'#a855f7', is_builtin:true},
+    {key:'ready',     default_label:t('statusMgmt.ready','Ready'),            color:'#14b8a6', is_builtin:true},
+    {key:'shipped',   default_label:t('statusMgmt.shipped','Shipped'),        color:'#f97316', is_builtin:true},
+    {key:'delivered', default_label:t('statusMgmt.delivered','Delivered'),    color:'#10b981', is_builtin:true},
+    {key:'cancelled', default_label:t('statusMgmt.cancelled','Cancelled'),    color:'#ef4444', is_builtin:true},
+    {key:'returned',  default_label:t('statusMgmt.returned','Returned'),      color:'#6b7280', is_builtin:true},
   ];
   const[statusRows,setStatusRows]=useState([]);
   const[statusLoading,setStatusLoading]=useState(false);
@@ -202,7 +215,7 @@ export default function TrackingOrders(){
                 <div className="p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100">
                   <h3 className="font-bold text-gray-800 mb-6">{t('storePage.deliveryProgress','Delivery Progress')}</h3>
                   {isFailed?(
-                    <div className="p-5 bg-red-50 rounded-2xl text-center"><RotateCcw size={32} className="mx-auto text-red-500 mb-2"/><p className="font-bold text-red-700 capitalize">{currentStatus.replace(/_/g,' ')}</p></div>
+                    <div className="p-5 bg-red-50 rounded-2xl text-center"><RotateCcw size={32} className="mx-auto text-red-500 mb-2"/><p className="font-bold text-red-700 capitalize">{trStatus(currentStatus)}</p></div>
                   ):(
                     <div className="relative">
                       <div className="absolute top-5 left-5 right-5 h-1 bg-gray-200 rounded-full"/>
@@ -222,7 +235,7 @@ export default function TrackingOrders(){
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isFailed?'bg-red-100':stepIdx>=5?'bg-emerald-100':'bg-brand-100'}`}>
                     {isFailed?<RotateCcw size={18} className="text-red-600"/>:stepIdx>=5?<Check size={18} className="text-emerald-600"/>:<Truck size={18} className="text-brand-600"/>}
                   </div>
-                  <div className="flex-1"><p className="font-bold text-sm text-gray-900 capitalize">{trackingData?.raw_status||currentStatus.replace(/_/g,' ')}</p><p className="text-xs text-gray-500">{t('storePage.via','via')} {trackingData?.company||selectedOrder.company_name}</p></div>
+                  <div className="flex-1"><p className="font-bold text-sm text-gray-900 capitalize">{trackingData?.raw_status||trStatus(currentStatus)}</p><p className="text-xs text-gray-500">{t('storePage.via','via')} {trackingData?.company||selectedOrder.company_name}</p></div>
                   {trackingData?.last_update&&<p className="text-[10px] text-gray-400">{new Date(trackingData.last_update).toLocaleString()}</p>}
                 </div>
                 {trackingData?.tracking_url&&!trackingData?.has_api&&(
@@ -287,7 +300,7 @@ export default function TrackingOrders(){
                     <span className="font-mono font-bold text-sm text-brand-600">{o.order_number}</span>
                     <span className="font-medium text-sm text-gray-700">{o.customer_name}</span>
                     {o.tracking_number&&<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':'bg-cyan-50 text-cyan-700'}`}>{st.replace(/_/g,' ')}</span>}
+                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':'bg-cyan-50 text-cyan-700'}`}>{trStatus(st)}</span>}
                   </div>
                   <div className="flex items-center gap-4 text-xs text-gray-400">
                     {o.shipping_wilaya&&<span className="flex items-center gap-1"><MapPin size={11}/>{o.shipping_wilaya}</span>}
