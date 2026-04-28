@@ -267,26 +267,26 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           {/* BaridiPay Payment */}
           {paymentStep === 'baridimob' && (
             <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className="font-bold text-gray-900">BaridiPay Payment</h3><p className="text-xs text-gray-400">Pay via BaridiPay app</p></div></div>
+              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className="font-bold text-gray-900">{t('checkout.baridiPayTitle','BaridiPay Payment')}</h3><p className="text-xs text-gray-400">{t('checkout.baridiPaySubtitle','Pay via BaridiPay app')}</p></div></div>
               <div className="bg-emerald-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">RIP Number</span><div className="flex items-center gap-2"><span className="font-mono font-bold">{store.baridimob_rip || 'N/A'}</span><button onClick={() => copyToClipboard(store.baridimob_rip || '')} className="p-1 hover:bg-emerald-100 rounded"><Copy size={14}/></button></div></div>
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">Amount</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} DZD</span></div>
+                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.ripNumber','RIP Number')}</span><div className="flex items-center gap-2"><span className="font-mono font-bold">{store.baridimob_rip || t('checkout.notAvailable','N/A')}</span><button onClick={() => copyToClipboard(store.baridimob_rip || '')} className="p-1 hover:bg-emerald-100 rounded"><Copy size={14}/></button></div></div>
+                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.amount','Amount')}</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency||'DZD'}</span></div>
               </div>
-              {store.baridimob_qr && <div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">Scan to Pay</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
-              <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs font-bold text-gray-500 mb-2">Steps:</p>
+              {store.baridimob_qr && <div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">{t('checkout.scanToPay','Scan to Pay')}</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
+              <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs font-bold text-gray-500 mb-2">{t('checkout.steps','Steps:')}</p>
                 <ol className="text-xs text-gray-600 space-y-1">
-                  <li>1. Open BaridiPay app on your phone</li>
-                  {store.baridimob_qr ? <li>2. Scan the QR code above OR transfer to RIP manually</li> : <li>2. Go to "Transfer" → "Transfer to RIP"</li>}
-                  <li>3. Enter the exact amount: {parseFloat(orderSuccess.total).toLocaleString()} DZD</li>
-                  <li>4. Confirm and screenshot your receipt</li>
+                  <li>1. {t('checkout.baridiStep1','Open BaridiPay app on your phone')}</li>
+                  {store.baridimob_qr ? <li>2. {t('checkout.baridiStep2qr','Scan the QR code above OR transfer to RIP manually')}</li> : <li>2. {t('checkout.baridiStep2norip','Go to "Transfer" → "Transfer to RIP"')}</li>}
+                  <li>3. {t('checkout.baridiStep3','Enter the exact amount:')} {parseFloat(orderSuccess.total).toLocaleString()} {store.currency||'DZD'}</li>
+                  <li>4. {t('checkout.baridiStep4','Confirm and screenshot your receipt')}</li>
                 </ol>
               </div>
-              <div><label className="input-label text-xs">Transaction Reference</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="BaridiPay transaction ID"/></div>
+              <div><label className="input-label text-xs">{t('checkout.txnRef','Transaction Reference')}</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder={t('checkout.baridiTxnPh','BaridiPay transaction ID')}/></div>
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-emerald-400 transition-colors" onClick={() => document.getElementById('receipt-upload').click()}>
-                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ Receipt uploaded</p></div> : <div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">Upload your BaridiPay receipt</p></div>}
+                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ {t('checkout.receiptUploaded','Receipt uploaded')}</p></div> : <div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">{t('checkout.uploadBaridiReceipt','Upload your BaridiPay receipt')}</p></div>}
               </div>
               <input id="receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
-              <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>Submit Receipt <ArrowRight size={16}/></button>
+              <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>{t('checkout.submitReceipt','Submit Receipt')} <ArrowRight size={16}/></button>
             </div>
           )}
 
@@ -513,7 +513,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             {/* Notification Preference */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-900 mb-4">{t('checkout.orderUpdates','Order Updates')}</h3>
-              <p className="text-xs text-gray-400 mb-3">How would you like to receive order updates?</p>
+              <p className="text-xs text-gray-400 mb-3">{t('checkout.orderUpdatesDesc','How would you like to receive order updates?')}</p>
               <div className="grid grid-cols-2 gap-2">
                 {[{key:'whatsapp',label:'WhatsApp',icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785c-1.784 0-3.532-.48-5.063-1.39l-.363-.215-3.764.988.999-3.648-.236-.375A9.731 9.731 0 012.27 12.05c0-5.384 4.383-9.767 9.78-9.767a9.714 9.714 0 016.922 2.868 9.714 9.714 0 012.868 6.919c-.004 5.384-4.387 9.765-9.79 9.765zM20.52 3.449A11.917 11.917 0 0012.05 0C5.495 0 .16 5.335.157 11.892a11.852 11.852 0 001.588 5.946L0 24l6.305-1.654a11.881 11.881 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 00-3.48-8.452z"/></svg>},{key:'email',label:'Email',icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>}].map(ch=>{
                   const selected=form.notification_preference===ch.key;

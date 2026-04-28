@@ -503,6 +503,8 @@ function UsersActivityLog({ storeId, isDark, t }) {
   const [view, setView] = useState('feed'); // 'feed' | 'payroll'
   const [range, setRange] = useState('week'); // 'day' | 'week' | 'month'
   const [expandedUser, setExpandedUser] = useState(null);
+  // Currently-expanded activity entry id (feed view detail pane).
+  const [expandedEntry, setExpandedEntry] = useState(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(true);
   const load = React.useCallback(async () => {
@@ -619,21 +621,94 @@ function UsersActivityLog({ storeId, isDark, t }) {
         ) : entries.length === 0 ? (
           <p className="text-xs text-gray-400 py-6 text-center">No activity yet — actions taken by you or your team will appear here.</p>
         ) : (
-          <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
             {entries.map(e => {
               const ic = ICONS[e.action] || { e: '📌', c: 'bg-gray-100 text-gray-600' };
+              const exp = expandedEntry === e.id;
+              // Pretty-print details: try JSON, fall back to plain string.
+              let detailsObj = null;
+              if (e.details) { try { detailsObj = JSON.parse(e.details); } catch {} }
               return (
-                <div key={e.id} className={`flex items-start gap-3 p-2.5 rounded-xl ${isDark ? 'bg-gray-800 hover:bg-gray-700/50' : 'bg-gray-50 hover:bg-gray-100/70'} transition-colors`}>
-                  <div className={`w-8 h-8 rounded-lg ${ic.c} flex items-center justify-center text-base shrink-0`}>{ic.e}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[12px] ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      <span className="font-bold">{e.actor_name || 'Someone'}</span>
-                      <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> · {fmtAction(e.action)}</span>
-                      {e.target_id && <span className={`ml-1 font-mono text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{e.target_id}</span>}
-                    </p>
-                    {e.details && <p className="text-[10px] text-gray-400 truncate">{e.details}</p>}
-                  </div>
-                  <span className="text-[10px] text-gray-400 shrink-0 mt-1">{timeAgo(e.created_at)}</span>
+                <div key={e.id} className={`rounded-xl overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-50'} transition-colors`}>
+                  <button onClick={() => setExpandedEntry(exp ? null : e.id)} className={`w-full flex items-start gap-3 p-2.5 text-left ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/70'}`}>
+                    <div className={`w-8 h-8 rounded-lg ${ic.c} flex items-center justify-center text-base shrink-0`}>{ic.e}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[12px] ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        <span className="font-bold">{e.actor_name || 'Someone'}</span>
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-500'}> · {fmtAction(e.action)}</span>
+                        {e.target_id && <span className={`ml-1 font-mono text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{e.target_id}</span>}
+                      </p>
+                      {e.details && !exp && <p className="text-[10px] text-gray-400 truncate">{typeof detailsObj === 'object' && detailsObj ? Object.entries(detailsObj).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(' · ') : e.details}</p>}
+                    </div>
+                    <span className="text-[10px] text-gray-400 shrink-0 mt-1">{timeAgo(e.created_at)}</span>
+                    <ChevronRight size={12} className={`text-gray-400 shrink-0 mt-1.5 transition-transform ${exp ? 'rotate-90' : ''}`}/>
+                  </button>
+                  {/* Expanded detail panel: full timestamp, actor metadata,
+                      target type/id, and a structured view of the details
+                      payload (object → key/value table; string → preformatted). */}
+                  {exp && (
+                    <div className={`px-3 pb-3 pt-1 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} text-[11px] space-y-2`}>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">When</p>
+                          <p className={isDark ? 'text-gray-200' : 'text-gray-800'}>{new Date(e.created_at).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Actor</p>
+                          <p className={isDark ? 'text-gray-200' : 'text-gray-800'}>{e.actor_name || '—'}</p>
+                          {(e.actor_role || e.actor_id) && <p className="text-[10px] text-gray-400 truncate">{[e.actor_role, e.actor_id].filter(Boolean).join(' · ')}</p>}
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Action</p>
+                          <p className={`font-mono ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{e.action}</p>
+                        </div>
+                        {e.target_type && (
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Target type</p>
+                            <p className={isDark ? 'text-gray-200' : 'text-gray-800'}>{e.target_type}</p>
+                          </div>
+                        )}
+                        {e.target_id && (
+                          <div className="col-span-2 sm:col-span-1">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Target ID</p>
+                            <p className={`font-mono text-[10px] truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{e.target_id}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Entry #</p>
+                          <p className={`font-mono ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>#{e.id}</p>
+                        </div>
+                      </div>
+                      {e.details && (
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Details</p>
+                          {detailsObj && typeof detailsObj === 'object' ? (
+                            <div className={`rounded-lg p-2 ${isDark ? 'bg-gray-900' : 'bg-white border border-gray-200'} divide-y ${isDark ? 'divide-gray-800' : 'divide-gray-100'}`}>
+                              {Object.entries(detailsObj).map(([k, v]) => (
+                                <div key={k} className="flex items-start gap-2 py-1">
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase shrink-0 min-w-[80px]">{k}</span>
+                                  <span className={`text-[11px] break-all ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <pre className={`rounded-lg p-2 text-[11px] whitespace-pre-wrap break-all ${isDark ? 'bg-gray-900 text-gray-200' : 'bg-white border border-gray-200 text-gray-800'}`}>{e.details}</pre>
+                          )}
+                        </div>
+                      )}
+                      {/* Quick navigation when the target is a known kind. */}
+                      {e.target_type === 'order' && e.target_id && (
+                        <a href={`/dashboard/orders?highlight=${encodeURIComponent(e.target_id)}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-500 text-white text-[10px] font-bold hover:bg-brand-600">
+                          Open order →
+                        </a>
+                      )}
+                      {e.target_type === 'product' && e.target_id && (
+                        <a href={`/dashboard/products?highlight=${encodeURIComponent(e.target_id)}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-500 text-white text-[10px] font-bold hover:bg-brand-600">
+                          Open product →
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

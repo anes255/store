@@ -7,6 +7,7 @@ import { ownerApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff, MessageCircle, ArrowLeft } from 'lucide-react';
+import WILAYA_CITIES from '../../data/wilayaCities';
 
 export default function OwnerRegister() {
   const { t } = useTranslation();
@@ -164,8 +165,22 @@ export default function OwnerRegister() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="input-label">{t('auth.city')}</label><input className="input-field" placeholder="City" value={form.city} onChange={set('city')} /></div>
-              <div><label className="input-label">{t('auth.wilaya')}</label><input className="input-field" placeholder="Wilaya" value={form.wilaya} onChange={set('wilaya')} /></div>
+              {/* Wilaya is a dropdown so registrations are consistent with
+                  the checkout flow — picking a wilaya filters the city list. */}
+              <div>
+                <label className="input-label">{t('auth.wilaya')}</label>
+                <select className="input-field" value={form.wilaya} onChange={e => setForm({ ...form, wilaya: e.target.value, city: '' })}>
+                  <option value="">{t('auth.wilayaPlaceholder', '— Select wilaya —')}</option>
+                  {Object.keys(WILAYA_CITIES).sort().map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="input-label">{t('auth.city')}</label>
+                <select className="input-field disabled:opacity-60" value={form.city} onChange={set('city')} disabled={!form.wilaya}>
+                  <option value="">{t('auth.cityPlaceholder', '— Select city —')}</option>
+                  {(WILAYA_CITIES[form.wilaya] || []).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5 mt-2">
               {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Send code <ArrowRight size={18}/></>}
