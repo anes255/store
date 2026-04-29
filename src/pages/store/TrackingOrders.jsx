@@ -50,6 +50,14 @@ export default function TrackingOrders(){
   const[selectedOrder,setSelectedOrder]=useState(null);
   const[trackingData,setTrackingData]=useState(null);
   const[trackingLoading,setTrackingLoading]=useState(false);
+  // Carriers saved for this store + sync state
+  const[carriers,setCarriers]=useState([]);
+  const[syncOpen,setSyncOpen]=useState(false);
+  const[syncing,setSyncing]=useState(null);
+  useEffect(()=>{
+    if(!currentStore?.id){setCarriers([]);return;}
+    api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r=>setCarriers(Array.isArray(r.data)?r.data:[])).catch(()=>setCarriers([]));
+  },[currentStore?.id]);
 
   const load=()=>{if(!currentStore?.id)return;
     let url=`/manage/stores/${currentStore.id}/tracking-orders`;
@@ -59,6 +67,18 @@ export default function TrackingOrders(){
     api.get(url).then(r=>setOrders(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));
   };
   useEffect(()=>{load();},[currentStore?.id,filter]);
+
+  const syncCarrier=async(c)=>{
+    if(!currentStore?.id)return;
+    setSyncing(c.id);setSyncOpen(false);
+    try{
+      const{data}=await api.post(`/manage/stores/${currentStore.id}/delivery-companies/${c.id}/sync`);
+      if(data?.ok)toast.success(data.message||t('storePage.syncDone','Synced'));
+      else toast.error(data?.error||t('storePage.syncFailed','Sync failed'));
+      load();
+    }catch(e){toast.error(e?.response?.data?.error||t('storePage.syncFailed','Sync failed'));}
+    setSyncing(null);
+  };
 
   const filtered=orders.filter(o=>{if(!search)return true;const s=search.toLowerCase();
     return(o.order_number||'').toLowerCase().includes(s)||(o.customer_name||'').toLowerCase().includes(s)||(o.tracking_number||'').toLowerCase().includes(s);});
@@ -474,7 +494,42 @@ export default function TrackingOrders(){
         <h1 className="text-2xl font-bold">{t('storePage.trackingOrders','Tracking Orders')}</h1>
         <p className="text-sm text-gray-400 mt-1">{t('storePage.trackingUnifiedDesc','Shipments, settings, and buyer preview — all in one place')}</p>
       </div>
-      {tab==='shipments'&&<button onClick={load} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>}
+      {tab==='shipments'&&(
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Sync from carrier — pulls every parcel from each carrier API
+              into this list so phone/manual orders created on the carrier's
+              site appear here too. */}
+          {carriers.length>0&&(
+            <div className="relative">
+              <button onClick={()=>setSyncOpen(o=>!o)} disabled={!!syncing} className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50">
+                {syncing?<RefreshCw size={14} className="animate-spin"/>:<RefreshCw size={14}/>}
+                {syncing?t('storePage.syncing','Syncing…'):t('storePage.syncFromCarrier','Sync from carrier')}
+              </button>
+              {syncOpen&&!syncing&&(
+                <>
+                  <div className="fixed inset-0 z-30" onClick={()=>setSyncOpen(false)}/>
+                  <div className="absolute right-0 top-full mt-2 z-40 w-72 rounded-2xl shadow-2xl border border-gray-100 bg-white overflow-hidden">
+                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b">
+                      {t('storePage.pickCarrier','Pick a carrier to sync')}
+                    </div>
+                    {carriers.map(c=>(
+                      <button key={c.id} onClick={()=>syncCarrier(c)} className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-50">
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">{(c.name||'?')[0]?.toUpperCase()}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-800 truncate">{c.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{(()=>{try{return new URL(c.api_base_url||'').host;}catch{return t('storePage.noApi','No API');}})()}</p>
+                        </div>
+                      </button>
+                    ))}
+                    <p className="px-3 py-2 text-[10px] text-gray-400 border-t">{t('storePage.syncHelp','Pulls parcels created on the carrier site into this list.')}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          <button onClick={load} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('storePage.refresh','Refresh')}</button>
+        </div>
+      )}
     </div>
 
     {/* Tab bar */}
