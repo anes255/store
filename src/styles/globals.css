@@ -213,6 +213,9 @@ html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{ba
 .badge{@apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold;}
 .badge-success{@apply bg-emerald-100 text-emerald-700;}.badge-warning{@apply bg-amber-100 text-amber-700;}.badge-danger{@apply bg-red-100 text-red-700;}.badge-info{@apply bg-blue-100 text-blue-700;}.badge-neutral{@apply bg-gray-100 text-gray-700;}
 .page-header{@apply text-2xl font-bold text-gray-900 font-display;}
+html.admin-dark .page-header,.admin-dark .page-header{color:#f3f4f6 !important;}
+/* Settings sticky header on mobile must match the dark dashboard frame */
+html.admin-dark .sticky.bg-gray-50\/95{background-color:rgba(15,23,42,0.95) !important;border-color:#1f2937 !important;}
 .gradient-text{@apply bg-gradient-to-r from-brand-500 via-purple-500 to-brand-400 bg-clip-text text-transparent;}
 }
 /* ═══ Buyer storefront dark mode overrides ═══ */

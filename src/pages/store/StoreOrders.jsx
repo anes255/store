@@ -1675,7 +1675,7 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
             className="fixed bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 z-[101] flex flex-col
               inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto
               rounded-t-3xl sm:rounded-2xl
-              max-h-[85vh] sm:max-h-[70vh]"
+              max-h-[80dvh] sm:max-h-[70vh]"
             style={
               window.innerWidth >= 640
                 ? { top: anchor.top, right: anchor.right, width: Math.min(288, window.innerWidth - 16) }
@@ -1689,7 +1689,7 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
               <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mt-1 sm:mt-0">Customize Columns</p>
               <button onClick={() => setOpen(false)} className="w-8 h-8 sm:w-auto sm:h-auto flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={16} /></button>
             </div>
-            <div className="p-2 overflow-y-auto flex-1 overscroll-contain">
+            <div className="p-2 overflow-y-auto flex-1 overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
               <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Active ({activeColumns.length})</p>
               {activeColumns.map((key, idx) => {
                 const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;

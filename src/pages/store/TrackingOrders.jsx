@@ -83,19 +83,24 @@ export default function TrackingOrders(){
   const filtered=orders.filter(o=>{if(!search)return true;const s=search.toLowerCase();
     return(o.order_number||'').toLowerCase().includes(s)||(o.customer_name||'').toLowerCase().includes(s)||(o.tracking_number||'').toLowerCase().includes(s);});
 
+  // Use whatever identifier the order has — tracking_number first, then
+  // external_id (for carrier-synced orders), then the internal order id —
+  // so the live tracking call works as soon as the carrier is assigned.
+  const trackKey=(o)=>o?.tracking_number||o?.external_id||o?.id;
   const openOrder=async(order)=>{
     setSelectedOrder(order);setTrackingData(null);
-    if(order.tracking_number){
+    const key=trackKey(order);
+    if(key&&(order.delivery_company_id||order.tracking_number)){
       setTrackingLoading(true);
-      try{const{data}=await api.get(`/manage/stores/${currentStore.id}/track/${order.tracking_number}`);setTrackingData(data);}
+      try{const{data}=await api.get(`/manage/stores/${currentStore.id}/track/${encodeURIComponent(key)}`);setTrackingData(data);}
       catch(e){setTrackingData({error:e.response?.data?.error||e.message});}
       setTrackingLoading(false);
     }
   };
   const refreshTracking=async()=>{
-    if(!selectedOrder?.tracking_number)return;
+    const key=trackKey(selectedOrder);if(!key)return;
     setTrackingLoading(true);
-    try{const{data}=await api.get(`/manage/stores/${currentStore.id}/track/${selectedOrder.tracking_number}`);setTrackingData(data);toast.success(t('storePage.updated','Updated'));}
+    try{const{data}=await api.get(`/manage/stores/${currentStore.id}/track/${encodeURIComponent(key)}`);setTrackingData(data);toast.success(t('storePage.updated','Updated'));}
     catch{toast.error(t('storePage.failed','Failed'));}
     setTrackingLoading(false);
   };
@@ -226,8 +231,8 @@ export default function TrackingOrders(){
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t('storePage.destination','Destination')}</p><p className="text-sm text-gray-700">{selectedOrder.shipping_wilaya||'—'}</p></div>
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t('storePage.partner','Partner')}</p><p className="font-bold text-sm text-gray-900">{selectedOrder.company_name||t('storePage.notAvailable','N/A')}</p>{trackingData?.has_api&&<span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t('storePage.live','LIVE')}</span>}</div>
             </div>
-            {!selectedOrder.tracking_number?(
-              <div className="p-8 text-center"><AlertTriangle size={36} className="mx-auto text-amber-400 mb-3"/><p className="font-bold text-gray-700">{t('storePage.noTrackingNumber','No tracking number')}</p><p className="text-xs text-gray-400 mt-1">{t('storePage.assignFromOrders','Assign one from the Orders page')}</p></div>
+            {!selectedOrder.tracking_number && !selectedOrder.delivery_company_id ? (
+              <div className="p-8 text-center"><AlertTriangle size={36} className="mx-auto text-amber-400 mb-3"/><p className="font-bold text-gray-700">{t('storePage.noCarrier','No carrier assigned')}</p><p className="text-xs text-gray-400 mt-1">{t('storePage.assignFromOrders','Assign one from the Orders page')}</p></div>
             ):trackingLoading&&!trackingData?(
               <div className="p-12 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>
             ):(
@@ -305,35 +310,45 @@ export default function TrackingOrders(){
     ):(
       <div className="space-y-3">
         {filtered.map(o=>{
-          const st=o.tracking_status||'in_transit';
+          const st=o.tracking_status||(o.status==='delivered'?'delivered':'in_transit');
           const stepIdx=getStepIndex(st);
           const isFailed=FAIL_STATUSES.includes(st);
+          // An order is "carrier-managed" once it's been assigned to a delivery
+          // company — even if the carrier hasn't returned a tracking number
+          // yet. We still display it as a live shipment, just labelled
+          // "syncing" instead of nagging the admin to assign a number.
+          const carrierAssigned = !!(o.delivery_company_id || o.company_name);
+          const isUntracked = !o.tracking_number && !carrierAssigned;
           return(
             <div key={o.id} onClick={()=>openOrder(o)} className="glass-card-solid p-5 hover:shadow-lg transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  !o.tracking_number?'bg-gray-100':isFailed?'bg-red-50':st==='delivered'?'bg-emerald-50':'bg-cyan-50'}`}>
-                  {!o.tracking_number?<AlertTriangle size={20} className="text-gray-400"/>:isFailed?<RotateCcw size={20} className="text-red-500"/>:st==='delivered'?<Check size={20} className="text-emerald-500"/>:<Truck size={20} className="text-cyan-600"/>}
+                  isUntracked?'bg-gray-100':isFailed?'bg-red-50':st==='delivered'?'bg-emerald-50':carrierAssigned&&!o.tracking_number?'bg-amber-50':'bg-cyan-50'}`}>
+                  {isUntracked?<AlertTriangle size={20} className="text-gray-400"/>:isFailed?<RotateCcw size={20} className="text-red-500"/>:st==='delivered'?<Check size={20} className="text-emerald-500"/>:carrierAssigned&&!o.tracking_number?<RefreshCw size={20} className="text-amber-500"/>:<Truck size={20} className="text-cyan-600"/>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-mono font-bold text-sm text-brand-600">{o.order_number}</span>
                     <span className="font-medium text-sm text-gray-700">{o.customer_name}</span>
-                    {o.tracking_number&&<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':'bg-cyan-50 text-cyan-700'}`}>{trStatus(st)}</span>}
+                    {(o.tracking_number||carrierAssigned)&&<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':carrierAssigned&&!o.tracking_number?'bg-amber-50 text-amber-700':'bg-cyan-50 text-cyan-700'}`}>{carrierAssigned&&!o.tracking_number?t('storePage.syncingWithCarrier','Syncing with carrier'):trStatus(st)}</span>}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-400">
+                  <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
                     {o.shipping_wilaya&&<span className="flex items-center gap-1"><MapPin size={11}/>{o.shipping_wilaya}</span>}
                     {o.company_name&&<span className="flex items-center gap-1"><Truck size={11}/>{o.company_name}</span>}
                     <span className="flex items-center gap-1"><Clock size={11}/>{new Date(o.created_at).toLocaleDateString()}</span>
                   </div>
-                  {o.tracking_number&&!isFailed&&(
+                  {(o.tracking_number||carrierAssigned)&&!isFailed&&(
                     <div className="flex gap-1 mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?'bg-emerald-400':'bg-gray-200'}`}/>))}</div>
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  {o.tracking_number?<p className="font-mono text-xs text-gray-500">{o.tracking_number}</p>:<span className="text-xs text-amber-600 font-bold bg-amber-50 px-3 py-1.5 rounded-lg">{t('storePage.noTracking','No tracking')}</span>}
-                  <p className="text-sm font-bold text-gray-800 mt-1">{parseFloat(o.total).toLocaleString()} DZD</p>
+                  {o.tracking_number
+                    ? <p className="font-mono text-xs text-gray-500">{o.tracking_number}</p>
+                    : carrierAssigned
+                      ? <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded-lg whitespace-nowrap">{t('storePage.awaitingTrackingNumber','Awaiting tracking #')}</span>
+                      : <span className="text-xs text-amber-600 font-bold bg-amber-50 px-3 py-1.5 rounded-lg">{t('storePage.noTracking','No tracking')}</span>}
+                  <p className="text-sm font-bold text-gray-800 mt-1">{parseFloat(o.total).toLocaleString()} {o.currency||'DZD'}</p>
                 </div>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-brand-500 transition-colors shrink-0"/>
               </div>

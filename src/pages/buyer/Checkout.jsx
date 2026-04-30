@@ -467,15 +467,15 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                       ].map(dt => {
                         const sel = form.shipping_type === dt.key;
                         return (
-                          <label key={dt.key} className={`flex items-center gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
+                          <label key={dt.key} className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
                             <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => setForm(prev => ({ ...prev, shipping_type: dt.key }))} className="sr-only"/>
-                            <span className="text-xl shrink-0">{dt.icon}</span>
+                            <span className="text-lg sm:text-xl shrink-0 leading-none">{dt.icon}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold text-sm text-gray-800 truncate">{dt.label}</p>
-                              <p className="text-xs text-gray-400">1-3 {t('checkout.days','days')}</p>
+                              <p className="font-bold text-[13px] sm:text-sm text-gray-800 leading-tight">{dt.label}</p>
+                              <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">1-3 {t('checkout.days','days')}</p>
                             </div>
-                            <span className="font-extrabold text-sm" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
-                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
+                            <span className="font-extrabold text-[12px] sm:text-sm whitespace-nowrap shrink-0" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
+                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
                           </label>
                         );
                       })}
