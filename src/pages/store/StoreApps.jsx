@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import api, { getPlatformInfo } from '../../utils/api';
 import { FileSpreadsheet, ShoppingCart, MessageCircle, Bell, Bot, Shield, Star, Check, X, Send, Sparkles, Zap, Activity, AlertTriangle, Package, Smartphone, Mail, Wifi, WifiOff, QrCode, RefreshCw, LogOut, ChevronRight, Phone, Calendar, Edit3, Languages } from 'lucide-react';
 import WhatsAppConfigModal from '../../components/shared/WhatsAppConfigModal';
+import EmailConfigModal from '../../components/shared/EmailConfigModal';
 
 function WhatsAppQR({ storeId }) {
   const { t } = useTranslation();
@@ -190,6 +191,7 @@ const getAllApps = (t) => [
   { slug:'abandoned-cart', icon:ShoppingCart, name:t('storePage.app.abandonedCart.name','Abandoned Cart Recovery'), desc:t('storePage.app.abandonedCart.desc','Track and recover abandoned carts with AI messages.'), color:'bg-purple-50 text-purple-600', colorHover:'hover:ring-purple-400', gradient:'from-purple-500 to-purple-700', badge:'purple', configKey:'ai_cart_recovery', link:'/dashboard/abandoned' },
   { slug:'whatsapp-recovery', icon:MessageCircle, name:t('storePage.app.whatsappRecovery.name','WhatsApp Recovery Messages'), desc:t('storePage.app.whatsappRecovery.desc','Send recovery messages via WhatsApp.'), color:'bg-green-50 text-green-600', colorHover:'hover:ring-green-400', gradient:'from-green-500 to-green-700', badge:'green', configKey:'ai_cart_recovery' },
   { slug:'whatsapp-status', icon:Bell, name:t('storePage.app.whatsappStatus.name','Order Status Notifications'), desc:t('storePage.app.whatsappStatus.desc','Auto-notify customers on status changes.'), color:'bg-blue-50 text-blue-600', colorHover:'hover:ring-blue-400', gradient:'from-blue-500 to-blue-700', badge:'blue', configKey:'ai_agent_enabled' },
+  { slug:'email-status', icon:Mail, name:t('storePage.app.emailStatus.name','Email Order Notifications'), desc:t('storePage.app.emailStatus.desc','Send transactional emails to buyers when their order status changes.'), color:'bg-blue-50 text-blue-600', colorHover:'hover:ring-blue-400', gradient:'from-blue-600 to-indigo-600', badge:'blue', configKey:'email_notifications_enabled' },
   { slug:'ai-sales-bot', icon:Bot, name:t('storePage.app.aiSalesBot.name','AI Customer Chatbot'), desc:t('storePage.app.aiSalesBot.desc','AI chatbot on storefront — Arabic, French, English.'), color:'bg-brand-50 text-brand-600', colorHover:'hover:ring-brand-400', gradient:'from-brand-500 to-purple-600', badge:'brand', configKey:'ai_chatbot_enabled' },
   { slug:'fake-detection', icon:Shield, name:t('storePage.app.fakeDetection.name','Fake Order Detection'), desc:t('storePage.app.fakeDetection.desc','AI-powered fraud scoring.'), color:'bg-red-50 text-red-600', colorHover:'hover:ring-red-400', gradient:'from-red-500 to-orange-500', badge:'red', configKey:'ai_fake_detection' },
   { slug:'smart-reviews', icon:Star, name:t('storePage.app.smartReviews.name','Smart Reviews'), desc:t('storePage.app.smartReviews.desc','AI-moderated product reviews.'), color:'bg-amber-50 text-amber-600', colorHover:'hover:ring-amber-400', gradient:'from-amber-500 to-orange-500', badge:'amber', configKey:'smart_reviews' },
@@ -215,6 +217,7 @@ export default function StoreApps() {
   // Test panels
   const [testPanel, setTestPanel] = useState(null); // app slug or tool slug
   const [showWaConfig, setShowWaConfig] = useState(false);
+  const [showEmailConfig, setShowEmailConfig] = useState(false);
 
   // Chatbot test
   const [botMessages, setBotMessages] = useState([]);
@@ -868,7 +871,12 @@ export default function StoreApps() {
             return (
               <div
                 key={app.slug}
-                onClick={() => { if (app.comingSoon) return; (app.slug==='whatsapp-recovery'||app.slug==='whatsapp-status')?setShowWaConfig(true):setTestPanel(app.slug); }}
+                onClick={() => {
+                  if (app.comingSoon) return;
+                  if (app.slug === 'whatsapp-recovery' || app.slug === 'whatsapp-status') return setShowWaConfig(true);
+                  if (app.slug === 'email-status') return setShowEmailConfig(true);
+                  setTestPanel(app.slug);
+                }}
                 className={`glass-card-solid p-5 transition-all text-left w-full cursor-pointer hover:ring-2 ${app.colorHover} hover:shadow-lg ${installed ? 'ring-2 ' + colors.ring + ' bg-white' : ''} ${app.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-start gap-4">
@@ -973,6 +981,7 @@ export default function StoreApps() {
         );
       })()}
       <WhatsAppConfigModal show={showWaConfig} onClose={()=>setShowWaConfig(false)} storeId={currentStore?.id} initialConfig={currentStore} onSave={async(cfg)=>{try{const{data}=await ownerApi.updateStore(currentStore.id,cfg);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch{toast.error(t('storePage.failed','Failed'));}}}/>
+      <EmailConfigModal show={showEmailConfig} onClose={()=>setShowEmailConfig(false)} storeId={currentStore?.id} initialConfig={currentStore} onSave={async(cfg)=>{try{const{data}=await ownerApi.updateStore(currentStore.id,cfg);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch{toast.error(t('storePage.failed','Failed'));}}}/>
     </DashboardLayout>
   );
 }
