@@ -188,6 +188,14 @@ export const orderApi = {
   sendOrderEmail: (storeId, orderId, data) => api.post(`/manage/stores/${storeId}/orders/${orderId}/send-email`, data),
 };
 
+// Shipping partner sync
+export const shippingApi = {
+  toggleAutoSync: (storeId, companyId, data) => api.patch(`/manage/stores/${storeId}/delivery-companies/${companyId}/auto-sync`, data),
+  fullSync: (storeId, companyId) => api.post(`/manage/stores/${storeId}/delivery-companies/${companyId}/full-sync`),
+  refreshTracking: (storeId, companyId) => api.post(`/manage/stores/${storeId}/delivery-companies/${companyId}/refresh-tracking`),
+  sync: (storeId, companyId) => api.post(`/manage/stores/${storeId}/delivery-companies/${companyId}/sync`),
+};
+
 // Public storefront
 export const storeApi = {
   getStore: (slug) => api.get(`/store/${slug}`),

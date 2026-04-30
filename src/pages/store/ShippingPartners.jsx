@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{shippingApi} from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,ArrowDownUp,Clock,Link2,Copy}from'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Verified carrier presets. Endpoints below have been cross-checked against
@@ -68,6 +68,7 @@ export default function ShippingPartners(){
   const[step,setStep]=useState('pick');
   const[showHelp,setShowHelp]=useState(false);
   const[testResult,setTestResult]=useState(null);const[testingForm,setTestingForm]=useState(false);
+  const[syncing,setSyncing]=useState(null);const[togglingSync,setTogglingSync]=useState(null);
   const[viewMode,setViewMode]=useState(()=>{try{return localStorage.getItem('partners_view')||'list';}catch{return'list';}});
   useEffect(()=>{try{localStorage.setItem('partners_view',viewMode);}catch{}},[viewMode]);
 
@@ -173,6 +174,28 @@ export default function ShippingPartners(){
     setTestingForm(false);
   };
 
+  const syncCarrier=async(id)=>{
+    setSyncing(id);
+    try{const{data}=await shippingApi.fullSync(currentStore.id,id);
+      toast.success(`Synced: ${data.inserted||0} new, ${data.updated||0} updated, ${data.tracking_updated||0} tracking refreshed`);load();
+    }catch(e){toast.error(e?.response?.data?.error||'Sync failed');}
+    setSyncing(null);
+  };
+
+  const toggleAutoSync=async(id,field,val)=>{
+    setTogglingSync(id);
+    try{await shippingApi.toggleAutoSync(currentStore.id,id,{[field]:val});
+      toast.success(val?'Enabled':'Disabled');load();
+    }catch(e){toast.error('Failed');}
+    setTogglingSync(null);
+  };
+
+  const copyWebhookUrl=async(c)=>{
+    const base=import.meta.env.VITE_API_URL||'https://test-t2d4.onrender.com/api';
+    const url=`${base}/webhook/carrier/${currentStore.id}/${c.id}`;
+    try{await navigator.clipboard.writeText(url);toast.success('Webhook URL copied');}catch{toast.error('Copy failed');}
+  };
+
   const addHeader=()=>setForm({...form,api_headers:{...form.api_headers,['']:''}});
   const removeHeader=(k)=>{const h={...form.api_headers};delete h[k];setForm({...form,api_headers:h});};
 
@@ -192,9 +215,10 @@ export default function ShippingPartners(){
       </div>
     </div>
 
-    <div className="grid grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-4 gap-4 mb-6">
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.partners','Partners')}</p><p className="text-2xl font-black text-gray-900 mt-1">{companies.length}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.apiConnected','API Connected')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{companies.filter(c=>c.api_base_url).length}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-blue-500 uppercase">Auto-Syncing</p><p className="text-2xl font-black text-blue-600 mt-1">{companies.filter(c=>c.auto_sync_enabled).length}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.avgRate','Avg Rate')}</p><p className="text-2xl font-black text-gray-900 mt-1">{companies.length?Math.round(companies.reduce((s,c)=>s+parseFloat(c.base_rate||0),0)/companies.length):0} <span className="text-xs font-normal text-gray-400">DZD</span></p></div>
     </div>
 
@@ -213,8 +237,15 @@ export default function ShippingPartners(){
               {parseFloat(c.base_rate)>0&&<span><Package size={12} className="inline mr-1"/>{c.base_rate} DZD</span>}
               {c.phone&&<span>{c.phone}</span>}
             </div>
-            <div className="flex gap-1 mt-3 pt-3 border-t border-gray-100">
+            {c.api_base_url&&<div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+              <button onClick={()=>toggleAutoSync(c.id,'auto_sync_enabled',!c.auto_sync_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_sync_enabled?'bg-emerald-100 text-emerald-700':'bg-gray-100 text-gray-500'}`} title="Auto-sync orders from carrier"><ArrowDownUp size={10}/>{c.auto_sync_enabled?'SYNC ON':'SYNC OFF'}</button>
+              <button onClick={()=>toggleAutoSync(c.id,'auto_dispatch_enabled',!c.auto_dispatch_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_dispatch_enabled?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'}`} title="Auto-push orders to carrier"><Zap size={10}/>{c.auto_dispatch_enabled?'AUTO':'MANUAL'}</button>
+              {c.last_synced_at&&<span className="text-[9px] text-gray-400 flex items-center gap-0.5"><Clock size={8}/>{new Date(c.last_synced_at).toLocaleTimeString()}</span>}
+            </div>}
+            <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100">
+              {c.api_base_url&&<button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-500" title="Sync orders from carrier">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={14}/>}</button>}
+              {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
               <button onClick={()=>openEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-brand-500"><Edit size={14}/></button>
               <button onClick={()=>del(c.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
             </div>
@@ -236,8 +267,15 @@ export default function ShippingPartners(){
                   {c.phone&&<span>{c.phone}</span>}
                 </div>
               </div>
-              <div className="flex gap-1 shrink-0">
-                {c.api_base_url&&<button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2.5 hover:bg-emerald-50 rounded-xl text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={16}/>}</button>}
+              <div className="flex items-center gap-1 shrink-0">
+                {c.api_base_url&&<>
+                  <button onClick={()=>toggleAutoSync(c.id,'auto_sync_enabled',!c.auto_sync_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_sync_enabled?'bg-emerald-100 text-emerald-700':'bg-gray-100 text-gray-500'}`} title="Auto-sync: pull orders from carrier automatically"><ArrowDownUp size={10}/>{c.auto_sync_enabled?'SYNC':'OFF'}</button>
+                  <button onClick={()=>toggleAutoSync(c.id,'auto_dispatch_enabled',!c.auto_dispatch_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_dispatch_enabled?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'}`} title="Auto-dispatch: push orders to carrier automatically"><Zap size={10}/>{c.auto_dispatch_enabled?'AUTO':'MANUAL'}</button>
+                  {c.last_synced_at&&<span className="text-[9px] text-gray-400 flex items-center gap-0.5 mx-1"><Clock size={8}/>{new Date(c.last_synced_at).toLocaleTimeString()}</span>}
+                  <button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2.5 hover:bg-blue-50 rounded-xl text-gray-400 hover:text-blue-500" title="Sync now">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={16}/>}</button>
+                  <button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2.5 hover:bg-emerald-50 rounded-xl text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={16}/>}</button>
+                  <button onClick={()=>copyWebhookUrl(c)} className="p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={16}/></button>
+                </>}
                 <button onClick={()=>openEdit(c)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500"><Edit size={16}/></button>
                 <button onClick={()=>del(c.id)} className="p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500"><Trash2 size={16}/></button>
               </div>
