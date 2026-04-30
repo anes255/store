@@ -107,7 +107,7 @@ function resolveAliases(msg){
   return msg;
 }
 
-export {WA_STATUSES,WA_STATUS_LABELS,WA_TIMING_OPTIONS,WA_CART_TIMING,WA_VARS,WA_CART_VARS,WA_DEFAULT_TEMPLATES,ALIAS_MAP,resolveAliases,localizedToken};
+export {WA_STATUSES,WA_STATUS_LABELS,WA_TIMING_OPTIONS,WA_CART_TIMING,WA_VARS,WA_VAR_LABELS,WA_CART_VARS,WA_DEFAULT_TEMPLATES,ALIAS_MAP,resolveAliases,localizedToken};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Single status row — collapsed pill view + inline editor when expanded.
