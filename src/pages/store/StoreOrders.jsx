@@ -19,8 +19,10 @@ const ALL_COLUMNS = [
   { key: 'wilaya_number',    label: 'N° Wilaya' },
   { key: 'commune',          label: 'Commune' },
   { key: 'customer_name',    label: 'Name' },
+
   { key: 'phone',            label: 'Phone N' },
   { key: 'transfer',         label: 'Transfer' },
+
   { key: 'status',           label: 'Status' },
   { key: 'shipping_method',  label: 'Shipping Method' },
   { key: 'shipping_cost',    label: 'Shipping Cost' },
@@ -67,13 +69,13 @@ const statusConfig = {
 };
 const allStatuses = ['new_order','pending','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','archived'];
 
+const TRANSFER_COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', yalid: '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
 function transferBadge(o) {
+  if (!o.delivery_company_name) return null;
   const name = (o.delivery_company_name || '').toLowerCase();
-  if (name.includes('noest')) return { label: 'NOEST Express', className: 'bg-blue-500 text-white' };
-  if (name.includes('dhd'))   return { label: 'DHD Livraison', className: 'bg-orange-500 text-white' };
-  if (name.includes('yalid')) return { label: 'Yalidine',      className: 'bg-green-500 text-white' };
-  if (o.delivery_company_name) return { label: o.delivery_company_name, className: 'bg-indigo-500 text-white' };
-  return null;
+  let color = '#6366f1';
+  for (const [k,v] of Object.entries(TRANSFER_COMPANY_COLORS)) { if (name.includes(k)) { color = v; break; } }
+  return { label: o.delivery_company_name, color };
 }
 
 function fmtMoney(v, cur) { return `${parseFloat(v||0).toLocaleString()} ${cur||'DZD'}`; }
@@ -221,7 +223,7 @@ export default function StoreOrders() {
       const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' || wantPreparingBucket ? undefined : filter, search });
       let rows = data.orders || [];
       if (wantPreparingBucket) {
-        rows = rows.filter(o => ['new_order','confirmed','preparing','under_preparation','cancelled'].includes(o.status));
+        rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
       }
       setOrders(rows); setTotal(wantPreparingBucket ? rows.length : data.total);
     } catch {} finally { setLoading(false); }
@@ -547,7 +549,7 @@ export default function StoreOrders() {
         return (
           <td className="px-3 py-3">{cellBtn(o, 'transfer',
             transfer ? (
-              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold leading-tight ${transfer.className}`}>{transfer.label}</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold leading-tight text-white" style={{backgroundColor: transfer.color}}>{transfer.label}</span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600"><Send size={10}/>{t('orders.transfer','Transfer')}</span>
             )
@@ -1126,10 +1128,11 @@ export default function StoreOrders() {
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(isPreparingPage ? ['new_order','preparing','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
+
                     const sc2 = statusConfig[s];
                     return (
                       <button key={s} onClick={() => updateStatus(selectedOrder.id, s)}
-                        className={`py-2.5 rounded-xl text-white font-bold text-xs ${sc2.color} hover:opacity-90 flex items-center justify-center gap-1.5`}>
+                        className={`py-2.5 rounded-xl font-bold text-xs ${sc2.color} text-white hover:opacity-90 flex items-center justify-center gap-1.5`}>
                         {sc2.label}
                       </button>
                     );
@@ -1284,14 +1287,33 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
       onDispatch?.(newCompany);
       onClose();
     };
+    const COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', 'yalid': '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
+    const companyColor = (name) => { const n = (name||'').toLowerCase(); for (const [k,v] of Object.entries(COMPANY_COLORS)) { if (n.includes(k)) return v; } return '#6366f1'; };
+    const selectedCompanyId = localPatch.delivery_company_id || o.delivery_company_id || '';
     return wrap(
       <div className="space-y-3">
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.deliveryCompany','Delivery Company')}</label>
-        <select defaultValue={o.delivery_company_id || ''} onChange={set('delivery_company_id')} className="input-field w-full">
-          <option value="">— {t('orders.none','None')} —</option>
-          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        {(localPatch.delivery_company_id || o.delivery_company_id) && (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {companies.map(c => {
+            const isSelected = String(c.id) === String(selectedCompanyId);
+            const color = companyColor(c.name);
+            return (
+              <button key={c.id} onClick={() => setLocalPatch(prev => ({...prev, delivery_company_id: c.id}))}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${isSelected ? 'shadow-md' : 'border-gray-100 hover:border-gray-200'}`}
+                style={isSelected ? {borderColor: color, backgroundColor: color + '10'} : {}}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{backgroundColor: color}}>
+                  {c.logo ? <img src={c.logo} className="w-full h-full rounded-xl object-cover" alt=""/> : (c.name||'?')[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-gray-900 truncate">{c.name}</p>
+                  {c.carrier_type && <p className="text-[10px] text-gray-400">{c.carrier_type}</p>}
+                </div>
+                {isSelected && <Check size={16} style={{color}}/>}
+              </button>
+            );
+          })}
+        </div>
+        {selectedCompanyId && (
           <p className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
             🚚 {t('orders.autoDispatchNote','Order will be created on the carrier\'s platform via API. Tracking number is saved automatically and status flips to SHIPPED.')}
           </p>
@@ -1515,6 +1537,27 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
               className={`py-3 rounded-xl text-xs font-bold uppercase ${active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{s}</button>
           );
         })}
+      </div>
+    );
+  }
+
+  if (type === 'payment_method') {
+    const method = (o.payment_method || 'cod').toUpperCase().replace(/_/g, ' ');
+    return wrap(
+      <div className="space-y-3">
+        <div className="p-4 rounded-2xl bg-gray-50 text-center">
+          <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Payment Method</p>
+          <p className="text-xl font-black text-gray-900">{method}</p>
+        </div>
+        {o.receipt_image && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-gray-400 uppercase">Payment Receipt</p>
+            <img src={o.receipt_image} alt="Receipt" className="w-full rounded-2xl border border-gray-200 max-h-96 object-contain bg-white"/>
+          </div>
+        )}
+        {o.payment_reference && row('Reference', o.payment_reference)}
+        {row('Status', (o.payment_status || 'pending').toUpperCase())}
+        {row('Total', fmtMoney(o.total, cur))}
       </div>
     );
   }

@@ -448,7 +448,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     </select>
                   </div>
                   <div>
-                    <label className="input-label">{t('auth.city','الدائرة')} *</label>
+                    <label className="input-label">{t('auth.city','الدائرة (City)')} *</label>
                     <select className="input-field" value={form.shipping_city} onChange={e => {
                       const city = e.target.value;
                       const wCode = selectedWilayaData?.wilaya_code || shippingWilayas.find(w=>w.wilaya_name===form.shipping_wilaya)?.wilaya_code || WILAYA_CODES[form.shipping_wilaya] || '';
@@ -608,9 +608,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         </div>
                       )}
                       <div className="flex items-center gap-2 mt-1">
-                        <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-6 h-6 bg-gray-200 dark:bg-gray-600 dark:text-white rounded flex items-center justify-center"><Minus size={10}/></button>
-                        <span className="text-xs font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-6 h-6 bg-gray-200 dark:bg-gray-600 dark:text-white rounded flex items-center justify-center"><Plus size={10}/></button>
+                        <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-7 h-7 bg-gray-200 dark:bg-gray-600 dark:text-white rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"><Minus size={12}/></button>
+                        <span className="text-xs font-bold min-w-[20px] text-center">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-7 h-7 bg-gray-200 dark:bg-gray-600 dark:text-white rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"><Plus size={12}/></button>
                       </div>
                     </div>
                     <div className="text-right"><p className="font-bold text-sm text-gray-900 dark:text-gray-100">{(item.price * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>

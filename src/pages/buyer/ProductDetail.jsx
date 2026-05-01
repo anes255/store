@@ -394,11 +394,11 @@ export default function ProductDetail() {
               {allImages.length > 1 && (
                 <>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 transition-opacity">
                     <ArrowLeft size={18}/>
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 transition-opacity">
                     <ArrowRight size={18}/>
                   </button>
                 </>
