@@ -1125,7 +1125,7 @@ export default function StoreOrders() {
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {allStatuses.filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
+                  {(isPreparingPage ? ['new_order','preparing','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
                     const sc2 = statusConfig[s];
                     return (
                       <button key={s} onClick={() => updateStatus(selectedOrder.id, s)}
