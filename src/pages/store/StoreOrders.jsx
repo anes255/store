@@ -213,14 +213,12 @@ export default function StoreOrders() {
   const toggleAll = () => setSelectedItems(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
   const clearSelection = () => setSelectedItems(new Set());
 
-  const loadOrders = async () => {
+  const loadOrders = async (overrideFilter) => {
     if (!currentStore?.id) return;
+    const effectiveFilter = overrideFilter || filter;
     try {
-      // Preparing page must include both confirmed and preparing orders.
-      // Backend filters by exact status; we ask for "all" and filter client-side
-      // so confirmed/preparing/under_preparation appear together.
-      const wantPreparingBucket = filter === 'preparing';
-      const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' || wantPreparingBucket ? undefined : filter, search });
+      const wantPreparingBucket = effectiveFilter === 'preparing';
+      const { data } = await orderApi.getAll(currentStore.id, { status: effectiveFilter === 'all' || wantPreparingBucket ? undefined : effectiveFilter, search });
       let rows = data.orders || [];
       if (wantPreparingBucket) {
         rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
@@ -229,7 +227,12 @@ export default function StoreOrders() {
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(() => { setLoading(true); loadOrders(); }, [currentStore?.id, filter, search, location.pathname]);
+  useEffect(() => {
+    const pathFilter = location.pathname === '/dashboard/preparing' ? 'preparing' : location.pathname === '/dashboard/orders-archive' ? 'archived' : null;
+    if (pathFilter && filter !== pathFilter) { setFilter(pathFilter); setLoading(true); loadOrders(pathFilter); }
+    else if (!pathFilter && (filter === 'preparing' || filter === 'archived')) { setFilter('all'); setLoading(true); loadOrders('all'); }
+    else { setLoading(true); loadOrders(); }
+  }, [currentStore?.id, filter, search, location.pathname]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
 
   const highlightId = useMemo(() => { const p = new URLSearchParams(location.search); return p.get('highlight') || null; }, [location.search]);
