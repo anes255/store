@@ -18,9 +18,9 @@ const ALL_COLUMNS = [
   { key: 'wilaya',           label: 'Wilaya' },
   { key: 'wilaya_number',    label: 'N° Wilaya' },
   { key: 'commune',          label: 'Commune' },
-  { key: 'customer_name',    label: 'Customer Name' },
+  { key: 'customer_name',    label: 'Name' },
   { key: 'phone',            label: 'Phone N' },
-  { key: 'transfer',         label: 'Transfer Status' },
+  { key: 'transfer',         label: 'Transfer' },
   { key: 'status',           label: 'Status' },
   { key: 'shipping_method',  label: 'Shipping Method' },
   { key: 'shipping_cost',    label: 'Shipping Cost' },
@@ -45,12 +45,13 @@ const ALL_COLUMNS = [
   { key: 'tracking_number',  label: 'Tracking Number' },
   { key: 'company_name',     label: 'Company Name' },
   { key: 'notes',            label: 'Notes' },
+  { key: 'payment_method',   label: 'Payment' },
 ];
-const DEFAULT_COLUMNS = ['order','photo','products','wilaya','wilaya_number','commune','customer_name','phone','whatsapp','transfer','status','shipping_method','shipping_cost','total','financial_status','tracking_number','notes'];
+const DEFAULT_COLUMNS = ['order','photo','products','wilaya','wilaya_number','commune','customer_name','phone','whatsapp','transfer','status','shipping_method','shipping_cost','total','financial_status','tracking_number','notes','payment_method'];
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
-  pending:        { color: 'bg-amber-500',  bg: 'bg-amber-50',  text: 'text-amber-700',  label: 'PENDING' },
+  pending:        { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
   confirmed:      { color: 'bg-blue-500',   bg: 'bg-blue-50',   text: 'text-blue-700',   label: 'CONFIRMED' },
   preparing:      { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', label: 'PREPARING' },
   under_preparation: { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', label: 'PREPARING' },
@@ -112,6 +113,7 @@ export default function StoreOrders() {
   useEffect(() => {
     if (isPreparingPage && filter !== 'preparing') setFilter('preparing');
     else if (isArchivePage && filter !== 'archived') setFilter('archived');
+    else if (!isPreparingPage && !isArchivePage && (filter === 'preparing' || filter === 'archived')) setFilter('all');
   }, [isPreparingPage, isArchivePage, filter]);
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -219,13 +221,13 @@ export default function StoreOrders() {
       const { data } = await orderApi.getAll(currentStore.id, { status: filter === 'all' || wantPreparingBucket ? undefined : filter, search });
       let rows = data.orders || [];
       if (wantPreparingBucket) {
-        rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
+        rows = rows.filter(o => ['new_order','confirmed','preparing','under_preparation','cancelled'].includes(o.status));
       }
       setOrders(rows); setTotal(wantPreparingBucket ? rows.length : data.total);
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(() => { loadOrders(); }, [currentStore?.id, filter, search]);
+  useEffect(() => { setLoading(true); loadOrders(); }, [currentStore?.id, filter, search, location.pathname]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
 
   const highlightId = useMemo(() => { const p = new URLSearchParams(location.search); return p.get('highlight') || null; }, [location.search]);
@@ -499,17 +501,21 @@ export default function StoreOrders() {
       case 'products': {
         const items = o.items || [];
         const first = items[0];
+        const img = o.first_image || first?.product_image;
         return (
           <td className="px-3 py-3">{cellBtn(o, 'products',
-            first ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">{first.quantity}x</span>
-                  <span className="text-xs font-semibold truncate max-w-[120px]">{first.product_name || first.name}</span>
+            <div className="flex items-center gap-2">
+              {img ? <img src={img} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><Package size={14} className="text-gray-400"/></div>}
+              {first ? (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">{first.quantity}x</span>
+                    <span className="text-xs font-semibold truncate max-w-[120px]">{first.product_name || first.name}</span>
+                  </div>
+                  {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">+{items.length-1} more</p>}
                 </div>
-                {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">+{items.length-1} more</p>}
-              </>
-            ) : <span className="text-xs text-gray-400">—</span>
+              ) : <span className="text-xs text-gray-400">—</span>}
+            </div>
           )}</td>
         );
       }
@@ -667,6 +673,16 @@ export default function StoreOrders() {
             : <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><FileText size={10}/>Add note</span>
         )}</td>;
 
+      case 'payment_method':
+        return <td className="px-3 py-3">{cellBtn(o, 'payment_method',
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${
+            o.payment_method === 'cod' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+            o.payment_method === 'ccp' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+            o.payment_method === 'baridimob' ? 'bg-green-50 text-green-700 border border-green-200' :
+            'bg-gray-50 text-gray-700 border border-gray-200'
+          }`}><CreditCard size={10}/>{(o.payment_method || 'cod').replace(/_/g, ' ')}</span>
+        )}</td>;
+
       default: return <td className="px-3 py-3">—</td>;
     }
   };
@@ -678,7 +694,7 @@ export default function StoreOrders() {
         <div className="mb-3 flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-purple-500 text-white shadow flex items-center gap-1.5">
             <Hourglass size={11} /> Preparing
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/25">({orders.filter(o => o.status === 'preparing' || o.status === 'under_preparation').length})</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/25">({orders.length})</span>
           </span>
           <span className="text-[11px] text-gray-400">Showing only orders currently being prepared.</span>
         </div>
@@ -1109,12 +1125,15 @@ export default function StoreOrders() {
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {selectedOrder.status !== 'confirmed' && <button onClick={() => updateStatus(selectedOrder.id, 'confirmed')} className="py-2.5 rounded-xl text-white font-bold text-xs bg-blue-500 hover:bg-blue-600 flex items-center justify-center gap-1.5"><Check size={12}/>Confirm</button>}
-                  {selectedOrder.status !== 'preparing' && <button onClick={() => updateStatus(selectedOrder.id, 'preparing')} className="py-2.5 rounded-xl text-white font-bold text-xs bg-purple-500 hover:bg-purple-600 flex items-center justify-center gap-1.5"><Package size={12}/>Prepare</button>}
-                  {selectedOrder.status !== 'ready' && <button onClick={() => updateStatus(selectedOrder.id, 'ready')} className="py-2.5 rounded-xl text-white font-bold text-xs bg-teal-500 hover:bg-teal-600 flex items-center justify-center gap-1.5"><Check size={12}/>Ready</button>}
-                  {selectedOrder.status !== 'shipped' && <button onClick={() => updateStatus(selectedOrder.id, 'shipped')} className="py-2.5 rounded-xl text-white font-bold text-xs bg-orange-500 hover:bg-orange-600 flex items-center justify-center gap-1.5"><Truck size={12}/>Ship</button>}
-                  {selectedOrder.status !== 'delivered' && <button onClick={() => updateStatus(selectedOrder.id, 'delivered')} className="py-2.5 rounded-xl text-white font-bold text-xs bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center gap-1.5"><Check size={12}/>Deliver</button>}
-                  <button onClick={() => updateStatus(selectedOrder.id, 'cancelled')} className="py-2.5 rounded-xl font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 flex items-center justify-center gap-1.5"><Ban size={12}/>Cancel</button>
+                  {allStatuses.filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
+                    const sc2 = statusConfig[s];
+                    return (
+                      <button key={s} onClick={() => updateStatus(selectedOrder.id, s)}
+                        className={`py-2.5 rounded-xl text-white font-bold text-xs ${sc2.color} hover:opacity-90 flex items-center justify-center gap-1.5`}>
+                        {sc2.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

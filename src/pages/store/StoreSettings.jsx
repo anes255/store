@@ -792,7 +792,9 @@ export default function StoreSettings(){
   const[waStatus,setWaStatus]=useState(null);
   const waCheckStatus=async()=>{if(!currentStore?.id)return;try{const{data}=await aiApi.waQrStatus(currentStore.id);setWaStatus(data);}catch{setWaStatus({status:'not_started',connected:false});}};
 
-  useEffect(()=>{if(currentStore){setS({...currentStore,theme:currentStore.theme||'classic'});loadData();}},[currentStore?.id]);
+  useEffect(()=>{if(currentStore){setS({...currentStore,theme:currentStore.theme||'classic'});loadData();
+    api.get(`/owner/stores`).then(r=>{const stores=r.data||[];const fresh=stores.find(st=>st.id===currentStore.id);if(fresh)setS(prev=>({...prev,logo:prev.logo||fresh.logo||'',cover_image:prev.cover_image||fresh.cover_image||'',favicon:prev.favicon||fresh.favicon||'',baridimob_qr:prev.baridimob_qr||fresh.baridimob_qr||''}));}).catch(()=>{});
+  }},[currentStore?.id]);
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);
   const loadData=()=>{if(!currentStore?.id)return;api.get(`/owner/stores/${currentStore.id}/staff`).then(r=>setStaff(r.data)).catch(()=>{});api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>setWilayas(Array.isArray(r.data)?r.data:(r.data?.wilayas||[]))).catch(()=>setWilayas([]));};
   const loadProfile=async()=>{try{const{data}=await ownerApi.getProfile();setProfile(data);setNewUsername(data.username||'');setNewEmail(data.email||'');}catch(e){}};

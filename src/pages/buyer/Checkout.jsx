@@ -75,6 +75,20 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       if (saved && typeof saved === 'object') setForm(prev => ({ ...prev, ...saved }));
     } catch {}
   }, []);
+  useEffect(() => {
+    const auth = useAuthStore.getState();
+    if (auth.role === 'customer' && auth.user) {
+      setForm(prev => ({
+        ...prev,
+        customer_name: prev.customer_name || auth.user.name || '',
+        customer_phone: prev.customer_phone || auth.user.phone || '',
+        customer_email: prev.customer_email || auth.user.email || '',
+        shipping_address: prev.shipping_address || auth.user.address || '',
+        shipping_wilaya: prev.shipping_wilaya || auth.user.wilaya || '',
+        shipping_city: prev.shipping_city || auth.user.city || '',
+      }));
+    }
+  }, []);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
@@ -191,6 +205,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
+    if ((form.payment_method === 'ccp' || form.payment_method === 'baridimob') && !receiptImage) return toast.error(t('checkout.errReceipt', 'Please upload your payment receipt before placing the order'));
     if (saveInfo) {
       try {
         const { coupon_code, notes, ...persist } = form;
@@ -433,7 +448,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     </select>
                   </div>
                   <div>
-                    <label className="input-label">{t('auth.city','City')} *</label>
+                    <label className="input-label">{t('auth.city','الدائرة')} *</label>
                     <select className="input-field" value={form.shipping_city} onChange={e => {
                       const city = e.target.value;
                       const wCode = selectedWilayaData?.wilaya_code || shippingWilayas.find(w=>w.wilaya_name===form.shipping_wilaya)?.wilaya_code || WILAYA_CODES[form.shipping_wilaya] || '';
@@ -593,9 +608,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         </div>
                       )}
                       <div className="flex items-center gap-2 mt-1">
-                        <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center"><Minus size={10}/></button>
+                        <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-6 h-6 bg-gray-200 dark:bg-gray-600 dark:text-white rounded flex items-center justify-center"><Minus size={10}/></button>
                         <span className="text-xs font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center"><Plus size={10}/></button>
+                        <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-6 h-6 bg-gray-200 dark:bg-gray-600 dark:text-white rounded flex items-center justify-center"><Plus size={10}/></button>
                       </div>
                     </div>
                     <div className="text-right"><p className="font-bold text-sm text-gray-900 dark:text-gray-100">{(item.price * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
@@ -606,7 +621,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
               <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Subtotal</span><span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>
+                {!isBuyNow && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>}
                 {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Discount</span><span className="text-emerald-600 dark:text-emerald-400 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200 dark:border-gray-700"><span className="text-gray-900 dark:text-gray-100">Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 dark:text-emerald-400 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}

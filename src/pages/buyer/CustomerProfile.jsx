@@ -867,7 +867,7 @@ export default function CustomerProfile() {
                             {item.variant.type === 'color' && item.variant.value && (
                               <span className="w-3 h-3 rounded-full border border-white/20 inline-block" style={{ backgroundColor: item.variant.value }} />
                             )}
-                            {item.variant.label || item.variant.name || (item.variant.type && item.variant.value ? `${item.variant.type}: ${item.variant.value}` : '')}
+                            {item.variant.label || item.variant.name || (item.variant.type && item.variant.value && !(item.variant.type === 'color' && /^#[0-9a-f]{3,8}$/i.test(item.variant.value)) ? `${item.variant.type}: ${item.variant.value}` : '')}
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1.5">

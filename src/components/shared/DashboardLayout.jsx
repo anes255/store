@@ -63,7 +63,7 @@ function LiveBadge({storeId}){
     return ()=>{ mounted = false; clearInterval(id); };
   },[storeId]);
   return (
-    <span className="badge badge-success text-[10px] hidden sm:flex items-center gap-1.5" title={count!=null?`${count} buyer${count===1?'':'s'} browsing now`:''}>
+    <span className="badge badge-success text-[10px] flex items-center gap-1.5" title={count!=null?`${count} buyer${count===1?'':'s'} browsing now`:''}>
       <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"/>
         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"/>

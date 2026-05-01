@@ -63,6 +63,9 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
 
   const variantLabel = selectedIdxes.map(idx => {
     const v = variants[idx];
+    const t = (v?.type || '').toLowerCase();
+    // Never show raw hex/color codes in the label — always prefer name
+    if (t === 'color') return v?.name || 'Color';
     return v?.name || v?.value || '';
   }).filter(Boolean).join(' / ');
 
@@ -213,7 +216,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
                                   className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${isSel ? 'border-gray-900 scale-110 shadow-lg ring-2 ring-gray-900/20' : 'border-gray-200 hover:border-gray-400 hover:scale-105'}`}
                                   style={useColor ? { backgroundColor: colorVal } : {}}
                                 >
-                                  {!useColor && <span className="text-[9px] font-bold text-gray-500 text-center leading-tight px-0.5">{(v.value || v.name || '?').slice(0, 3)}</span>}
+                                  {!useColor && <span className="text-[9px] font-bold text-gray-500 text-center leading-tight px-0.5">{(v.name || '?').slice(0, 3)}</span>}
                                   {isSel && <Check size={14} className="text-white drop-shadow-md" />}
                                 </div>
                                 <span className={`text-[10px] font-medium ${isSel ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>{v.name}</span>

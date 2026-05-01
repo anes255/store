@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, ArrowRight, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import Checkout from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
@@ -242,6 +242,7 @@ export default function ProductDetail() {
   // Build a variant label for display
   const variantLabel = selectedIdxes.map(idx => {
     const v = variants[idx];
+    if (v?.type === 'color' && v?.value && /^#[0-9a-f]{3,8}$/i.test(v.value)) return v.name || '';
     return v?.name || v?.value || '';
   }).filter(Boolean).join(' / ');
 
@@ -389,6 +390,18 @@ export default function ProductDetail() {
                 <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   🔍 {t('product.clickToZoom','Click to zoom')}
                 </span>
+              )}
+              {allImages.length > 1 && (
+                <>
+                  <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <ArrowLeft size={18}/>
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <ArrowRight size={18}/>
+                  </button>
+                </>
               )}
             </div>
             {allImages.length > 1 && (

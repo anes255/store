@@ -209,6 +209,7 @@ export const storeApi = {
   deleteCustomerAccount: (slug) => api.delete(`/store/${slug}/customers/profile`),
   placeOrder: (slug, data) => api.post(`/store/${slug}/orders`, data),
   cancelOrder: (slug, orderId) => api.post(`/store/${slug}/orders/${orderId}/cancel`),
+  deleteOrder: (slug, orderId) => api.delete(`/store/${slug}/orders/${orderId}`),
   validateCoupon: (slug, data) => api.post(`/store/${slug}/validate-coupon`, data),
   getPages: (slug) => api.get(`/store/${slug}/pages`),
   // Reviews
