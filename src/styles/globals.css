@@ -1,5 +1,5 @@
 @tailwind base;@tailwind components;@tailwind utilities;
-:root{--brand:#7C3AED;--admin-500:#7C3AED;--platform-500:#EF4444;}
+:root{--brand:#C5A55A;--admin-500:#C5A55A;--platform-500:#EF4444;}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{max-width:100vw;overflow-x:hidden;}
 html{scroll-behavior:smooth;}
@@ -160,7 +160,7 @@ html.admin-dark .divide-gray-100>*, html.admin-dark .divide-gray-200>*, html.pla
 html.admin-dark table tbody tr{border-color:#374151 !important;}
 html.admin-dark table thead{background:#111827 !important;}
 html.admin-dark .hover\:bg-gray-50:hover, html.admin-dark .hover\:bg-gray-100:hover{background:#374151 !important;}
-html.admin-dark .bg-brand-50{background:rgba(124,58,237,0.15) !important;}
+html.admin-dark .bg-brand-50{background:rgba(197,165,90,0.15) !important;}
 /* Opacity variants and hover backgrounds that otherwise render white */
 html.admin-dark .bg-white\/80, html.platform-dark .bg-white\/80{background-color:rgba(31,41,55,0.85) !important;}
 html.admin-dark .bg-white\/90, html.platform-dark .bg-white\/90{background-color:rgba(31,41,55,0.92) !important;}
@@ -216,7 +216,7 @@ html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{ba
 html.admin-dark .page-header,.admin-dark .page-header{color:#f3f4f6 !important;}
 /* Settings sticky header on mobile must match the dark dashboard frame */
 html.admin-dark .sticky.bg-gray-50\/95{background-color:rgba(15,23,42,0.95) !important;border-color:#1f2937 !important;}
-.gradient-text{@apply bg-gradient-to-r from-brand-500 via-purple-500 to-brand-400 bg-clip-text text-transparent;}
+.gradient-text{@apply bg-gradient-to-r from-brand-500 via-brand-600 to-brand-400 bg-clip-text text-transparent;}
 }
 /* ═══ Buyer storefront dark mode overrides ═══ */
 .buyer-theme-dark .bg-white{background-color:#1a2140 !important;}

@@ -510,7 +510,9 @@ function Subscriptions({isDark}){
   const[rejectModal,setRejectModal]=useState(null);const[rejectNotes,setRejectNotes]=useState('');
   const[viewReceipt,setViewReceipt]=useState(null);
   const[expiring,setExpiring]=useState([]);const[grantModal,setGrantModal]=useState(null);const[grantDays,setGrantDays]=useState(7);
-  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));
+  const[searchQuery,setSearchQuery]=useState('');
+  const[selectedIds,setSelectedIds]=useState([]);
+  const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter==='expiring'||filter==='deactivated'||filter==='new'?'all':filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));
     platformApi.getExpiringSubscriptions().then(r=>setExpiring(r.data?.owners||[])).catch(()=>setExpiring([]));};
   useEffect(()=>{load();},[filter]);
   const approve=async(pid)=>{try{await platformApi.approvePayment(pid);toast.success('Payment approved! Subscription activated.');load();}catch{toast.error('Failed');}};
@@ -520,6 +522,18 @@ function Subscriptions({isDark}){
   const grant=async()=>{if(!grantModal)return;const d=parseInt(grantDays,10);if(!d||d<1)return toast.error('Enter valid days');
     try{await platformApi.extendSubscription(grantModal.id,{days:d});toast.success(`Granted ${d} free day(s) to ${grantModal.name||grantModal.full_name}`);setGrantModal(null);setGrantDays(7);load();}catch{toast.error('Failed');}};
   const stats=data.stats||{};
+  const toggleSelect=(id)=>setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  const toggleSelectAll=()=>{const visible=filteredPayments.map(p=>p.id);setSelectedIds(prev=>prev.length===visible.length?[]:visible);};
+  const filteredPayments=(data.payments||[]).filter(p=>{
+    if(filter==='expiring'){const ex=expiring.map(o=>o.id);return ex.includes(p.owner_id);}
+    if(filter==='deactivated')return p.status==='rejected'||p.status==='suspended';
+    if(filter==='new'){const d=new Date(p.created_at);const week=7*24*60*60*1000;return(Date.now()-d.getTime())<week;}
+    return true;
+  }).filter(p=>{
+    if(!searchQuery.trim())return true;
+    const q=searchQuery.toLowerCase();
+    return(p.owner_name||'').toLowerCase().includes(q)||(p.owner_phone||'').toLowerCase().includes(q)||(p.plan||'').toLowerCase().includes(q)||(p.payment_method||'').toLowerCase().includes(q);
+  });
   const card=isDark?'bg-gray-900 border border-gray-800':'bg-white';
   const cardSoft=isDark?'bg-gray-800/50 border border-gray-700':'bg-gray-50';
   const titleC=isDark?'text-gray-100':'text-gray-900';
@@ -553,16 +567,38 @@ function Subscriptions({isDark}){
       )}
     </div>
 
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-      <div className={`${card} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('all')}><p className={`text-xs ${mutedC}`}>Total</p><p className={`text-xl md:text-2xl font-black ${titleC}`}>{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
-      <div className={`${isDark?'bg-amber-900/30 border border-amber-800':'bg-amber-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400`} onClick={()=>setFilter('pending')}><p className={`text-xs ${isDark?'text-amber-300':'text-amber-600'}`}>Pending</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-amber-200':'text-amber-700'}`}>{stats.pending||0}</p></div>
-      <div className={`${isDark?'bg-emerald-900/30 border border-emerald-800':'bg-emerald-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400`} onClick={()=>setFilter('approved')}><p className={`text-xs ${isDark?'text-emerald-300':'text-emerald-600'}`}>Approved</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-emerald-200':'text-emerald-700'}`}>{stats.approved||0}</p></div>
-      <div className={`${isDark?'bg-red-900/30 border border-red-800':'bg-red-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400`} onClick={()=>setFilter('rejected')}><p className={`text-xs ${isDark?'text-red-300':'text-red-600'}`}>Rejected</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-red-200':'text-red-700'}`}>{stats.rejected||0}</p></div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
+      <div className={`${card} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400 ${filter==='all'?'ring-2 ring-brand-500':''}`} onClick={()=>setFilter('all')}><p className={`text-xs ${mutedC}`}>Total</p><p className={`text-xl md:text-2xl font-black ${titleC}`}>{(stats.pending||0)+(stats.approved||0)+(stats.rejected||0)}</p></div>
+      <div className={`${isDark?'bg-amber-900/30 border border-amber-800':'bg-amber-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-amber-400 ${filter==='pending'?'ring-2 ring-amber-400':''}`} onClick={()=>setFilter('pending')}><p className={`text-xs ${isDark?'text-amber-300':'text-amber-600'}`}>Pending</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-amber-200':'text-amber-700'}`}>{stats.pending||0}</p></div>
+      <div className={`${isDark?'bg-emerald-900/30 border border-emerald-800':'bg-emerald-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400 ${filter==='approved'?'ring-2 ring-emerald-400':''}`} onClick={()=>setFilter('approved')}><p className={`text-xs ${isDark?'text-emerald-300':'text-emerald-600'}`}>Active</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-emerald-200':'text-emerald-700'}`}>{stats.approved||0}</p></div>
+      <div className={`${isDark?'bg-red-900/30 border border-red-800':'bg-red-50'} rounded-2xl p-4 md:p-5 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-400 ${filter==='rejected'?'ring-2 ring-red-400':''}`} onClick={()=>setFilter('rejected')}><p className={`text-xs ${isDark?'text-red-300':'text-red-600'}`}>Rejected</p><p className={`text-xl md:text-2xl font-black ${isDark?'text-red-200':'text-red-700'}`}>{stats.rejected||0}</p></div>
+    </div>
+
+    {/* Bulk actions */}
+    {selectedIds.length>0&&(
+      <div className={`${card} rounded-2xl p-3 shadow-sm mb-4 flex items-center gap-3 flex-wrap`}>
+        <span className={`text-xs font-bold ${textC}`}>{selectedIds.length} selected</span>
+        <button onClick={async()=>{for(const id of selectedIds){try{await platformApi.approvePayment(id);}catch{}}setSelectedIds([]);load();toast.success(`Approved ${selectedIds.length} payments`);}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve All</button>
+        <button onClick={()=>setSelectedIds([])} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${isDark?'bg-gray-800 text-gray-300':'bg-gray-100 text-gray-600'}`}>Clear Selection</button>
+      </div>
+    )}
+
+    {/* Filter tabs + Search */}
+    <div className={`${card} rounded-2xl p-3 shadow-sm mb-6 flex flex-col sm:flex-row gap-3`}>
+      <div className="relative flex-1">
+        <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${mutedC}`}/>
+        <input className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm ${inputCls}`} placeholder="Search by name, phone, plan..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+      </div>
+      <div className={`flex items-center gap-1 p-1 rounded-lg overflow-x-auto ${isDark?'bg-gray-800':'bg-gray-100'}`}>
+        {[{k:'all',l:'All'},{k:'pending',l:'Pending'},{k:'approved',l:'Active'},{k:'deactivated',l:'Deactivated'},{k:'expiring',l:'Expiring'},{k:'new',l:'New'},{k:'rejected',l:'Rejected'}].map(f=>(
+          <button key={f.k} onClick={()=>setFilter(f.k)} className={`px-3 py-1.5 rounded-md text-[11px] font-bold whitespace-nowrap transition-all ${filter===f.k?(isDark?'bg-gray-900 text-brand-400 shadow-sm':'bg-white text-brand-600 shadow-sm'):mutedC}`}>{f.l}</button>
+        ))}
+      </div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile cards */}
     <div className="md:hidden space-y-3">
-      {data.payments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:data.payments.map(p=>(
+      {filteredPayments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}{searchQuery?` matching "${searchQuery}"`:''}</p>:filteredPayments.map(p=>(
         <div key={p.id} className={`${card} rounded-2xl shadow-sm p-4`}>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -588,10 +624,11 @@ function Subscriptions({isDark}){
       ))}
     </div>
     <div className={`hidden md:block ${card} rounded-2xl shadow-sm overflow-x-auto`}>
-      {data.payments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}</p>:
-      <table className="w-full text-sm min-w-[780px]"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
-      <tbody>{data.payments.map(p=>(
+      {filteredPayments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}{searchQuery?` matching "${searchQuery}"`:''}</p>:
+      <table className="w-full text-sm min-w-[780px]"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3 w-8"><input type="checkbox" checked={selectedIds.length===filteredPayments.length&&filteredPayments.length>0} onChange={toggleSelectAll} className="rounded"/></th><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
+      <tbody>{filteredPayments.map(p=>(
         <tr key={p.id} className={`border-t ${rowBorder} ${rowHover}`}>
+          <td className="px-5 py-4 w-8"><input type="checkbox" checked={selectedIds.includes(p.id)} onChange={()=>toggleSelect(p.id)} className="rounded"/></td>
           <td className="px-5 py-4"><div><p className={`font-bold ${textC}`}>{p.owner_name||'N/A'}</p><p className={`text-[10px] ${mutedC}`}>{p.owner_phone}</p></div></td>
           <td className={`px-5 py-4 ${textC}`}><span className="font-bold capitalize">{p.plan}</span><br/><span className={`text-[10px] ${mutedC} capitalize`}>{p.period}</span></td>
           <td className={`px-5 py-4 font-bold ${textC}`}>{parseFloat(p.amount).toLocaleString()} DZD</td>

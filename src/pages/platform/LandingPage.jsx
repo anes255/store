@@ -57,7 +57,7 @@ export default function LandingPage() {
     }).catch(() => { setInfoLoaded(true); });
   }, []);
 
-  const pc = info.primary_color || '#7C3AED';
+  const pc = info.primary_color || '#C5A55A';
 
   const getYTId = (url) => { if (!url) return null; const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/); return m ? m[1] : null; };
 
@@ -214,15 +214,15 @@ export default function LandingPage() {
   const OriginalPage = () => (
     <>
       <section className="relative pt-32 pb-20 px-6">
-        <div className="absolute inset-0 overflow-hidden"><div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-3xl" /><div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl" /></div>
+        <div className="absolute inset-0 overflow-hidden"><div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-3xl" /><div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-brand-700/10 rounded-full blur-3xl" /></div>
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 border border-brand-200 rounded-full text-brand-600 text-sm font-bold mb-8"><Sparkles size={16} />Now with AI-Powered Features</div>
-            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight"><span className="text-gray-900">{t('hero.title').split(' ').slice(0, 2).join(' ')}</span><br /><span className="gradient-text">{t('hero.title').split(' ').slice(2).join(' ')}</span></h1>
-            <p className="mt-6 text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">{t('hero.subtitle')}</p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 border border-brand-500/30 rounded-full text-brand-400 text-sm font-bold mb-8"><Sparkles size={16} />Now with AI-Powered Features</div>
+            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight"><span className="text-gray-100">{t('hero.title').split(' ').slice(0, 2).join(' ')}</span><br /><span className="text-brand-400">{t('hero.title').split(' ').slice(2).join(' ')}</span></h1>
+            <p className="mt-6 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">{t('hero.subtitle')}</p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register" className="btn-primary text-base !py-4 !px-8 flex items-center gap-2 group" style={!infoLoaded?{visibility:'hidden'}:undefined}>{infoLoaded?(info.trial_enabled!==false?t('hero.ctaDays','Start Free — {{count}} Days Trial',{count:info.trial_days||14}):t('hero.ctaNoTrial','Get Started')):'\u00A0'}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
-              <a href="#features" className="btn-secondary text-base !py-4 !px-8 flex items-center gap-2"><Play size={16} />{t('hero.cta2')}</a>
+              <Link to="/register" className="bg-brand-500 hover:bg-brand-600 text-white text-base font-bold py-4 px-8 rounded-xl flex items-center gap-2 group shadow-lg shadow-brand-500/30 transition-all" style={!infoLoaded?{visibility:'hidden'}:undefined}>{infoLoaded?(info.trial_enabled!==false?t('hero.ctaDays','Start Free — {{count}} Days Trial',{count:info.trial_days||14}):t('hero.ctaNoTrial','Get Started')):'\u00A0'}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
+              <a href="#features" className="border border-gray-600 text-gray-300 hover:border-brand-500 hover:text-brand-400 text-base font-bold py-4 px-8 rounded-xl flex items-center gap-2 transition-all"><Play size={16} />{t('hero.cta2')}</a>
             </div>
             <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
               <span className="flex items-center gap-1.5"><Check size={16} className="text-emerald-500" /> {t('landing.noCreditCard','No credit card required')}</span>
@@ -241,8 +241,8 @@ export default function LandingPage() {
             viewport={{once:true,amount:0.3}}
             transition={{duration:0.5,ease:'easeOut'}}
           >
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900">{t('features.title')}</h2>
-            <p className="mt-4 text-lg text-gray-500">{t('features.subtitle')}</p>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-100">{t('features.title')}</h2>
+            <p className="mt-4 text-lg text-gray-400">{t('features.subtitle')}</p>
           </motion.div>
           <motion.div
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
@@ -254,23 +254,23 @@ export default function LandingPage() {
             {defaultFeatures.map((feature, i) => { const Icon = feature.icon; return (
               <motion.div
                 key={i}
-                className="glass-card-solid p-6 hover:shadow-glass-lg hover:-translate-y-1 transition-all duration-300 group"
+                className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-6 hover:shadow-glass-lg hover:-translate-y-1 transition-all duration-300 group"
                 variants={{
                   hidden:{opacity:0,y:30,scale:0.96},
                   show:{opacity:1,y:0,scale:1,transition:{type:'spring',stiffness:260,damping:22,mass:0.6}}
                 }}
               >
-                <div className="w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center mb-4 group-hover:bg-brand-500 group-hover:shadow-lg group-hover:shadow-brand-500/30 transition-all duration-300"><Icon size={22} className="text-brand-500 group-hover:text-white transition-colors" /></div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{feature.desc}</p>
+                <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center mb-4 group-hover:bg-brand-500 group-hover:shadow-lg group-hover:shadow-brand-500/30 transition-all duration-300"><Icon size={22} className="text-brand-400 group-hover:text-white transition-colors" /></div>
+                <h3 className="text-base font-bold text-gray-100 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
               </motion.div>
             ); })}
           </motion.div>
         </div>
       </section>
-      <section id="pricing" className="py-24 px-6 bg-white">
+      <section id="pricing" className="py-24 px-6 bg-[#0D0D0D]">
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900">{t('pricing.title')}</h2>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-100">{t('pricing.title')}</h2>
           <div className={`mt-12 grid gap-8 mx-auto ${(apiPlans && apiPlans.length >= 3) ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'}`}>
             {(apiPlans && apiPlans.length
               ? apiPlans.map(p => ({
@@ -282,51 +282,51 @@ export default function LandingPage() {
                 }))
               : [{ name: t('landing.starter','Starter'), price: t('landing.free','Free'), period: t('landing.daysN','{{count}} days',{count:info.trial_days||14}), features: [t('landing.p1a','1 Store'), t('landing.p1b','50 Products'), t('landing.p1c','Basic Analytics'), t('landing.p1d','COD Payment')] }, { name: t('landing.pro','Pro'), price: '2,900 DZD', period: t('landing.perMonth','/month'), popular: true, features: [t('landing.p2a','3 Stores'), t('landing.p2b','Unlimited Products'), t('landing.p2c','AI Chatbot'), t('landing.p2d','All Payments'), t('landing.p2e','Cart Recovery'), t('landing.p2f','Custom Domain')] }]
             ).map((plan, i) => (
-              <div key={i} className={`relative rounded-3xl p-8 ${plan.popular ? 'bg-gradient-to-br from-brand-500 to-purple-600 text-white shadow-2xl shadow-brand-500/30 scale-105' : 'bg-gray-50 border border-gray-200'}`}>
-                {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
-                <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                <div className="mt-4 mb-6"><span className={`text-4xl font-extrabold ${plan.popular ? 'text-white' : 'text-gray-900'}`}>{plan.price}</span><span className={`text-sm ${plan.popular ? 'text-white/70' : 'text-gray-500'}`}>{plan.period}</span></div>
-                <ul className="space-y-3 mb-8">{plan.features.map((f, j) => <li key={j} className={`flex items-center gap-2 text-sm ${plan.popular ? 'text-white/90' : 'text-gray-600'}`}><Check size={16} className={plan.popular ? 'text-white' : 'text-brand-500'} />{f}</li>)}</ul>
-                <Link to="/register" className={`block w-full py-3 rounded-xl font-bold text-center transition-all ${plan.popular ? 'bg-white text-brand-600 hover:bg-gray-100' : 'bg-brand-500 text-white hover:bg-brand-600'}`}>{t('pricing.start')}</Link>
+              <div key={i} className={`relative rounded-3xl p-8 ${plan.popular ? 'bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-2xl shadow-brand-500/30 scale-105' : 'bg-[#1A1A1A] border border-[#2A2A2A]'}`}>
+                {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-brand-400 text-gray-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
+                <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-gray-100'}`}>{plan.name}</h3>
+                <div className="mt-4 mb-6"><span className={`text-4xl font-extrabold ${plan.popular ? 'text-white' : 'text-gray-100'}`}>{plan.price}</span><span className={`text-sm ${plan.popular ? 'text-white/70' : 'text-gray-400'}`}>{plan.period}</span></div>
+                <ul className="space-y-3 mb-8">{plan.features.map((f, j) => <li key={j} className={`flex items-center gap-2 text-sm ${plan.popular ? 'text-white/90' : 'text-gray-400'}`}><Check size={16} className={plan.popular ? 'text-white' : 'text-brand-400'} />{f}</li>)}</ul>
+                <Link to="/register" className={`block w-full py-3 rounded-xl font-bold text-center transition-all ${plan.popular ? 'bg-white text-brand-700 hover:bg-gray-100' : 'bg-brand-500 text-white hover:bg-brand-600'}`}>{t('pricing.start')}</Link>
               </div>
             ))}
           </div>
         </div>
       </section>
       <section className="py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-brand-500 via-purple-600 to-brand-700 rounded-3xl p-12 md:p-16 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 rounded-3xl p-12 md:p-16 relative overflow-hidden">
           <h2 className="text-3xl md:text-5xl font-extrabold text-white relative z-10">{t('landing.readyTitle','Ready to Start Selling?')}</h2>
           <p className="mt-4 text-white/70 text-lg relative z-10">{t('landing.readySubtitle','Join thousands of merchants already growing with')}{info.site_name?` ${info.site_name}.`:'.'}</p>
-          <Link to="/register" className="mt-8 inline-flex items-center gap-2 px-8 py-4 bg-white text-brand-600 font-bold rounded-xl hover:bg-gray-100 transition-all shadow-2xl relative z-10 group">{t('landing.getStartedFree','Get Started Free')}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
+          <Link to="/register" className="mt-8 inline-flex items-center gap-2 px-8 py-4 bg-[#111] text-brand-400 font-bold rounded-xl hover:bg-[#1A1A1A] transition-all shadow-2xl relative z-10 group">{t('landing.getStartedFree','Get Started Free')}<ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></Link>
         </div>
       </section>
     </>
   );
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] overflow-hidden">
-      <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-2xl border-b border-gray-100/50">
+    <div className="min-h-screen bg-[#111111] overflow-hidden text-gray-100">
+      <nav className="fixed top-0 w-full z-50 bg-[#1A1A1A]/90 backdrop-blur-2xl border-b border-[#2A2A2A]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover aspect-square" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
-            {info.site_name && <span className="text-base font-extrabold text-gray-900">{info.site_name}</span>}
+            {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover aspect-square" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
+            {info.site_name && <span className="text-base font-extrabold text-gray-100">{info.site_name}</span>}
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.pricing')}</a></>}
+            {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-400 hover:text-brand-400">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-400 hover:text-brand-400">{t('nav.pricing')}</a></>}
             <LanguageSwitcher />
-            <Link to="/login" className="text-sm font-semibold text-gray-700 hover:text-brand-600">{t('nav.login')}</Link>
-            <Link to="/register" className="btn-primary text-sm !py-2.5 !px-5">{t('nav.signup')}</Link>
+            <Link to="/login" className="text-sm font-semibold text-gray-300 hover:text-brand-400">{t('nav.login')}</Link>
+            <Link to="/register" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all">{t('nav.signup')}</Link>
           </div>
-          <div className="md:hidden flex items-center gap-2"><LanguageSwitcher /><Link to="/login" className="text-xs font-semibold text-gray-700 hover:text-brand-600 px-2">{t('nav.login')}</Link><Link to="/register" className="btn-primary text-xs !py-2 !px-4">{t('nav.signup')}</Link></div>
+          <div className="md:hidden flex items-center gap-2"><LanguageSwitcher /><Link to="/login" className="text-xs font-semibold text-gray-300 hover:text-brand-400 px-2">{t('nav.login')}</Link><Link to="/register" className="bg-brand-500 text-white text-xs font-bold py-2 px-4 rounded-xl">{t('nav.signup')}</Link></div>
         </div>
       </nav>
 
       {hasCustom ? <div className="pt-20">{blocks.map((b, i) => renderBlock(b, i))}</div> : <OriginalPage />}
 
-      <footer className="border-t border-gray-200 py-12 px-6 bg-white">
+      <footer className="border-t border-[#2A2A2A] py-12 px-6 bg-[#0D0D0D]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center"><ShoppingBag size={16} className="text-white" /></div>{info.site_name && <span className="font-bold text-gray-900">{info.site_name}</span>}</div>
-          <p className="text-sm text-gray-400">© {new Date().getFullYear()}{info.site_name?` ${info.site_name}.`:'.'} All rights reserved.</p>
+          <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center"><ShoppingBag size={16} className="text-white" /></div>{info.site_name && <span className="font-bold text-gray-100">{info.site_name}</span>}</div>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()}{info.site_name?` ${info.site_name}.`:'.'} All rights reserved.</p>
           <Link to="/admin/login" className="text-xs text-gray-200 hover:text-gray-400 select-none" aria-hidden="true">·</Link>
         </div>
       </footer>
