@@ -49,7 +49,7 @@ const ALL_COLUMNS = [
   { key: 'notes',            label: 'Notes' },
   { key: 'payment_method',   label: 'Payment' },
 ];
-const DEFAULT_COLUMNS = ['order','photo','products','wilaya','wilaya_number','commune','customer_name','phone','whatsapp','transfer','status','shipping_method','shipping_cost','total','financial_status','tracking_number','notes','payment_method'];
+const DEFAULT_COLUMNS = ['order','photo','products','wilaya','wilaya_number','commune','customer_name','phone','whatsapp','transfer','status','company_name','shipping_method','shipping_cost','total','financial_status','tracking_number','notes','payment_method'];
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
