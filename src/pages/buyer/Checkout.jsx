@@ -5,7 +5,7 @@ import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
 import i18n from '../../i18n';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck } from 'lucide-react';
 
 // Algerian phone validator: accepts 0[567]xxxxxxxx or +213[567]xxxxxxxx
 export function isValidAlgerianPhone(p) {
@@ -63,6 +63,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '', shipping_zip: '',
     shipping_type: 'desk', // 'desk' (to desk/relay point) or 'home' (domicile)
+    delivery_company_id: '',
     payment_method: 'cod', notes: '', coupon_code: '',
     notification_preference: 'whatsapp',
   });
@@ -93,12 +94,14 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
+  const [deliveryCompanies, setDeliveryCompanies] = useState([]);
 
   useEffect(() => { storeApi.getStore(storeSlug).then(r => { setStore(r.data); try { initPixels(r.data?.tracking_pixels); trackInitiateCheckout(r.data?.tracking_pixels, items, items.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0)); } catch {} }).catch(() => {}); }, [storeSlug]); // eslint-disable-line
   // Load shipping wilayas for real pricing
   useEffect(() => {
     if (!storeSlug) return;
     storeApi.getShippingWilayas(storeSlug).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
+    storeApi.getDeliveryCompanies(storeSlug).then(r => { if (Array.isArray(r.data)) setDeliveryCompanies(r.data); }).catch(() => {});
   }, [storeSlug]);
   // Wilaya code lookup for zip auto-fill (works even when API fails)
   const WILAYA_CODES={'Adrar':'01','Chlef':'02','Laghouat':'03','Oum El Bouaghi':'04','Batna':'05','Béjaïa':'06','Biskra':'07','Béchar':'08','Blida':'09','Bouira':'10','Tamanrasset':'11','Tébessa':'12','Tlemcen':'13','Tiaret':'14','Tizi Ouzou':'15','Alger':'16','Djelfa':'17','Jijel':'18','Sétif':'19','Saïda':'20','Skikda':'21','Sidi Bel Abbès':'22','Annaba':'23','Guelma':'24','Constantine':'25','Médéa':'26','Mostaganem':'27',"M'Sila":'28','Mascara':'29','Ouargla':'30','Oran':'31','El Bayadh':'32','Illizi':'33','Bordj Bou Arréridj':'34','Boumerdès':'35','El Tarf':'36','Tindouf':'37','Tissemsilt':'38','El Oued':'39','Khenchela':'40','Souk Ahras':'41','Tipaza':'42','Mila':'43','Aïn Defla':'44','Naâma':'45','Aïn Témouchent':'46','Ghardaïa':'47','Relizane':'48'};
@@ -491,6 +494,25 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                               <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">1-3 {t('checkout.days','days')}</p>
                             </div>
                             <span className="font-extrabold text-[12px] sm:text-sm whitespace-nowrap shrink-0" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
+                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {deliveryCompanies.length > 0 && (
+                  <div>
+                    <label className="input-label mb-2">{t('checkout.deliveryCompany','Preferred Delivery Company')}</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {deliveryCompanies.map(dc => {
+                        const sel = form.delivery_company_id === dc.id;
+                        return (
+                          <label key={dc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
+                            <input type="radio" name="delivery_company" value={dc.id} checked={sel} onChange={() => setForm(prev => ({ ...prev, delivery_company_id: dc.id }))} className="sr-only"/>
+                            {dc.logo ? <img src={dc.logo} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0"/> : <Truck size={18} className="text-gray-400 shrink-0"/>}
+                            <span className="font-bold text-sm text-gray-800 flex-1">{dc.name}</span>
                             {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
                           </label>
                         );

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useBuyerTheme } from '../../hooks/useStore';
-import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home, Trash2 } from 'lucide-react';
+import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 const DEFAULT_STATUS_COLORS = {
@@ -64,7 +64,6 @@ export default function TrackOrder() {
   const [mode, setMode] = useState('phone'); // active tab when method==='both'
   const [orders, setOrders] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     storeApi.getStore(storeSlug).then(r => {
@@ -118,17 +117,6 @@ export default function TrackOrder() {
       setOrders([]);
     }
     setLoading(false);
-  };
-
-  const deleteOrder = async (orderId) => {
-    try {
-      await storeApi.deleteOrder(storeSlug, orderId);
-      setOrders(prev => prev.filter(o => o.id !== orderId));
-      toast.success(t('track.orderDeleted', 'Order deleted'));
-      setDeleteConfirm(null);
-    } catch {
-      toast.error(t('track.deleteFailed', 'Failed to delete order'));
-    }
   };
 
   // Order status pretty label: prefer the merchant's per-status template,
@@ -315,10 +303,6 @@ export default function TrackOrder() {
                         {store.tracking_show_price && (
                           <p className="text-lg font-extrabold text-white mt-1">{parseFloat(o.total || 0).toLocaleString()} {currency}</p>
                         )}
-                        <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(o.id); }}
-                          className="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
-                          <Trash2 size={10}/>Delete
-                        </button>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
@@ -446,19 +430,6 @@ export default function TrackOrder() {
           </div>
         )}
       </div>
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 max-w-sm w-full text-center">
-            <Trash2 size={28} className="mx-auto text-red-400 mb-3"/>
-            <h3 className="text-lg font-bold text-white mb-2">{t('track.confirmDelete', 'Delete this order?')}</h3>
-            <p className="text-sm text-gray-400 mb-4">{t('track.confirmDeleteDesc', 'This action cannot be undone.')}</p>
-            <div className="flex gap-2">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl bg-white/10 text-white font-bold text-sm">{t('common.cancel', 'Cancel')}</button>
-              <button onClick={() => deleteOrder(deleteConfirm)} className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm">{t('common.delete', 'Delete')}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -308,8 +308,8 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-2xl border-b border-gray-100/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
-            {info.site_name && <span className="text-xl font-extrabold text-gray-900">{info.site_name}</span>}
+            {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover aspect-square" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
+            {info.site_name && <span className="text-base font-extrabold text-gray-900">{info.site_name}</span>}
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-600 hover:text-brand-600">{t('nav.pricing')}</a></>}
