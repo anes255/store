@@ -271,6 +271,8 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
               >
                 {mode === 'favorite'
                   ? (<><Heart size={16} fill="white" /> Add to Favorites</>)
+                  : mode === 'buyNow'
+                  ? (<><ShoppingCart size={16} /> Order Now</>)
                   : (<><ShoppingCart size={16} /> Add to Cart</>)}
               </button>
             </div>

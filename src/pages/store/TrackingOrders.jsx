@@ -83,6 +83,16 @@ export default function TrackingOrders(){
   const filtered=orders.filter(o=>{if(!search)return true;const s=search.toLowerCase();
     return(o.order_number||'').toLowerCase().includes(s)||(o.customer_name||'').toLowerCase().includes(s)||(o.tracking_number||'').toLowerCase().includes(s);});
 
+  const deleteOrder=async(e,orderId)=>{
+    e.stopPropagation();
+    if(!confirm(t('storePage.confirmDelete','Are you sure you want to delete this order?')))return;
+    try{
+      await api.delete(`/manage/stores/${currentStore.id}/orders/${orderId}`);
+      toast.success(t('storePage.orderDeleted','Order deleted'));
+      load();
+    }catch(err){toast.error(err?.response?.data?.error||t('storePage.deleteFailed','Failed to delete'));}
+  };
+
   // Use whatever identifier the order has — tracking_number first, then
   // external_id (for carrier-synced orders), then the internal order id —
   // so the live tracking call works as soon as the carrier is assigned.
@@ -350,6 +360,7 @@ export default function TrackingOrders(){
                       : <span className="text-xs text-amber-600 font-bold bg-amber-50 px-3 py-1.5 rounded-lg">{t('storePage.noTracking','No tracking')}</span>}
                   <p className="text-sm font-bold text-gray-800 mt-1">{parseFloat(o.total).toLocaleString()} {o.currency||'DZD'}</p>
                 </div>
+                <button onClick={(e)=>deleteOrder(e,o.id)} className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0" title={t('common.delete','Delete')}><Trash2 size={16}/></button>
                 <ChevronRight size={18} className="text-gray-300 group-hover:text-brand-500 transition-colors shrink-0"/>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag, Zap, Minus, Plus, Check, Star, Truck, Shield } from 'lucide-react';
+import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag, Zap, Minus, Plus, Check, Star, Truck, Shield, LayoutDashboard } from 'lucide-react';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import { motion } from 'framer-motion';
@@ -610,8 +610,9 @@ export default function Storefront() {
   const { t } = useTranslation();
   const { lang } = useLangStore();
   const { addItem, getCount } = useCartStore();
-  const { token: authToken, role: authRole } = useAuthStore();
+  const { token: authToken, role: authRole, user: authUser } = useAuthStore();
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
+  const isStoreOwner = !!authToken && authRole === 'store_owner';
   const wishlistStore = useWishlistStore();
   // Bind the wishlist store to this storefront's slug as soon as we mount.
   useEffect(()=>{ wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
@@ -661,7 +662,8 @@ export default function Storefront() {
   const [detailProduct, setDetailProduct] = useState(null);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowItems, setBuyNowItems] = useState(null);
-  const [previewItems, setPreviewItems] = useState(null); // checkout preview before full checkout
+  const [previewItems, setPreviewItems] = useState(null);
+  const [buyNowProduct, setBuyNowProduct] = useState(null);
   const buyerTheme = useBuyerTheme();
   useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const navigate = useNavigate();
@@ -778,18 +780,23 @@ export default function Storefront() {
     const slug = product.slug || product.id;
     navigate(`/s/${storeSlug}/product/${slug}`);
   };
-  // Buy now: show a checkout preview first so the buyer can confirm the
-  // product, qty and total before committing to the full checkout flow.
-  // The full Checkout modal only opens after they hit "Continue".
+  // Buy now: open the variant picker (same as Add to Cart) so the buyer can
+  // choose color/size/qty, then proceed directly to checkout.
   const handleBuyNow = (product, qty = 1, variant = null) => {
     const p = typeof product.price === 'number' ? product : { ...product, price: parseFloat(product.price) || 0 };
-    const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant }];
-    setPreviewItems(items);
+    let variants = p.variants || [];
+    if (typeof variants === 'string') { try { variants = JSON.parse(variants); } catch { variants = []; } }
+    if (Array.isArray(variants) && variants.length > 0) {
+      setBuyNowProduct(p);
+    } else {
+      const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant }];
+      setBuyNowItems(items);
+      setBuyNowOpen(true);
+    }
   };
-  const confirmPreview = () => {
-    if (!previewItems) return;
-    setBuyNowItems(previewItems);
-    setPreviewItems(null);
+  const handleBuyNowFromQuickAdd = ({ product: p, selectedVariant, quantity: qty }) => {
+    const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant: selectedVariant }];
+    setBuyNowItems(items);
     setBuyNowOpen(true);
   };
   // Opens the quick-add popup so the buyer can pick variants before adding.
@@ -814,7 +821,7 @@ export default function Storefront() {
   // Block the entire page until store, products and categories are all in.
   // This is the "don't appear half-loaded" guarantee — the spinner stays until
   // every dependency is ready, then the real layout slides in.
-  if ((loading || !contentReady) && !store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
+  if (loading && !store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
   if (suspended) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center max-w-md"><div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Package size={32} className="text-red-500"/></div><h1 className="text-2xl font-bold text-gray-900 mb-2">Store Temporarily Unavailable</h1><p className="text-gray-500">This store is currently suspended. Please check back later or contact the store owner.</p></div></div>;
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
 
@@ -864,6 +871,7 @@ export default function Storefront() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0 overflow-x-auto max-w-full" style={{scrollbarWidth:'none'}}>
+            {isStoreOwner && <Link to="/dashboard" className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full shrink-0" title="Dashboard"><LayoutDashboard size={18} className="sm:w-5 sm:h-5"/></Link>}
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full shrink-0"><User size={18} className="sm:w-5 sm:h-5"/></Link>
@@ -1132,16 +1140,16 @@ export default function Storefront() {
       )}
 
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
-      {previewItems && (
-        <CheckoutPreview
-          items={previewItems}
-          store={store}
-          pc={pc}
-          currency={store.currency || 'DZD'}
-          onConfirm={confirmPreview}
-          onClose={() => setPreviewItems(null)}
-        />
-      )}
+      <ProductQuickAdd
+        show={!!buyNowProduct}
+        onClose={() => setBuyNowProduct(null)}
+        product={buyNowProduct}
+        storeSlug={storeSlug}
+        primaryColor={pc}
+        currency={store.currency || 'DZD'}
+        mode="buyNow"
+        onAddToCart={handleBuyNowFromQuickAdd}
+      />
       {buyNowOpen && <Checkout isModal onClose={()=>{setBuyNowOpen(false);setBuyNowItems(null);}} storeSlug={storeSlug} directItems={buyNowItems}/>}
       <ProductQuickAdd
         show={!!quickAddProduct}

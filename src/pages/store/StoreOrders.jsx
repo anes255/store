@@ -67,7 +67,7 @@ const statusConfig = {
   returned:       { color: 'bg-gray-500',   bg: 'bg-gray-50',   text: 'text-gray-700',   label: 'RETURNED' },
   archived:       { color: 'bg-slate-500',  bg: 'bg-slate-50',  text: 'text-slate-700',  label: 'ARCHIVED' },
 };
-const allStatuses = ['new_order','pending','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','archived'];
+const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','archived'];
 
 const TRANSFER_COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', yalid: '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
 function transferBadge(o) {
@@ -173,10 +173,10 @@ export default function StoreOrders() {
     };
   }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
-    try { const s = JSON.parse(localStorage.getItem('orders.columns.v3') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
+    try { const s = JSON.parse(localStorage.getItem('orders.columns.v4') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
-  useEffect(() => { localStorage.setItem('orders.columns.v3', JSON.stringify(activeColumns)); }, [activeColumns]);
+  useEffect(() => { localStorage.setItem('orders.columns.v4', JSON.stringify(activeColumns)); }, [activeColumns]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');

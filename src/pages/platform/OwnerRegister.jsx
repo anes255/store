@@ -175,7 +175,7 @@ export default function OwnerRegister() {
                 </select>
               </div>
               <div>
-                <label className="input-label">{t('auth.city')}</label>
+                <label className="input-label">{t('auth.city','الدائرة (City)')}</label>
                 <select className="input-field disabled:opacity-60" value={form.city} onChange={set('city')} disabled={!form.wilaya}>
                   <option value="">{t('auth.cityPlaceholder', '— Select city —')}</option>
                   {(WILAYA_CITIES[form.wilaya] || []).map(c => <option key={c} value={c}>{c}</option>)}

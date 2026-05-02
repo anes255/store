@@ -86,6 +86,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
         shipping_address: prev.shipping_address || auth.user.address || '',
         shipping_wilaya: prev.shipping_wilaya || auth.user.wilaya || '',
         shipping_city: prev.shipping_city || auth.user.city || '',
+        shipping_zip: prev.shipping_zip || auth.user.zip || auth.user.zip_code || auth.user.postal_code || '',
       }));
     }
   }, []);
@@ -523,6 +524,27 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   );
                 })}
               </div>
+              {(form.payment_method === 'ccp' || form.payment_method === 'baridimob') && (
+                <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
+                  <p className="text-sm font-bold text-amber-800">{t('checkout.uploadReceipt','Upload Payment Receipt')} *</p>
+                  <p className="text-xs text-amber-600">{t('checkout.receiptDesc','Please upload a screenshot of your CCP/BaridiMob transfer receipt before placing the order.')}</p>
+                  {receiptImage ? (
+                    <div className="flex items-center gap-3">
+                      <img src={receiptImage} className="w-16 h-16 rounded-xl object-cover border border-amber-300" alt="Receipt"/>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-emerald-700">{t('checkout.receiptUploaded','Receipt uploaded')}</p>
+                        <button type="button" onClick={() => setReceiptImage(null)} className="text-xs text-red-500 hover:underline mt-1">{t('common.remove','Remove')}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-amber-300 hover:border-amber-400 cursor-pointer transition-colors bg-white">
+                      <Upload size={16} className="text-amber-500"/>
+                      <span className="text-sm font-bold text-amber-700">{t('checkout.chooseReceipt','Choose receipt image')}</span>
+                      <input type="file" accept="image/*" className="sr-only" onChange={handleReceiptUpload}/>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Notification Preference. Email is offered ONLY when the admin

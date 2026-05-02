@@ -605,7 +605,7 @@ export default function CustomerProfile() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.city', 'City / Commune')}</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.city', 'الدائرة (City)')}</label>
                         <select
                           className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 transition-all disabled:opacity-50"
                           style={{ '--tw-ring-color': pc + '55' }}

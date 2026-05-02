@@ -69,7 +69,8 @@ function LiveBadge({storeId}){
         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"/>
       </span>
       {t('sidebar.live','Live')}
-      {count!=null&&<span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/30 text-[9px] font-extrabold">{count}</span>}
+      {count!=null&&count>0&&<span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/30 text-[9px] font-extrabold">{count}</span>}
+      {count===0&&<span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-[9px] font-extrabold">0</span>}
     </span>
   );
 }
@@ -321,7 +322,15 @@ export default function DashboardLayout({children}){
       }catch{}
       return;
     }
-    import('../../utils/api').then(m=>{m.ownerApi.getStores().then(r=>{if(Array.isArray(r.data))setStores(r.data);}).catch(()=>{});});
+    import('../../utils/api').then(m=>{m.ownerApi.getStores().then(r=>{
+      if(Array.isArray(r.data)){
+        setStores(r.data);
+        if(currentStore?.id){
+          const fresh=r.data.find(s=>s.id===currentStore.id);
+          if(fresh)setCurrentStore(fresh);
+        }
+      }
+    }).catch(()=>{});});
   },[user]);// eslint-disable-line
   const planCtx = usePlanFeatures();
   const theme = useAdminTheme();
