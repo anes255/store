@@ -101,7 +101,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   useEffect(() => {
     if (!storeSlug) return;
     storeApi.getShippingWilayas(storeSlug).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
-    storeApi.getDeliveryCompanies(storeSlug).then(r => { if (Array.isArray(r.data)) setDeliveryCompanies(r.data); }).catch(() => {});
+    if (storeApi.getDeliveryCompanies) storeApi.getDeliveryCompanies(storeSlug).then(r => { if (Array.isArray(r.data)) setDeliveryCompanies(r.data); }).catch(() => {});
   }, [storeSlug]);
   // Wilaya code lookup for zip auto-fill (works even when API fails)
   const WILAYA_CODES={'Adrar':'01','Chlef':'02','Laghouat':'03','Oum El Bouaghi':'04','Batna':'05','Béjaïa':'06','Biskra':'07','Béchar':'08','Blida':'09','Bouira':'10','Tamanrasset':'11','Tébessa':'12','Tlemcen':'13','Tiaret':'14','Tizi Ouzou':'15','Alger':'16','Djelfa':'17','Jijel':'18','Sétif':'19','Saïda':'20','Skikda':'21','Sidi Bel Abbès':'22','Annaba':'23','Guelma':'24','Constantine':'25','Médéa':'26','Mostaganem':'27',"M'Sila":'28','Mascara':'29','Ouargla':'30','Oran':'31','El Bayadh':'32','Illizi':'33','Bordj Bou Arréridj':'34','Boumerdès':'35','El Tarf':'36','Tindouf':'37','Tissemsilt':'38','El Oued':'39','Khenchela':'40','Souk Ahras':'41','Tipaza':'42','Mila':'43','Aïn Defla':'44','Naâma':'45','Aïn Témouchent':'46','Ghardaïa':'47','Relizane':'48'};
