@@ -53,7 +53,8 @@ function LiveBadge({storeId}){
     let mounted = true;
     const tick = async () => {
       try{
-        const{api}=await import('../../utils/api');
+        const mod=await import('../../utils/api');
+        const api=mod.default;
         const{data}=await api.get(`/store/by-id/${storeId}/live-visitors`);
         if(mounted)setCount(data?.count ?? 0);
       }catch{ if(mounted) setCount(null); }
