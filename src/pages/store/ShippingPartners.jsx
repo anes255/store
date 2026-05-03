@@ -326,17 +326,6 @@ export default function ShippingPartners(){
             <div><label className="input-label">{t('storePage.baseRateDzd','Base Rate (DZD)')}</label><input type="number" className="input-field" value={form.base_rate} onChange={e=>setForm({...form,base_rate:e.target.value})} placeholder="400"/></div>
             <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="0555123456"/></div>
           </div>
-          <div>
-            <label className="input-label">{t('storePage.companyLogo','Company Logo')}</label>
-            <div className="flex items-center gap-3">
-              {form.logo?<img src={form.logo} alt="" className="w-14 h-14 rounded-xl object-contain bg-white border border-gray-200 p-1 shrink-0"/>:<div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0"><Truck size={20} className="text-gray-400"/></div>}
-              <label className="flex-1 cursor-pointer">
-                <input type="file" accept="image/*" className="sr-only" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{const img=new window.Image();img.onload=()=>{const c=document.createElement('canvas');const max=200;const ratio=Math.min(max/img.width,max/img.height,1);c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);setForm({...form,logo:c.toDataURL('image/png')});};img.src=r.result;};r.readAsDataURL(f);e.target.value='';}}/>
-                <div className="px-3 py-2 rounded-lg border-2 border-dashed border-gray-300 text-center text-xs font-bold text-gray-500 hover:border-brand-400 transition-colors">{form.logo?t('storePage.changeLogo','Change logo'):t('storePage.uploadLogo','Upload logo')}</div>
-              </label>
-              {form.logo&&<button type="button" onClick={()=>setForm({...form,logo:''})} className="text-xs text-red-500 hover:underline">{t('common.remove','Remove')}</button>}
-            </div>
-          </div>
 
           {/* API Credentials — simplified view: only show what user needs to paste */}
           {form.use_api&&(<div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-3">

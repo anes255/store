@@ -14,7 +14,7 @@ const PerCompanyEditor=memo(function PerCompanyEditor({w,companies,onChange,t}){
           return(
             <div key={c.id} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                {c.logo?<img src={c.logo} alt={c.name} className="w-7 h-7 rounded object-contain bg-white border border-gray-100 p-0.5 shrink-0"/>:<div className="w-7 h-7 rounded bg-gray-200 flex items-center justify-center shrink-0"><Truck size={12} className="text-gray-400"/></div>}
+                <div className="w-7 h-7 rounded bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-[10px] shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
                 <span className="font-semibold text-xs text-gray-700 truncate">{c.name}</span>
               </div>
               <div className="flex items-center gap-1.5">
