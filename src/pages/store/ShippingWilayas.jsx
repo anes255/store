@@ -1,4 +1,5 @@
 import React,{useState,useEffect,useCallback,memo} from'react';import{useTranslation}from'react-i18next';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import toast from'react-hot-toast';import{Globe,Check,X,Save,Search,Truck,Home,Building,Gift,DollarSign,ToggleLeft,ToggleRight,Package,ChevronDown,ChevronUp}from'lucide-react';
+import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 
 // Defined at module scope so React doesn't unmount/remount it on every parent
 // re-render (which would steal focus from the inputs after every keystroke).
@@ -14,7 +15,7 @@ const PerCompanyEditor=memo(function PerCompanyEditor({w,companies,onChange,t}){
           return(
             <div key={c.id} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <div className="w-7 h-7 rounded bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-[10px] shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
+                <div className={`w-7 h-7 rounded bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-[10px] shrink-0`}>{initialFor(c.name)}</div>
                 <span className="font-semibold text-xs text-gray-700 truncate">{c.name}</span>
               </div>
               <div className="flex items-center gap-1.5">

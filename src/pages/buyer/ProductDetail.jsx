@@ -437,6 +437,26 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Quantity offers */}
+            {(() => {
+              let qOffers = product.quantity_offers || [];
+              if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+              if (!Array.isArray(qOffers) || qOffers.length === 0) return null;
+              return (
+                <div className="mt-3">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">{t('store.quantityOffers','Quantity Offers')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {qOffers.map((qo, qi) => (
+                      <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all hover:scale-[1.02]" style={{ borderColor: pc + '40', backgroundColor: pc + '08', color: pc }}>
+                        <span className="text-xs font-extrabold" style={{ color: pc }}>×{qo.quantity}</span>
+                        <span className="text-xs font-bold text-gray-700">{qo.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Description */}
             {getDesc() && <p className="mt-4 text-gray-600 leading-relaxed">{getDesc()}</p>}
             {sv?.description && <p className="mt-2 text-sm text-gray-500 italic border-l-2 border-gray-200 pl-3">{sv.description}</p>}

@@ -37,7 +37,7 @@ export default function StoreProducts() {
   const toggleAll = () => setSelectedItems(prev => prev.size === products.length ? new Set() : new Set(products.map(p => p.id)));
   const clearSelection = () => setSelectedItems(new Set());
 
-  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false,is_on_sale:false,sale_badge_text:'',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:''};
+  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false,is_on_sale:false,sale_badge_text:'',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:'',quantity_offers:[]};
   const [form, setForm] = useState({...empty});
 
   const loadProducts = async () => {
@@ -124,7 +124,10 @@ export default function StoreProducts() {
   const openEdit = (p) => {
     setEditing(p);
     let vars = p.variants||[]; if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];} if(!Array.isArray(vars))vars=[];
-    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active,is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'',offer_title:p.offer_title||'',offer_discount:p.offer_discount||'',offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||''});
+    let qOffers = p.quantity_offers || [];
+    if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+    if (!Array.isArray(qOffers)) qOffers = [];
+    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active,is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'',offer_title:p.offer_title||'',offer_discount:p.offer_discount||'',offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||'',quantity_offers:qOffers});
     setShowModal(true);
   };
 
@@ -336,6 +339,25 @@ export default function StoreProducts() {
                       </div>
                     </div>
                     <p className="text-[11px] text-gray-400">{t('storePage.saleOfferHint','Shows a sale badge on the product card and optional countdown timer on the product page.')}</p>
+
+                    {/* Quantity offers — buy N → label (e.g. "Buy 3 → 20% OFF") */}
+                    <div className="border-t border-gray-100 pt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{t('storePage.quantityOffers','Quantity Offers')}</label>
+                        <button type="button" onClick={()=>setForm({...form,quantity_offers:[...(form.quantity_offers||[]),{quantity:'',label:''}]})} className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"><Plus size={12}/>{t('storePage.addQuantityOffer','Add Offer')}</button>
+                      </div>
+                      {(!form.quantity_offers||form.quantity_offers.length===0)&&<p className="text-[11px] text-gray-400 italic">{t('storePage.noQuantityOffers','No quantity offers. Add one to show "Buy 2 → 10% off" type deals on the product page.')}</p>}
+                      <div className="space-y-2">
+                        {(form.quantity_offers||[]).map((qo,qi)=>(
+                          <div key={qi} className="grid grid-cols-[80px,1fr,32px] gap-2 items-center">
+                            <input type="number" min="1" placeholder={t('storePage.quantity','Qty')} value={qo.quantity||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],quantity:e.target.value};setForm({...form,quantity_offers:n});}} className="input-field !py-1.5 text-xs text-center"/>
+                            <input placeholder={t('storePage.quantityOfferLabelPh','e.g. 20% OFF, Free shipping')} value={qo.label||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],label:e.target.value};setForm({...form,quantity_offers:n});}} className="input-field !py-1.5 text-xs"/>
+                            <button type="button" onClick={()=>setForm({...form,quantity_offers:form.quantity_offers.filter((_,i)=>i!==qi)})} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title={t('storePage.remove','Remove')}><Trash2 size={14}/></button>
+                          </div>
+                        ))}
+                      </div>
+                      {form.quantity_offers&&form.quantity_offers.length>0&&<p className="text-[10px] text-gray-400 mt-2">{t('storePage.quantityOffersHint','Buyers see a row of quantity-tier badges on the product page. Set quantity (e.g. 2) and a label (e.g. "10% OFF").')}</p>}
+                    </div>
                   </div>
                 )}
               </div>

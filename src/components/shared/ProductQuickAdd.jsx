@@ -182,6 +182,26 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
               </div>
             )}
 
+            {/* Quantity offers */}
+            {(() => {
+              let qOffers = product.quantity_offers || [];
+              if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+              if (!Array.isArray(qOffers) || qOffers.length === 0) return null;
+              return (
+                <div className="mt-3">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Quantity Offers</p>
+                  <div className="flex flex-wrap gap-2">
+                    {qOffers.map((qo, qi) => (
+                      <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all" style={{ borderColor: pc + '40', backgroundColor: pc + '08' }}>
+                        <span className="text-xs font-extrabold" style={{ color: pc }}>×{qo.quantity}</span>
+                        <span className="text-xs font-bold text-gray-700">{qo.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ---- VARIANT SELECTORS ---- */}
             {groupTypes.length > 0 && (
               <div className="mt-4 space-y-4 flex-1">

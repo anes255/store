@@ -16,6 +16,7 @@ export function isValidAlgerianPhone(p) {
 import WILAYA_CITIES from '../../data/wilayaCities';
 import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
+import { gradientForCompany, initialFor } from '../../utils/carrierGradient';
 
 // Stable wrapper component defined at module level so it doesn't unmount on every parent re-render.
 function ShellWrapper({ isModal, onClose, children }) {
@@ -95,30 +96,6 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
   const [deliveryCompanies, setDeliveryCompanies] = useState([]);
-  // Brand gradients for built-in carriers — kept in sync with the presets in
-  // ShippingPartners.jsx so the same coloured square shows up in both places.
-  const COMPANY_GRADIENTS = {
-    'yalidine':'from-yellow-500 to-orange-500',
-    'zr express':'from-blue-500 to-cyan-500',
-    'procolis':'from-indigo-500 to-blue-500',
-    'maystro delivery':'from-purple-500 to-pink-500',
-    'maystro':'from-purple-500 to-pink-500',
-    'noest express':'from-green-500 to-emerald-500',
-    'noest':'from-green-500 to-emerald-500',
-    'ecotrack':'from-teal-500 to-green-500',
-    'yassir express':'from-fuchsia-500 to-purple-600',
-    'yassir':'from-fuchsia-500 to-purple-600',
-    'dhd livraison':'from-sky-500 to-blue-600',
-    'dhd':'from-sky-500 to-blue-600',
-    'aramex':'from-red-600 to-red-500',
-    'dhl express':'from-yellow-400 to-yellow-600',
-    'dhl':'from-yellow-400 to-yellow-600',
-    'fedex':'from-purple-600 to-indigo-600',
-    'ups':'from-amber-700 to-yellow-700',
-    'boxy dz':'from-lime-500 to-green-600',
-    'boxy':'from-lime-500 to-green-600',
-  };
-  const gradientFor = (name) => COMPANY_GRADIENTS[(name||'').toLowerCase().trim()] || 'from-brand-500 to-purple-500';
 
   useEffect(() => { storeApi.getStore(storeSlug).then(r => { setStore(r.data); try { initPixels(r.data?.tracking_pixels); trackInitiateCheckout(r.data?.tracking_pixels, items, items.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0)); } catch {} }).catch(() => {}); }, [storeSlug]); // eslint-disable-line
   // Load shipping wilayas for real pricing
@@ -522,7 +499,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         return (
                           <label key={dc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
                             <input type="radio" name="delivery_company" value={dc.id} checked={sel} onChange={() => setForm(prev => ({ ...prev, delivery_company_id: dc.id }))} className="sr-only"/>
-                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${gradientFor(dc.name)} flex items-center justify-center text-white font-bold text-sm shrink-0`}>{(dc.name || '?')[0].toUpperCase()}</div>
+                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${gradientForCompany(dc.name)} flex items-center justify-center text-white font-bold text-sm shrink-0`}>{initialFor(dc.name)}</div>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-sm text-gray-800 truncate">{dc.name}</p>
                               {dcShipPrice != null && <p className="text-[11px] text-gray-500">{dcShipPrice.toLocaleString()} {store?.currency || 'DZD'}</p>}

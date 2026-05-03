@@ -1,4 +1,5 @@
 import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{shippingApi} from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,ArrowDownUp,Clock,Link2,Copy}from'lucide-react';
+import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Verified carrier presets. Endpoints below have been cross-checked against
@@ -226,7 +227,7 @@ export default function ShippingPartners(){
         {filtered.map(c=>(
           <div key={c.id} className="glass-card-solid p-4 sm:p-5 hover:shadow-lg transition-all flex flex-col">
             <div className="flex items-start justify-between mb-3 gap-2">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0`}>{initialFor(c.name)}</div>
               {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
             </div>
             <p className="font-bold text-gray-900 text-base sm:text-lg break-words">{c.name}</p>
@@ -255,7 +256,7 @@ export default function ShippingPartners(){
           <div key={c.id} className="glass-card-solid p-3 sm:p-5 hover:shadow-lg transition-all">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0`}>{initialFor(c.name)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2"><p className="font-bold text-gray-900 text-base sm:text-lg break-words min-w-0">{c.name}</p>
                     {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
