@@ -1,4 +1,35 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import toast from'react-hot-toast';import{Globe,Check,X,Save,Search,Truck,Home,Building,Gift,DollarSign,ToggleLeft,ToggleRight,Package,ChevronDown,ChevronUp}from'lucide-react';
+import React,{useState,useEffect,useCallback,memo} from'react';import{useTranslation}from'react-i18next';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import toast from'react-hot-toast';import{Globe,Check,X,Save,Search,Truck,Home,Building,Gift,DollarSign,ToggleLeft,ToggleRight,Package,ChevronDown,ChevronUp}from'lucide-react';
+
+// Defined at module scope so React doesn't unmount/remount it on every parent
+// re-render (which would steal focus from the inputs after every keystroke).
+const PerCompanyEditor=memo(function PerCompanyEditor({w,companies,onChange,t}){
+  if(!companies.length)return<p className="text-xs text-gray-400 italic px-3 py-2">{t('storePage.noCompaniesYet','Add a delivery company first to set per-company prices.')}</p>;
+  const cp=typeof w.company_prices==='string'?(()=>{try{return JSON.parse(w.company_prices);}catch{return{};}})():(w.company_prices||{});
+  return(
+    <div className="space-y-2">
+      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('storePage.perCompanyPrices','Per-company prices for this wilaya')}</p>
+      <div className="space-y-2">
+        {companies.map(c=>{
+          const cur=cp[c.id]||{};
+          return(
+            <div key={c.id} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {c.logo?<img src={c.logo} alt={c.name} className="w-7 h-7 rounded object-contain bg-white border border-gray-100 p-0.5 shrink-0"/>:<div className="w-7 h-7 rounded bg-gray-200 flex items-center justify-center shrink-0"><Truck size={12} className="text-gray-400"/></div>}
+                <span className="font-semibold text-xs text-gray-700 truncate">{c.name}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input type="number" placeholder={t('storePage.deskShort','Desk')} value={cur.desk||''} onChange={e=>onChange(w.id,c.id,'desk',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
+                <input type="number" placeholder={t('storePage.homeShort','Home')} value={cur.home||''} onChange={e=>onChange(w.id,c.id,'home',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
+                <span className="text-[9px] text-gray-400">DA</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-gray-400">{t('storePage.perCompanyHint','Leave empty to use the default price above. Buyers see the company-specific price when they pick that company at checkout.')}</p>
+    </div>
+  );
+});
 
 export default function ShippingWilayas(){
   const{t}=useTranslation();
@@ -102,16 +133,19 @@ export default function ShippingWilayas(){
     else toast.success(t('storePage.savedLocally','Saved locally — will sync when connection is restored'));
   };
 
-  const updatePrice=(id,field,val)=>setWilayas(wilayas.map(w=>w.id===id?{...w,[field]:val}:w));
-  const updateCompanyPrice=(id,companyId,field,val)=>{
-    setWilayas(wilayas.map(w=>{
+  // Use functional updates and stable callbacks so the input components and
+  // their refs don't churn on every keystroke (which steals focus on mobile).
+  const updatePrice=useCallback((id,field,val)=>setWilayas(prev=>prev.map(w=>w.id===id?{...w,[field]:val}:w)),[]);
+  const updateCompanyPrice=useCallback((id,companyId,field,val)=>{
+    setWilayas(prev=>prev.map(w=>{
       if(w.id!==id)return w;
-      const cp={...(w.company_prices||{})};
+      const cp=typeof w.company_prices==='string'?(()=>{try{return JSON.parse(w.company_prices);}catch{return{};}})():{...(w.company_prices||{})};
       cp[companyId]={...(cp[companyId]||{}),[field]:val};
       return{...w,company_prices:cp};
     }));
-  };
-  const toggleActive=(id)=>setWilayas(wilayas.map(w=>w.id===id?{...w,is_active:w.is_active===false?true:false}:w));
+  },[]);
+  const toggleActive=useCallback((id)=>setWilayas(prev=>prev.map(w=>w.id===id?{...w,is_active:w.is_active===false?true:false}:w)),[]);
+  const toggleField=useCallback((id,field)=>setWilayas(prev=>prev.map(w=>w.id===id?{...w,[field]:w[field]===false?true:false}:w)),[]);
 
   const wName=(w)=>t(`wilayas.${w.wilaya_code}`,w.wilaya_name);
   const _num=v=>{const n=parseFloat(v);return isNaN(n)?null:n;};
@@ -140,35 +174,6 @@ export default function ShippingWilayas(){
   const total=wilayas.length;
   const active=wilayas.filter(w=>w.is_active!==false).length;
   const inactive=total-active;
-
-  const PerCompanyEditor=({w})=>{
-    if(!companies.length)return<p className="text-xs text-gray-400 italic px-3 py-2">{t('storePage.noCompaniesYet','Add a delivery company first to set per-company prices.')}</p>;
-    const cp=typeof w.company_prices==='string'?(()=>{try{return JSON.parse(w.company_prices);}catch{return{};}})():(w.company_prices||{});
-    return(
-      <div className="space-y-2">
-        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('storePage.perCompanyPrices','Per-company prices for this wilaya')}</p>
-        <div className="space-y-2">
-          {companies.map(c=>{
-            const cur=cp[c.id]||{};
-            return(
-              <div key={c.id} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {c.logo?<img src={c.logo} alt={c.name} className="w-7 h-7 rounded object-contain bg-white border border-gray-100 p-0.5 shrink-0"/>:<div className="w-7 h-7 rounded bg-gray-200 flex items-center justify-center shrink-0"><Truck size={12} className="text-gray-400"/></div>}
-                  <span className="font-semibold text-xs text-gray-700 truncate">{c.name}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input type="number" placeholder={t('storePage.deskShort','Desk')} value={cur.desk||''} onChange={e=>updateCompanyPrice(w.id,c.id,'desk',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
-                  <input type="number" placeholder={t('storePage.homeShort','Home')} value={cur.home||''} onChange={e=>updateCompanyPrice(w.id,c.id,'home',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
-                  <span className="text-[9px] text-gray-400">DA</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-[10px] text-gray-400">{t('storePage.perCompanyHint','Leave empty to use the default price above. Buyers see the company-specific price when they pick that company at checkout.')}</p>
-      </div>
-    );
-  };
 
   return(<DashboardLayout>
     <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-8 mb-6 text-white">
@@ -285,7 +290,7 @@ export default function ShippingWilayas(){
                 )}
               </div>
               <button onClick={()=>setExpandedRow(expanded?null:w.id)} className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-brand-600 py-1.5 hover:bg-brand-50 rounded-lg">{t('storePage.companyPrices','Company prices')} {expanded?<ChevronUp size={12}/>:<ChevronDown size={12}/>}</button>
-              {expanded&&<div className="mt-2 pt-2 border-t border-gray-100"><PerCompanyEditor w={w}/></div>}
+              {expanded&&<div className="mt-2 pt-2 border-t border-gray-100"><PerCompanyEditor w={w} companies={companies} onChange={updateCompanyPrice} t={t}/></div>}
             </div>
           );
         })}
@@ -319,7 +324,7 @@ export default function ShippingWilayas(){
                 </tr>
                 {expandedRow===w.id&&(
                   <tr className="bg-gray-50/50">
-                    <td colSpan={5} className="px-4 py-3"><PerCompanyEditor w={w}/></td>
+                    <td colSpan={5} className="px-4 py-3"><PerCompanyEditor w={w} companies={companies} onChange={updateCompanyPrice} t={t}/></td>
                   </tr>
                 )}
               </React.Fragment>

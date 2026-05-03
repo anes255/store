@@ -483,32 +483,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
                 {/* Desk vs Home delivery toggle. On mobile we stack the cards
                     so the emoji + label + price never run out of room. */}
-                {selectedWilayaData && (
-                  <div>
-                    <label className="input-label mb-2">{t('checkout.deliveryType','Delivery Type')} *</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[
-                        { key: 'desk', label: t('checkout.deskDelivery','Desk / Relay Point'), price: parseFloat(selectedWilayaData.desk_delivery_price)||0, icon: '🏢' },
-                        { key: 'home', label: t('checkout.homeDelivery','Home Delivery'), price: parseFloat(selectedWilayaData.home_delivery_price)||0, icon: '🏠' },
-                      ].map(dt => {
-                        const sel = form.shipping_type === dt.key;
-                        return (
-                          <label key={dt.key} className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
-                            <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => setForm(prev => ({ ...prev, shipping_type: dt.key }))} className="sr-only"/>
-                            <span className="text-lg sm:text-xl shrink-0 leading-none">{dt.icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-[13px] sm:text-sm text-gray-800 leading-tight">{dt.label}</p>
-                              <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">1-3 {t('checkout.days','days')}</p>
-                            </div>
-                            <span className="font-extrabold text-[12px] sm:text-sm whitespace-nowrap shrink-0" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
-                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
+                {/* Delivery company picker comes BEFORE delivery type so the
+                    desk/home prices update based on the selected company. */}
                 {deliveryCompanies.length > 0 && (
                   <div>
                     <label className="input-label mb-2">{t('checkout.deliveryCompany','Preferred Delivery Company')}</label>
@@ -534,6 +510,42 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     </div>
                   </div>
                 )}
+
+                {selectedWilayaData && (() => {
+                  // Compute desk/home prices using the per-company override
+                  // (if a company is selected) so the buyer sees the actual
+                  // shipping cost for that company before picking desk/home.
+                  const cp = selectedWilayaData?.company_prices;
+                  let parsed = cp; if (typeof cp === 'string') { try { parsed = JSON.parse(cp); } catch { parsed = null; } }
+                  const perCo = parsed?.[form.delivery_company_id];
+                  const deskPrice = perCo ? (parseFloat(perCo.desk || perCo.desk_price) || parseFloat(selectedWilayaData.desk_delivery_price) || 0) : (parseFloat(selectedWilayaData.desk_delivery_price) || 0);
+                  const homePrice = perCo ? (parseFloat(perCo.home || perCo.home_price) || parseFloat(selectedWilayaData.home_delivery_price) || 0) : (parseFloat(selectedWilayaData.home_delivery_price) || 0);
+                  return (
+                  <div>
+                    <label className="input-label mb-2">{t('checkout.deliveryType','Delivery Type')} *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { key: 'desk', label: t('checkout.deskDelivery','Desk / Relay Point'), price: deskPrice, icon: '🏢' },
+                        { key: 'home', label: t('checkout.homeDelivery','Home Delivery'), price: homePrice, icon: '🏠' },
+                      ].map(dt => {
+                        const sel = form.shipping_type === dt.key;
+                        return (
+                          <label key={dt.key} className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
+                            <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => setForm(prev => ({ ...prev, shipping_type: dt.key }))} className="sr-only"/>
+                            <span className="text-lg sm:text-xl shrink-0 leading-none">{dt.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-[13px] sm:text-sm text-gray-800 leading-tight">{dt.label}</p>
+                              <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">1-3 {t('checkout.days','days')}</p>
+                            </div>
+                            <span className="font-extrabold text-[12px] sm:text-sm whitespace-nowrap shrink-0" style={sel ? { color: pc } : { color: '#6B7280' }}>{dt.price.toLocaleString()} {store?.currency||'DZD'}</span>
+                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  );
+                })()}
               </div>
             </div>
 

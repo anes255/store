@@ -241,7 +241,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
                                 style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}
                               >
                                 {v.name || v.value || 'Option'}
-                                {v.price_adjustment && parseFloat(v.price_adjustment) !== 0 && (
+                                {(parseFloat(v.price_adjustment) || 0) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">
                                     ({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})
                                   </span>
