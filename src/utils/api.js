@@ -223,6 +223,7 @@ export const storeApi = {
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
   // Shipping wilayas (public, for checkout)
   getShippingWilayas: (slug) => api.get(`/store/${slug}/shipping-wilayas`),
+  getDeliveryCompanies: (slug) => api.get(`/store/${slug}/delivery-companies`),
   // Domain lookup
   lookupDomain: (domain) => api.get(`/store/by-domain/${domain}`),
 };

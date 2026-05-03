@@ -680,12 +680,17 @@ export default function StoreOrders() {
 
       case 'payment_method':
         return <td className="px-3 py-3">{cellBtn(o, 'payment_method',
-          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${
-            o.payment_method === 'cod' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-            o.payment_method === 'ccp' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-            o.payment_method === 'baridimob' ? 'bg-green-50 text-green-700 border border-green-200' :
-            'bg-gray-50 text-gray-700 border border-gray-200'
-          }`}><CreditCard size={10}/>{(o.payment_method || 'cod').replace(/_/g, ' ')}</span>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${
+              o.payment_method === 'cod' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+              o.payment_method === 'ccp' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+              o.payment_method === 'baridimob' ? 'bg-green-50 text-green-700 border border-green-200' :
+              'bg-gray-50 text-gray-700 border border-gray-200'
+            }`}><CreditCard size={10}/>{(o.payment_method || 'cod').replace(/_/g, ' ')}</span>
+            {o.receipt_image && (o.payment_method === 'ccp' || o.payment_method === 'baridimob') && (
+              <img src={o.receipt_image} alt="Receipt" className="w-8 h-8 rounded object-cover border border-gray-200 cursor-pointer" title="View receipt"/>
+            )}
+          </div>
         )}</td>;
 
       default: return <td className="px-3 py-3">—</td>;
@@ -736,11 +741,11 @@ export default function StoreOrders() {
           </div>
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Date: Oldest</label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field !py-2 text-sm w-full" />
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0" />
           </div>
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Date: Newest</label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field !py-2 text-sm w-full" />
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0" />
           </div>
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Search</label>

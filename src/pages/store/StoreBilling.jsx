@@ -285,7 +285,41 @@ export default function StoreBilling() {
             allPlans.forEach(p => localizedFeatures(p).forEach(f => allFeatSet.add(f)));
             const allFeatures = Array.from(allFeatSet);
             return (
-              <div className="overflow-x-auto -mx-2 px-2">
+              <>
+              {/* Mobile: stacked cards */}
+              <div className="sm:hidden space-y-3">
+                {allPlans.map(p => {
+                  const name = localizedName(p);
+                  const tagline = localizedTagline(p);
+                  const isCurrent = data?.plan === p.slug && isActive;
+                  const planFeats = localizedFeatures(p);
+                  return (
+                    <div key={p.id || p.slug} className={`rounded-2xl border p-4 ${isCurrent ? 'border-brand-300 bg-brand-50/60 dark:bg-brand-500/10' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900'}`}>
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <span className="text-base font-black text-gray-900 dark:text-white">{name}</span>
+                        {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag', 'POPULAR')}</span>}
+                        {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag', 'CURRENT')}</span>}
+                      </div>
+                      {tagline && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tagline}</p>}
+                      <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.priceMonthly','Monthly')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></div></div>
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.priceYearly','Yearly')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></div></div>
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.maxProducts','Products')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{p.max_products || t('storePage.unlimited', '∞')}</div></div>
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.maxOrders','Orders/mo')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{p.max_orders_month || t('storePage.unlimited', '∞')}</div></div>
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 col-span-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.maxStaff','Staff')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{p.max_staff || t('storePage.unlimited', '∞')}</div></div>
+                      </div>
+                      {allFeatures.length > 0 && <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-white/10">
+                        {allFeatures.map((feat, i) => {
+                          const has = planFeats.includes(feat);
+                          return <div key={p.id+'_mf'+i} className="flex items-center gap-2 text-xs">{has ? <Check size={14} className="text-emerald-500 shrink-0"/> : <span className="text-gray-300 dark:text-gray-600 shrink-0 text-center w-3.5">—</span>}<span className={has ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}>{feat}</span></div>;
+                        })}
+                      </div>}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden sm:block overflow-x-auto -mx-2 px-2">
                 <table className="w-full text-sm border-separate border-spacing-0" style={{minWidth: `${Math.max(640, 260 + (5 + allFeatures.length) * 160)}px`}}>
                   <thead>
                     <tr>
@@ -333,6 +367,7 @@ export default function StoreBilling() {
                   </tbody>
                 </table>
               </div>
+              </>
             );
           })()}
     </div>

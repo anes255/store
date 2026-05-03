@@ -21,7 +21,12 @@ function useAnchorRect(open){
   const[anchor,setAnchor]=useState(null);
   useLayoutEffect(()=>{
     if(!open||!ref.current)return;
-    const update=()=>{const r=ref.current?.getBoundingClientRect();if(r)setAnchor({top:r.bottom+8,right:Math.max(8,window.innerWidth-r.right)});};
+    const update=()=>{
+      const r=ref.current?.getBoundingClientRect();if(!r)return;
+      const isMobile=window.innerWidth<640;
+      if(isMobile)setAnchor({top:r.bottom+8,left:8,right:null});
+      else setAnchor({top:r.bottom+8,right:Math.max(8,window.innerWidth-r.right),left:null});
+    };
     update();
     window.addEventListener('resize',update);window.addEventListener('scroll',update,true);
     return()=>{window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
@@ -59,7 +64,7 @@ function NotificationsBell({isDark,pc}){
       </button>
       {open&&anchor&&createPortal(<>
         <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
-        <div className={`fixed w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-[101] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`} style={{top:anchor.top,right:anchor.right}}>
+        <div className={`fixed w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-[101] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`} style={{top:anchor.top,...(anchor.left!=null?{left:anchor.left}:{right:anchor.right})}}>
           <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div>
               <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Notifications</div>
@@ -353,7 +358,7 @@ function AllStores(){
     <div className="grid gap-4">{stores.map(s=>(
       <div key={s.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden`}>
         <div className="p-4 md:p-5 flex flex-wrap items-center gap-3 md:gap-4">
-          <div className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>
+          {s.logo_url||s.logo?<img src={s.logo_url||s.logo} alt="" className="w-11 h-11 md:w-12 md:h-12 rounded-xl object-cover bg-gray-100 shrink-0 border border-gray-200"/>:<div className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>}
           <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
             <div className="flex flex-wrap items-center gap-2"><p className={`font-bold truncate ${isDark?'text-gray-100':'text-gray-900'}`}>{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark?'bg-gray-700 text-gray-400':'bg-gray-100 text-gray-500'}`}>{t('admin.offline','OFFLINE')}</span>}</div>
             <p className="text-xs text-gray-400 truncate">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>
@@ -450,11 +455,12 @@ function AllOrders(){
 // ═══════ SITE SETTINGS ═══════
 function SiteSettings(){
   const[s,setS]=useState({});const[loading,setLoading]=useState(false);const logoRef=useRef(null);const favRef=useRef(null);
+  const theme=usePlatformTheme();const pc=theme.primaryColor;
   useEffect(()=>{platformApi.getSettings().then(r=>setS(r.data)).catch(()=>{});},[]);
   const save=async()=>{setLoading(true);try{const{data}=await platformApi.updateSettings(s);setS(data);toast.success('Saved!');}catch{toast.error('Failed');}setLoading(false);};
   const imgUp=(field)=>(e)=>{const f=e.target.files?.[0];if(!f){toast.error('No file');return;}const reader=new FileReader();reader.onerror=()=>toast.error('Read failed');reader.onload=()=>{const img=new window.Image();img.onerror=()=>toast.error('Image invalid');img.onload=()=>{try{const c=document.createElement('canvas');const max=field==='favicon'?128:400;const ratio=Math.min(max/img.width,max/img.height,1);c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);const compressed=c.toDataURL('image/png');setS(prev=>({...(prev||{}),[field]:compressed}));toast.success('Uploaded — click Save to apply');}catch(err){toast.error('Compress failed');}};img.src=reader.result;};reader.readAsDataURL(f);e.target.value='';};
   return(<div>
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Site & Branding</h1><button onClick={save} disabled={loading} className="px-4 md:px-6 py-2.5 bg-red-500 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-600 disabled:opacity-50"><Save size={16}/>Save Changes</button></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Site & Branding</h1><button onClick={save} disabled={loading} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:opacity-90 disabled:opacity-50"><Save size={16}/>Save Changes</button></div>
     <div className="grid lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
         <h3 className="font-bold text-gray-900">Platform Identity</h3>
@@ -672,6 +678,7 @@ function BillingConfig(){
   const[config,setConfig]=useState({billing_ccp_account:'',billing_ccp_name:'',billing_baridimob_rip:'',billing_baridimob_qr:''});
   const[plans,setPlans]=useState([]);
   const[saving,setSaving]=useState(false);const fileRef=useRef(null);
+  const theme=usePlatformTheme();const pc=theme.primaryColor;
   useEffect(()=>{
     platformApi.getSettings().then(r=>{const s=r.data||{};setConfig({billing_ccp_account:s.billing_ccp_account||'',billing_ccp_name:s.billing_ccp_name||'',billing_baridimob_rip:s.billing_baridimob_rip||'',billing_baridimob_qr:s.billing_baridimob_qr||''});}).catch(()=>{});
     platformApi.getPlans().then(r=>{setPlans(r.data?.plans||[]);}).catch(()=>{});
@@ -679,7 +686,7 @@ function BillingConfig(){
   const save=async()=>{setSaving(true);try{await platformApi.updateBillingConfig(config);toast.success('Billing config saved!');}catch{toast.error('Failed');}setSaving(false);};
   const uploadQR=(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setConfig({...config,billing_baridimob_qr:r.result});r.readAsDataURL(f);};
   return(<div>
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} className="px-4 md:px-6 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
 
     {/* Active subscription plans summary */}
     <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
@@ -759,6 +766,7 @@ function PageBuilder(){
 
   const[blocks,setBlocks]=useState([]);const[saving,setSaving]=useState(false);const[editIdx,setEditIdx]=useState(null);
   const imgRef=useRef(null);
+  const theme=usePlatformTheme();const pc=theme.primaryColor;
 
   useEffect(()=>{platformApi.getSettings().then(r=>{try{setBlocks(JSON.parse(r.data?.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
 
@@ -810,7 +818,7 @@ function PageBuilder(){
   };
 
   return(<div>
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Page Builder</h1><div className="flex flex-wrap gap-2"><button onClick={()=>{if(confirm('Reset to original landing page? All custom blocks will be removed.')){setBlocks([]);save([]);}}} className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/><span className="hidden sm:inline">Reset to Original</span><span className="sm:hidden">Reset</span></button><a href="/" target="_blank" className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={()=>save()} disabled={saving} className="px-4 md:px-6 py-2.5 bg-red-500 text-white rounded-xl text-xs md:text-sm font-bold hover:bg-red-600 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Page Builder</h1><div className="flex flex-wrap gap-2"><button onClick={()=>{if(confirm('Reset to original landing page? All custom blocks will be removed.')){setBlocks([]);save([]);}}} className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/><span className="hidden sm:inline">Reset to Original</span><span className="sm:hidden">Reset</span></button><a href="/" target="_blank" className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1"><Eye size={14}/>Preview</a><button onClick={()=>save()} disabled={saving} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-xs md:text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div></div>
 
     <div className="grid lg:grid-cols-[1fr,280px] gap-4 md:gap-6">
       <div className="space-y-3">

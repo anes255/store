@@ -88,8 +88,8 @@ function LightboxImage({ images, index, onClose, onChange }) {
       onClick={onClose}
       onWheel={onWheel}
     >
-      {/* Top toolbar */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-2 py-1.5 z-10" onClick={e => e.stopPropagation()}>
+      {/* Top toolbar — hidden on mobile, shown on sm+ */}
+      <div className="hidden sm:flex absolute top-3 left-1/2 -translate-x-1/2 items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-2 py-1.5 z-10" onClick={e => e.stopPropagation()}>
         <button onClick={() => setScale(s => Math.max(1, +(s - 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Zoom out (-)"><ZoomOut size={16}/></button>
         <span className="text-white text-xs font-bold font-mono w-12 text-center tabular-nums">{Math.round(scale * 100)}%</span>
         <button onClick={() => setScale(s => Math.min(5, +(s + 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Zoom in (+)"><ZoomIn size={16}/></button>
@@ -144,7 +144,7 @@ function LightboxImage({ images, index, onClose, onChange }) {
         </div>
       )}
 
-      <p className="absolute bottom-16 left-1/2 -translate-x-1/2 text-[10px] text-white/50 font-mono">
+      <p className="hidden sm:block absolute bottom-16 left-1/2 -translate-x-1/2 text-[10px] text-white/50 font-mono">
         Scroll / +/- to zoom · drag to pan · double-click to toggle · Esc to close
       </p>
     </div>

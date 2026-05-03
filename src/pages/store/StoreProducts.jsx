@@ -142,7 +142,7 @@ export default function StoreProducts() {
           {selectedItems.size > 0 && selectedItems.size === products.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
           <span className="text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
         </button>
-        <div className="relative max-w-sm flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <div className="relative max-w-sm flex-1 min-w-[140px]"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"/><input className="input-field !pl-9 !py-2 text-sm w-full bg-white text-gray-900 placeholder-gray-400" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)} style={{color:'#111827',backgroundColor:'#ffffff'}}/></div>
         <select className="input-field !py-2 text-sm !w-44 shrink-0" value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}>
           <option value="">{t('storePage.allCategories','All Categories')}</option>
           {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name} ({c.product_count||0})</option>))}

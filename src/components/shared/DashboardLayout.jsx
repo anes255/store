@@ -162,7 +162,13 @@ function NotifBell(){
   const[anchor,setAnchor]=React.useState(null);
   React.useLayoutEffect(()=>{
     if(!open||!btnRef.current)return;
-    const update=()=>{const r=btnRef.current?.getBoundingClientRect();if(r)setAnchor({top:r.bottom+8,right:Math.max(8,window.innerWidth-r.right)});};
+    const update=()=>{
+      const r=btnRef.current?.getBoundingClientRect();if(!r)return;
+      const isMobile=window.innerWidth<640;
+      // On mobile, anchor to the LEFT side so the popover doesn't overflow viewport
+      if(isMobile)setAnchor({top:r.bottom+8,left:8,right:null});
+      else setAnchor({top:r.bottom+8,right:Math.max(8,window.innerWidth-r.right),left:null});
+    };
     update();
     window.addEventListener('resize',update);window.addEventListener('scroll',update,true);
     return()=>{window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
@@ -255,7 +261,7 @@ function NotifBell(){
     <button ref={btnRef} onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">{unread>9?'9+':unread}</span>}</button>
     {open&&anchor&&createPortal(<>
       <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
-      <div className="fixed w-[min(92vw,22rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[101] overflow-hidden" style={{top:anchor.top,right:anchor.right}}>
+      <div className="fixed w-[min(92vw,22rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[101] overflow-hidden" style={{top:anchor.top,...(anchor.left!=null?{left:anchor.left}:{right:anchor.right})}}>
         <div className="p-3 border-b border-gray-100 flex items-center gap-2">
           <h3 className="font-bold text-sm flex-1">Notifications</h3>
           {selectMode?(<>

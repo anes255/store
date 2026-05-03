@@ -614,6 +614,8 @@ export default function Storefront() {
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
   const isStoreOwner = !!authToken && authRole === 'store_owner';
   const wishlistStore = useWishlistStore();
+  // Subscribe explicitly to items so this component re-renders when wishlist changes.
+  const wishlistItems = useWishlistStore(s=>s.items);
   // Bind the wishlist store to this storefront's slug as soon as we mount.
   useEffect(()=>{ wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
   // Track a single store visit per browser session (not per page view).
@@ -640,7 +642,7 @@ export default function Storefront() {
     const id=setInterval(beat,15000);
     return ()=>clearInterval(id);
   },[storeSlug]);
-  const wishlist = wishlistStore.items.map(p=>p.id);
+  const wishlist = wishlistItems.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -834,6 +836,8 @@ export default function Storefront() {
   const headerText = '#ffffff';
   const nameFont = store.header_font || 'Arial, sans-serif';
   const headerFont = store.header_font || 'Arial, sans-serif';
+  const customFontFamily = store.header_font ? String(store.header_font).split(',')[0].replace(/['"]/g,'').trim() : '';
+  const fontHref = customFontFamily ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(customFontFamily).replace(/%20/g,'+')}:wght@400;600;700;800;900&display=swap` : '';
   const bodyTextColor = store.text_color || undefined;
 
   // Owner-customised scrollbar (Settings → Customization → Scrollbar Studio).
@@ -847,6 +851,7 @@ export default function Storefront() {
 
   return (
     <div className={`storefront-scope min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={bodyTextColor?{color:bodyTextColor}:undefined}>
+      {fontHref && <link rel="stylesheet" href={fontHref}/>}
       {sbCss && <style>{sbCss}</style>}
       {/* ============ OFFER BANNER ============ */}
       {store.offer_enabled && <OfferBanner store={store}/>}
@@ -1093,7 +1098,7 @@ export default function Storefront() {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed bottom-[calc(160px+env(safe-area-inset-bottom))] md:bottom-24 left-4 md:left-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"
+            className="fixed bottom-[calc(160px+env(safe-area-inset-bottom))] md:bottom-24 right-4 md:right-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"
             style={{background:'linear-gradient(135deg, #25D366, #128C7E)'}}
             title="Chat on WhatsApp"
             aria-label="Chat on WhatsApp"
@@ -1107,7 +1112,7 @@ export default function Storefront() {
       {store.support_phone && (() => {
         const cleanPhone = String(store.support_phone).replace(/[^\d+]/g,'');
         return (
-          <a href={`tel:${cleanPhone}`} className="fixed bottom-[calc(160px+env(safe-area-inset-bottom))] md:bottom-24 right-4 md:right-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform" style={{background:'linear-gradient(135deg, #3b82f6, #1d4ed8)'}} title="Call support" aria-label="Call support">
+          <a href={`tel:${cleanPhone}`} className="fixed bottom-[calc(90px+env(safe-area-inset-bottom))] md:bottom-6 left-4 md:left-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform" style={{background:'linear-gradient(135deg, #3b82f6, #1d4ed8)'}} title="Call support" aria-label="Call support">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </a>
         );

@@ -65,13 +65,13 @@ export default function LanguageSwitcher({ variant }) {
       <button
         ref={btnRef}
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+        className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
           isHeader
             ? 'hover:bg-white/20 text-inherit'
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}
       >
-        <Flag country={current.country} size={20}/>
+        <Flag country={current.country} size={16}/>
         <span>{current.short}</span>
       </button>
 

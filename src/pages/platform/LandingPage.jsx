@@ -309,7 +309,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover aspect-square" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
-            {info.site_name && <span className="text-base font-extrabold text-gray-100">{info.site_name}</span>}
+            {info.site_name && <span className="text-sm sm:text-base font-extrabold text-gray-100">{info.site_name}</span>}
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-400 hover:text-brand-400">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-400 hover:text-brand-400">{t('nav.pricing')}</a></>}

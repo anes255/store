@@ -209,7 +209,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
-    if ((form.payment_method === 'ccp' || form.payment_method === 'baridimob') && !receiptImage) return toast.error(t('checkout.errReceipt', 'Please upload your payment receipt before placing the order'));
+    // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
       try {
         const { coupon_code, notes, ...persist } = form;
@@ -335,7 +335,6 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </div>
           )}
 
-          <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="w-full mt-4 py-3 text-center text-sm text-gray-500 hover:text-gray-700">Skip — I'll pay later</button>
         </div>
       </Shell>
     );
@@ -547,24 +546,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 })}
               </div>
               {(form.payment_method === 'ccp' || form.payment_method === 'baridimob') && (
-                <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
-                  <p className="text-sm font-bold text-amber-800">{t('checkout.uploadReceipt','Upload Payment Receipt')} *</p>
-                  <p className="text-xs text-amber-600">{t('checkout.receiptDesc','Please upload a screenshot of your CCP/BaridiMob transfer receipt before placing the order.')}</p>
-                  {receiptImage ? (
-                    <div className="flex items-center gap-3">
-                      <img src={receiptImage} className="w-16 h-16 rounded-xl object-cover border border-amber-300" alt="Receipt"/>
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-emerald-700">{t('checkout.receiptUploaded','Receipt uploaded')}</p>
-                        <button type="button" onClick={() => setReceiptImage(null)} className="text-xs text-red-500 hover:underline mt-1">{t('common.remove','Remove')}</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-amber-300 hover:border-amber-400 cursor-pointer transition-colors bg-white">
-                      <Upload size={16} className="text-amber-500"/>
-                      <span className="text-sm font-bold text-amber-700">{t('checkout.chooseReceipt','Choose receipt image')}</span>
-                      <input type="file" accept="image/*" className="sr-only" onChange={handleReceiptUpload}/>
-                    </label>
-                  )}
+                <div className="mt-4 p-4 bg-blue-50 rounded-2xl border border-blue-200">
+                  <p className="text-xs text-blue-700">{t('checkout.receiptInfo','You will upload your payment receipt right after placing the order.')}</p>
                 </div>
               )}
             </div>
@@ -653,7 +636,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-7 h-7 bg-gray-200 dark:bg-gray-600 dark:text-white rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"><Minus size={12}/></button>
-                        <span className="text-xs font-bold min-w-[20px] text-center">{item.quantity}</span>
+                        <span className="text-xs font-bold min-w-[20px] text-center text-gray-900 dark:text-white">{item.quantity}</span>
                         <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-7 h-7 bg-gray-200 dark:bg-gray-600 dark:text-white rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"><Plus size={12}/></button>
                       </div>
                     </div>

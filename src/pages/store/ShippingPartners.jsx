@@ -201,45 +201,45 @@ export default function ShippingPartners(){
   const TestIcon=({ok})=>ok===true?<CheckCircle size={14} className="text-emerald-500"/>:ok===false?<XCircle size={14} className="text-red-500"/>:<AlertCircle size={14} className="text-gray-300"/>;
 
   return(<DashboardLayout>
-    <div className="flex items-center justify-between mb-6">
-      <div><h1 className="text-2xl font-bold">{t('storePage.shippingPartners','Shipping Partners')}</h1><p className="text-sm text-gray-400 mt-1">{t('storePage.addYourDeliveryCompanies','Add your delivery companies')}</p></div>
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div><h1 className="text-xl sm:text-2xl font-bold">{t('storePage.shippingPartners','Shipping Partners')}</h1><p className="text-xs sm:text-sm text-gray-400 mt-1">{t('storePage.addYourDeliveryCompanies','Add your delivery companies')}</p></div>
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
           <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title="List view"><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
           <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title="Grid view"><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
         </div>
-        <button onClick={()=>{setEditing(null);setForm({...EMPTY});setStep('pick');setTestResult(null);setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('storePage.addCompany','Add Company')}</button>
+        <button onClick={()=>{setEditing(null);setForm({...EMPTY});setStep('pick');setTestResult(null);setShowModal(true);}} className="btn-primary flex items-center gap-2 text-xs sm:text-sm"><Plus size={16}/>{t('storePage.addCompany','Add Company')}</button>
       </div>
     </div>
 
-    <div className="grid grid-cols-4 gap-4 mb-6">
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.partners','Partners')}</p><p className="text-2xl font-black text-gray-900 mt-1">{companies.length}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.apiConnected','API Connected')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{companies.filter(c=>c.api_base_url).length}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-blue-500 uppercase">Auto-Syncing</p><p className="text-2xl font-black text-blue-600 mt-1">{companies.filter(c=>c.auto_sync_enabled).length}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.avgRate','Avg Rate')}</p><p className="text-2xl font-black text-gray-900 mt-1">{companies.length?Math.round(companies.reduce((s,c)=>s+parseFloat(c.base_rate||0),0)/companies.length):0} <span className="text-xs font-normal text-gray-400">DZD</span></p></div>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
+      <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.partners','Partners')}</p><p className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{companies.length}</p></div>
+      <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.apiConnected','API Connected')}</p><p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{companies.filter(c=>c.api_base_url).length}</p></div>
+      <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-blue-500 uppercase">Auto-Syncing</p><p className="text-xl sm:text-2xl font-black text-blue-600 mt-1">{companies.filter(c=>c.auto_sync_enabled).length}</p></div>
+      <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.avgRate','Avg Rate')}</p><p className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{companies.length?Math.round(companies.reduce((s,c)=>s+parseFloat(c.base_rate||0),0)/companies.length):0} <span className="text-xs font-normal text-gray-400">DZD</span></p></div>
     </div>
 
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>:filtered.length===0?(
       <div className="glass-card-solid p-16 text-center"><Truck size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">{t('storePage.noDeliveryCompaniesYet','No delivery companies yet')}</p></div>
     ):viewMode==='grid'?(
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filtered.map(c=>(
-          <div key={c.id} className="glass-card-solid p-5 hover:shadow-lg transition-all flex flex-col">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
-              {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">{t('storePage.manual','MANUAL')}</span>}
+          <div key={c.id} className="glass-card-solid p-4 sm:p-5 hover:shadow-lg transition-all flex flex-col">
+            <div className="flex items-start justify-between mb-3 gap-2">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
+              {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
             </div>
-            <p className="font-bold text-gray-900 text-lg">{c.name}</p>
-            <div className="flex flex-col gap-1 mt-1 text-sm text-gray-500 flex-1">
+            <p className="font-bold text-gray-900 text-base sm:text-lg break-words">{c.name}</p>
+            <div className="flex flex-wrap gap-2 mt-1 text-xs sm:text-sm text-gray-500 flex-1">
               {parseFloat(c.base_rate)>0&&<span><Package size={12} className="inline mr-1"/>{c.base_rate} DZD</span>}
-              {c.phone&&<span>{c.phone}</span>}
+              {c.phone&&<span className="break-all">{c.phone}</span>}
             </div>
-            {c.api_base_url&&<div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+            {c.api_base_url&&<div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100 flex-wrap">
               <button onClick={()=>toggleAutoSync(c.id,'auto_sync_enabled',!c.auto_sync_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_sync_enabled?'bg-emerald-100 text-emerald-700':'bg-gray-100 text-gray-500'}`} title="Auto-sync orders from carrier"><ArrowDownUp size={10}/>{c.auto_sync_enabled?'SYNC ON':'SYNC OFF'}</button>
               <button onClick={()=>toggleAutoSync(c.id,'auto_dispatch_enabled',!c.auto_dispatch_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_dispatch_enabled?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'}`} title="Auto-push orders to carrier"><Zap size={10}/>{c.auto_dispatch_enabled?'AUTO':'MANUAL'}</button>
               {c.last_synced_at&&<span className="text-[9px] text-gray-400 flex items-center gap-0.5"><Clock size={8}/>{new Date(c.last_synced_at).toLocaleTimeString()}</span>}
             </div>}
-            <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100">
+            <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100 flex-wrap">
               {c.api_base_url&&<button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-500" title="Sync orders from carrier">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
@@ -252,29 +252,30 @@ export default function ShippingPartners(){
     ):(
       <div className="space-y-3">
         {filtered.map(c=>(
-          <div key={c.id} className="glass-card-solid p-5 hover:shadow-lg transition-all">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2"><p className="font-bold text-gray-900 text-lg">{c.name}</p>
-                  {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1"><Wifi size={8}/>{t('storePage.liveTracking','LIVE TRACKING')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">{t('storePage.manual','MANUAL')}</span>}
-                </div>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                  {parseFloat(c.base_rate)>0&&<span><Package size={12} className="inline mr-1"/>{c.base_rate} DZD</span>}
-                  {c.phone&&<span>{c.phone}</span>}
+          <div key={c.id} className="glass-card-solid p-3 sm:p-5 hover:shadow-lg transition-all">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0">{(c.name||'?')[0].toUpperCase()}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2"><p className="font-bold text-gray-900 text-base sm:text-lg break-words min-w-0">{c.name}</p>
+                    {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-500">
+                    {parseFloat(c.base_rate)>0&&<span><Package size={12} className="inline mr-1"/>{c.base_rate} DZD</span>}
+                    {c.phone&&<span className="break-all">{c.phone}</span>}
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap sm:shrink-0 -mx-1 sm:mx-0 overflow-x-auto sm:overflow-visible">
                 {c.api_base_url&&<>
-                  <button onClick={()=>toggleAutoSync(c.id,'auto_sync_enabled',!c.auto_sync_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_sync_enabled?'bg-emerald-100 text-emerald-700':'bg-gray-100 text-gray-500'}`} title="Auto-sync: pull orders from carrier automatically"><ArrowDownUp size={10}/>{c.auto_sync_enabled?'SYNC':'OFF'}</button>
-                  <button onClick={()=>toggleAutoSync(c.id,'auto_dispatch_enabled',!c.auto_dispatch_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ${c.auto_dispatch_enabled?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'}`} title="Auto-dispatch: push orders to carrier automatically"><Zap size={10}/>{c.auto_dispatch_enabled?'AUTO':'MANUAL'}</button>
-                  {c.last_synced_at&&<span className="text-[9px] text-gray-400 flex items-center gap-0.5 mx-1"><Clock size={8}/>{new Date(c.last_synced_at).toLocaleTimeString()}</span>}
-                  <button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2.5 hover:bg-blue-50 rounded-xl text-gray-400 hover:text-blue-500" title="Sync now">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={16}/>}</button>
-                  <button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2.5 hover:bg-emerald-50 rounded-xl text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={16}/>}</button>
-                  <button onClick={()=>copyWebhookUrl(c)} className="p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={16}/></button>
+                  <button onClick={()=>toggleAutoSync(c.id,'auto_sync_enabled',!c.auto_sync_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 ${c.auto_sync_enabled?'bg-emerald-100 text-emerald-700':'bg-gray-100 text-gray-500'}`} title="Auto-sync: pull orders from carrier automatically"><ArrowDownUp size={10}/>{c.auto_sync_enabled?'SYNC':'OFF'}</button>
+                  <button onClick={()=>toggleAutoSync(c.id,'auto_dispatch_enabled',!c.auto_dispatch_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 ${c.auto_dispatch_enabled?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'}`} title="Auto-dispatch: push orders to carrier automatically"><Zap size={10}/>{c.auto_dispatch_enabled?'AUTO':'MANUAL'}</button>
+                  <button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2 sm:p-2.5 hover:bg-blue-50 rounded-xl text-gray-400 hover:text-blue-500 shrink-0" title="Sync now">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={14}/>}</button>
+                  <button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2 sm:p-2.5 hover:bg-emerald-50 rounded-xl text-gray-400 hover:text-emerald-500 shrink-0" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={14}/>}</button>
+                  <button onClick={()=>copyWebhookUrl(c)} className="p-2 sm:p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500 shrink-0" title="Copy webhook URL"><Link2 size={14}/></button>
                 </>}
-                <button onClick={()=>openEdit(c)} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500"><Edit size={16}/></button>
-                <button onClick={()=>del(c.id)} className="p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500"><Trash2 size={16}/></button>
+                <button onClick={()=>openEdit(c)} className="p-2 sm:p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500 shrink-0"><Edit size={14}/></button>
+                <button onClick={()=>del(c.id)} className="p-2 sm:p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500 shrink-0"><Trash2 size={14}/></button>
               </div>
             </div>
           </div>
@@ -282,7 +283,7 @@ export default function ShippingPartners(){
       </div>
     )}
 
-    {showModal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowModal(false)}><div className="bg-white rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+    {showModal&&<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={()=>setShowModal(false)}><div className="bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full sm:max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
 
       {/* STEP 1 */}
       {step==='pick'&&!editing&&<>
