@@ -53,7 +53,7 @@ const PRESETS=[
   {name:'Boxy DZ',logo:'B',color:'from-lime-500 to-green-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'Boxy DZ has no documented public API — keep MANUAL or paste tracking URL',verified:false,manual_only:true},
 ];
 
-const EMPTY={name:'',base_rate:'',phone:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_query_params:{},api_tracking_endpoint:'',api_status_path:'',api_method:'GET',api_body_template:'',oauth2_token_url:'',oauth2_credentials:{},api_create_endpoint:'',api_create_method:'POST',api_create_body_template:'',api_create_tracking_path:'',use_api:false};
+const EMPTY={name:'',base_rate:'',phone:'',logo:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_query_params:{},api_tracking_endpoint:'',api_status_path:'',api_method:'GET',api_body_template:'',oauth2_token_url:'',oauth2_credentials:{},api_create_endpoint:'',api_create_method:'POST',api_create_body_template:'',api_create_tracking_path:'',use_api:false};
 
 export default function ShippingPartners(){
   const{t}=useTranslation();
@@ -92,7 +92,7 @@ export default function ShippingPartners(){
 
   const openEdit=(c)=>{
     const parse=(v)=>typeof v==='string'?(()=>{try{return JSON.parse(v);}catch{return{};}})():(v||{});
-    setEditing(c);setForm({name:c.name,base_rate:c.base_rate||'',phone:c.phone||'',tracking_url:c.tracking_url||'',
+    setEditing(c);setForm({name:c.name,base_rate:c.base_rate||'',phone:c.phone||'',logo:c.logo||'',tracking_url:c.tracking_url||'',
       api_base_url:c.api_base_url||'',api_auth_type:c.api_auth_type||'none',api_key:c.api_key||'',
       api_headers:parse(c.api_headers),api_query_params:parse(c.api_query_params),
       oauth2_credentials:parse(c.oauth2_credentials),oauth2_token_url:c.oauth2_token_url||'',
@@ -325,6 +325,17 @@ export default function ShippingPartners(){
           <div className="grid grid-cols-2 gap-3">
             <div><label className="input-label">{t('storePage.baseRateDzd','Base Rate (DZD)')}</label><input type="number" className="input-field" value={form.base_rate} onChange={e=>setForm({...form,base_rate:e.target.value})} placeholder="400"/></div>
             <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="0555123456"/></div>
+          </div>
+          <div>
+            <label className="input-label">{t('storePage.companyLogo','Company Logo')}</label>
+            <div className="flex items-center gap-3">
+              {form.logo?<img src={form.logo} alt="" className="w-14 h-14 rounded-xl object-contain bg-white border border-gray-200 p-1 shrink-0"/>:<div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0"><Truck size={20} className="text-gray-400"/></div>}
+              <label className="flex-1 cursor-pointer">
+                <input type="file" accept="image/*" className="sr-only" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{const img=new window.Image();img.onload=()=>{const c=document.createElement('canvas');const max=200;const ratio=Math.min(max/img.width,max/img.height,1);c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);setForm({...form,logo:c.toDataURL('image/png')});};img.src=r.result;};r.readAsDataURL(f);e.target.value='';}}/>
+                <div className="px-3 py-2 rounded-lg border-2 border-dashed border-gray-300 text-center text-xs font-bold text-gray-500 hover:border-brand-400 transition-colors">{form.logo?t('storePage.changeLogo','Change logo'):t('storePage.uploadLogo','Upload logo')}</div>
+              </label>
+              {form.logo&&<button type="button" onClick={()=>setForm({...form,logo:''})} className="text-xs text-red-500 hover:underline">{t('common.remove','Remove')}</button>}
+            </div>
           </div>
 
           {/* API Credentials — simplified view: only show what user needs to paste */}

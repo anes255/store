@@ -517,7 +517,7 @@ export default function ProductDetail() {
                                 {/* Always prefer the human-readable name; fall back to value
                                     only when the admin didn't set one (and strip hex prefix). */}
                                 {v.name || (v.value && !/^#[0-9a-f]{3,8}$/i.test(v.value) ? v.value : 'Option')}
-                                {v.price_adjustment && parseFloat(v.price_adjustment) !== 0 && (
+                                {(parseFloat(v.price_adjustment) || 0) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">
                                     ({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})
                                   </span>

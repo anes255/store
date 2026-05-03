@@ -137,20 +137,20 @@ export default function StoreProducts() {
         <h1 className="page-header">{t('sidebar.products')}</h1>
         <button onClick={()=>{setEditing(null);setForm({...empty});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('products.addProduct')}</button>
       </div>
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={toggleAll} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === products.length ? 'Deselect All' : 'Select All'}>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
+        <button onClick={toggleAll} className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === products.length ? t('storePage.deselectAll','Deselect All') : t('storePage.selectAll','Select All')}>
           {selectedItems.size > 0 && selectedItems.size === products.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
-          <span className="text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} selected` : 'Select All'}</span>
+          <span className="text-[11px] sm:text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} ${t('storePage.selectedCount','selected')}` : t('storePage.selectAll','Select All')}</span>
         </button>
-        <div className="relative max-w-sm flex-1 min-w-[140px]"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"/><input className="input-field !pl-9 !py-2 text-sm w-full bg-white text-gray-900 placeholder-gray-400" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)} style={{color:'#111827',backgroundColor:'#ffffff'}}/></div>
-        <select className="input-field !py-2 text-sm !w-44 shrink-0" value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}>
+        <div className="relative flex-1 basis-full sm:basis-auto sm:max-w-sm order-last sm:order-none"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"/><input className="input-field !pl-9 !py-2 text-sm w-full bg-white text-gray-900 placeholder-gray-400" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)} style={{color:'#111827',backgroundColor:'#ffffff'}}/></div>
+        <select className="input-field !py-2 text-sm w-full sm:!w-44 shrink-0" value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}>
           <option value="">{t('storePage.allCategories','All Categories')}</option>
           {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name} ({c.product_count||0})</option>))}
         </select>
-        <button onClick={addCategory} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title="Add category"><Plus size={12}/>Category</button>
-        <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
-          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title="Grid view"><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
-          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title="List view"><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
+        <button onClick={addCategory} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title={t('storePage.addCategory','Add category')}><Plus size={12}/>{t('storePage.category','Category')}</button>
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0 ml-auto sm:ml-0">
+          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title={t('storePage.gridView','Grid view')}><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title={t('storePage.listView','List view')}><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
         </div>
       </div>
 

@@ -138,10 +138,18 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   }, [items, storeSlug, isBuyNow]);
 
   const subtotal = getTotal();
-  // Use per-wilaya shipping price (desk vs home), fall back to store default
-  const shipping = selectedWilayaData
-    ? parseFloat(form.shipping_type === 'home' ? selectedWilayaData.home_delivery_price : selectedWilayaData.desk_delivery_price) || 0
-    : (store ? parseFloat(store.shipping_default_price || 0) : 0);
+  // Use per-wilaya shipping price (desk vs home), preferring per-company override.
+  const shipping = (() => {
+    if (!selectedWilayaData) return store ? parseFloat(store.shipping_default_price || 0) : 0;
+    const cp = selectedWilayaData.company_prices;
+    let parsed = cp;
+    if (typeof cp === 'string') { try { parsed = JSON.parse(cp); } catch { parsed = null; } }
+    const perCo = parsed && form.delivery_company_id ? parsed[form.delivery_company_id] : null;
+    if (perCo) {
+      return parseFloat(form.shipping_type === 'home' ? (perCo.home || perCo.home_price || selectedWilayaData.home_delivery_price) : (perCo.desk || perCo.desk_price || selectedWilayaData.desk_delivery_price)) || 0;
+    }
+    return parseFloat(form.shipping_type === 'home' ? selectedWilayaData.home_delivery_price : selectedWilayaData.desk_delivery_price) || 0;
+  })();
   const total = subtotal + shipping - couponDiscount;
   const pc = store?.primary_color || '#7C3AED';
 
@@ -507,11 +515,18 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {deliveryCompanies.map(dc => {
                         const sel = form.delivery_company_id === dc.id;
+                        const cp = selectedWilayaData?.company_prices;
+                        let parsed = cp; if (typeof cp === 'string') { try { parsed = JSON.parse(cp); } catch { parsed = null; } }
+                        const perCo = parsed?.[dc.id];
+                        const dcShipPrice = perCo ? parseFloat(form.shipping_type === 'home' ? (perCo.home || perCo.home_price) : (perCo.desk || perCo.desk_price)) || null : null;
                         return (
                           <label key={dc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
                             <input type="radio" name="delivery_company" value={dc.id} checked={sel} onChange={() => setForm(prev => ({ ...prev, delivery_company_id: dc.id }))} className="sr-only"/>
-                            {dc.logo ? <img src={dc.logo} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0"/> : <Truck size={18} className="text-gray-400 shrink-0"/>}
-                            <span className="font-bold text-sm text-gray-800 flex-1">{dc.name}</span>
+                            {dc.logo ? <img src={dc.logo} alt={dc.name} className="w-9 h-9 rounded-lg object-contain bg-white border border-gray-100 shrink-0 p-0.5"/> : <div className="w-9 h-9 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0"><Truck size={18} className="text-gray-400"/></div>}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-gray-800 truncate">{dc.name}</p>
+                              {dcShipPrice != null && <p className="text-[11px] text-gray-500">{dcShipPrice.toLocaleString()} {store?.currency || 'DZD'}</p>}
+                            </div>
                             {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
                           </label>
                         );

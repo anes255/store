@@ -370,7 +370,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                                 className={`px-3.5 py-2 rounded-full text-sm font-bold border transition-all ${isSel ? 'text-white shadow-md border-transparent' : 'border-white/15 text-white/60 hover:border-white/40 bg-white/5'}`}
                                 style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
                                 {v.name || v.value || 'Option'}
-                                {v.price_adjustment && parseFloat(v.price_adjustment) !== 0 && (
+                                {(parseFloat(v.price_adjustment) || 0) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})</span>
                                 )}
                               </button>
