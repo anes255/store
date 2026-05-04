@@ -40,7 +40,7 @@ function WhatsAppQR({ storeId }) {
 
   React.useEffect(() => {
     checkStatus();
-    const i = setInterval(checkStatus, 2000);
+    const i = setInterval(checkStatus, 1500);
     return () => clearInterval(i);
   }, [storeId]);
 

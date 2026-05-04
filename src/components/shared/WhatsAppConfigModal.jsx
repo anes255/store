@@ -204,7 +204,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   const dk=useAdminTheme(s=>s.mode==='dark');
 
   useEffect(()=>{if(show&&initialConfig)setCfg({...initialConfig});if(show){const lg=String(initialConfig?.wa_language||'fr').slice(0,2).toLowerCase();setLang(['en','fr','ar'].includes(lg)?lg:'fr');}},[show,initialConfig]);
-  useEffect(()=>{if(show&&storeId&&!waStatus)checkStatus();},[show,storeId]);
+  useEffect(()=>{if(!show||!storeId)return;checkStatus();const id=setInterval(checkStatus,1500);return()=>clearInterval(id);},[show,storeId]);
   useEffect(()=>{if(!show||!storeId)return;loadStats();loadRecent();const id=setInterval(loadStats,30000);return()=>clearInterval(id);},[show,storeId]);
 
   const setV=(k,v)=>setCfg(p=>({...p,[k]:v}));

@@ -16,7 +16,8 @@ export default function AdminWhatsApp() {
 
   useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 3000);
+    // Poll fast (1.5s) so the UI flips to "connected" the moment the QR is scanned
+    const iv = setInterval(refresh, 1500);
     return () => clearInterval(iv);
   }, []);
 
