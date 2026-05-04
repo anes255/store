@@ -166,6 +166,10 @@ export default function ShippingPartners(){
         api_body_template:form.api_body_template||'',
         api_tracking_endpoint:form.api_tracking_endpoint,
         api_status_path:form.api_status_path,
+        api_create_endpoint:form.api_create_endpoint||'',
+        api_create_method:form.api_create_method||'POST',
+        api_create_body_template:form.api_create_body_template||'',
+        api_create_tracking_path:form.api_create_tracking_path||'',
       });
       setTestResult(data);
     }catch(e){setTestResult({ok:false,error:e.response?.data?.error||e.message,results:{}});}
