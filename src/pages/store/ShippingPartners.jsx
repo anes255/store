@@ -409,6 +409,17 @@ export default function ShippingPartners(){
                     </div>
                   </details>
                 )}
+                {testResult.request_body && (
+                  <details className="text-[11px] opacity-80">
+                    <summary className="cursor-pointer">{t('storePage.showRequestBody','Show what we sent (debugging)')}</summary>
+                    <div className="mt-1 p-2 bg-white/60 rounded text-[10px] font-mono whitespace-pre-wrap break-all">
+                      <p className="font-bold mb-1">URL:</p>
+                      <p className="mb-2">{testResult.url}</p>
+                      <p className="font-bold mb-1">Body sent:</p>
+                      <p>{testResult.request_body}</p>
+                    </div>
+                  </details>
+                )}
               </div>
             )}
           </div>)}
