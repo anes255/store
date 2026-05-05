@@ -116,7 +116,7 @@ export default function TrackingOrders(){
   };
 
   const tracked = orders.filter(o => o.tracking_number || o['delivery_company_id']).length;
-  const syncing = orders.filter(o => !o.tracking_number && o['delivery_company_id']).length;
+  const syncingCount = orders.filter(o => !o.tracking_number && o['delivery_company_id']).length;
   const delivered=orders.filter(o=>o.status==='delivered').length;
 
   // ── Settings state (from OrderTracking.jsx) ──
@@ -310,7 +310,7 @@ export default function TrackingOrders(){
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalShipped','Total Shipped')}</p><p className="text-2xl font-black text-gray-900 mt-1">{orders.length}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.withCarrier','With Carrier')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{tracked}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-cyan-500 uppercase">{t('storePage.syncing','Syncing')}</p><p className="text-2xl font-black text-cyan-600 mt-1">{syncing}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-cyan-500 uppercase">{t('storePage.syncing','Syncing')}</p><p className="text-2xl font-black text-cyan-600 mt-1">{syncingCount}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-brand-500 uppercase">{t('storePage.delivered','Delivered')}</p><p className="text-2xl font-black text-brand-600 mt-1">{delivered}</p></div>
     </div>
 
