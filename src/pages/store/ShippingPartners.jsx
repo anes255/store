@@ -47,20 +47,15 @@ const PRESETS=[
     create_method:'POST',
     create_tracking_path:'tracking',
     create_body_template:'{"reference":"{order_id}","nom_client":"{customer_name}","telephone":"{customer_phone}","adresse":"{shipping_address}","code_wilaya":"{wilaya_code}","commune":"{shipping_city}","montant":"{total}","remarque":"{notes}","produit":"{product_list}","type":1,"stop_desk":{is_stopdesk_int},"quantite":{item_count}}'},
-  // ─── Prest (EcoTrack-based) ─────────────────────────────────────────────
-  // Prest Courrier Express runs on EcoTrack (prest.ecotrack.dz).
+  // ─── Prest Courrier Express ─────────────────────────────────────────────
+  // Prest uses EcoTrack internally (prest.ecotrack.dz) but tokens are issued
+  // per-tenant. No public API docs. Kept as manual until Prest publishes an
+  // open integration or provides API credentials to the user.
   {name:'Prest Courrier Express',logo:'P',color:'from-orange-500 to-red-500',
-    api_base_url:'https://prest.ecotrack.dz/api/v1',
-    api_auth_type:'bearer',
-    api_tracking_endpoint:'/get/tracking/{tracking_number}',
-    api_status_path:'data.activity.0.event',
+    api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',
     headers:[],query_params:[],
-    help:'Prest partner portal (prest.ecotrack.dz) → API → copy your Bearer token (single token)',
-    verified:true,
-    create_endpoint:'/create/order',
-    create_method:'POST',
-    create_tracking_path:'tracking',
-    create_body_template:'{"reference":"{order_id}","nom_client":"{customer_name}","telephone":"{customer_phone}","adresse":"{shipping_address}","code_wilaya":"{wilaya_code}","commune":"{shipping_city}","montant":"{total}","remarque":"{notes}","produit":"{product_list}","type":1,"stop_desk":{is_stopdesk_int},"quantite":{item_count}}'},
+    help:'Prest (prest-dz.com) has no documented public API yet. Use MANUAL mode or contact Prest for API access (prest.ecotrack.dz).',
+    verified:false,manual_only:true},
   {name:'Aramex',logo:'A',color:'from-red-600 to-red-500',api_base_url:'https://ws.aramex.net/ShippingAPI.V2/Tracking/Service_1_0.svc',api_auth_type:'custom_headers',api_tracking_endpoint:'/json/TrackShipments',api_status_path:'TrackingResults.0.Value.0.UpdateDescription',headers:['UserName','Password','AccountNumber','AccountPin','AccountEntity','AccountCountryCode'],query_params:[],help:'aramex.com → MyAramex → Developer → SOAP/JSON credentials (all 6 required)',verified:true,method:'POST',body_template:'{"ClientInfo":{"UserName":"{UserName}","Password":"{Password}","Version":"v1.0","AccountNumber":"{AccountNumber}","AccountPin":"{AccountPin}","AccountEntity":"{AccountEntity}","AccountCountryCode":"{AccountCountryCode}"},"Shipments":["{tracking_number}"]}'},
   {name:'DHL Express',logo:'D',color:'from-yellow-400 to-yellow-600',api_base_url:'https://api-eu.dhl.com/track/shipments',api_auth_type:'custom_headers',api_tracking_endpoint:'?trackingNumber={tracking_number}',api_status_path:'shipments.0.status.description',headers:['DHL-API-Key'],query_params:[],help:'developer.dhl.com → My DHL API → Track and Trace → copy DHL-API-Key',verified:true},
   {name:'FedEx',logo:'F',color:'from-purple-600 to-indigo-600',api_base_url:'https://apis.fedex.com',api_auth_type:'oauth2',api_tracking_endpoint:'/track/v1/trackingnumbers',api_status_path:'output.completeTrackResults.0.trackResults.0.latestStatusDetail.description',headers:[],query_params:[],oauth2_token_url:'https://apis.fedex.com/oauth/token',headers_oauth2:['client_id','client_secret'],help:'developer.fedex.com → My Projects → copy client_id and client_secret (system fetches the OAuth token automatically)',verified:true,method:'POST',body_template:'{"trackingInfo":[{"trackingNumberInfo":{"trackingNumber":"{tracking_number}"}}],"includeDetailedScans":false}'},
