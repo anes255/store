@@ -218,6 +218,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
+    if (deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
     // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
       try {
@@ -488,8 +489,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     desk/home prices update based on the selected company. */}
                 {deliveryCompanies.length > 0 && (
                   <div>
-                    <label className="input-label mb-2">{t('checkout.deliveryCompany','Preferred Delivery Company')}</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="input-label mb-2">{t('checkout.deliveryCompany','Preferred Delivery Company')} *</label>
+                    <div className="space-y-2">
                       {deliveryCompanies.map(dc => {
                         const sel = form.delivery_company_id === dc.id;
                         const cp = selectedWilayaData?.company_prices;
@@ -497,15 +498,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         const perCo = parsed?.[dc.id];
                         const dcShipPrice = perCo ? parseFloat(form.shipping_type === 'home' ? (perCo.home || perCo.home_price) : (perCo.desk || perCo.desk_price)) || null : null;
                         return (
-                          <label key={dc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
-                            <input type="radio" name="delivery_company" value={dc.id} checked={sel} onChange={() => setForm(prev => ({ ...prev, delivery_company_id: dc.id }))} className="sr-only"/>
-                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${gradientForCompany(dc.name)} flex items-center justify-center text-white font-bold text-sm shrink-0`}>{initialFor(dc.name)}</div>
+                          <button key={dc.id} type="button" onClick={() => setForm(prev => ({ ...prev, delivery_company_id: dc.id }))}
+                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${sel ? 'shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
+                            style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientForCompany(dc.name)} flex items-center justify-center text-white font-bold text-lg shrink-0`}>{initialFor(dc.name)}</div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold text-sm text-gray-800 truncate">{dc.name}</p>
-                              {dcShipPrice != null && <p className="text-[11px] text-gray-500">{dcShipPrice.toLocaleString()} {store?.currency || 'DZD'}</p>}
+                              <p className="font-bold text-gray-900">{dc.name}</p>
+                              {dcShipPrice != null && <p className="text-xs text-gray-500 mt-0.5">{dcShipPrice.toLocaleString()} {store?.currency || 'DZD'}</p>}
                             </div>
-                            {sel && <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
-                          </label>
+                            {sel && <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor: pc}}><Check size={14} className="text-white"/></div>}
+                          </button>
                         );
                       })}
                     </div>
@@ -513,22 +515,32 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 )}
 
                 {selectedWilayaData && (() => {
-                  // Compute desk/home prices using the per-company override
-                  // (if a company is selected) so the buyer sees the actual
-                  // shipping cost for that company before picking desk/home.
                   const cp = selectedWilayaData?.company_prices;
                   let parsed = cp; if (typeof cp === 'string') { try { parsed = JSON.parse(cp); } catch { parsed = null; } }
                   const perCo = parsed?.[form.delivery_company_id];
                   const deskPrice = perCo ? (parseFloat(perCo.desk || perCo.desk_price) || parseFloat(selectedWilayaData.desk_delivery_price) || 0) : (parseFloat(selectedWilayaData.desk_delivery_price) || 0);
                   const homePrice = perCo ? (parseFloat(perCo.home || perCo.home_price) || parseFloat(selectedWilayaData.home_delivery_price) || 0) : (parseFloat(selectedWilayaData.home_delivery_price) || 0);
+                  const deskEnabled = selectedWilayaData.desk_enabled !== false;
+                  const homeEnabled = selectedWilayaData.home_enabled !== false;
+                  const options = [
+                    deskEnabled && { key: 'desk', label: t('checkout.deskDelivery','Desk / Relay Point'), price: deskPrice, icon: '🏢' },
+                    homeEnabled && { key: 'home', label: t('checkout.homeDelivery','Home Delivery'), price: homePrice, icon: '🏠' },
+                  ].filter(Boolean);
+                  if (!options.length) return null;
+                  if (options.length === 1 && form.shipping_type !== options[0].key) {
+                    setTimeout(() => setForm(prev => ({ ...prev, shipping_type: options[0].key })), 0);
+                  }
+                  if (!deskEnabled && form.shipping_type === 'desk') {
+                    setTimeout(() => setForm(prev => ({ ...prev, shipping_type: 'home' })), 0);
+                  }
+                  if (!homeEnabled && form.shipping_type === 'home') {
+                    setTimeout(() => setForm(prev => ({ ...prev, shipping_type: 'desk' })), 0);
+                  }
                   return (
                   <div>
                     <label className="input-label mb-2">{t('checkout.deliveryType','Delivery Type')} *</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[
-                        { key: 'desk', label: t('checkout.deskDelivery','Desk / Relay Point'), price: deskPrice, icon: '🏢' },
-                        { key: 'home', label: t('checkout.homeDelivery','Home Delivery'), price: homePrice, icon: '🏠' },
-                      ].map(dt => {
+                      {options.map(dt => {
                         const sel = form.shipping_type === dt.key;
                         return (
                           <label key={dt.key} className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>

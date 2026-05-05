@@ -46,6 +46,7 @@ const ALL_COLUMNS = [
   { key: 'shipping_zip',     label: 'Shipping Zip' },
   { key: 'tracking_number',  label: 'Tracking Number' },
   { key: 'company_name',     label: 'Company Name' },
+  { key: 'preferred_company', label: 'Preferred Delivery' },
   { key: 'notes',            label: 'Notes' },
   { key: 'payment_method',   label: 'Payment' },
 ];
@@ -110,8 +111,6 @@ export default function StoreOrders() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(isPreparingPage ? 'preparing' : isArchivePage ? 'archived' : 'all');
-  // Force the filter back to "preparing"/"archived" whenever the route is
-  // one of those special pages (defends against stale state when navigating).
   useEffect(() => {
     if (isPreparingPage && filter !== 'preparing') setFilter('preparing');
     else if (isArchivePage && filter !== 'archived') setFilter('archived');
@@ -671,6 +670,13 @@ export default function StoreOrders() {
             : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>Set</span>
         )}</td>;
 
+      case 'preferred_company':
+        return <td className="px-3 py-3">
+          {o.preferred_delivery_company_name
+            ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><Truck size={10}/>{o.preferred_delivery_company_name}</span>
+            : <span className="text-[10px] text-gray-400">—</span>}
+        </td>;
+
       case 'notes':
         return <td className="px-3 py-3">{cellBtn(o, 'notes',
           o.notes
@@ -845,7 +851,7 @@ export default function StoreOrders() {
               }
             }}
           >
-            <table className="" style={{ width: 'auto', minWidth: `${Math.max(1600, (activeColumns.length + 1) * 160 * colScale)}px`, tableLayout: 'auto', whiteSpace: 'nowrap' }}>
+            <table className="" style={{ width: '100%', minWidth: `${Math.max(1200, (activeColumns.length + 1) * 140 * colScale)}px`, tableLayout: 'auto', whiteSpace: 'nowrap' }}>
               {/* colgroup so user-set column widths actually apply to body cells. */}
               <colgroup>
                 <col style={{ width: 40 }} />
@@ -1009,6 +1015,7 @@ export default function StoreOrders() {
           companies={companies}
           statusConfig={statusConfig}
           allStatuses={allStatuses}
+          isPreparingPage={isPreparingPage}
         />
       )}
 
@@ -1135,7 +1142,7 @@ export default function StoreOrders() {
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(isPreparingPage ? ['new_order','preparing','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
+                  {(isPreparingPage ? ['preparing','confirmed','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
 
                     const sc2 = statusConfig[s];
                     return (
@@ -1160,7 +1167,7 @@ export default function StoreOrders() {
 // ==========================================================================
 // Quick Action Drawer — one modal that switches on column type.
 // ==========================================================================
-function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, onDispatch, companies, statusConfig, allStatuses }) {
+function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, onDispatch, companies, statusConfig, allStatuses, isPreparingPage }) {
   const { t } = useTranslation();
   const { type, order: o } = action;
   const [localPatch, setLocalPatch] = useState({});
@@ -1250,10 +1257,11 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'status') {
+    const statusList = isPreparingPage ? ['preparing','confirmed','cancelled'] : allStatuses;
     return wrap(
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
-          {allStatuses.map(s => {
+          {statusList.map(s => {
             const sc = statusConfig[s];
             const active = o.status === s;
             return (

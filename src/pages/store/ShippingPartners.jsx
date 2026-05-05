@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{shippingApi} from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,ArrowDownUp,Clock,Link2,Copy}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{shippingApi} from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,ArrowDownUp,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign}from'lucide-react';
 import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,9 +78,34 @@ export default function ShippingPartners(){
   const[syncing,setSyncing]=useState(null);const[togglingSync,setTogglingSync]=useState(null);
   const[viewMode,setViewMode]=useState(()=>{try{return localStorage.getItem('partners_view')||'list';}catch{return'list';}});
   useEffect(()=>{try{localStorage.setItem('partners_view',viewMode);}catch{}},[viewMode]);
+  const[wilayas,setWilayas]=useState([]);
+  const[expandedPricing,setExpandedPricing]=useState(null);
+  const[savingPrices,setSavingPrices]=useState(false);
+
+  const loadWilayas=()=>{if(!currentStore?.id)return;api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>{const d=r.data;if(Array.isArray(d))setWilayas(d);else if(d&&Array.isArray(d.wilayas))setWilayas(d.wilayas);}).catch(()=>{});};
+
+  const updateCompanyPrice=(wilayaId,companyId,field,val)=>{
+    setWilayas(prev=>prev.map(w=>{
+      if(w.id!==wilayaId)return w;
+      const cp=typeof w.company_prices==='string'?(()=>{try{return JSON.parse(w.company_prices);}catch{return{};}})():{...(w.company_prices||{})};
+      cp[companyId]={...(cp[companyId]||{}),[field]:val};
+      return{...w,company_prices:cp};
+    }));
+  };
+
+  const saveCompanyPrices=async(companyId)=>{
+    if(!currentStore?.id)return;
+    setSavingPrices(true);
+    try{
+      const payload={wilayas:wilayas.map(w=>({id:w.id,wilaya_code:w.wilaya_code,wilaya_name:w.wilaya_name,home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active,home_enabled:w.home_enabled!==false,desk_enabled:w.desk_enabled!==false,company_prices:w.company_prices||{}}))};
+      await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,payload);
+      toast.success(t('storePage.changesSaved','Changes saved!'));
+    }catch{toast.error(t('storePage.failed','Failed'));}
+    setSavingPrices(false);
+  };
 
   const load=()=>{if(!currentStore?.id)return;api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r=>setCompanies(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
-  useEffect(()=>{load();},[currentStore?.id]);
+  useEffect(()=>{load();loadWilayas();},[currentStore?.id]);
 
   const save=async()=>{
     if(!form.name)return toast.error(t('storePage.companyNameRequired','Company name required'));
@@ -259,7 +284,32 @@ export default function ShippingPartners(){
               {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
               <button onClick={()=>openEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-brand-500"><Edit size={14}/></button>
               <button onClick={()=>del(c.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
+              <button onClick={()=>setExpandedPricing(expandedPricing===c.id?null:c.id)} className={`p-2 rounded-lg text-[10px] font-bold flex items-center gap-1 ${expandedPricing===c.id?'bg-brand-100 text-brand-700':'hover:bg-gray-100 text-gray-400'}`}><DollarSign size={14}/></button>
             </div>
+            {expandedPricing===c.id&&(
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('storePage.perWilayaPrices','Per-wilaya prices for')} {c.name}</p>
+                  <button onClick={()=>saveCompanyPrices(c.id)} disabled={savingPrices} className="px-3 py-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-bold flex items-center gap-1 disabled:opacity-50">{savingPrices?<div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={10}/>}{t('common.save','Save')}</button>
+                </div>
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {wilayas.filter(w=>w.is_active!==false).map(w=>{
+                    const cp=typeof w.company_prices==='string'?(()=>{try{return JSON.parse(w.company_prices);}catch{return{};}})():(w.company_prices||{});
+                    const cur=cp[c.id]||{};
+                    return(
+                      <div key={w.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <span className="text-[10px] font-mono font-bold text-gray-400 w-6 shrink-0">{w.wilaya_code}</span>
+                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate min-w-0">{t(`wilayas.${w.wilaya_code}`,w.wilaya_name)}</span>
+                        <input type="number" placeholder={t('storePage.deskShort','Desk')} value={cur.desk||''} onChange={e=>updateCompanyPrice(w.id,c.id,'desk',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
+                        <input type="number" placeholder={t('storePage.homeShort','Home')} value={cur.home||''} onChange={e=>updateCompanyPrice(w.id,c.id,'home',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
+                        <span className="text-[9px] text-gray-400">DA</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2">{t('storePage.perCompanyHint','Leave empty to use the default price above. Buyers see the company-specific price when they pick that company at checkout.')}</p>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -290,8 +340,33 @@ export default function ShippingPartners(){
                 </>}
                 <button onClick={()=>openEdit(c)} className="p-2 sm:p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500 shrink-0"><Edit size={14}/></button>
                 <button onClick={()=>del(c.id)} className="p-2 sm:p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500 shrink-0"><Trash2 size={14}/></button>
+                <button onClick={()=>setExpandedPricing(expandedPricing===c.id?null:c.id)} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 ${expandedPricing===c.id?'bg-brand-100 text-brand-700':'bg-gray-100 text-gray-500'}`}><DollarSign size={10}/>{t('storePage.wilayaPrices','Prices')}{expandedPricing===c.id?<ChevronUp size={10}/>:<ChevronDown size={10}/>}</button>
               </div>
             </div>
+            {expandedPricing===c.id&&(
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{t('storePage.perWilayaPrices','Per-wilaya prices for')} {c.name}</p>
+                  <button onClick={()=>saveCompanyPrices(c.id)} disabled={savingPrices} className="px-3 py-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-bold flex items-center gap-1 disabled:opacity-50">{savingPrices?<div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={10}/>}{t('common.save','Save')}</button>
+                </div>
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {wilayas.filter(w=>w.is_active!==false).map(w=>{
+                    const cp=typeof w.company_prices==='string'?(()=>{try{return JSON.parse(w.company_prices);}catch{return{};}})():(w.company_prices||{});
+                    const cur=cp[c.id]||{};
+                    return(
+                      <div key={w.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <span className="text-[10px] font-mono font-bold text-gray-400 w-6 shrink-0">{w.wilaya_code}</span>
+                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate min-w-0">{t(`wilayas.${w.wilaya_code}`,w.wilaya_name)}</span>
+                        <input type="number" placeholder={t('storePage.deskShort','Desk')} value={cur.desk||''} onChange={e=>updateCompanyPrice(w.id,c.id,'desk',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
+                        <input type="number" placeholder={t('storePage.homeShort','Home')} value={cur.home||''} onChange={e=>updateCompanyPrice(w.id,c.id,'home',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
+                        <span className="text-[9px] text-gray-400">DA</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2">{t('storePage.perCompanyHint','Leave empty to use the default price above. Buyers see the company-specific price when they pick that company at checkout.')}</p>
+              </div>
+            )}
           </div>
         ))}
       </div>
