@@ -115,8 +115,8 @@ export default function TrackingOrders(){
     setTrackingLoading(false);
   };
 
-  const tracked=orders.filter(o=>o.tracking_number||o.delivery_company_id).length;
-  const syncing=orders.filter(o=>!o.tracking_number&&o.delivery_company_id).length;
+  const tracked = orders.filter(o => o.tracking_number || o.delivery_company_id).length;
+  const syncing = orders.filter(o => !o.tracking_number && o.delivery_company_id).length;
   const delivered=orders.filter(o=>o.status==='delivered').length;
 
   // ── Settings state (from OrderTracking.jsx) ──
