@@ -100,7 +100,7 @@ export default function TrackingOrders(){
   const openOrder=async(order)=>{
     setSelectedOrder(order);setTrackingData(null);
     const key=trackKey(order);
-    if(key&&(order.delivery_company_id||order.tracking_number)){
+    if(key&&order.delivery_company_id){
       setTrackingLoading(true);
       try{const{data}=await api.get(`/manage/stores/${currentStore.id}/track/${encodeURIComponent(key)}`);setTrackingData(data);}
       catch(e){setTrackingData({error:e.response?.data?.error||e.message});}
@@ -115,8 +115,8 @@ export default function TrackingOrders(){
     setTrackingLoading(false);
   };
 
-  const tracked=orders.filter(o=>o.tracking_number).length;
-  const untracked=orders.filter(o=>!o.tracking_number&&o.status==='shipped').length;
+  const tracked=orders.filter(o=>o.tracking_number||o.delivery_company_id).length;
+  const syncing=orders.filter(o=>!o.tracking_number&&o.delivery_company_id).length;
   const delivered=orders.filter(o=>o.status==='delivered').length;
 
   // ── Settings state (from OrderTracking.jsx) ──
@@ -231,7 +231,7 @@ export default function TrackingOrders(){
               <p className="text-xs text-gray-400 mt-0.5">{selectedOrder.company_name||t('storePage.noDeliveryCompany','No delivery company')} {selectedOrder.tracking_number&&<span className="font-mono bg-gray-100 px-2 py-0.5 rounded ml-1">#{selectedOrder.tracking_number}</span>}</p>
             </div>
             <div className="flex items-center gap-2">
-              {selectedOrder.tracking_number&&<button onClick={refreshTracking} disabled={trackingLoading} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={12} className={trackingLoading?'animate-spin':''}/>{t('storePage.refresh','Refresh')}</button>}
+              {(selectedOrder.tracking_number||selectedOrder.delivery_company_id)&&<button onClick={refreshTracking} disabled={trackingLoading} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={12} className={trackingLoading?'animate-spin':''}/>{t('storePage.refresh','Refresh')}</button>}
               <button onClick={()=>{setSelectedOrder(null);setTrackingData(null);}} className="p-2 hover:bg-gray-100 rounded-xl"><X size={18}/></button>
             </div>
           </div>
@@ -242,7 +242,13 @@ export default function TrackingOrders(){
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t('storePage.partner','Partner')}</p><p className="font-bold text-sm text-gray-900">{selectedOrder.company_name||t('storePage.notAvailable','N/A')}</p>{trackingData?.has_api&&<span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t('storePage.live','LIVE')}</span>}</div>
             </div>
             {!selectedOrder.tracking_number && !selectedOrder.delivery_company_id ? (
-              <div className="p-8 text-center"><AlertTriangle size={36} className="mx-auto text-amber-400 mb-3"/><p className="font-bold text-gray-700">{t('storePage.noCarrier','No carrier assigned')}</p><p className="text-xs text-gray-400 mt-1">{t('storePage.assignFromOrders','Assign one from the Orders page')}</p></div>
+              <div className="p-8 text-center"><AlertTriangle size={36} className="mx-auto text-gray-300 mb-3"/><p className="font-bold text-gray-700">{t('storePage.noCarrier','No carrier assigned')}</p><p className="text-xs text-gray-400 mt-1">{t('storePage.assignFromOrders','Assign one from the Orders page')}</p></div>
+            ):!selectedOrder.tracking_number && selectedOrder.delivery_company_id && !trackingData && !trackingLoading ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-cyan-50 flex items-center justify-center mx-auto mb-4"><RefreshCw size={28} className="text-cyan-500 animate-spin"/></div>
+                <p className="font-bold text-gray-800">{t('storePage.carrierSyncActive','Synced with carrier')}</p>
+                <p className="text-xs text-gray-400 mt-1">{t('storePage.carrierSyncDesc','This order is managed by')} <span className="font-bold text-cyan-600">{selectedOrder.company_name}</span>. {t('storePage.trackingAutoSync','Tracking updates automatically from their platform.')}</p>
+              </div>
             ):trackingLoading&&!trackingData?(
               <div className="p-12 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>
             ):(
@@ -303,13 +309,13 @@ export default function TrackingOrders(){
   const shipmentsTab=()=>(<>
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalShipped','Total Shipped')}</p><p className="text-2xl font-black text-gray-900 mt-1">{orders.length}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.withTracking','With Tracking')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{tracked}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-amber-500 uppercase">{t('storePage.noTracking','No Tracking')}</p><p className="text-2xl font-black text-amber-600 mt-1">{untracked}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.withCarrier','With Carrier')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{tracked}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-cyan-500 uppercase">{t('storePage.syncing','Syncing')}</p><p className="text-2xl font-black text-cyan-600 mt-1">{syncing}</p></div>
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-brand-500 uppercase">{t('storePage.delivered','Delivered')}</p><p className="text-2xl font-black text-brand-600 mt-1">{delivered}</p></div>
     </div>
 
     <div className="flex items-center gap-3 mb-6 flex-wrap">
-      {[{k:'all',l:t('storePage.all','All')},{k:'tracked',l:t('storePage.withTracking','With Tracking')},{k:'untracked',l:t('storePage.noTracking','No Tracking')}].map(f=>(
+      {[{k:'all',l:t('storePage.all','All')},{k:'tracked',l:t('storePage.tracked','Tracked')},{k:'untracked',l:t('storePage.syncing','Syncing')}].map(f=>(
         <button key={f.k} onClick={()=>setFilter(f.k)} className={`px-4 py-2 rounded-xl text-sm font-bold ${filter===f.k?'bg-brand-500 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{f.l}</button>
       ))}
       <div className="relative flex-1 max-w-xs ml-auto"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchOrdersOrTracking','Search orders or tracking...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
@@ -323,25 +329,22 @@ export default function TrackingOrders(){
           const st=o.tracking_status||(o.status==='delivered'?'delivered':'in_transit');
           const stepIdx=getStepIndex(st);
           const isFailed=FAIL_STATUSES.includes(st);
-          // An order is "carrier-managed" once it's been assigned to a delivery
-          // company — even if the carrier hasn't returned a tracking number
-          // yet. We still display it as a live shipment, just labelled
-          // "syncing" instead of nagging the admin to assign a number.
           const carrierAssigned = !!(o.delivery_company_id || o.company_name);
           const isUntracked = !o.tracking_number && !carrierAssigned;
+          const isSyncing = carrierAssigned && !o.tracking_number;
           return(
             <div key={o.id} onClick={()=>openOrder(o)} className="glass-card-solid p-5 hover:shadow-lg transition-all cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  isUntracked?'bg-gray-100':isFailed?'bg-red-50':st==='delivered'?'bg-emerald-50':carrierAssigned&&!o.tracking_number?'bg-amber-50':'bg-cyan-50'}`}>
-                  {isUntracked?<AlertTriangle size={20} className="text-gray-400"/>:isFailed?<RotateCcw size={20} className="text-red-500"/>:st==='delivered'?<Check size={20} className="text-emerald-500"/>:carrierAssigned&&!o.tracking_number?<RefreshCw size={20} className="text-amber-500"/>:<Truck size={20} className="text-cyan-600"/>}
+                  isUntracked?'bg-gray-100':isFailed?'bg-red-50':st==='delivered'?'bg-emerald-50':isSyncing?'bg-cyan-50':'bg-cyan-50'}`}>
+                  {isUntracked?<AlertTriangle size={20} className="text-gray-400"/>:isFailed?<RotateCcw size={20} className="text-red-500"/>:st==='delivered'?<Check size={20} className="text-emerald-500"/>:isSyncing?<RefreshCw size={20} className="text-cyan-500 animate-spin"/>:<Truck size={20} className="text-cyan-600"/>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-mono font-bold text-sm text-brand-600">{o.order_number}</span>
                     <span className="font-medium text-sm text-gray-700">{o.customer_name}</span>
                     {(o.tracking_number||carrierAssigned)&&<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':carrierAssigned&&!o.tracking_number?'bg-amber-50 text-amber-700':'bg-cyan-50 text-cyan-700'}`}>{carrierAssigned&&!o.tracking_number?t('storePage.syncingWithCarrier','Syncing with carrier'):trStatus(st)}</span>}
+                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':isSyncing?'bg-cyan-50 text-cyan-700':'bg-cyan-50 text-cyan-700'}`}>{isSyncing?t('storePage.liveSync','Live sync'):trStatus(st)}</span>}
                   </div>
                   <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
                     {o.shipping_wilaya&&<span className="flex items-center gap-1"><MapPin size={11}/>{o.shipping_wilaya}</span>}
@@ -349,15 +352,15 @@ export default function TrackingOrders(){
                     <span className="flex items-center gap-1"><Clock size={11}/>{new Date(o.created_at).toLocaleDateString()}</span>
                   </div>
                   {(o.tracking_number||carrierAssigned)&&!isFailed&&(
-                    <div className="flex gap-1 mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?'bg-emerald-400':'bg-gray-200'}`}/>))}</div>
+                    <div className="flex gap-1 mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?(isSyncing?'bg-cyan-400':'bg-emerald-400'):'bg-gray-200'}`}/>))}</div>
                   )}
                 </div>
                 <div className="text-right shrink-0">
                   {o.tracking_number
                     ? <p className="font-mono text-xs text-gray-500">{o.tracking_number}</p>
                     : carrierAssigned
-                      ? <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded-lg whitespace-nowrap">{t('storePage.awaitingTrackingNumber','Awaiting tracking #')}</span>
-                      : <span className="text-xs text-amber-600 font-bold bg-amber-50 px-3 py-1.5 rounded-lg">{t('storePage.noTracking','No tracking')}</span>}
+                      ? <span className="text-[10px] text-cyan-600 font-bold bg-cyan-50 px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1"><RefreshCw size={10} className="animate-spin"/>{t('storePage.carrierManaged','Carrier managed')}</span>
+                      : <span className="text-xs text-gray-400 font-bold bg-gray-50 px-3 py-1.5 rounded-lg">{t('storePage.notAssigned','Not assigned')}</span>}
                   <p className="text-sm font-bold text-gray-800 mt-1">{parseFloat(o.total).toLocaleString()} {o.currency||'DZD'}</p>
                 </div>
                 <button onClick={(e)=>deleteOrder(e,o.id)} className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0" title={t('common.delete','Delete')}><Trash2 size={16}/></button>
