@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{shippingApi} from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,ArrowDownUp,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{shippingApi} from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,ArrowDownUp,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope}from'lucide-react';
 import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,6 +232,18 @@ export default function ShippingPartners(){
     try{await navigator.clipboard.writeText(url);toast.success('Webhook URL copied');}catch{toast.error('Copy failed');}
   };
 
+  const[diagnosing,setDiagnosing]=useState(null);
+  const[diagnoseResult,setDiagnoseResult]=useState(null);
+
+  const diagnoseCarrier=async(id)=>{
+    setDiagnosing(id);setDiagnoseResult(null);
+    try{
+      const{data}=await api.post(`/manage/stores/${currentStore.id}/delivery-companies/${id}/diagnose`,{});
+      setDiagnoseResult(data);
+    }catch(e){setDiagnoseResult({error:e?.response?.data?.error||e.message});}
+    setDiagnosing(null);
+  };
+
   const addHeader=()=>setForm({...form,api_headers:{...form.api_headers,['']:''}});
   const removeHeader=(k)=>{const h={...form.api_headers};delete h[k];setForm({...form,api_headers:h});};
 
@@ -281,6 +293,7 @@ export default function ShippingPartners(){
             <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100 flex-wrap">
               {c.api_base_url&&<button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-500" title="Sync orders from carrier">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-500" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={14}/>}</button>}
+              {c.api_base_url&&<button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 hover:bg-amber-50 rounded-lg text-gray-400 hover:text-amber-600" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
               <button onClick={()=>openEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-brand-500"><Edit size={14}/></button>
               <button onClick={()=>del(c.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
@@ -336,6 +349,7 @@ export default function ShippingPartners(){
                   <button onClick={()=>toggleAutoSync(c.id,'auto_dispatch_enabled',!c.auto_dispatch_enabled)} disabled={togglingSync===c.id} className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 ${c.auto_dispatch_enabled?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-500'}`} title="Auto-dispatch: push orders to carrier automatically"><Zap size={10}/>{c.auto_dispatch_enabled?'AUTO':'MANUAL'}</button>
                   <button onClick={()=>syncCarrier(c.id)} disabled={syncing===c.id} className="p-2 sm:p-2.5 hover:bg-blue-50 rounded-xl text-gray-400 hover:text-blue-500 shrink-0" title="Sync now">{syncing===c.id?<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"/>:<ArrowDownUp size={14}/>}</button>
                   <button onClick={()=>testSaved(c.id)} disabled={testing===c.id} className="p-2 sm:p-2.5 hover:bg-emerald-50 rounded-xl text-gray-400 hover:text-emerald-500 shrink-0" title={t('storePage.testApi','Test API')}>{testing===c.id?<div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"/>:<RefreshCw size={14}/>}</button>
+                  <button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 sm:p-2.5 hover:bg-amber-50 rounded-xl text-gray-400 hover:text-amber-600 shrink-0" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>
                   <button onClick={()=>copyWebhookUrl(c)} className="p-2 sm:p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500 shrink-0" title="Copy webhook URL"><Link2 size={14}/></button>
                 </>}
                 <button onClick={()=>openEdit(c)} className="p-2 sm:p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500 shrink-0"><Edit size={14}/></button>
@@ -567,6 +581,28 @@ export default function ShippingPartners(){
         </div>
       </>}
 
+    </div></div>}
+
+    {diagnoseResult&&<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={()=>setDiagnoseResult(null)}><div className="bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold flex items-center gap-2"><Stethoscope size={18} className="text-amber-500"/>API Diagnosis</h2>
+        <button onClick={()=>setDiagnoseResult(null)}><X size={20}/></button>
+      </div>
+      {diagnoseResult.error&&<div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">{diagnoseResult.error}</div>}
+      {diagnoseResult.carrier&&<div className="text-xs text-gray-500 mb-3">Carrier: <span className="font-bold text-gray-700">{diagnoseResult.carrier}</span> | Base URL: <span className="font-mono text-[10px]">{diagnoseResult.api_base_url}</span> | Auth: {diagnoseResult.api_auth_type} | Key: {diagnoseResult.has_api_key?'✅ present':'❌ missing'}</div>}
+      {diagnoseResult.steps&&diagnoseResult.steps.map((s,i)=>(
+        <div key={i} className={`p-3 rounded-xl border mb-2 ${s.error?'bg-red-50 border-red-200':s.status>=200&&s.status<300?'bg-emerald-50 border-emerald-200':s.status>=400?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider">{(s.step||'').replace(/_/g,' ')}</span>
+            {s.error?<span className="text-[10px] text-red-600 font-bold">ERROR</span>:<span className={`text-[10px] font-bold ${s.status>=200&&s.status<300?'text-emerald-600':s.status>=400?'text-red-600':'text-amber-600'}`}>HTTP {s.status}</span>}
+          </div>
+          {s.url&&<p className="text-[10px] font-mono text-gray-500 break-all mb-1">{s.method?s.method+' ':'GET '}{s.url}</p>}
+          {s.body_sent&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request body</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.body_sent), null, 2); } catch { return s.body_sent; } })()}</pre></details>}
+          {s.error&&<p className="text-xs text-red-600">{s.error}</p>}
+          {s.response&&<details open={s.step==='create_order'}><summary className="text-[10px] text-gray-500 cursor-pointer">Response</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-60 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.response), null, 2); } catch { return s.response; } })()}</pre></details>}
+          {s.tracking&&<p className="text-[10px] text-gray-500">Tracking: <span className="font-mono font-bold">{s.tracking}</span></p>}
+        </div>
+      ))}
     </div></div>}
   </DashboardLayout>);
 }
