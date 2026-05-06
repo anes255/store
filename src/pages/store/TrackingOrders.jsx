@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useMemo,useRef} from'react';
+import React,{useState,useEffect,useMemo,useRef,useCallback} from'react';
 import{useTranslation}from'react-i18next';
 import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
@@ -115,9 +115,20 @@ export default function TrackingOrders(){
     setTrackingLoading(false);
   };
 
-  const tracked = orders.filter(o => o.tracking_number || o['delivery_company_id']).length;
-  const syncingCount = orders.filter(o => !o.tracking_number && o['delivery_company_id']).length;
-  const delivered=orders.filter(o=>o.status==='delivered').length;
+  const statusCounts = useMemo(() => {
+    const c = { shipped: 0, in_transit: 0, delivered: 0, returned: 0, cancelled: 0, preparing: 0, confirmed: 0, pending: 0 };
+    for (const o of orders) {
+      const st = o.status || 'shipped';
+      if (st === 'delivered') c.delivered++;
+      else if (st === 'returned') c.returned++;
+      else if (st === 'cancelled') c.cancelled++;
+      else if (st === 'preparing' || st === 'under_preparation') c.preparing++;
+      else if (st === 'confirmed') c.confirmed++;
+      else if (st === 'shipped') c.shipped++;
+      else c.in_transit++;
+    }
+    return c;
+  }, [orders]);
 
   // ── Settings state (from OrderTracking.jsx) ──
   const[s,setS]=useState({});
@@ -310,11 +321,13 @@ export default function TrackingOrders(){
 
   // ═══════════════════ TABS CONTENT ═══════════════════
   const shipmentsTab=()=>(<>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalShipped','Total Shipped')}</p><p className="text-2xl font-black text-gray-900 mt-1">{orders.length}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.withCarrier','With Carrier')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{tracked}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-cyan-500 uppercase">{t('storePage.syncing','Syncing')}</p><p className="text-2xl font-black text-cyan-600 mt-1">{syncingCount}</p></div>
-      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-brand-500 uppercase">{t('storePage.delivered','Delivered')}</p><p className="text-2xl font-black text-brand-600 mt-1">{delivered}</p></div>
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.totalOrders','Total')}</p><p className="text-2xl font-black text-gray-900 mt-1">{orders.length}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-orange-500 uppercase">{t('storePage.shipped','Shipped')}</p><p className="text-2xl font-black text-orange-600 mt-1">{statusCounts.shipped + statusCounts.in_transit}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-purple-500 uppercase">{t('storePage.preparing','Preparing')}</p><p className="text-2xl font-black text-purple-600 mt-1">{statusCounts.preparing}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.delivered','Delivered')}</p><p className="text-2xl font-black text-emerald-600 mt-1">{statusCounts.delivered}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-gray-500 uppercase">{t('storePage.returned','Returned')}</p><p className="text-2xl font-black text-gray-600 mt-1">{statusCounts.returned}</p></div>
+      <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-red-500 uppercase">{t('storePage.cancelled','Cancelled')}</p><p className="text-2xl font-black text-red-600 mt-1">{statusCounts.cancelled}</p></div>
     </div>
 
     <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 flex-wrap">
@@ -329,19 +342,35 @@ export default function TrackingOrders(){
     ):(
       <div className="space-y-2 sm:space-y-3">
         {filtered.map(o=>{
-          const st=o.tracking_status||(o.status==='delivered'?'delivered':'in_transit');
+          const orderStatus = o.status || 'shipped';
+          const st = o.tracking_status || orderStatus;
           const stepIdx=getStepIndex(st);
-          const isFailed=FAIL_STATUSES.includes(st);
+          const isFailed=FAIL_STATUSES.includes(st) || orderStatus==='returned' || orderStatus==='cancelled';
           const carrierAssigned = !!(o['delivery_company_id'] || o.company_name);
-          const isUntracked = !o.tracking_number && !carrierAssigned;
-          const isSyncing = carrierAssigned && !o.tracking_number;
+
+          const statusColor = orderStatus==='delivered'?'bg-emerald-50 text-emerald-700'
+            :orderStatus==='returned'?'bg-gray-100 text-gray-700'
+            :orderStatus==='cancelled'?'bg-red-50 text-red-700'
+            :orderStatus==='shipped'?'bg-orange-50 text-orange-700'
+            :orderStatus==='preparing'||orderStatus==='under_preparation'?'bg-purple-50 text-purple-700'
+            :orderStatus==='confirmed'?'bg-blue-50 text-blue-700'
+            :'bg-cyan-50 text-cyan-700';
+
+          const iconBg = orderStatus==='delivered'?'bg-emerald-50'
+            :isFailed?'bg-red-50'
+            :orderStatus==='shipped'?'bg-orange-50'
+            :orderStatus==='preparing'||orderStatus==='under_preparation'?'bg-purple-50'
+            :'bg-cyan-50';
+
           return(
             <div key={o.id} onClick={()=>openOrder(o)} className="glass-card-solid p-3 sm:p-5 hover:shadow-lg transition-all cursor-pointer group">
-              {/* Mobile: stacked layout */}
               <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
-                  isUntracked?'bg-gray-100':isFailed?'bg-red-50':st==='delivered'?'bg-emerald-50':isSyncing?'bg-cyan-50':'bg-cyan-50'}`}>
-                  {isUntracked?<AlertTriangle size={18} className="text-gray-400"/>:isFailed?<RotateCcw size={18} className="text-red-500"/>:st==='delivered'?<Check size={18} className="text-emerald-500"/>:isSyncing?<RefreshCw size={18} className="text-cyan-500 animate-spin"/>:<Truck size={18} className="text-cyan-600"/>}
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>
+                  {orderStatus==='delivered'?<Check size={18} className="text-emerald-500"/>
+                    :isFailed?<RotateCcw size={18} className="text-red-500"/>
+                    :orderStatus==='shipped'?<Truck size={18} className="text-orange-600"/>
+                    :orderStatus==='preparing'||orderStatus==='under_preparation'?<Package size={18} className="text-purple-500"/>
+                    :<Truck size={18} className="text-cyan-600"/>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
@@ -355,15 +384,15 @@ export default function TrackingOrders(){
                     </div>
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-400 flex-wrap">
-                    {(o.tracking_number||carrierAssigned)&&<span className={`px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase ${
-                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':isSyncing?'bg-cyan-50 text-cyan-700':'bg-cyan-50 text-cyan-700'}`}>{isSyncing?t('storePage.liveSync','Live sync'):trStatus(st)}</span>}
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase ${statusColor}`}>{trStatus(orderStatus)}</span>
+                    {o.tracking_status && o.tracking_status !== orderStatus && <span className={`px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase bg-cyan-50 text-cyan-700`}>{trStatus(o.tracking_status)}</span>}
                     {o.shipping_wilaya&&<span className="flex items-center gap-0.5"><MapPin size={10}/>{o.shipping_wilaya}</span>}
                     {o.company_name&&<span className="flex items-center gap-0.5"><Truck size={10}/>{o.company_name}</span>}
                     <span className="flex items-center gap-0.5"><Clock size={10}/>{new Date(o.created_at).toLocaleDateString()}</span>
                     {o.tracking_number&&<span className="font-mono hidden sm:inline">{o.tracking_number}</span>}
                   </div>
-                  {(o.tracking_number||carrierAssigned)&&!isFailed&&(
-                    <div className="flex gap-0.5 sm:gap-1 mt-1.5 sm:mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?(isSyncing?'bg-cyan-400':'bg-emerald-400'):'bg-gray-200'}`}/>))}</div>
+                  {carrierAssigned&&!isFailed&&(
+                    <div className="flex gap-0.5 sm:gap-1 mt-1.5 sm:mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?'bg-emerald-400':'bg-gray-200'}`}/>))}</div>
                   )}
                 </div>
               </div>
