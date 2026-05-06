@@ -793,8 +793,8 @@ export default function StoreSettings(){
   const waCheckStatus=async()=>{if(!currentStore?.id)return;try{const{data}=await aiApi.waQrStatus(currentStore.id);setWaStatus(data);}catch{setWaStatus({status:'not_started',connected:false});}};
 
   useEffect(()=>{if(currentStore){setS({...currentStore,theme:currentStore.theme||'classic'});loadData();
-    api.get(`/owner/stores/${currentStore.id}`).then(r=>{const fresh=r.data;if(fresh)setS(prev=>({...prev,logo:fresh.logo||prev.logo||'',cover_image:fresh.cover_image||prev.cover_image||'',favicon:fresh.favicon||prev.favicon||'',baridimob_qr:fresh.baridimob_qr||prev.baridimob_qr||''}));}).catch(()=>{
-      api.get(`/owner/stores`).then(r=>{const stores=r.data||[];const fresh=stores.find(st=>st.id===currentStore.id);if(fresh)setS(prev=>({...prev,logo:fresh.logo||prev.logo||'',cover_image:fresh.cover_image||prev.cover_image||'',favicon:fresh.favicon||prev.favicon||'',baridimob_qr:fresh.baridimob_qr||prev.baridimob_qr||''}));}).catch(()=>{});
+    api.get(`/owner/stores/${currentStore.id}`).then(r=>{const fresh=r.data;if(fresh){setS(prev=>({...prev,...fresh,theme:fresh.theme||prev.theme||'classic'}));setCurrentStore(fresh);}}).catch(()=>{
+      api.get(`/owner/stores`).then(r=>{const stores=r.data||[];const fresh=stores.find(st=>st.id===currentStore.id);if(fresh)setS(prev=>({...prev,...fresh,theme:fresh.theme||prev.theme||'classic'}));}).catch(()=>{});
     });
   }},[currentStore?.id]);
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);

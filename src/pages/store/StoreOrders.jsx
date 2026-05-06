@@ -842,12 +842,16 @@ export default function StoreOrders() {
               fontSize: `${colScale}em`,
             }}
             onWheel={(e) => {
-              if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                const el = e.currentTarget;
-                if (el.scrollWidth > el.clientWidth) {
-                  el.scrollLeft += e.deltaY;
-                  e.preventDefault();
-                }
+              const el = e.currentTarget;
+              if (el.scrollWidth <= el.clientWidth) return;
+              // Only convert vertical wheel to horizontal when shift is held
+              if (e.shiftKey && e.deltaY !== 0) {
+                el.scrollLeft += e.deltaY;
+                e.preventDefault();
+              }
+              // Native horizontal scroll (trackpad / shift+wheel)
+              if (e.deltaX !== 0) {
+                e.stopPropagation();
               }
             }}
           >
@@ -1308,22 +1312,19 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     return wrap(
       <div className="space-y-3">
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.deliveryCompany','Delivery Company')}</label>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
           {companies.map(c => {
             const isSelected = String(c.id) === String(currentCompanyId);
             const color = companyColor(c.name);
             return (
               <button key={c.id} onClick={() => { onDispatch?.(c.id); onClose(); }}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${isSelected ? 'shadow-md' : 'border-gray-100 hover:border-gray-200'}`}
+                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${isSelected ? 'shadow-md' : 'border-gray-100 hover:border-gray-200'}`}
                 style={isSelected ? {borderColor: color, backgroundColor: color + '10'} : {}}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{backgroundColor: color}}>
                   {c.logo ? <img src={c.logo} className="w-full h-full rounded-xl object-cover" alt=""/> : (c.name||'?')[0].toUpperCase()}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-gray-900 truncate">{c.name}</p>
-                  {c.carrier_type && <p className="text-[10px] text-gray-400">{c.carrier_type}</p>}
-                </div>
-                {isSelected && <Check size={16} style={{color}}/>}
+                <p className="font-bold text-xs text-gray-900 truncate w-full">{c.name}</p>
+                {isSelected && <Check size={14} style={{color}}/>}
               </button>
             );
           })}

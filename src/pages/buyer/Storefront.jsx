@@ -538,43 +538,6 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           <h3 className={`font-semibold text-sm truncate transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
         </div>
 
-        {/* Variants preview (colors, sizes, materials) */}
-        {(() => {
-          let variants = product.variants || [];
-          if (typeof variants === 'string') try { variants = JSON.parse(variants); } catch { variants = []; }
-          if (!Array.isArray(variants) || variants.length === 0) return null;
-          const groups = {};
-          variants.forEach(v => { const t = (v.type || 'option').toLowerCase(); if (!groups[t]) groups[t] = []; groups[t].push(v); });
-          const isColorVal = (val) => val && (/^#[0-9A-Fa-f]{3,8}$/.test(val) || /^(rgb|hsl)a?\(/.test(val) || ['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver'].includes((val||'').toLowerCase()));
-          return (
-            <div className="mt-1.5 space-y-1">
-              {groups.color && (
-                <div className="flex items-center gap-1 flex-wrap">
-                  {groups.color.slice(0, 6).map((v, i) => (
-                    <span key={i} className="w-4 h-4 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: isColorVal(v.value) ? v.value : '#ccc' }} title={v.name || v.value}/>
-                  ))}
-                  {groups.color.length > 6 && <span className={`text-[9px] font-bold ${isLight ? 'text-gray-400' : 'text-white/30'}`}>+{groups.color.length - 6}</span>}
-                </div>
-              )}
-              {groups.size && (
-                <div className="flex items-center gap-1 flex-wrap">
-                  {groups.size.slice(0, 4).map((v, i) => (
-                    <span key={i} className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${isLight ? 'bg-gray-100 text-gray-600' : 'bg-white/10 text-white/50'}`}>{v.name || v.value}</span>
-                  ))}
-                  {groups.size.length > 4 && <span className={`text-[9px] font-bold ${isLight ? 'text-gray-400' : 'text-white/30'}`}>+{groups.size.length - 4}</span>}
-                </div>
-              )}
-              {groups.material && (
-                <div className="flex items-center gap-1 flex-wrap">
-                  {groups.material.slice(0, 3).map((v, i) => (
-                    <span key={i} className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${isLight ? 'bg-gray-100 text-gray-600' : 'bg-white/10 text-white/50'}`}>{v.name || v.value}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
         {/* Stock badge */}
         <div className="mt-1.5">
           {stockCount > 0

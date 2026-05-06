@@ -223,20 +223,23 @@ export default function TrackingOrders(){
     const stepIdx=getStepIndex(currentStatus);
     const isFailed=FAIL_STATUSES.includes(currentStatus);
     return(
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>{setSelectedOrder(null);setTrackingData(null);}}>
-        <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
-          <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold flex items-center gap-2"><span className="font-mono text-brand-600">{selectedOrder.order_number}</span><span className="text-gray-300">—</span><span>{selectedOrder.customer_name}</span></h2>
-              <p className="text-xs text-gray-400 mt-0.5">{selectedOrder.company_name||t('storePage.noDeliveryCompany','No delivery company')} {selectedOrder.tracking_number&&<span className="font-mono bg-gray-100 px-2 py-0.5 rounded ml-1">#{selectedOrder.tracking_number}</span>}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              {(selectedOrder.tracking_number||selectedOrder['delivery_company_id'])&&<button onClick={refreshTracking} disabled={trackingLoading} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={12} className={trackingLoading?'animate-spin':''}/>{t('storePage.refresh','Refresh')}</button>}
-              <button onClick={()=>{setSelectedOrder(null);setTrackingData(null);}} className="p-2 hover:bg-gray-100 rounded-xl"><X size={18}/></button>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm sm:p-4" onClick={()=>{setSelectedOrder(null);setTrackingData(null);}}>
+        <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="sticky top-0 bg-white z-10 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-gray-100">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3 sm:hidden"/>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <h2 className="text-sm sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2 flex-wrap"><span className="font-mono text-brand-600">{selectedOrder.order_number}</span><span className="text-gray-300 hidden sm:inline">—</span><span className="truncate">{selectedOrder.customer_name}</span></h2>
+                <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 truncate">{selectedOrder.company_name||t('storePage.noDeliveryCompany','No delivery company')} {selectedOrder.tracking_number&&<span className="font-mono bg-gray-100 px-2 py-0.5 rounded ml-1">#{selectedOrder.tracking_number}</span>}</p>
+              </div>
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {(selectedOrder.tracking_number||selectedOrder['delivery_company_id'])&&<button onClick={refreshTracking} disabled={trackingLoading} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw size={12} className={trackingLoading?'animate-spin':''}/><span className="hidden sm:inline">{t('storePage.refresh','Refresh')}</span></button>}
+                <button onClick={()=>{setSelectedOrder(null);setTrackingData(null);}} className="p-2 hover:bg-gray-100 rounded-xl"><X size={18}/></button>
+              </div>
             </div>
           </div>
-          <div className="p-6 space-y-5">
-            <div className="grid grid-cols-3 gap-3">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t('storePage.customer','Customer')}</p><p className="font-bold text-sm text-gray-900">{selectedOrder.customer_name}</p><p className="text-xs text-gray-500">{selectedOrder.customer_phone}</p></div>
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t('storePage.destination','Destination')}</p><p className="text-sm text-gray-700">{selectedOrder.shipping_wilaya||'—'}</p></div>
               <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">{t('storePage.partner','Partner')}</p><p className="font-bold text-sm text-gray-900">{selectedOrder.company_name||t('storePage.notAvailable','N/A')}</p>{trackingData?.has_api&&<span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t('storePage.live','LIVE')}</span>}</div>
@@ -314,17 +317,17 @@ export default function TrackingOrders(){
       <div className="glass-card-solid p-4"><p className="text-[10px] font-bold text-brand-500 uppercase">{t('storePage.delivered','Delivered')}</p><p className="text-2xl font-black text-brand-600 mt-1">{delivered}</p></div>
     </div>
 
-    <div className="flex items-center gap-3 mb-6 flex-wrap">
+    <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 flex-wrap">
       {[{k:'all',l:t('storePage.all','All')},{k:'tracked',l:t('storePage.tracked','Tracked')},{k:'untracked',l:t('storePage.syncing','Syncing')}].map(f=>(
-        <button key={f.k} onClick={()=>setFilter(f.k)} className={`px-4 py-2 rounded-xl text-sm font-bold ${filter===f.k?'bg-brand-500 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{f.l}</button>
+        <button key={f.k} onClick={()=>setFilter(f.k)} className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold ${filter===f.k?'bg-brand-500 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{f.l}</button>
       ))}
-      <div className="relative flex-1 max-w-xs ml-auto"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm" placeholder={t('storePage.searchOrdersOrTracking','Search orders or tracking...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      <div className="relative w-full sm:flex-1 sm:max-w-xs sm:ml-auto mt-2 sm:mt-0"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input-field !pl-9 !py-2 text-sm w-full" placeholder={t('storePage.searchOrdersOrTracking','Search orders or tracking...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
     </div>
 
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>:filtered.length===0?(
       <div className="glass-card-solid p-16 text-center"><Truck size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 font-medium">{t('storePage.noShippedOrders','No shipped orders found')}</p><p className="text-sm text-gray-400 mt-1">{t('storePage.ordersAppearHere','Orders appear here once marked as shipped')}</p></div>
     ):(
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {filtered.map(o=>{
           const st=o.tracking_status||(o.status==='delivered'?'delivered':'in_transit');
           const stepIdx=getStepIndex(st);
@@ -333,38 +336,36 @@ export default function TrackingOrders(){
           const isUntracked = !o.tracking_number && !carrierAssigned;
           const isSyncing = carrierAssigned && !o.tracking_number;
           return(
-            <div key={o.id} onClick={()=>openOrder(o)} className="glass-card-solid p-5 hover:shadow-lg transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+            <div key={o.id} onClick={()=>openOrder(o)} className="glass-card-solid p-3 sm:p-5 hover:shadow-lg transition-all cursor-pointer group">
+              {/* Mobile: stacked layout */}
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
                   isUntracked?'bg-gray-100':isFailed?'bg-red-50':st==='delivered'?'bg-emerald-50':isSyncing?'bg-cyan-50':'bg-cyan-50'}`}>
-                  {isUntracked?<AlertTriangle size={20} className="text-gray-400"/>:isFailed?<RotateCcw size={20} className="text-red-500"/>:st==='delivered'?<Check size={20} className="text-emerald-500"/>:isSyncing?<RefreshCw size={20} className="text-cyan-500 animate-spin"/>:<Truck size={20} className="text-cyan-600"/>}
+                  {isUntracked?<AlertTriangle size={18} className="text-gray-400"/>:isFailed?<RotateCcw size={18} className="text-red-500"/>:st==='delivered'?<Check size={18} className="text-emerald-500"/>:isSyncing?<RefreshCw size={18} className="text-cyan-500 animate-spin"/>:<Truck size={18} className="text-cyan-600"/>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono font-bold text-sm text-brand-600">{o.order_number}</span>
-                    <span className="font-medium text-sm text-gray-700">{o.customer_name}</span>
-                    {(o.tracking_number||carrierAssigned)&&<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':isSyncing?'bg-cyan-50 text-cyan-700':'bg-cyan-50 text-cyan-700'}`}>{isSyncing?t('storePage.liveSync','Live sync'):trStatus(st)}</span>}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                      <span className="font-mono font-bold text-xs sm:text-sm text-brand-600">{o.order_number}</span>
+                      <span className="font-medium text-xs sm:text-sm text-gray-700 truncate">{o.customer_name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs sm:text-sm font-bold text-gray-800">{parseFloat(o.total).toLocaleString()} <span className="text-[10px] text-gray-400">{o.currency||'DZD'}</span></span>
+                      <ChevronRight size={16} className="text-gray-300 hidden sm:block group-hover:text-brand-500 transition-colors"/>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
-                    {o.shipping_wilaya&&<span className="flex items-center gap-1"><MapPin size={11}/>{o.shipping_wilaya}</span>}
-                    {o.company_name&&<span className="flex items-center gap-1"><Truck size={11}/>{o.company_name}</span>}
-                    <span className="flex items-center gap-1"><Clock size={11}/>{new Date(o.created_at).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-400 flex-wrap">
+                    {(o.tracking_number||carrierAssigned)&&<span className={`px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase ${
+                      isFailed?'bg-red-50 text-red-700':st==='delivered'?'bg-emerald-50 text-emerald-700':isSyncing?'bg-cyan-50 text-cyan-700':'bg-cyan-50 text-cyan-700'}`}>{isSyncing?t('storePage.liveSync','Live sync'):trStatus(st)}</span>}
+                    {o.shipping_wilaya&&<span className="flex items-center gap-0.5"><MapPin size={10}/>{o.shipping_wilaya}</span>}
+                    {o.company_name&&<span className="flex items-center gap-0.5"><Truck size={10}/>{o.company_name}</span>}
+                    <span className="flex items-center gap-0.5"><Clock size={10}/>{new Date(o.created_at).toLocaleDateString()}</span>
+                    {o.tracking_number&&<span className="font-mono hidden sm:inline">{o.tracking_number}</span>}
                   </div>
                   {(o.tracking_number||carrierAssigned)&&!isFailed&&(
-                    <div className="flex gap-1 mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?(isSyncing?'bg-cyan-400':'bg-emerald-400'):'bg-gray-200'}`}/>))}</div>
+                    <div className="flex gap-0.5 sm:gap-1 mt-1.5 sm:mt-2">{STEPS.map((_,i)=>(<div key={i} className={`h-1 flex-1 rounded-full ${i<=stepIdx?(isSyncing?'bg-cyan-400':'bg-emerald-400'):'bg-gray-200'}`}/>))}</div>
                   )}
                 </div>
-                <div className="text-right shrink-0">
-                  {o.tracking_number
-                    ? <p className="font-mono text-xs text-gray-500">{o.tracking_number}</p>
-                    : carrierAssigned
-                      ? <span className="text-[10px] text-cyan-600 font-bold bg-cyan-50 px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1"><RefreshCw size={10} className="animate-spin"/>{t('storePage.carrierManaged','Carrier managed')}</span>
-                      : <span className="text-xs text-gray-400 font-bold bg-gray-50 px-3 py-1.5 rounded-lg">{t('storePage.notAssigned','Not assigned')}</span>}
-                  <p className="text-sm font-bold text-gray-800 mt-1">{parseFloat(o.total).toLocaleString()} {o.currency||'DZD'}</p>
-                </div>
-                <button onClick={(e)=>deleteOrder(e,o.id)} className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0" title={t('common.delete','Delete')}><Trash2 size={16}/></button>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-brand-500 transition-colors shrink-0"/>
               </div>
             </div>
           );
@@ -518,10 +519,10 @@ export default function TrackingOrders(){
   </>);
 
   return(<DashboardLayout>
-    <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2 sm:gap-3">
       <div>
-        <h1 className="text-2xl font-bold">{t('storePage.trackingOrders','Tracking Orders')}</h1>
-        <p className="text-sm text-gray-400 mt-1">{t('storePage.trackingUnifiedDesc','Shipments, settings, and buyer preview — all in one place')}</p>
+        <h1 className="text-lg sm:text-2xl font-bold">{t('storePage.trackingOrders','Tracking Orders')}</h1>
+        <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">{t('storePage.trackingUnifiedDesc','Shipments, settings, and buyer preview — all in one place')}</p>
       </div>
       {tab==='shipments'&&(
         <div className="flex items-center gap-2 flex-wrap">
@@ -562,14 +563,14 @@ export default function TrackingOrders(){
     </div>
 
     {/* Tab bar */}
-    <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-2xl mb-6 w-fit max-w-full overflow-x-auto">
+    <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-2xl mb-4 sm:mb-6 w-full sm:w-fit max-w-full overflow-x-auto">
       {[
         {k:'shipments',icon:Truck,label:t('storePage.shipmentsTab','Shipments')},
         {k:'settings',icon:SettingsIcon,label:t('storePage.settingsTab','Settings')},
-        {k:'statuses',icon:Tag,label:t('storePage.statusesTab','Status Management')},
-        {k:'preview',icon:Eye,label:t('storePage.previewTab','Buyer Preview')},
+        {k:'statuses',icon:Tag,label:t('storePage.statusesTab','Statuses')},
+        {k:'preview',icon:Eye,label:t('storePage.previewTab','Preview')},
       ].map(x=>{const Icon=x.icon;return(
-        <button key={x.k} onClick={()=>setTab(x.k)} className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap ${tab===x.k?'bg-white shadow text-brand-600':'text-gray-500 hover:text-gray-700'}`}><Icon size={14}/>{x.label}</button>
+        <button key={x.k} onClick={()=>setTab(x.k)} className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap ${tab===x.k?'bg-white shadow text-brand-600':'text-gray-500 hover:text-gray-700'}`}><Icon size={14}/><span className="hidden sm:inline">{x.label}</span><span className="sm:hidden">{x.label.split(' ')[0]}</span></button>
       );})}
     </div>
 

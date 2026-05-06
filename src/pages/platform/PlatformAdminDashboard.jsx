@@ -711,22 +711,56 @@ function BillingConfig(){
     <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
       <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-1"><CreditCard size={18}/>Subscription Plans & Pricing</h3>
       <p className="text-xs text-gray-400 mb-4">Pricing is managed per plan in the <strong>Subscriptions</strong> page. Below is a summary of your active plans.</p>
-      {plans.length===0?<div className="p-4 bg-amber-50 rounded-xl text-sm text-amber-700 flex items-center gap-2"><AlertTriangle size={16}/>No subscription plans created yet. Go to <strong className="mx-1">Subscriptions</strong> to add plans with pricing.</div>:(
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {plans.filter(p=>p.is_active).map(p=>(
-            <div key={p.id} className={`p-4 rounded-xl border-2 ${p.is_popular?'border-brand-400 bg-brand-50':'border-gray-200 bg-gray-50'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-gray-900">{p.name?.en||p.slug}</span>
-                {p.is_popular&&<span className="text-[9px] font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full">POPULAR</span>}
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-sm"><span className="text-gray-500">Monthly</span><span className="font-bold text-gray-900">{(p.price_monthly||0).toLocaleString()} {p.currency||'DZD'}</span></div>
-                <div className="flex items-center justify-between text-sm"><span className="text-gray-500">Yearly</span><span className="font-bold text-gray-900">{(p.price_yearly||0).toLocaleString()} {p.currency||'DZD'}</span></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {plans.length===0?<div className="p-4 bg-amber-50 rounded-xl text-sm text-amber-700 flex items-center gap-2"><AlertTriangle size={16}/>No subscription plans created yet. Go to <strong className="mx-1">Subscriptions</strong> to add plans with pricing.</div>:(()=>{
+        const activePlans=plans.filter(p=>p.is_active);
+        const allFeatures=[...new Set(activePlans.flatMap(p=>{const f=p.features?.en||p.features||[];return Array.isArray(f)?f:[];}))];
+        return(
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left px-4 py-3 bg-gray-50 rounded-tl-xl font-bold text-gray-500 text-xs uppercase tracking-wider">Feature</th>
+                {activePlans.map(p=>(
+                  <th key={p.id} className={`px-4 py-3 text-center ${p.is_popular?'bg-brand-50':'bg-gray-50'}`}>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-bold text-gray-900">{p.name?.en||p.slug}</span>
+                      {p.is_popular&&<span className="text-[9px] font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full">POPULAR</span>}
+                      <span className="text-xs text-gray-500">{(p.price_monthly||0).toLocaleString()} {p.currency||'DZD'}/mo</span>
+                      <span className="text-[10px] text-gray-400">{(p.price_yearly||0).toLocaleString()} {p.currency||'DZD'}/yr</span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allFeatures.map((feat,i)=>(
+                <tr key={i} className={i%2===0?'bg-white':'bg-gray-50/50'}>
+                  <td className="px-4 py-2.5 text-sm text-gray-700 font-medium border-t border-gray-100">{feat}</td>
+                  {activePlans.map(p=>{
+                    const pf=p.features?.en||p.features||[];
+                    const has=Array.isArray(pf)&&pf.includes(feat);
+                    return(<td key={p.id} className="px-4 py-2.5 text-center border-t border-gray-100">
+                      {has?<Check size={16} className="mx-auto text-emerald-500"/>:<span className="text-gray-300">—</span>}
+                    </td>);
+                  })}
+                </tr>
+              ))}
+              <tr className="border-t border-gray-200">
+                <td className="px-4 py-2.5 text-sm text-gray-500 font-medium">Max Products</td>
+                {activePlans.map(p=>(<td key={p.id} className="px-4 py-2.5 text-center font-bold text-gray-900">{p.max_products===0||p.max_products===null?'∞':p.max_products}</td>))}
+              </tr>
+              <tr>
+                <td className="px-4 py-2.5 text-sm text-gray-500 font-medium">Max Orders/mo</td>
+                {activePlans.map(p=>(<td key={p.id} className="px-4 py-2.5 text-center font-bold text-gray-900">{p.max_orders_month===0||p.max_orders_month===null?'∞':p.max_orders_month}</td>))}
+              </tr>
+              <tr>
+                <td className="px-4 py-2.5 text-sm text-gray-500 font-medium">Max Staff</td>
+                {activePlans.map(p=>(<td key={p.id} className="px-4 py-2.5 text-center font-bold text-gray-900">{p.max_staff===0||p.max_staff===null?'∞':p.max_staff}</td>))}
+              </tr>
+            </tbody>
+          </table>
+        </div>);
+      })()}
     </div>
 
     <div className="grid lg:grid-cols-2 gap-6">
