@@ -478,6 +478,15 @@ export default function DashboardLayout({children}){
     const isDragging=dragIdx===idx;
     const isOver=overIdx===idx&&dragIdx!==idx;
 
+    // For link items: hide entirely if staff-blocked
+    if(item.type==='link'&&isStaffBlocked(item.to))return null;
+
+    // For group items: hide entire group if ALL children are staff-blocked
+    if(item.type==='group'&&staffPerms){
+      const hasVisibleChild=item.children.some(c=>!isStaffBlocked(c.to));
+      if(!hasVisibleChild)return null;
+    }
+
     return(
       <div key={item.id}
         draggable={sidebarOpen}

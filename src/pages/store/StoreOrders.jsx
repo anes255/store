@@ -664,11 +664,11 @@ export default function StoreOrders() {
         )}</td>;
 
       case 'company_name':
-        return <td className="px-3 py-3">{cellBtn(o, 'transfer',
-          o.delivery_company_name
+        return <td className="px-3 py-3">
+          {o.delivery_company_name
             ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"><Building2 size={10}/>{o.delivery_company_name}</span>
-            : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>Set</span>
-        )}</td>;
+            : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500">—</span>}
+        </td>;
 
       case 'preferred_company':
         return <td className="px-3 py-3">
@@ -931,6 +931,19 @@ export default function StoreOrders() {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50">
           <span className="text-sm font-bold">{selectedItems.size} selected</span>
           <div className="w-px h-5 bg-gray-600"/>
+          <button onClick={async () => {
+            const selected = orders.filter(o => selectedItems.has(o.id));
+            const withPref = selected.filter(o => o.preferred_delivery_company_id);
+            if (!withPref.length) { toast.error(t('orders.noPrefCompany','No selected orders have a preferred delivery company')); return; }
+            const tid = toast.loading(t('orders.bulkTransferring',`Transferring ${withPref.length} order(s)...`));
+            let ok = 0;
+            for (const o of withPref) {
+              try { await api.post(`/manage/stores/${currentStore.id}/orders/${o.id}/dispatch`, { delivery_company_id: o.preferred_delivery_company_id }); ok++; } catch {}
+            }
+            toast.dismiss(tid);
+            toast.success(`${ok}/${withPref.length} ${t('orders.transferred','transferred')}`);
+            clearSelection(); loadOrders();
+          }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/>{t('orders.bulkTransfer','Transfer')}</button>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold"><Download size={12}/>Export</button>
           <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold"><Printer size={12}/>Print</button>
           <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold"><Trash2 size={12}/>Delete</button>
@@ -1289,32 +1302,18 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'transfer') {
-    // When the admin assigns a delivery company, push the order to the
-    // carrier's API (creating the parcel on their platform). The dispatch
-    // backend saves the tracking number it returns + flips status to shipped.
-    const saveTransfer = async () => {
-      const patch = { ...localPatch };
-      const newCompany = patch.delivery_company_id || o.delivery_company_id;
-      if (!newCompany) {
-        if (Object.keys(patch).length) onSaveField(patch);
-        onClose();
-        return;
-      }
-      onDispatch?.(newCompany);
-      onClose();
-    };
     const COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', 'yalid': '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
     const companyColor = (name) => { const n = (name||'').toLowerCase(); for (const [k,v] of Object.entries(COMPANY_COLORS)) { if (n.includes(k)) return v; } return '#6366f1'; };
-    const selectedCompanyId = localPatch.delivery_company_id || o.delivery_company_id || '';
+    const currentCompanyId = o.delivery_company_id || '';
     return wrap(
       <div className="space-y-3">
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.deliveryCompany','Delivery Company')}</label>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {companies.map(c => {
-            const isSelected = String(c.id) === String(selectedCompanyId);
+            const isSelected = String(c.id) === String(currentCompanyId);
             const color = companyColor(c.name);
             return (
-              <button key={c.id} onClick={() => setLocalPatch(prev => ({...prev, delivery_company_id: c.id}))}
+              <button key={c.id} onClick={() => { onDispatch?.(c.id); onClose(); }}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${isSelected ? 'shadow-md' : 'border-gray-100 hover:border-gray-200'}`}
                 style={isSelected ? {borderColor: color, backgroundColor: color + '10'} : {}}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0" style={{backgroundColor: color}}>
@@ -1329,12 +1328,6 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
             );
           })}
         </div>
-        {selectedCompanyId && (
-          <p className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
-            🚚 {t('orders.autoDispatchNote','Order will be created on the carrier\'s platform via API. Tracking number is saved automatically and status flips to SHIPPED.')}
-          </p>
-        )}
-        <button onClick={saveTransfer} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm">{t('orders.transferAndPush','Transfer & push to carrier')}</button>
       </div>
     );
   }

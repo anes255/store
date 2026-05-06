@@ -151,7 +151,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     }
     return parseFloat(form.shipping_type === 'home' ? selectedWilayaData.home_delivery_price : selectedWilayaData.desk_delivery_price) || 0;
   })();
-  const total = subtotal + shipping - couponDiscount;
+  const isNonCodPayment = ['ccp','baridimob','bank_transfer'].includes(form.payment_method);
+  const total = subtotal + (isNonCodPayment ? 0 : shipping) - couponDiscount;
   const pc = store?.primary_color || '#7C3AED';
 
   const validateCoupon = async () => {
@@ -688,7 +689,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
               <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Subtotal</span><span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                {!isBuyNow && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>}
+                {!isBuyNow && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{isNonCodPayment ? <span className="text-emerald-600">{t('checkout.freeShipping','Free')}</span> : <>{shipping.toLocaleString()} {store.currency||'DZD'}</>}</span></div>}
                 {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Discount</span><span className="text-emerald-600 dark:text-emerald-400 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200 dark:border-gray-700"><span className="text-gray-900 dark:text-gray-100">Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 dark:text-emerald-400 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}

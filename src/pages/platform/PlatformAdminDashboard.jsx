@@ -348,14 +348,27 @@ function AllStores(){
   const {t}=useTranslation();
   const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[stores,setStores]=useState([]);const[loading,setLoading]=useState(true);const[detail,setDetail]=useState(null);
+  const[storeSearch,setStoreSearch]=useState('');const[storeFilter,setStoreFilter]=useState('all');
   const load=()=>{platformApi.getStores().then(r=>setStores(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[]);
   const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success('Toggled');load();}catch{toast.error('Failed');}};
   const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');setDetail(null);load();}catch{toast.error('Failed');}};
+  const filteredStores=stores.filter(s=>{
+    if(storeFilter==='live'&&!s.is_published)return false;
+    if(storeFilter==='offline'&&s.is_published)return false;
+    if(storeFilter==='suspended'&&s.owner_active!==false&&s.subscription_status!=='suspended')return false;
+    if(!storeSearch.trim())return true;
+    const q=storeSearch.toLowerCase();
+    return(s.name||s.store_name||'').toLowerCase().includes(q)||(s.owner_name||'').toLowerCase().includes(q)||(s.owner_email||'').toLowerCase().includes(q)||(s.slug||'').toLowerCase().includes(q);
+  });
   return(<div>
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-xs md:text-sm text-gray-400">{stores.length} {t('admin.total','total')}</span></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-xs md:text-sm text-gray-400">{filteredStores.length}/{stores.length} {t('admin.total','total')}</span></div>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','live','offline','suspended'].map(f=><button key={f} onClick={()=>setStoreFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${storeFilter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f[0].toUpperCase()+f.slice(1)}</button>)}</div>
+      <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-2 rounded-xl border text-sm focus:outline-none ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'}`} placeholder="Search stores, owners..." value={storeSearch} onChange={e=>setStoreSearch(e.target.value)}/></div>
+    </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="grid gap-4">{stores.map(s=>(
+    <div className="grid gap-4">{filteredStores.map(s=>(
       <div key={s.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden`}>
         <div className="p-4 md:p-5 flex flex-wrap items-center gap-3 md:gap-4">
           {s.logo_url||s.logo?<img src={s.logo_url||s.logo} alt="" className="w-11 h-11 md:w-12 md:h-12 rounded-xl object-cover bg-gray-100 shrink-0 border border-gray-200"/>:<div className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>}
@@ -391,14 +404,20 @@ function AllStores(){
 function AllOrders(){
   const[orders,setOrders]=useState([]);const[total,setTotal]=useState(0);const[filter,setFilter]=useState('all');const[search,setSearch]=useState('');const[loading,setLoading]=useState(true);
   const[expanded,setExpanded]=useState(null);
-  const load=()=>{api.get('/platform/orders',{params:{status:filter,search}}).then(r=>{setOrders(r.data.orders||[]);setTotal(r.data.total||0);}).catch(()=>{}).finally(()=>setLoading(false));};
-  useEffect(()=>{load();},[filter,search]);
+  const[dateFrom,setDateFrom]=useState('');const[dateTo,setDateTo]=useState('');
+  const load=()=>{api.get('/platform/orders',{params:{status:filter,search,date_from:dateFrom||undefined,date_to:dateTo||undefined}}).then(r=>{setOrders(r.data.orders||[]);setTotal(r.data.total||0);}).catch(()=>{}).finally(()=>setLoading(false));};
+  useEffect(()=>{load();},[filter,search,dateFrom,dateTo]);
   const variantLabel=(v)=>{try{const vv=typeof v==='string'?JSON.parse(v):v;if(!vv)return'';return vv.label||vv.name||(Array.isArray(vv.selections)?vv.selections.map(s=>s.name).filter(Boolean).join(' / '):'');}catch{return'';}};
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">All Orders</h1><span className="text-xs md:text-sm text-gray-400">{total} total</span></div>
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','pending','confirmed','shipped','delivered','cancelled'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f}</button>)}</div>
-      <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+    <div className="flex flex-col gap-3 mb-6">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','new_order','pending','failed_call_1','failed_call_2','failed_call_3','confirmed','preparing','ready','shipped','delivered','cancelled','returned','archived'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f==='new_order'?'New':f.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</button>)}</div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <input type="date" className="px-3 py-2 bg-white rounded-xl border border-gray-200 text-xs" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} placeholder="From"/>
+        <input type="date" className="px-3 py-2 bg-white rounded-xl border border-gray-200 text-xs" value={dateTo} onChange={e=>setDateTo(e.target.value)} placeholder="To"/>
+        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom('');setDateTo('');}} className="text-xs text-red-500 font-bold">Clear dates</button>}
+      </div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile cards */}
