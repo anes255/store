@@ -221,6 +221,7 @@ export const storeApi = {
   getStatusTemplates: (storeId) => api.get(`/public/stores/${storeId}/status-templates`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
+  restoreCart: (slug, phone) => api.get(`/store/${slug}/restore-cart?phone=${encodeURIComponent(phone)}`),
   // Shipping wilayas (public, for checkout)
   getShippingWilayas: (slug) => api.get(`/store/${slug}/shipping-wilayas`),
   getDeliveryCompanies: (slug) => api.get(`/store/${slug}/delivery-companies`),

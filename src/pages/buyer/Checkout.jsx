@@ -77,6 +77,36 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       if (saved && typeof saved === 'object') setForm(prev => ({ ...prev, ...saved }));
     } catch {}
   }, []);
+  // Restore cart from recovery link (?recover=phone)
+  useEffect(() => {
+    if (!storeSlug) return;
+    const params = new URLSearchParams(window.location.search);
+    const recoverPhone = params.get('recover');
+    if (!recoverPhone) return;
+    storeApi.restoreCart(storeSlug, recoverPhone).then(r => {
+      if (!r.data?.found) return;
+      const c = r.data.cart;
+      if (c.items?.length && !isBuyNow) {
+        cartStore.clearCart();
+        c.items.forEach(it => cartStore.addItem({ product_id: it.product_id, name: it.name, price: it.price, quantity: it.quantity, variant: it.variant, image: it.image }));
+      }
+      setForm(prev => ({
+        ...prev,
+        customer_name: c.customer_name || prev.customer_name,
+        customer_phone: recoverPhone,
+        customer_email: c.customer_email || prev.customer_email,
+        shipping_address: c.shipping_address || prev.shipping_address,
+        shipping_city: c.shipping_city || prev.shipping_city,
+        shipping_wilaya: c.shipping_wilaya || prev.shipping_wilaya,
+        shipping_zip: c.shipping_zip || prev.shipping_zip,
+        shipping_type: c.shipping_type || prev.shipping_type,
+        delivery_company_id: c.delivery_company_id || prev.delivery_company_id,
+        payment_method: c.payment_method || prev.payment_method,
+        notification_preference: c.notification_preference || prev.notification_preference,
+        notes: c.notes || prev.notes,
+      }));
+    }).catch(() => {});
+  }, [storeSlug]);
   useEffect(() => {
     const auth = useAuthStore.getState();
     if (auth.role === 'customer' && auth.user) {
@@ -116,27 +146,41 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (code && !form.shipping_zip) setForm(prev => ({ ...prev, shipping_zip: code.padStart(2,'0') + '000' }));
   }, [form.shipping_wilaya, shippingWilayas]);
 
-  // Sync cart to backend for abandoned cart recovery
+  // Sync cart to backend for abandoned cart recovery (includes checkout form fields)
   useEffect(() => {
     if (!form.customer_phone || form.customer_phone.length < 8 || !items.length || !storeSlug) return;
     const timer = setTimeout(() => {
       const cartItems = items.map(i => ({ product_id: i.product_id || i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
-      storeApi.saveCart(storeSlug, { customer_phone: form.customer_phone, customer_name: form.customer_name, customer_email: form.customer_email || '', items: cartItems }).catch(() => {});
+      storeApi.saveCart(storeSlug, {
+        customer_phone: form.customer_phone, customer_name: form.customer_name, customer_email: form.customer_email || '', items: cartItems,
+        shipping_address: form.shipping_address || '', shipping_city: form.shipping_city || '',
+        shipping_wilaya: form.shipping_wilaya || '', shipping_zip: form.shipping_zip || '',
+        shipping_type: form.shipping_type || '', delivery_company_id: form.delivery_company_id || '',
+        payment_method: form.payment_method || '', notification_preference: form.notification_preference || '',
+        notes: form.notes || '',
+      }).catch(() => {});
     }, 2000);
     return () => clearTimeout(timer);
-  }, [form.customer_phone, form.customer_name, form.customer_email, items, storeSlug]);
+  }, [form.customer_phone, form.customer_name, form.customer_email, form.shipping_address, form.shipping_wilaya, form.shipping_city, form.shipping_type, form.payment_method, items, storeSlug]);
 
-  // For registered customers, auto-save cart on mount and whenever items change
+  // For registered customers, auto-save cart on mount and whenever items/form change
   useEffect(() => {
     if (isBuyNow || !items.length || !storeSlug) return;
     const auth = useAuthStore.getState();
     if (auth.role !== 'customer' || !auth.user?.phone) return;
     const timer = setTimeout(() => {
       const cartItems = items.map(i => ({ product_id: i.product_id || i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
-      storeApi.saveCart(storeSlug, { customer_phone: auth.user.phone, customer_name: auth.user.name || '', customer_email: auth.user.email || '', items: cartItems }).catch(() => {});
+      storeApi.saveCart(storeSlug, {
+        customer_phone: auth.user.phone, customer_name: auth.user.name || '', customer_email: auth.user.email || '', items: cartItems,
+        shipping_address: form.shipping_address || '', shipping_city: form.shipping_city || '',
+        shipping_wilaya: form.shipping_wilaya || '', shipping_zip: form.shipping_zip || '',
+        shipping_type: form.shipping_type || '', delivery_company_id: form.delivery_company_id || '',
+        payment_method: form.payment_method || '', notification_preference: form.notification_preference || '',
+        notes: form.notes || '',
+      }).catch(() => {});
     }, 3000);
     return () => clearTimeout(timer);
-  }, [items, storeSlug, isBuyNow]);
+  }, [items, storeSlug, isBuyNow, form.shipping_address, form.shipping_wilaya, form.shipping_city, form.shipping_type, form.payment_method]);
 
   const subtotal = getTotal();
   // Use per-wilaya shipping price (desk vs home), preferring per-company override.

@@ -4,7 +4,7 @@ import { orderApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { RefreshCw, ShoppingCart, CheckCircle, TrendingUp, DollarSign, Clock, Zap, Send, Sparkles, MessageCircle, Phone, X, Calendar, Edit3, Languages } from 'lucide-react';
+import { RefreshCw, ShoppingCart, CheckCircle, TrendingUp, DollarSign, Clock, Zap, Send, Sparkles, MessageCircle, Phone, X, Calendar, Edit3, Languages, MapPin } from 'lucide-react';
 
 export default function CartRecovery() {
   const { t } = useTranslation();
@@ -86,11 +86,12 @@ export default function CartRecovery() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center mb-3"><ShoppingCart size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">Abandoned Carts</p><p className="text-xl font-black mt-1">{stats.total_carts || 0}</p></div>
         <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center mb-3"><CheckCircle size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">Recovered</p><p className="text-xl font-black mt-1">{stats.recovered || 0}</p></div>
         <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center mb-3"><TrendingUp size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">Recovered Revenue</p><p className="text-xl font-black mt-1">{parseFloat(stats.recovered_revenue || 0).toLocaleString()} DZD</p></div>
         <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center mb-3"><DollarSign size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">Lost Revenue</p><p className="text-xl font-black mt-1">{parseFloat(stats.lost_revenue || 0).toLocaleString()} DZD</p></div>
+        {(stats.checkout_abandoned>0)&&<div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center mb-3"><MapPin size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">Checkout Abandoned</p><p className="text-xl font-black mt-1">{stats.checkout_abandoned}</p></div>}
       </div>
 
       {/* Automated sequences — admin-editable timing */}
@@ -107,11 +108,12 @@ export default function CartRecovery() {
           <div className="space-y-3">
             {data.carts.map(cart => (
               <div key={cart.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0"><ShoppingCart size={16} className="text-orange-600"/></div>
+                <div className={`w-10 h-10 rounded-full ${cart.checkout_started?'bg-amber-100':'bg-orange-100'} flex items-center justify-center shrink-0`}>{cart.checkout_started?<MapPin size={16} className="text-amber-600"/>:<ShoppingCart size={16} className="text-orange-600"/>}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-gray-800">{cart.customer_name || 'Anonymous'}</p>
+                  <p className="font-bold text-sm text-gray-800">{cart.customer_name || 'Anonymous'}{cart.checkout_started&&<span className="ml-2 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">CHECKOUT</span>}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                     {cart.customer_phone && <span className="flex items-center gap-1"><Phone size={10}/>{cart.customer_phone}</span>}
+                    {cart.shipping_wilaya && <span className="flex items-center gap-1"><MapPin size={10}/>{cart.shipping_wilaya}</span>}
                     <span>{new Date(cart.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
