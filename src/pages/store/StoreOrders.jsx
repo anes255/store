@@ -277,21 +277,33 @@ export default function StoreOrders() {
 
   // Dispatch order: create the parcel on the carrier's platform via API and
   // save the returned tracking number. Status auto-flips to shipped server-side.
+  const [lastDispatchDebug, setLastDispatchDebug] = useState(null);
+
   const dispatchOrder = async (orderId, deliveryCompanyId) => {
     const tid = toast.loading(t('orders.pushingToCarrier','Pushing order to carrier…'));
     try {
       const { data } = await api.post(`/manage/stores/${currentStore.id}/orders/${orderId}/dispatch`, { delivery_company_id: deliveryCompanyId });
       toast.dismiss(tid);
-      if (data?.tracking_number) toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
-      else toast.success(data?.message || t('orders.transferred','Order transferred'));
+      if (data?.ok === false) {
+        toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
+        setLastDispatchDebug(data);
+      } else if (data?.tracking_number) {
+        toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
+        setLastDispatchDebug(data);
+      } else {
+        toast.success(data?.message || t('orders.transferred','Order transferred'));
+        setLastDispatchDebug(data);
+      }
       loadOrders();
       if (selectedOrder?.id === orderId) { const { data: o } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(o); }
     } catch (e) {
       toast.dismiss(tid);
-      const carrier = e?.response?.data?.carrier_response;
-      const msg = e?.response?.data?.error || 'Carrier push failed';
+      const respData = e?.response?.data;
+      const carrier = respData?.carrier_response;
+      const msg = respData?.error || 'Carrier push failed';
       const detail = carrier ? ' · ' + (typeof carrier === 'string' ? carrier.slice(0,80) : (carrier.message || carrier.error || JSON.stringify(carrier).slice(0,80))) : '';
       toast.error(msg + detail, { duration: 7000 });
+      setLastDispatchDebug(respData || { error: msg });
       loadOrders();
     }
   };
@@ -1177,6 +1189,21 @@ export default function StoreOrders() {
           </div>
         </div>
       )}
+      {lastDispatchDebug&&<div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={()=>setLastDispatchDebug(null)}><div className="bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full sm:max-w-xl max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-sm">{lastDispatchDebug.ok?'✅ Dispatch Result':'❌ Dispatch Failed'}</h3>
+          <button onClick={()=>setLastDispatchDebug(null)} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
+        </div>
+        {lastDispatchDebug.message&&<p className="text-sm font-medium text-gray-700 mb-2">{lastDispatchDebug.message}</p>}
+        {lastDispatchDebug.error&&<p className="text-sm font-bold text-red-600 mb-2">{lastDispatchDebug.error}</p>}
+        {lastDispatchDebug.tracking_number&&<p className="text-sm mb-2">Tracking: <span className="font-mono font-bold text-emerald-700">{lastDispatchDebug.tracking_number}</span></p>}
+        {lastDispatchDebug.carrier_response&&<details open><summary className="text-[10px] text-gray-500 cursor-pointer mb-1">Carrier response</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{typeof lastDispatchDebug.carrier_response==='string'?lastDispatchDebug.carrier_response:JSON.stringify(lastDispatchDebug.carrier_response,null,2)}</pre></details>}
+        {lastDispatchDebug.debug&&<>
+          {lastDispatchDebug.debug.request_url&&<p className="text-[10px] text-gray-500 mt-2 break-all">URL: <span className="font-mono">{lastDispatchDebug.debug.request_url}</span></p>}
+          {lastDispatchDebug.debug.request_body&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request body sent</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(lastDispatchDebug.debug.request_body), null, 2); } catch { return lastDispatchDebug.debug.request_body; } })()}</pre></details>}
+          {lastDispatchDebug.debug.tried&&lastDispatchDebug.debug.tried.length>0&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">URLs tried ({lastDispatchDebug.debug.tried.length})</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{JSON.stringify(lastDispatchDebug.debug.tried,null,2)}</pre></details>}
+        </>}
+      </div></div>}
     </DashboardLayout>
   );
 }
