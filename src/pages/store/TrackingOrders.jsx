@@ -378,8 +378,9 @@ export default function TrackingOrders(){
                       <span className="font-mono font-bold text-xs sm:text-sm text-brand-600">{o.order_number}</span>
                       <span className="font-medium text-xs sm:text-sm text-gray-700 truncate">{o.customer_name}</span>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <span className="text-xs sm:text-sm font-bold text-gray-800">{parseFloat(o.total).toLocaleString()} <span className="text-[10px] text-gray-400">{o.currency||'DZD'}</span></span>
+                      <button onClick={(e)=>deleteOrder(e,o.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title={t('storePage.delete','Delete')}><Trash2 size={14}/></button>
                       <ChevronRight size={16} className="text-gray-300 hidden sm:block group-hover:text-brand-500 transition-colors"/>
                     </div>
                   </div>
