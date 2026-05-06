@@ -280,94 +280,72 @@ export default function StoreBilling() {
       {allPlans.length === 0
         ? <p className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">{t('storePage.noPlansYet', 'No plans published yet.')}</p>
         : (() => {
-            // Plans become rows; features + limits become columns.
+            // Features = rows, Plans = columns
             const allFeatSet = new Set();
             allPlans.forEach(p => localizedFeatures(p).forEach(f => allFeatSet.add(f)));
             const allFeatures = Array.from(allFeatSet);
+            const planFeatMap = Object.fromEntries(allPlans.map(p => [p.id || p.slug, new Set(localizedFeatures(p))]));
+
+            const fixedRows = [
+              { key: 'monthly', label: t('storePage.priceMonthly', 'Monthly Price'), render: p => <span className="font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_monthly||0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></span> },
+              { key: 'yearly',  label: t('storePage.priceYearly', 'Yearly Price'),   render: p => <span className="font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_yearly||0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></span> },
+              { key: 'products',label: t('storePage.maxProducts', 'Products'),        render: p => <span className="font-black text-gray-900 dark:text-white">{p.max_products || t('storePage.unlimited','∞')}</span> },
+              { key: 'orders',  label: t('storePage.maxOrders', 'Orders / mo'),       render: p => <span className="font-black text-gray-900 dark:text-white">{p.max_orders_month || t('storePage.unlimited','∞')}</span> },
+              { key: 'staff',   label: t('storePage.maxStaff', 'Staff'),              render: p => <span className="font-black text-gray-900 dark:text-white">{p.max_staff || t('storePage.unlimited','∞')}</span> },
+            ];
+
             return (
-              <>
-              {/* Mobile: stacked cards */}
-              <div className="sm:hidden space-y-3">
-                {allPlans.map(p => {
-                  const name = localizedName(p);
-                  const tagline = localizedTagline(p);
-                  const isCurrent = data?.plan === p.slug && isActive;
-                  const planFeats = localizedFeatures(p);
-                  return (
-                    <div key={p.id || p.slug} className={`rounded-2xl border p-4 ${isCurrent ? 'border-brand-300 bg-brand-50/60 dark:bg-brand-500/10' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900'}`}>
-                      <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <span className="text-base font-black text-gray-900 dark:text-white">{name}</span>
-                        {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag', 'POPULAR')}</span>}
-                        {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag', 'CURRENT')}</span>}
-                      </div>
-                      {tagline && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tagline}</p>}
-                      <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.priceMonthly','Monthly')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></div></div>
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.priceYearly','Yearly')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></div></div>
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.maxProducts','Products')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{p.max_products || t('storePage.unlimited', '∞')}</div></div>
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.maxOrders','Orders/mo')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{p.max_orders_month || t('storePage.unlimited', '∞')}</div></div>
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 col-span-2"><div className="text-[10px] uppercase text-gray-400 font-bold">{t('storePage.maxStaff','Staff')}</div><div className="font-black text-gray-900 dark:text-white text-sm">{p.max_staff || t('storePage.unlimited', '∞')}</div></div>
-                      </div>
-                      {allFeatures.length > 0 && <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-white/10">
-                        {allFeatures.map((feat, i) => {
-                          const has = planFeats.includes(feat);
-                          return <div key={p.id+'_mf'+i} className="flex items-center gap-2 text-xs">{has ? <Check size={14} className="text-emerald-500 shrink-0"/> : <span className="text-gray-300 dark:text-gray-600 shrink-0 text-center w-3.5">—</span>}<span className={has ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}>{feat}</span></div>;
-                        })}
-                      </div>}
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Desktop: table */}
-              <div className="hidden sm:block overflow-x-auto -mx-2 px-2">
-                <table className="w-full text-sm border-separate border-spacing-0" style={{minWidth: `${Math.max(640, 260 + (5 + allFeatures.length) * 160)}px`}}>
+              <div className="overflow-x-auto -mx-2 px-2">
+                <table className="w-full text-sm border-separate border-spacing-0" style={{minWidth:`${Math.max(400, 200 + allPlans.length * 160)}px`}}>
                   <thead>
                     <tr>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 rounded-l-xl border-b-2 border-gray-200 dark:border-white/10 text-left text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black sticky left-0 z-10">{t('storePage.planCol', 'Plan')}</th>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.priceMonthly', 'Monthly')}</th>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.priceYearly', 'Yearly')}</th>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.maxProducts', 'Products')}</th>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.maxOrders', 'Orders/mo')}</th>
-                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black">{t('storePage.maxStaff', 'Staff')}</th>
-                      {allFeatures.map((feat, i) => (
-                        <th key={'feath_'+i} className={`py-4 px-5 bg-gray-50 dark:bg-white/5 border-b-2 border-gray-200 dark:border-white/10 text-center text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black ${i===allFeatures.length-1?'rounded-r-xl':''}`}>{feat}</th>
-                      ))}
+                      {/* Feature label column */}
+                      <th className="py-4 px-5 bg-gray-50 dark:bg-white/5 rounded-tl-xl border-b-2 border-gray-200 dark:border-white/10 text-left text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-black sticky left-0 z-10 w-44">{t('storePage.featureCol','Feature')}</th>
+                      {/* One column per plan */}
+                      {allPlans.map((p, pi) => {
+                        const name = localizedName(p);
+                        const tagline = localizedTagline(p);
+                        const isCurrent = data?.plan === p.slug && isActive;
+                        return (
+                          <th key={p.id||p.slug} className={`py-4 px-5 border-b-2 border-gray-200 dark:border-white/10 text-center ${isCurrent ? 'bg-brand-50 dark:bg-brand-500/10' : 'bg-gray-50 dark:bg-white/5'} ${pi === allPlans.length-1 ? 'rounded-tr-xl' : ''}`}>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-sm font-black text-gray-900 dark:text-white normal-case">{name}</span>
+                              {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag','POPULAR')}</span>}
+                              {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag','CURRENT')}</span>}
+                              {tagline && <span className="text-[10px] text-gray-400 dark:text-gray-500 font-normal normal-case">{tagline}</span>}
+                            </div>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
-                    {allPlans.map(p => {
-                      const name = localizedName(p);
-                      const tagline = localizedTagline(p);
-                      const isCurrent = data?.plan === p.slug && isActive;
-                      const planFeats = localizedFeatures(p);
-                      return (
-                        <tr key={p.id || p.slug} className={isCurrent ? 'bg-brand-50/60 dark:bg-brand-500/10' : ''}>
-                          <td className="py-3 px-5 border-b border-gray-100 dark:border-white/10 sticky left-0 bg-white dark:bg-gray-900">
-                            <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <span className="text-base font-black text-gray-900 dark:text-white normal-case">{name}</span>
-                                {p.is_popular && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 font-black">{t('storePage.popularTag', 'POPULAR')}</span>}
-                                {isCurrent && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 font-black">{t('storePage.currentTag', 'CURRENT')}</span>}
-                              </div>
-                              {tagline && <span className="text-[10px] text-gray-500 dark:text-gray-400 normal-case">{tagline}</span>}
-                            </div>
-                          </td>
-                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_monthly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></td>
-                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white whitespace-nowrap">{parseFloat(p.price_yearly || 0).toLocaleString()} <span className="text-[10px] font-normal text-gray-400">{p.currency||'DZD'}</span></td>
-                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_products || t('storePage.unlimited', '∞')}</td>
-                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_orders_month || t('storePage.unlimited', '∞')}</td>
-                          <td className="py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 font-black text-gray-900 dark:text-white">{p.max_staff || t('storePage.unlimited', '∞')}</td>
-                          {allFeatures.map((feat, i) => {
-                            const has = planFeats.includes(feat);
-                            return <td key={p.id+'_f'+i} className="py-2.5 px-5 text-center border-b border-gray-100 dark:border-white/10">{has ? <Check size={16} className="inline text-emerald-500"/> : <span className="text-gray-300 dark:text-gray-600">—</span>}</td>;
-                          })}
-                        </tr>
-                      );
-                    })}
+                    {/* Fixed rows: price + limits */}
+                    {fixedRows.map((row, ri) => (
+                      <tr key={row.key} className={ri % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-gray-50/50 dark:bg-white/[0.02]'}>
+                        <td className="py-3 px-5 border-b border-gray-100 dark:border-white/10 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide sticky left-0 bg-inherit">{row.label}</td>
+                        {allPlans.map(p => (
+                          <td key={p.id||p.slug} className={`py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 ${data?.plan === p.slug && isActive ? 'bg-brand-50/40 dark:bg-brand-500/5' : ''}`}>{row.render(p)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                    {/* Feature rows */}
+                    {allFeatures.map((feat, fi) => (
+                      <tr key={'feat_'+fi} className={fi % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-gray-50/50 dark:bg-white/[0.02]'}>
+                        <td className="py-3 px-5 border-b border-gray-100 dark:border-white/10 text-sm text-gray-700 dark:text-gray-300 sticky left-0 bg-inherit">{feat}</td>
+                        {allPlans.map(p => {
+                          const has = planFeatMap[p.id||p.slug]?.has(feat);
+                          return (
+                            <td key={p.id||p.slug} className={`py-3 px-5 text-center border-b border-gray-100 dark:border-white/10 ${data?.plan === p.slug && isActive ? 'bg-brand-50/40 dark:bg-brand-500/5' : ''}`}>
+                              {has ? <Check size={17} className="inline text-emerald-500"/> : <span className="text-gray-300 dark:text-gray-600 text-base">—</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-              </>
             );
           })()}
     </div>
