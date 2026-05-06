@@ -29,9 +29,9 @@ const PRESETS=[
   {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/public/v1',api_auth_type:'query_params',api_tracking_endpoint:'/get/trackings',api_status_path:'0.last_situation',headers:[],query_params:['api_token','user_guid'],help:'NOEST partner portal → API → copy api_token and user_guid (both required)',verified:true,method:'POST',
     create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',
     create_body_template:''},
-  {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',headers:[],query_params:[],help:'ecotrack.dz → Dashboard → API → copy your Bearer token (single token)',verified:true,
+  {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',headers:[],query_params:[],help:'ecotrack.dz → Dashboard → API Settings → copy your API token. Supports: create orders, track, download labels, request returns, get wilayas/communes/fees.',verified:true,
     create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',
-    create_body_template:'{"reference":"{order_id}","nom_client":"{customer_name}","telephone":"{customer_phone}","telephone_2":"","adresse":"{shipping_address}","code_wilaya":{wilaya_code},"commune":"{shipping_city}","montant":{total},"remarque":"{notes}","produit":"{product_list}","stock":0,"quantite":"{item_count}","type":1,"stop_desk":{is_stopdesk_int},"weight":"{weight}","fragile":0}'},
+    create_body_template:''},
   {name:'Yassir Express',logo:'Y',color:'from-fuchsia-500 to-purple-600',api_base_url:'https://logistics.yassir.com/api/v1',api_auth_type:'custom_headers',api_tracking_endpoint:'/deliveries/{tracking_number}',api_status_path:'data.status',headers:['Authorization','X-Partner-ID'],query_params:[],help:'Yassir Express partner portal → API → copy Authorization (Bearer <token>) and Partner ID',verified:false},
   // ─── DHD (EcoTrack-based) ───────────────────────────────────────────────
   // DHD runs on the EcoTrack platform. Auth is a single Bearer token.
@@ -41,12 +41,12 @@ const PRESETS=[
     api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',
     api_status_path:'data.activity.0.event',
     headers:[],query_params:[],
-    help:'DHD partner portal (dhd.ecotrack.dz) → API → copy your Bearer token (single token)',
+    help:'DHD partner portal (dhd.ecotrack.dz) → API → copy your Bearer token. Same EcoTrack API — supports create orders, track, labels, returns.',
     verified:true,
     create_endpoint:'/create/order',
     create_method:'POST',
     create_tracking_path:'tracking',
-    create_body_template:'{"reference":"{order_id}","nom_client":"{customer_name}","telephone":"{customer_phone}","telephone_2":"","adresse":"{shipping_address}","code_wilaya":{wilaya_code},"commune":"{shipping_city}","montant":{total},"remarque":"{notes}","produit":"{product_list}","stock":0,"quantite":"{item_count}","type":1,"stop_desk":{is_stopdesk_int},"weight":"{weight}","fragile":0}'},
+    create_body_template:''},
   // ─── Prest Courrier Express ─────────────────────────────────────────────
   // Prest uses EcoTrack internally (prest.ecotrack.dz) but tokens are issued
   // per-tenant. No public API docs. Kept as manual until Prest publishes an
