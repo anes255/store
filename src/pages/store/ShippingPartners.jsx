@@ -8,7 +8,7 @@ import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 //   • bearer            → Authorization: Bearer <token>
 //   • token_prefix      → Authorization: Token <token>   (Maystro / Django REST)
 //   • custom_headers    → arbitrary header pairs (Yalidine X-API-ID + X-API-TOKEN)
-//   • query_params      → credentials appended to every URL (NOEST api_token + user_guid)
+//   • query_params      → credentials appended to every URL
 // `headers` lists the header NAMES the user needs to fill; `query_params`
 // lists the query-string keys when auth_type === 'query_params'. Both are
 // rendered as separate input fields in the modal.
@@ -26,9 +26,9 @@ const PRESETS=[
   {name:'Maystro Delivery',logo:'M',color:'from-purple-500 to-pink-500',api_base_url:'https://backend.maystro-delivery.com/api/stores',api_auth_type:'token_prefix',api_tracking_endpoint:'/orders/?display_id={tracking_number}',api_status_path:'list.0.status_display',headers:[],query_params:[],help:'Maystro dashboard → Settings → API → copy your API Token (sent as "Authorization: Token <token>")',verified:true,
     create_endpoint:'/orders/',create_method:'POST',create_tracking_path:'display_id',
     create_body_template:'{"customer_name":"{customer_name}","customer_phone":"{customer_phone}","destination_text":"{shipping_address}","commune":"{shipping_city}","wilaya":"{shipping_wilaya}","product_price":{total},"products":[{"product_name":"{product_list}","quantity":{item_count},"product_id":""}],"display_id":"{order_id}","note_to_driver":"{notes}","express":false,"source":"api"}'},
-  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/public/v1',api_auth_type:'query_params',api_tracking_endpoint:'/get/trackings',api_status_path:'0.last_situation',headers:[],query_params:['api_token','user_guid'],help:'NOEST partner portal → API → copy api_token and user_guid (both required)',verified:true,method:'POST',
+  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',headers:[],query_params:[],help:'NOEST partner portal (app.noest-dz.com) → API → copy your Bearer token (single token)',verified:true,
     create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',
-    create_body_template:''},
+    create_body_template:'{"reference":"{order_id}","nom_client":"{customer_name}","telephone":"{customer_phone}","telephone_2":"","adresse":"{shipping_address}","code_wilaya":{wilaya_code},"commune":"{shipping_city}","montant":{total},"remarque":"{notes}","produit":"{product_list}","stock":0,"quantite":"{item_count}","type":1,"stop_desk":{is_stopdesk_int},"weight":"{weight}","fragile":0}'},
   {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',headers:[],query_params:[],help:'ecotrack.dz → Dashboard → API Settings → copy your API token. Supports: create orders, track, download labels, request returns, get wilayas/communes/fees.',verified:true,
     create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',
     create_body_template:''},
