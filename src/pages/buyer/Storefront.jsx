@@ -387,10 +387,10 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
             {/* Quantity + Actions */}
             <div className="mt-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="flex items-center bg-white/10 rounded-xl border border-white/10">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2.5 hover:bg-white/10 rounded-l-xl transition-colors text-white/60"><Minus size={15} /></button>
+                <div className="flex items-center bg-white/20 rounded-xl border border-white/20">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2.5 hover:bg-white/20 rounded-l-xl transition-colors text-white"><Minus size={15} /></button>
                   <span className="w-10 text-center font-bold text-sm text-white">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="p-2.5 hover:bg-white/10 rounded-r-xl transition-colors text-white/60"><Plus size={15} /></button>
+                  <button onClick={() => setQuantity(quantity + 1)} className="p-2.5 hover:bg-white/20 rounded-r-xl transition-colors text-white"><Plus size={15} /></button>
                 </div>
               </div>
               <button
@@ -500,7 +500,7 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
 }
 
 // ============ DARK PRODUCT CARD ============
-function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow, themeMode }) {
+function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart }) {
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
   const cartItems = useCartStore(s => s.items);
@@ -527,7 +527,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
         {onSale && <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
-        <button onClick={(e) => { e.stopPropagation(); openQuickAdd(product); }}
+        <button onClick={(e) => { e.stopPropagation(); if (inCart && addToCart) { addToCart(product, 1, null); } else { openQuickAdd(product); } }}
           className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
           aria-label="Add to cart"><ShoppingCart size={14} /></button>
       </div>
@@ -1017,7 +1017,7 @@ export default function Storefront() {
               <DarkProductCard key={product.id} product={product} storeSlug={storeSlug} pc={pc}
                 currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
                 openQuickAdd={openQuickAdd} openDetail={openDetail}
-                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow} themeMode={buyerTheme.mode}/>
+                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow} themeMode={buyerTheme.mode} addToCart={addItem}/>
             ))}
           </div>
         );})()}

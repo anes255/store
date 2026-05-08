@@ -294,7 +294,14 @@ export default function StoreOrders() {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
         setLastDispatchDebug(data);
       }
-      loadOrders();
+      const dcName = companies.find(c => String(c.id) === String(deliveryCompanyId))?.name || null;
+      setOrders(prev => prev.map(o => o.id === orderId ? {
+        ...o,
+        delivery_company_id: deliveryCompanyId,
+        delivery_company_name: dcName,
+        status: data?.ok !== false ? 'shipped' : o.status,
+        tracking_number: data?.tracking_number || o.tracking_number,
+      } : o));
       if (selectedOrder?.id === orderId) { const { data: o } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(o); }
     } catch (e) {
       toast.dismiss(tid);
@@ -1282,20 +1289,48 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
 
   if (type === 'products') {
     const items = o.items || [];
+    const cap = (s) => typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s;
     return wrap(
       <div className="space-y-2">
         {items.length === 0 && <p className="text-sm text-gray-500 text-center py-6">No items.</p>}
-        {items.map((it,i) => (
-          <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-            {it.product_image ? <img src={it.product_image} className="w-12 h-12 rounded-xl object-cover" alt=""/> : <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center"><Package size={18} className="text-gray-400"/></div>}
+        {items.map((it,i) => {
+          const img = it.product_image || it.image || (o.first_image && i === 0 ? o.first_image : null);
+          let v = it.variant_info ?? it.variant;
+          if (typeof v === 'string') { try { v = JSON.parse(v); } catch { v = { name: v }; } }
+          const variantBits = (() => {
+            if (it.variant_label) return [it.variant_label];
+            if (it.variant_name) return String(it.variant_name).split(/\s*[·,/]\s*/).filter(Boolean);
+            if (!v) return [];
+            if (Array.isArray(v)) return v.map(x => typeof x === 'string' ? x : (x?.name || x?.value || '')).filter(Boolean);
+            if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? cap(s.type) + ': ' : ''}${s.label || s.name || s.value || ''}`).filter(Boolean);
+            if (v.name || v.value || v.label) return [`${v.type ? cap(v.type) + ': ' : ''}${v.label || v.name || v.value}`];
+            if (typeof v === 'object') { const out = []; for (const [k, val] of Object.entries(v)) { if (val == null || typeof val === 'object' || k === 'type' || k === 'sku' || k === 'price') continue; out.push(`${cap(k)}: ${val}`); } return out; }
+            return [];
+          })();
+          const colorSwatch = (() => {
+            if (!v) return null;
+            if (v.type === 'color' && v.value) return v.value;
+            if (Array.isArray(v?.selections)) { const c = v.selections.find(s => s.type === 'color'); return c?.value || null; }
+            return null;
+          })();
+          return (
+          <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+            {img ? <img src={img} className="w-14 h-14 rounded-xl object-cover shrink-0" alt=""/> : <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center shrink-0"><Package size={18} className="text-gray-400"/></div>}
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{it.product_name || it.name}</p>
-              {it.variant_label && <p className="text-[10px] text-purple-600">{it.variant_label}</p>}
-              <p className="text-[11px] text-gray-400">{it.quantity} × {fmtMoney(it.unit_price || it.price, cur)}</p>
+              <p className="font-semibold text-sm">{it.product_name || it.name}</p>
+              {variantBits.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                  {colorSwatch && <span className="w-3 h-3 rounded-full border border-gray-300 shrink-0" style={{backgroundColor: colorSwatch}}/>}
+                  {variantBits.map((b, j) => <span key={j} className="text-[10px] px-1.5 py-0.5 bg-white border border-gray-200 rounded font-medium text-gray-700">{b}</span>)}
+                </div>
+              )}
+              {it.sku && <p className="text-[10px] text-gray-400 font-mono mt-1">SKU: {it.sku}</p>}
+              <p className="text-[11px] text-gray-400 mt-1">{it.quantity} × {fmtMoney(it.unit_price || it.price, cur)}</p>
             </div>
-            <p className="font-bold text-sm whitespace-nowrap">{fmtMoney(it.total_price || (it.quantity * (it.unit_price || it.price || 0)), cur)}</p>
+            <p className="font-bold text-sm whitespace-nowrap shrink-0">{fmtMoney(it.total_price || (it.quantity * (it.unit_price || it.price || 0)), cur)}</p>
           </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
@@ -1434,10 +1469,11 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     })();
     return wrap(
       <div className="space-y-3">
+        {!o.shipping_city && <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium">Commune is required for carrier dispatch. Please fill in the City (Commune) field.</div>}
         <label className="text-[10px] font-bold text-gray-400 uppercase">Street</label>
         <input defaultValue={o.shipping_address || ''} onChange={set('shipping_address')} className="input-field w-full"/>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">City (Commune)</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className="input-field w-full"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">City (Commune) *</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className={`input-field w-full ${!o.shipping_city ? 'border-amber-400 ring-1 ring-amber-300' : ''}`} placeholder="Required for dispatch"/></div>
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase">Wilaya</label>
             <input defaultValue={o.shipping_wilaya || ''} onChange={set('shipping_wilaya')} className="input-field w-full"/>
