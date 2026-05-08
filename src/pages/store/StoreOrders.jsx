@@ -682,12 +682,14 @@ export default function StoreOrders() {
             : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>Add</span>
         )}</td>;
 
-      case 'company_name':
+      case 'company_name': {
+        const dcName = o.delivery_company_name || o.preferred_delivery_company_name;
         return <td className="px-3 py-3">
-          {o.delivery_company_name
-            ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"><Building2 size={10}/>{o.delivery_company_name}</span>
+          {dcName
+            ? <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border ${o.delivery_company_name ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}><Building2 size={10}/>{dcName}{!o.delivery_company_name && o.preferred_delivery_company_name ? ' (buyer)' : ''}</span>
             : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500">—</span>}
         </td>;
+      }
 
       case 'preferred_company':
         return <td className="px-3 py-3">
