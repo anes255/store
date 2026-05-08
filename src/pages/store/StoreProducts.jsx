@@ -303,65 +303,6 @@ export default function StoreProducts() {
                 <p className="text-[11px] text-gray-400 mt-2">{t('storePage.couponHint','At checkout, if the buyer enters this code, the percentage is removed from this product\'s price.')}</p>
               </div>
 
-              {/* ═══════ SALE & OFFER ═══════ */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="input-label text-xs flex items-center gap-1 mb-0"><Tag size={14} className="text-red-500"/>{t('storePage.saleOfferLabel','Sale & Offer Branding')}</label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.is_on_sale} onChange={e=>setForm({...form,is_on_sale:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-400"/>
-                    <span className="text-xs font-bold text-gray-600">{form.is_on_sale?t('storePage.onSale','On Sale'):t('storePage.notOnSale','Not on Sale')}</span>
-                  </label>
-                </div>
-                {form.is_on_sale && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-gray-400">{t('storePage.saleBadgeText','Sale Badge')}</label>
-                        <input className="input-field !py-1.5 text-xs" placeholder="SALE" value={form.sale_badge_text} onChange={e=>setForm({...form,sale_badge_text:e.target.value})}/>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-400">{t('storePage.offerDiscountText','Discount Text')}</label>
-                        <input className="input-field !py-1.5 text-xs" placeholder="40% OFF" value={form.offer_discount} onChange={e=>setForm({...form,offer_discount:e.target.value})}/>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-400">{t('storePage.offerTitle','Offer Title')}</label>
-                      <input className="input-field !py-1.5 text-xs" placeholder="Limited Offer" value={form.offer_title} onChange={e=>setForm({...form,offer_title:e.target.value})}/>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-gray-400">{t('storePage.timerHours','Timer Hours')}</label>
-                        <input type="number" className="input-field !py-1.5 text-xs" placeholder="15" value={form.offer_hours} onChange={e=>setForm({...form,offer_hours:e.target.value})}/>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-400">{t('storePage.timerMinutes','Timer Minutes')}</label>
-                        <input type="number" className="input-field !py-1.5 text-xs" placeholder="33" value={form.offer_minutes} onChange={e=>setForm({...form,offer_minutes:e.target.value})}/>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400">{t('storePage.saleOfferHint','Shows a sale badge on the product card and optional countdown timer on the product page.')}</p>
-
-                    {/* Quantity offers — buy N → label (e.g. "Buy 3 → 20% OFF") */}
-                    <div className="border-t border-gray-100 pt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{t('storePage.quantityOffers','Quantity Offers')}</label>
-                        <button type="button" onClick={()=>setForm({...form,quantity_offers:[...(form.quantity_offers||[]),{quantity:'',label:''}]})} className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"><Plus size={12}/>{t('storePage.addQuantityOffer','Add Offer')}</button>
-                      </div>
-                      {(!form.quantity_offers||form.quantity_offers.length===0)&&<p className="text-[11px] text-gray-400 italic">{t('storePage.noQuantityOffers','No quantity offers. Add one to show "Buy 2 → 10% off" type deals on the product page.')}</p>}
-                      <div className="space-y-2">
-                        {(form.quantity_offers||[]).map((qo,qi)=>(
-                          <div key={qi} className="grid grid-cols-[80px,1fr,32px] gap-2 items-center">
-                            <input type="number" min="1" placeholder={t('storePage.quantity','Qty')} value={qo.quantity||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],quantity:e.target.value};setForm({...form,quantity_offers:n});}} className="input-field !py-1.5 text-xs text-center"/>
-                            <input placeholder={t('storePage.quantityOfferLabelPh','e.g. 20% OFF, Free shipping')} value={qo.label||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],label:e.target.value};setForm({...form,quantity_offers:n});}} className="input-field !py-1.5 text-xs"/>
-                            <button type="button" onClick={()=>setForm({...form,quantity_offers:form.quantity_offers.filter((_,i)=>i!==qi)})} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title={t('storePage.remove','Remove')}><Trash2 size={14}/></button>
-                          </div>
-                        ))}
-                      </div>
-                      {form.quantity_offers&&form.quantity_offers.length>0&&<p className="text-[10px] text-gray-400 mt-2">{t('storePage.quantityOffersHint','Buyers see a row of quantity-tier badges on the product page. Set quantity (e.g. 2) and a label (e.g. "10% OFF").')}</p>}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Images */}
               <div>
                 <label className="input-label text-xs flex items-center gap-1"><Image size={14}/>{t('storePage.mainImages','Main Images')}</label>

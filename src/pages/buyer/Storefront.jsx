@@ -504,6 +504,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
   const cartItems = useCartStore(s => s.items);
+  const removeItem = useCartStore(s => s.removeItem);
   const inCart = cartItems.some(i => i.product_id === product.id);
   const price = parseFloat(product.price) || 0;
   const comparePrice = product.compare_at_price ? parseFloat(product.compare_at_price) : null;
@@ -527,9 +528,9 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
         {onSale && <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
-        <button onClick={(e) => { e.stopPropagation(); if (inCart && addToCart) { addToCart(product, 1, null); } else { openQuickAdd(product); } }}
+        <button onClick={(e) => { e.stopPropagation(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
           className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
-          aria-label="Add to cart"><ShoppingCart size={14} /></button>
+          aria-label={inCart ? "Remove from cart" : "Add to cart"}>{inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
       </div>
 
       {/* Product Info */}
@@ -722,10 +723,8 @@ export default function Storefront() {
   // Callback from the ProductQuickAdd modal when used in favorite mode.
   const handleFavAdd = ({ product: p, selectedVariant, quantity: qty }) => {
     const label = selectedVariant
-      ? (selectedVariant.label || selectedVariant.name || '')
+      ? (selectedVariant.type === 'color' ? selectedVariant.name : (selectedVariant.label || selectedVariant.name || ''))
       : '';
-    // Attach the chosen variant to the product object so Favorites.jsx can
-    // display it and pre-fill it when the buyer adds it to the cart.
     const saved = { ...p, _selectedVariant: selectedVariant || null, _variantLabel: label || null };
     wishlistStore.toggle(saved);
     toast.success(label ? `Saved "${label}" to favorites` : t('store.addedToFavorites','Added to favorites'));
@@ -828,10 +827,10 @@ export default function Storefront() {
             </Link>
           </div>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
-              <Search size={20} className="ml-5 text-gray-400"/>
+            <div className="flex items-center bg-white/95 rounded-full shadow-md w-full overflow-hidden">
+              <Search size={20} className="ml-5 text-gray-400 shrink-0"/>
               <input
-                className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none"
+                className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none rounded-full"
                 placeholder={t('store.search','Search products...')}
                 value={search}
                 onChange={e=>setSearch(e.target.value)}
@@ -857,10 +856,10 @@ export default function Storefront() {
         </div>
         {/* Mobile-only search row */}
         <div className="md:hidden px-3 pb-3">
-          <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+          <div className="flex items-center bg-white/95 rounded-full shadow-md w-full overflow-hidden">
             <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
             <input
-              className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800"
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800 rounded-full"
               placeholder={t('store.search','Search products...')}
               value={search}
               onChange={e=>setSearch(e.target.value)}

@@ -323,12 +323,12 @@ export default function Favorites() {
                         <h3 className="font-semibold text-sm text-white/90 truncate hover:text-white transition-colors">{getName(product)}</h3>
                       </Link>
                       {/* Variant label if saved from product detail */}
-                      {product._variantLabel && (
+                      {(product._variantLabel || product._selectedVariant) && (
                         <p className="text-[10px] text-white/50 mt-1 flex items-center gap-1">
                           {product._selectedVariant?.type === 'color' && product._selectedVariant?.value && (
                             <span className="w-3 h-3 rounded-full border border-white/20 shrink-0 inline-block" style={{backgroundColor: product._selectedVariant.value}}/>
                           )}
-                          {product._variantLabel}
+                          {product._selectedVariant?.type === 'color' ? product._selectedVariant?.name : (product._variantLabel || product._selectedVariant?.name || '')}
                         </p>
                       )}
                       <div className="flex items-baseline gap-2 mt-1.5">

@@ -50,7 +50,8 @@ const ALL_COLUMNS = [
   { key: 'notes',            label: 'Notes' },
   { key: 'payment_method',   label: 'Payment' },
 ];
-const DEFAULT_COLUMNS = ['order','photo','products','wilaya','wilaya_number','commune','customer_name','phone','whatsapp','transfer','status','company_name','shipping_method','shipping_cost','total','financial_status','tracking_number','notes','payment_method'];
+const DEFAULT_COLUMNS = ['order','products','wilaya','commune','transfer','phone','status','preferred_company','shipping_method','total','financial_status','notes','tracking_number'];
+const PREPARING_COLUMNS = ['order','products','customer_name','phone','wilaya','commune','status','notes'];
 
 const statusConfig = {
   new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
@@ -172,10 +173,11 @@ export default function StoreOrders() {
     };
   }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
-    try { const s = JSON.parse(localStorage.getItem('orders.columns.v4') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
+    if (isPreparingPage) return PREPARING_COLUMNS;
+    try { const s = JSON.parse(localStorage.getItem('orders.columns.v5') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
-  useEffect(() => { localStorage.setItem('orders.columns.v4', JSON.stringify(activeColumns)); }, [activeColumns]);
+  useEffect(() => { if (!isPreparingPage) localStorage.setItem('orders.columns.v5', JSON.stringify(activeColumns)); }, [activeColumns, isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');
@@ -217,12 +219,16 @@ export default function StoreOrders() {
     const effectiveFilter = overrideFilter || filter;
     try {
       const wantPreparingBucket = effectiveFilter === 'preparing';
-      const { data } = await orderApi.getAll(currentStore.id, { status: effectiveFilter === 'all' || wantPreparingBucket ? undefined : effectiveFilter, search });
+      const wantArchive = effectiveFilter === 'archived';
+      const params = { search };
+      if (wantArchive) { params.archived = 'only'; }
+      else if (!wantPreparingBucket && effectiveFilter !== 'all') { params.status = effectiveFilter; }
+      const { data } = await orderApi.getAll(currentStore.id, params);
       let rows = data.orders || [];
       if (wantPreparingBucket) {
         rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
       }
-      setOrders(rows); setTotal(wantPreparingBucket ? rows.length : data.total);
+      setOrders(rows); setTotal(wantPreparingBucket || wantArchive ? rows.length : data.total);
     } catch {} finally { setLoading(false); }
   };
 
@@ -756,7 +762,7 @@ export default function StoreOrders() {
       )}
 
       {/* Filters card */}
-      <div className="glass-card-solid p-4 mb-4">
+      {!isPreparingPage && <div className="glass-card-solid p-4 mb-4">
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">All statuses</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
@@ -789,7 +795,7 @@ export default function StoreOrders() {
             </select>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Orders header */}
       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
@@ -1180,7 +1186,7 @@ export default function StoreOrders() {
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(isPreparingPage ? ['preparing','confirmed','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
+                  {(isPreparingPage ? ['preparing','ready','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
 
                     const sc2 = statusConfig[s];
                     return (
@@ -1338,7 +1344,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'status') {
-    const statusList = isPreparingPage ? ['preparing','confirmed','cancelled'] : allStatuses;
+    const statusList = isPreparingPage ? ['preparing','ready','cancelled'] : allStatuses;
     return wrap(
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
