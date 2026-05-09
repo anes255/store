@@ -444,35 +444,43 @@ export default function StoreOrders() {
     };
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Orders — Print (${hydrated.length})</title>
       <style>
-        *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111}
-        body{margin:0;padding:16px;background:#fff}
-        h1.title{font-size:14px;font-weight:800;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px;color:#555}
-        /* Single-page layout: tickets stack normally with no forced page-breaks
-           so the browser fits as many on one printed page as it can. */
-        .ticket{border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;page-break-inside:avoid}
-        .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:8px;margin-bottom:8px}
-        .store{font-size:16px;font-weight:800}
-        .meta{font-size:10px;color:#666;margin-top:2px}
-        .status{font-size:10px;font-weight:800;background:#111;color:#fff;padding:3px 8px;border-radius:999px;letter-spacing:.5px}
-        .lbl{font-size:9px;font-weight:800;text-transform:uppercase;color:#888;letter-spacing:.5px;margin:0 0 3px}
-        .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11.5px;line-height:1.45;margin-bottom:8px}
-        .cust b,.ship b{font-size:12.5px}
-        table.items{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
-        table.items th{background:#f5f5f5;text-align:left;padding:5px;border-bottom:1px solid #ddd;font-size:9px;text-transform:uppercase;color:#555}
-        table.items td{padding:5px;border-bottom:1px solid #f0f0f0;vertical-align:top}
-        .pname{font-weight:600}
-        .pvar{font-size:10px;color:#666;margin-top:1px}
-        .psku{font-size:9px;color:#999;font-family:monospace}
-        .totals{font-size:11px;border-top:1px dashed #ccc;padding-top:6px}
-        .totals div{display:flex;justify-content:space-between;padding:1px 0}
-        .totals .total{font-size:13px;font-weight:800;border-top:1px solid #111;margin-top:3px;padding-top:5px}
-        .track{margin-top:6px;font-size:10px;color:#444}
-        .notes{margin-top:5px;font-size:10px;color:#666;font-style:italic}
-        @media print{body{padding:6mm}.ticket{border:1px solid #999}h1.title{display:none}}
+        *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0;padding:0}
+        body{margin:0;padding:4px 8px;background:#fff}
+        h1.title{font-size:11px;font-weight:800;margin:0 0 4px;text-transform:uppercase;letter-spacing:1px;color:#555}
+        .page{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+        .ticket{border:1px solid #ccc;border-radius:4px;padding:5px 6px;page-break-inside:avoid;font-size:9px;line-height:1.3}
+        .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:3px;margin-bottom:3px}
+        .store{font-size:11px;font-weight:800}
+        .meta{font-size:8px;color:#666;margin-top:1px}
+        .status{font-size:8px;font-weight:800;background:#111;color:#fff;padding:1px 5px;border-radius:999px;letter-spacing:.3px}
+        .lbl{font-size:7px;font-weight:800;text-transform:uppercase;color:#888;letter-spacing:.3px;margin:0 0 1px}
+        .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;line-height:1.25;margin-bottom:3px}
+        .cust b,.ship b{font-size:9.5px}
+        table.items{width:100%;border-collapse:collapse;font-size:8px;margin-bottom:3px}
+        table.items th{background:#f5f5f5;text-align:left;padding:2px 3px;border-bottom:1px solid #ddd;font-size:7px;text-transform:uppercase;color:#555}
+        table.items td{padding:2px 3px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+        .pname{font-weight:600;font-size:8px}
+        .pvar{font-size:7.5px;color:#666;margin-top:0}
+        .psku{font-size:7px;color:#999;font-family:monospace}
+        .totals{font-size:8.5px;border-top:1px dashed #ccc;padding-top:2px}
+        .totals div{display:flex;justify-content:space-between;padding:0}
+        .totals .total{font-size:10px;font-weight:800;border-top:1px solid #111;margin-top:1px;padding-top:2px}
+        .track{margin-top:2px;font-size:8px;color:#444}
+        .notes{margin-top:2px;font-size:8px;color:#666;font-style:italic}
+        @media print{body{padding:2mm 3mm}.ticket{border:1px solid #999}h1.title{display:none}.page-break{page-break-after:always}}
       </style>
       </head><body>
         <h1 class="title">${hydrated.length} order${hydrated.length === 1 ? '' : 's'} · ${esc(currentStore?.name || '')} · ${esc(new Date().toLocaleString())}</h1>
-        ${hydrated.map((o, i) => ticket(o, i, hydrated.length)).join('')}
+        ${(() => {
+          const tickets = hydrated.map((o, i) => ticket(o, i, hydrated.length));
+          const pages = [];
+          for (let i = 0; i < tickets.length; i += 8) {
+            const chunk = tickets.slice(i, i + 8);
+            const isLast = i + 8 >= tickets.length;
+            pages.push('<div class="page">' + chunk.join('') + '</div>' + (isLast ? '' : '<div class="page-break"></div>'));
+          }
+          return pages.join('');
+        })()}
         <script>window.onload=function(){setTimeout(function(){window.print();},300);};</script>
       </body></html>`;
     const w = window.open('', '_blank');

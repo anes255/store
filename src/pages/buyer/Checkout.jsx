@@ -52,7 +52,17 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const removeItem = (idx) => { if (isBuyNow) setBuyNowItems(prev => prev.filter((_,i)=>i!==idx)); else cartStore.removeItem(idx); };
   const updateQuantity = (idx, qty) => { if (isBuyNow) setBuyNowItems(prev => { const n=[...prev]; n[idx]={...n[idx],quantity:Math.max(1,qty)}; return n; }); else cartStore.updateQuantity(idx, qty); };
   const clearItems = () => { if (isBuyNow) setBuyNowItems([]); else cartStore.clearCart(); };
-  const getTotal = () => items.reduce((s,i) => s + (i.price||0) * (i.quantity||1), 0);
+  const getItemPrice = (item) => {
+    let up = item.price || 0;
+    if (item.variant) {
+      if (item.variant.price != null && parseFloat(item.variant.price) > 0) up = parseFloat(item.variant.price);
+      else if (item.variant.price_diff != null) up += parseFloat(item.variant.price_diff);
+      else if (item.variant.additional_price != null) up += parseFloat(item.variant.additional_price);
+      if (Array.isArray(item.variant?.selections)) { for (const sel of item.variant.selections) { if (sel.price_diff != null) up += parseFloat(sel.price_diff); } }
+    }
+    return up;
+  };
+  const getTotal = () => items.reduce((s,i) => s + getItemPrice(i) * (i.quantity||1), 0);
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -196,7 +206,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     return parseFloat(form.shipping_type === 'home' ? selectedWilayaData.home_delivery_price : selectedWilayaData.desk_delivery_price) || 0;
   })();
   const isNonCodPayment = ['ccp','baridimob','bank_transfer'].includes(form.payment_method);
-  const total = subtotal + (isNonCodPayment ? 0 : shipping) - couponDiscount;
+  const total = subtotal + shipping - couponDiscount;
   const pc = store?.primary_color || '#7C3AED';
 
   const validateCoupon = async () => {
@@ -727,7 +737,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-7 h-7 bg-gray-200 dark:bg-gray-600 dark:text-white rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"><Plus size={12}/></button>
                       </div>
                     </div>
-                    <div className="text-right"><p className="font-bold text-sm text-gray-900 dark:text-gray-100">{(item.price * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
+                    <div className="text-right"><p className="font-bold text-sm text-gray-900 dark:text-gray-100">{(getItemPrice(item) * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>
                   );
                 })}
@@ -735,7 +745,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
               <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Subtotal</span><span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                {!isBuyNow && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{isNonCodPayment ? <span className="text-emerald-600">{t('checkout.freeShipping','Free')}</span> : <>{shipping.toLocaleString()} {store.currency||'DZD'}</>}</span></div>}
+                {!isBuyNow && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>}
                 {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Discount</span><span className="text-emerald-600 dark:text-emerald-400 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200 dark:border-gray-700"><span className="text-gray-900 dark:text-gray-100">Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 dark:text-emerald-400 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
