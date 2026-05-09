@@ -54,20 +54,20 @@ const DEFAULT_COLUMNS = ['order','products','wilaya','commune','transfer','phone
 const PREPARING_COLUMNS = ['order','products','customer_name','phone','wilaya','commune','status','notes'];
 
 const statusConfig = {
-  new_order:      { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
-  pending:        { color: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'NEW' },
-  confirmed:      { color: 'bg-blue-500',   bg: 'bg-blue-50',   text: 'text-blue-700',   label: 'CONFIRMED' },
-  preparing:      { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', label: 'PREPARING' },
-  under_preparation: { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', label: 'PREPARING' },
-  ready:          { color: 'bg-teal-500',   bg: 'bg-teal-50',   text: 'text-teal-700',   label: 'READY' },
-  shipped:        { color: 'bg-orange-500', bg: 'bg-orange-100',text: 'text-orange-700', label: 'SHIPPED' },
-  delivered:      { color: 'bg-emerald-500',bg: 'bg-emerald-50',text: 'text-emerald-700',label: 'DELIVERED' },
-  cancelled:      { color: 'bg-red-500',    bg: 'bg-red-50',    text: 'text-red-700',    label: 'CANCELLED' },
-  failed_call_1:  { color: 'bg-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', label: 'CALL FAILED 1' },
-  failed_call_2:  { color: 'bg-orange-400', bg: 'bg-orange-50', text: 'text-orange-700', label: 'CALL FAILED 2' },
-  failed_call_3:  { color: 'bg-red-400',    bg: 'bg-red-50',    text: 'text-red-700',    label: 'CALL FAILED 3' },
-  returned:       { color: 'bg-gray-500',   bg: 'bg-gray-50',   text: 'text-gray-700',   label: 'RETURNED' },
-  archived:       { color: 'bg-slate-500',  bg: 'bg-slate-50',  text: 'text-slate-700',  label: 'ARCHIVED' },
+  new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW' },
+  pending:        { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW' },
+  confirmed:      { color: 'bg-blue-500',    bg: 'bg-blue-500',    text: 'text-white', label: 'CONFIRMED' },
+  preparing:      { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING' },
+  under_preparation: { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING' },
+  ready:          { color: 'bg-teal-500',    bg: 'bg-teal-500',    text: 'text-white', label: 'READY' },
+  shipped:        { color: 'bg-blue-600',    bg: 'bg-blue-600',    text: 'text-white', label: 'SHIPPED' },
+  delivered:      { color: 'bg-emerald-500', bg: 'bg-emerald-500', text: 'text-white', label: 'DELIVERED' },
+  cancelled:      { color: 'bg-red-500',     bg: 'bg-red-500',     text: 'text-white', label: 'CANCELLED' },
+  failed_call_1:  { color: 'bg-yellow-500',  bg: 'bg-yellow-500',  text: 'text-white', label: 'CALL FAILED 1' },
+  failed_call_2:  { color: 'bg-orange-400',  bg: 'bg-orange-400',  text: 'text-white', label: 'CALL FAILED 2' },
+  failed_call_3:  { color: 'bg-rose-400',    bg: 'bg-rose-400',    text: 'text-white', label: 'CALL FAILED 3' },
+  returned:       { color: 'bg-gray-500',    bg: 'bg-gray-500',    text: 'text-white', label: 'RETURNED' },
+  archived:       { color: 'bg-slate-500',   bg: 'bg-slate-500',   text: 'text-white', label: 'ARCHIVED' },
 };
 const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','archived'];
 
@@ -585,7 +585,7 @@ export default function StoreOrders() {
 
       case 'status':
         return <td className="px-3 py-3">{cellBtn(o, 'status',
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold ${sc.bg} ${sc.text}`}>{sc.label} <ChevronDown size={10} className="ml-1 opacity-60"/></span>
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm ${sc.bg} ${sc.text}`}>{sc.label} <ChevronDown size={10} className="ml-1 opacity-60"/></span>
         )}</td>;
 
       case 'shipping_method':
@@ -750,10 +750,9 @@ export default function StoreOrders() {
               const count = f.key === 'all' ? total : orders.filter(o => f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
               return (
                 <button key={f.key} onClick={() => setFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? (sc ? `${sc.bg} ${sc.text} border-current shadow` : 'bg-gray-200 text-gray-700 border-transparent shadow') : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                  {sc && <span className={`w-2 h-2 rounded-full ${sc.color} shrink-0`}/>}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? (sc ? `${sc.bg} text-white border-transparent shadow-md` : 'bg-gray-700 text-white border-transparent shadow-md') : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
                   {f.label}
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-black/10' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
                 </button>
               );
             })}
@@ -968,8 +967,8 @@ export default function StoreOrders() {
             <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[160px] max-h-64 overflow-y-auto z-50">
               {allStatuses.filter(s=>s!=='archived').map(s=>{const sc2=statusConfig[s];return(
                 <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 ${sc2.text}`}>
-                  <span className={`w-2 h-2 rounded-full ${sc2.color}`}/>{sc2.label}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
+                  <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.label}
                 </button>
               );})}
             </div>
