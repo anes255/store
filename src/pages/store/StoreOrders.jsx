@@ -748,12 +748,12 @@ export default function StoreOrders() {
               const isActive = filter === f.key;
               const sc = statusConfig[f.key];
               const count = f.key === 'all' ? total : orders.filter(o => f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
-              const base = sc ? sc.color : 'bg-gray-200';
               return (
                 <button key={f.key} onClick={() => setFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? `${base} text-white border-transparent shadow` : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? (sc ? `${sc.bg} ${sc.text} border-current shadow` : 'bg-gray-200 text-gray-700 border-transparent shadow') : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                  {sc && <span className={`w-2 h-2 rounded-full ${sc.color} shrink-0`}/>}
                   {f.label}
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-black/10' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
                 </button>
               );
             })}
@@ -959,9 +959,34 @@ export default function StoreOrders() {
 
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50 flex-wrap max-w-[95vw]">
           <span className="text-sm font-bold">{selectedItems.size} selected</span>
           <div className="w-px h-5 bg-gray-600"/>
+          {/* Bulk status change */}
+          <div className="relative group">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/>Status <ChevronDown size={10}/></button>
+            <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[160px] max-h-64 overflow-y-auto z-50">
+              {allStatuses.filter(s=>s!=='archived').map(s=>{const sc2=statusConfig[s];return(
+                <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 ${sc2.text}`}>
+                  <span className={`w-2 h-2 rounded-full ${sc2.color}`}/>{sc2.label}
+                </button>
+              );})}
+            </div>
+          </div>
+          {/* Bulk financial status change */}
+          <div className="relative group">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/>Payment <ChevronDown size={10}/></button>
+            <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[140px] z-50">
+              {['pending','paid','refunded','failed'].map(ps=>{
+                const cls=ps==='paid'?'text-emerald-700':ps==='refunded'?'text-orange-700':ps==='failed'?'text-red-700':'text-amber-700';
+                return(
+                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${ps.toUpperCase()}`);clearSelection();loadOrders();}}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold ${cls} hover:bg-gray-50 uppercase`}>{ps}
+                </button>
+              );})}
+            </div>
+          </div>
           <button onClick={async () => {
             const selected = orders.filter(o => selectedItems.has(o.id));
             const withPref = selected.filter(o => o.preferred_delivery_company_id);
@@ -1363,11 +1388,11 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         <button onClick={async () => {
           try {
             const{orderApi}=await import('../../utils/api');
-            await orderApi.archive(o.store_id || o.shop_id || '', o.id, !o.is_archived);
-            // The drawer's parent receives the change via onSaveField patch.
-            onSaveField(o.id, { is_archived: !o.is_archived });
+            const storeId=o.store_id||o.shop_id||'';
+            await orderApi.archive(storeId, o.id, !o.is_archived);
+            toast.success(o.is_archived?'Restored from archive':'Archived');
             onClose();
-          } catch {/* parent toast handles failures */}
+          } catch { toast.error('Failed'); }
         }} className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${o.is_archived?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}>
           {o.is_archived?'📤 Restore from archive':'📦 Archive order'}
         </button>
