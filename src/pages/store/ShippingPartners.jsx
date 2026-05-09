@@ -26,7 +26,7 @@ const PRESETS=[
   {name:'Maystro Delivery',logo:'M',color:'from-purple-500 to-pink-500',api_base_url:'https://backend.maystro-delivery.com/api/stores',api_auth_type:'token_prefix',api_tracking_endpoint:'/orders/?display_id={tracking_number}',api_status_path:'list.0.status_display',headers:[],query_params:[],help:'Maystro dashboard → Settings → API → copy your API Token (sent as "Authorization: Token <token>")',verified:true,
     create_endpoint:'/orders/',create_method:'POST',create_tracking_path:'display_id',
     create_body_template:'{"customer_name":"{customer_name}","customer_phone":"{customer_phone}","destination_text":"{shipping_address}","commune":"{shipping_city}","wilaya":"{shipping_wilaya}","product_price":{total},"products":[{"product_name":"{product_list}","quantity":{item_count},"product_id":""}],"display_id":"{order_id}","note_to_driver":"{notes}","express":false,"source":"api"}'},
-  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/public/v1',api_auth_type:'query_params',api_tracking_endpoint:'/get/trackings',api_status_path:'data.last_situation',headers:[],query_params:['api_token','user_guid'],help:'NOEST partner portal → API → copy api_token and user_guid (both required)',verified:true,
+  {name:'NOEST Express',logo:'N',color:'from-green-500 to-emerald-500',api_base_url:'https://app.noest-dz.com/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',headers:[],query_params:[],help:'NOEST partner portal (app.noest-dz.com) → API → copy your Bearer token. Same EcoTrack API as DHD.',verified:true,
     create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',
     create_body_template:''},
   {name:'EcoTrack',logo:'E',color:'from-teal-500 to-green-500',api_base_url:'https://app.ecotrack.dz/api/v1',api_auth_type:'bearer',api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',headers:[],query_params:[],help:'ecotrack.dz → Dashboard → API Settings → copy your API token. Supports: create orders, track, download labels, request returns, get wilayas/communes/fees.',verified:true,
@@ -555,23 +555,41 @@ export default function ShippingPartners(){
         <button onClick={()=>setDiagnoseResult(null)}><X size={20}/></button>
       </div>
       {diagnoseResult.error&&<div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">{diagnoseResult.error}</div>}
-      {diagnoseResult.carrier&&<div className="text-xs text-gray-500 mb-3">Carrier: <span className="font-bold text-gray-700">{diagnoseResult.carrier}</span> | Base URL: <span className="font-mono text-[10px]">{diagnoseResult.api_base_url}</span> | Auth: {diagnoseResult.api_auth_type} | Key: {diagnoseResult.has_api_key?'✅ present':'❌ missing'}</div>}
-      {diagnoseResult.steps&&diagnoseResult.steps.map((s,i)=>(
-        <div key={i} className={`p-3 rounded-xl border mb-2 ${s.error?'bg-red-50 border-red-200':s.status>=200&&s.status<300?'bg-emerald-50 border-emerald-200':s.status>=400?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200'}`}>
+      {diagnoseResult.carrier&&<div className="text-xs text-gray-500 mb-3">Carrier: <span className="font-bold text-gray-700">{diagnoseResult.carrier}</span> | Base URL: <span className="font-mono text-[10px]">{diagnoseResult.api_base_url}</span> | Auth: {diagnoseResult.api_auth_type} | Key: {diagnoseResult.has_api_key?'✅ present':'❌ missing'}{diagnoseResult.working_base&&diagnoseResult.working_base!==diagnoseResult.api_base_url&&<span className="ml-2 text-emerald-600 font-bold">Working base: <span className="font-mono">{diagnoseResult.working_base}</span></span>}</div>}
+      {diagnoseResult.summary&&<div className={`p-3 rounded-xl border mb-3 text-sm font-semibold whitespace-pre-wrap ${diagnoseResult.summary.startsWith('✅')?'bg-emerald-50 border-emerald-200 text-emerald-700':diagnoseResult.summary.startsWith('❌')?'bg-red-50 border-red-200 text-red-700':'bg-amber-50 border-amber-200 text-amber-700'}`}>{diagnoseResult.summary}</div>}
+      {diagnoseResult.steps&&diagnoseResult.steps.map((s,i)=>{
+        const diagOk=s.diagnosis&&(s.diagnosis.includes('✅')||s.diagnosis.includes('SUCCEEDED'));
+        const diagFail=s.diagnosis&&(s.diagnosis.includes('❌')||s.diagnosis.includes('FAILED')||s.diagnosis.includes('CRITICAL'));
+        const stepColor=s.error||diagFail?'bg-red-50 border-red-200':diagOk||(s.status>=200&&s.status<300&&!diagFail)?'bg-emerald-50 border-emerald-200':s.status>=400?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200';
+        const diagTextColor=diagOk?'text-emerald-700':diagFail||s.error?'text-red-700':'text-amber-700';
+        return(
+        <div key={i} className={`p-3 rounded-xl border mb-2 ${stepColor}`}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">{(s.step||'').replace(/_/g,' ')}</span>
-            {s.error?<span className="text-[10px] text-red-600 font-bold">ERROR</span>:<span className={`text-[10px] font-bold ${s.status>=200&&s.status<300?'text-emerald-600':s.status>=400?'text-red-600':'text-amber-600'}`}>HTTP {s.status}</span>}
+            {s.error?<span className="text-[10px] text-red-600 font-bold">ERROR</span>:s.status?<span className={`text-[10px] font-bold ${s.status>=200&&s.status<300?'text-emerald-600':s.status>=400?'text-red-600':'text-amber-600'}`}>HTTP {s.status}</span>:s.ok===true?<span className="text-[10px] font-bold text-emerald-600">OK</span>:s.ok===false?<span className="text-[10px] font-bold text-red-600">FAIL</span>:null}
           </div>
-          {s.diagnosis&&<p className={`text-xs font-semibold mb-1 ${s.status>=200&&s.status<300&&!s.error?'text-emerald-700':'text-red-700'}`}>{s.diagnosis}</p>}
+          {s.diagnosis&&<p className={`text-xs font-semibold mb-1 whitespace-pre-wrap ${diagTextColor}`}>{s.diagnosis}</p>}
           {s.redirect&&<p className="text-[10px] text-amber-600 font-mono mb-1">Redirected ({s.redirect.code}): {s.redirect.from} → {s.redirect.to}</p>}
           {s.url&&<p className="text-[10px] font-mono text-gray-500 break-all mb-1">{s.method?s.method+' ':'GET '}{s.url}</p>}
+          {s.request_url&&!s.url&&<p className="text-[10px] font-mono text-gray-500 break-all mb-1">POST {s.request_url}</p>}
           {s.headers_sent&&typeof s.headers_sent==='object'&&!Array.isArray(s.headers_sent)&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request headers</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-32 overflow-auto">{JSON.stringify(Object.fromEntries(Object.entries(s.headers_sent).map(([k,v])=>[k,k.toLowerCase().includes('auth')||k.toLowerCase().includes('token')?v.slice(0,10)+'…':v])),null,2)}</pre></details>}
-          {s.body_sent&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request body</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.body_sent), null, 2); } catch { return s.body_sent; } })()}</pre></details>}
+          {(s.body_sent||s.form_body_sent||s.request_body)&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request body</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { const b=s.body_sent||s.form_body_sent||s.request_body||''; try { return JSON.stringify(JSON.parse(b), null, 2); } catch { return b; } })()}</pre></details>}
           {s.error&&<p className="text-xs text-red-600">{s.error}</p>}
-          {s.response&&<details open={s.step==='create_order'}><summary className="text-[10px] text-gray-500 cursor-pointer">Response</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-60 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.response), null, 2); } catch { return s.response; } })()}</pre></details>}
+          {s.response&&<details open={s.step?.includes('create')||s.step?.includes('dispatch')}><summary className="text-[10px] text-gray-500 cursor-pointer">Response</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-60 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.response), null, 2); } catch { return s.response; } })()}</pre></details>}
+          {s.tracking_number&&<p className="text-[10px] text-gray-500">Tracking: <span className="font-mono font-bold">{s.tracking_number}</span></p>}
           {s.tracking&&<p className="text-[10px] text-gray-500">Tracking: <span className="font-mono font-bold">{s.tracking}</span></p>}
+          {(s.tried||s.trials)&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer font-bold">{(s.tried||s.trials).length} endpoint(s) tried</summary><div className="mt-1 space-y-1">{(s.tried||s.trials).map((t,j)=>(
+            <div key={j} className={`p-2 rounded-lg text-[10px] border ${t.status===200?'bg-emerald-50/50 border-emerald-200':t.status===404?'bg-gray-50 border-gray-200':'bg-amber-50/50 border-amber-200'}`}>
+              <div className="flex items-center justify-between"><span className="font-mono break-all">{t.url||t.base||''}</span>{t.status&&<span className={`font-bold ${t.status===200?'text-emerald-600':t.status===404?'text-gray-400':'text-amber-600'}`}>{t.status}</span>}</div>
+              {t.diagnosis&&<p className={`font-semibold mt-0.5 ${t.diagnosis.includes('✅')?'text-emerald-700':t.diagnosis.includes('❌')?'text-red-600':'text-gray-600'}`}>{t.diagnosis}</p>}
+              {t.response&&<pre className="mt-0.5 p-1 bg-white/60 rounded font-mono break-all whitespace-pre-wrap max-h-20 overflow-auto">{t.response}</pre>}
+              {t.error&&<p className="text-red-600">{t.error}</p>}
+            </div>
+          ))}</div></details>}
+          {s.working_base&&<p className="text-[10px] mt-1 text-emerald-600 font-bold">Recommended base URL: <span className="font-mono">{s.working_base}</span></p>}
         </div>
-      ))}
+        );
+      })}
     </div></div>}
   </DashboardLayout>);
 }
