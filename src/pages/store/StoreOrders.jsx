@@ -958,7 +958,7 @@ export default function StoreOrders() {
 
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50 flex-wrap max-w-[95vw]">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50 whitespace-nowrap overflow-x-auto max-w-[95vw]">
           <span className="text-sm font-bold">{selectedItems.size} selected</span>
           <div className="w-px h-5 bg-gray-600"/>
           {/* Bulk status change */}
@@ -1020,8 +1020,11 @@ export default function StoreOrders() {
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
-                  try { await orderApi.bulkArchive(currentStore.id, ids, true); } catch {}
-                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch {}
+                  const tid = toast.loading('Archiving & deleting...');
+                  try { await orderApi.bulkArchive(currentStore.id, ids, true); } catch (e) { console.error('Archive failed:', e); }
+                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch (e) { console.error('Delete failed:', e); }
+                  toast.dismiss(tid);
+                  toast.success(`${ids.length} order(s) archived & deleted`);
                   setDeleteConfirm(null); clearSelection(); loadOrders();
                 }}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-2"
@@ -1031,7 +1034,10 @@ export default function StoreOrders() {
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
-                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch {}
+                  const tid = toast.loading('Deleting...');
+                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch (e) { console.error('Delete failed:', e); }
+                  toast.dismiss(tid);
+                  toast.success(`${ids.length} order(s) deleted`);
                   setDeleteConfirm(null); clearSelection(); loadOrders();
                 }}
                 className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm"
