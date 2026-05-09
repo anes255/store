@@ -987,19 +987,18 @@ export default function StoreOrders() {
               );})}
             </div>
           </div>
-          <button onClick={async () => {
-            const selected = orders.filter(o => selectedItems.has(o.id));
-            const withPref = selected.filter(o => o.preferred_delivery_company_id);
-            if (!withPref.length) { toast.error(t('orders.noPrefCompany','No selected orders have a preferred delivery company')); return; }
-            const tid = toast.loading(t('orders.bulkTransferring',`Transferring ${withPref.length} order(s)...`));
-            let ok = 0;
-            for (const o of withPref) {
-              try { await api.post(`/manage/stores/${currentStore.id}/orders/${o.id}/dispatch`, { delivery_company_id: o.preferred_delivery_company_id }); ok++; } catch {}
-            }
-            toast.dismiss(tid);
-            toast.success(`${ok}/${withPref.length} ${t('orders.transferred','transferred')}`);
-            clearSelection(); loadOrders();
-          }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/>{t('orders.bulkTransfer','Transfer')}</button>
+          {/* Bulk transfer to delivery company */}
+          <div className="relative group">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/>{t('orders.bulkTransfer','Transfer')} <ChevronDown size={10}/></button>
+            <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[180px] max-h-64 overflow-y-auto z-50">
+              {companies.length?companies.map(c=>(
+                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;for(const id of ids){try{await api.post(`/manage/stores/${currentStore.id}/orders/${id}/dispatch`,{delivery_company_id:c.id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();loadOrders();}}
+                  className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
+                  <Truck size={10} className="text-emerald-500"/>{c.name}
+                </button>
+              )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
+            </div>
+          </div>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold"><Download size={12}/>Export</button>
           <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold"><Printer size={12}/>Print</button>
           <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold"><Trash2 size={12}/>Delete</button>
