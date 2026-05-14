@@ -444,7 +444,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   // ═══════ MAIN CHECKOUT ═══════
   const paymentMethods = [
     store.enable_cod && { key: 'cod', icon: Banknote, label: 'Cash on Delivery', desc: 'Pay in cash upon delivery', color: 'emerald' },
-    store.enable_ccp && { key: 'ccp', icon: CreditCard, label: 'CCP Transfer', desc: `Transfer to CCP: ${store.ccp_account || ''}`, color: 'amber' },
+    store.enable_ccp && { key: 'ccp', icon: CreditCard, label: 'CCP Transfer', desc: 'Transfer via CCP postal account', color: 'amber' },
     store.enable_baridimob && { key: 'baridimob', icon: QrCode, label: 'BaridiPay', desc: 'Pay via BaridiPay app', color: 'green' },
     store.enable_chargily && { key: 'chargily', icon: Wifi, label: 'Edahabia / CIB Card', desc: 'Pay online with your bank card', color: 'brand' },
     store.enable_bank_transfer && { key: 'bank_transfer', icon: Building, label: 'Bank Transfer', desc: 'Under development', color: 'gray', disabled: true },
@@ -745,7 +745,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
               <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Subtotal</span><span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                {!isBuyNow && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping.toLocaleString()} {store.currency||'DZD'}</span></div>}
+                <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400 flex items-center gap-1"><Truck size={14}/> Shipping</span><span className="font-semibold text-gray-900 dark:text-gray-100">{shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
                 {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Discount</span><span className="text-emerald-600 dark:text-emerald-400 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200 dark:border-gray-700"><span className="text-gray-900 dark:text-gray-100">Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 dark:text-emerald-400 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}

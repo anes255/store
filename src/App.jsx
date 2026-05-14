@@ -101,6 +101,7 @@ const ShippingWilayas=lazy(()=>import('./pages/store/ShippingWilayas'));
 const ShippingPartners=lazy(()=>import('./pages/store/ShippingPartners'));
 const HowToConnect=lazy(()=>import('./pages/store/HowToConnect'));
 const Blacklist=lazy(()=>import('./pages/store/Blacklist'));
+const AutoBlacklist=lazy(()=>import('./pages/store/AutoBlacklist'));
 const AboutUs=lazy(()=>import('./pages/store/AboutUs'));
 const FAQs=lazy(()=>import('./pages/store/FAQs'));
 const ContactInfo=lazy(()=>import('./pages/store/ContactInfo'));
@@ -145,6 +146,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/dashboard/staff" element={<P><StoreStaff/></P>}/>
 <Route path="/dashboard/customers" element={<P><StoreCustomers/></P>}/>
 <Route path="/dashboard/blacklist" element={<P><Blacklist/></P>}/>
+<Route path="/dashboard/auto-blacklist" element={<P><AutoBlacklist/></P>}/>
 <Route path="/dashboard/domains" element={<P><StoreDomains/></P>}/>
 <Route path="/dashboard/analytics" element={<P><StoreAnalytics/></P>}/>
 <Route path="/dashboard/costs" element={<P><StoreCosts/></P>}/>

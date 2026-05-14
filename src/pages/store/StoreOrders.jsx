@@ -177,7 +177,7 @@ export default function StoreOrders() {
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v5') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
-  useEffect(() => { if (!isPreparingPage) localStorage.setItem('orders.columns.v5', JSON.stringify(activeColumns)); }, [activeColumns, isPreparingPage]);
+  useEffect(() => { if (!isPreparingPage && activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v5', JSON.stringify(activeColumns)); } catch {} } }, [activeColumns, isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');
@@ -966,7 +966,7 @@ export default function StoreOrders() {
 
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50 whitespace-nowrap overflow-x-auto max-w-[95vw]">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50 whitespace-nowrap max-w-[95vw]">
           <span className="text-sm font-bold">{selectedItems.size} selected</span>
           <div className="w-px h-5 bg-gray-600"/>
           {/* Bulk status change */}

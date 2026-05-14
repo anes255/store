@@ -34,6 +34,7 @@ const PERM_GATE_MAP = {
   '/dashboard/tracking-orders': 'orders_view',
   '/dashboard/customers': 'customers_view',
   '/dashboard/blacklist': 'customers_blacklist',
+  '/dashboard/auto-blacklist': 'customers_blacklist',
   '/dashboard/costs': 'finances_view',
   '/dashboard/taxes': 'taxes_view',
   '/dashboard/billing': 'settings_edit',
@@ -302,7 +303,7 @@ const DEFAULT_ITEMS = [
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
     {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'},{to:'/dashboard/tracking-orders',label:'sidebar.trackingOrders'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
-    {to:'/dashboard/customers',label:'sidebar.customersList'},{to:'/dashboard/blacklist',label:'sidebar.blacklist'}]},
+    {to:'/dashboard/customers',label:'sidebar.customersList'},{to:'/dashboard/blacklist',label:'sidebar.blacklist'},{to:'/dashboard/auto-blacklist',label:'sidebar.autoBlacklist'}]},
   {id:'analytics',type:'link',to:'/dashboard/analytics',icon:'BarChart3',label:'sidebar.analytics'},
   {id:'costs',type:'link',to:'/dashboard/costs',icon:'DollarSign',label:'sidebar.costs'},
   {id:'taxes',type:'link',to:'/dashboard/taxes',icon:'Percent',label:'sidebar.taxes'},

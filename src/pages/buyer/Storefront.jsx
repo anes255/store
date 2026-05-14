@@ -187,7 +187,9 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
   const selectedIdxes = Object.values(selectedVariants).filter(v => v !== null && v !== undefined);
   const primarySelected = selectedIdxes.length > 0 ? variants[selectedIdxes[0]] : null;
 
-  const basePrice = parseFloat(product.price) || 0;
+  const rawBasePrice = parseFloat(product.price) || 0;
+  const modalOfferPct = product.is_on_sale && product.offer_discount ? (parseFloat(String(product.offer_discount).replace(/[^0-9.]/g, '')) || 0) : 0;
+  const basePrice = modalOfferPct > 0 ? Math.round(rawBasePrice * (1 - modalOfferPct / 100)) : rawBasePrice;
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
   const finalPrice = basePrice + priceAdj;
   const stockCount = primarySelected ? (primarySelected.stock ?? product.stock_quantity) : product.stock_quantity;
@@ -274,9 +276,9 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                 ))}
               </div>
             )}
-            {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
+            {((product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice) || modalOfferPct > 0) && (
               <span className="inline-block mt-3 px-3 py-1 bg-red-500/20 text-red-300 text-xs font-bold rounded-lg border border-red-500/30">
-                SALE - Save {(parseFloat(product.compare_at_price) - finalPrice).toLocaleString()} {currency}
+                {product.sale_badge_text || 'SALE'} {modalOfferPct > 0 ? `- ${product.offer_discount || modalOfferPct+'% OFF'}` : `- Save ${(parseFloat(product.compare_at_price) - finalPrice).toLocaleString()} ${currency}`}
               </span>
             )}
           </div>
@@ -288,8 +290,8 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
             {/* Price */}
             <div className="mt-3 flex items-baseline gap-3 flex-wrap">
               <span className="text-3xl font-extrabold" style={{ color: pc }}>{finalPrice.toLocaleString()} {currency}</span>
-              {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
-                <span className="text-base text-white/30 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>
+              {((product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice) || modalOfferPct > 0) && (
+                <span className="text-base text-white/30 line-through">{(modalOfferPct > 0 ? rawBasePrice : parseFloat(product.compare_at_price)).toLocaleString()}</span>
               )}
             </div>
 
@@ -506,8 +508,12 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const cartItems = useCartStore(s => s.items);
   const removeItem = useCartStore(s => s.removeItem);
   const inCart = cartItems.some(i => i.product_id === product.id);
-  const price = parseFloat(product.price) || 0;
-  const comparePrice = product.compare_at_price ? parseFloat(product.compare_at_price) : null;
+  const rawPrice = parseFloat(product.price) || 0;
+  // If the product has an active offer with a discount (e.g. "40% OFF"),
+  // compute the discounted price and treat the original as compare_at_price.
+  const offerPct = product.is_on_sale && product.offer_discount ? (parseFloat(String(product.offer_discount).replace(/[^0-9.]/g, '')) || 0) : 0;
+  const price = offerPct > 0 ? Math.round(rawPrice * (1 - offerPct / 100)) : rawPrice;
+  const comparePrice = offerPct > 0 ? rawPrice : (product.compare_at_price ? parseFloat(product.compare_at_price) : null);
   const onSale = comparePrice && comparePrice > price;
   const stockCount = product.stock_quantity;
   const isLight = themeMode === 'light';
@@ -524,8 +530,8 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         </div>
 
         {/* Favourite on LEFT top. SALE badge at BOTTOM-LEFT. Cart on top-RIGHT. */}
-        <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
-          className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
+        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleWishlist(product); }}
+          className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 touch-manipulation ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
         {onSale && <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
         <button onClick={(e) => { e.stopPropagation(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}

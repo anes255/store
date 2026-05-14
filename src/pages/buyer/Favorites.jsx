@@ -287,8 +287,8 @@ export default function Favorites() {
                   >
                     {/* Selection checkbox */}
                     <button
-                      onClick={() => toggleSelect(product.id)}
-                      className="absolute top-3 left-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-md transition-all"
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleSelect(product.id); }}
+                      className="absolute top-3 left-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-md transition-all touch-manipulation"
                       style={isSelected
                         ? {backgroundColor: pc, color: '#fff'}
                         : {backgroundColor: 'rgba(15,23,42,0.6)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.1)'}}
@@ -298,8 +298,8 @@ export default function Favorites() {
 
                     {/* Remove pill — always visible so mobile buyers can see it */}
                     <button
-                      onClick={() => handleRemove(product.id)}
-                      className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center bg-black/50 backdrop-blur-md text-gray-300 hover:text-red-400 hover:bg-black/70 border border-white/10 transition-all"
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleRemove(product.id); }}
+                      className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center bg-black/50 backdrop-blur-md text-gray-300 hover:text-red-400 hover:bg-black/70 border border-white/10 transition-all touch-manipulation"
                       aria-label="Remove from favorites"
                     >
                       <X size={14}/>
@@ -387,7 +387,7 @@ export default function Favorites() {
             animate={{y: 0, opacity: 1}}
             exit={{y: 80, opacity: 0}}
             transition={{type: 'spring', stiffness: 260, damping: 22}}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md"
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md pb-[env(safe-area-inset-bottom)]"
           >
             <div className="bg-gray-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 px-4 py-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm" style={{backgroundColor: pc}}>
