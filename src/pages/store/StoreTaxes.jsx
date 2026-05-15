@@ -25,13 +25,21 @@ export default function StoreTaxes(){
   const [period,setPeriod]=useState('month'); // month | quarter | year | all
   const [customRevenue,setCustomRevenue]=useState('');
 
+  // Sync tax config whenever store data refreshes (e.g. after DashboardLayout
+  // re-fetches from the API on page reload).
+  const cfgTaxEnabled=currentStore?.config?.tax_enabled;
+  const cfgTaxRate=currentStore?.config?.tax_rate;
+  const cfgTaxInclusive=currentStore?.config?.tax_inclusive;
+  const cfgTaxLabel=currentStore?.config?.tax_label;
   useEffect(()=>{
-    if(!currentStore?.id)return;
-    const cfg=currentStore.config||{};
+    const cfg=currentStore?.config||{};
     setRate(parseFloat(cfg.tax_rate)||0);
     setInclusive(cfg.tax_inclusive===true);
     setLabel(cfg.tax_label||'TVA');
     setEnabled(cfg.tax_enabled===true);
+  },[cfgTaxEnabled,cfgTaxRate,cfgTaxInclusive,cfgTaxLabel]);
+  useEffect(()=>{
+    if(!currentStore?.id)return;
     setLoading(true);
     orderApi.getAll(currentStore.id,{limit:1000}).then(r=>setOrders(r.data?.orders||r.data||[])).catch(()=>{}).finally(()=>setLoading(false));
   },[currentStore?.id]);
