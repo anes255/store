@@ -39,7 +39,7 @@ export default function StoreTaxes(){
   const save=async()=>{
     setSaving(true);
     try{
-      const {data}=await ownerApi.updateStore(currentStore.id,{config:{...(currentStore.config||{}),tax_rate:rate,tax_inclusive:inclusive,tax_label:label,tax_enabled:enabled}});
+      const {data}=await ownerApi.updateStore(currentStore.id,{tax_rate:rate,tax_inclusive:inclusive,tax_label:label,tax_enabled:enabled});
       setCurrentStore(data);
       toast.success('Tax settings saved');
     }catch{toast.error('Failed to save');}
