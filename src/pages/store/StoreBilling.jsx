@@ -91,6 +91,8 @@ export default function StoreBilling() {
     if (!src || (Array.isArray(src) && src.length === 0)) src = plan?.[`features_${lang}`];
     if (!src || (Array.isArray(src) && src.length === 0)) src = plan?.features_i18n && pickLangWithFallback(plan.features_i18n);
     if (!src || (Array.isArray(src) && src.length === 0)) src = plan?.features_en || plan?.features;
+    // plan.features may be a lang-keyed object { en: [...], fr: [...] } from public plans API
+    if (src && typeof src === 'object' && !Array.isArray(src)) src = src[lang] || pickLangWithFallback(src) || src.en;
     return toArr(src).map(stringifyItem).filter(Boolean);
   };
 

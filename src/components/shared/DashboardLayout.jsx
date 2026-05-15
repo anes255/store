@@ -481,6 +481,8 @@ export default function DashboardLayout({children}){
 
     // For link items: hide entirely if staff-blocked
     if(item.type==='link'&&isStaffBlocked(item.to))return null;
+    // Hide taxes when tax_enabled is off in store config
+    if(item.id==='taxes'&&!currentStore?.config?.tax_enabled)return null;
 
     // For group items: hide entire group if ALL children are staff-blocked
     if(item.type==='group'&&staffPerms){
