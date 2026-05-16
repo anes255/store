@@ -889,8 +889,6 @@ export default function StoreApps() {
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-2">{app.desc}</p>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {installed && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">{t('storePage.active','ACTIVE')}</span>}
-                      {!installed && !app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-500">{t('storePage.inactive','INACTIVE')}</span>}
                       {app.comingSoon && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">{t('storePage.soon','SOON')}</span>}
                       {/* Explicit Activate / Deactivate button right on the
                           card so the admin doesn't need to open the modal
