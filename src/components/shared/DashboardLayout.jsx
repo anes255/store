@@ -298,8 +298,8 @@ const DEFAULT_ITEMS = [
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'},{to:'/dashboard/orders-archive',label:'sidebar.ordersArchive'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
     {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/offers',label:'Offers'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
-  {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
-    {to:'/dashboard/settings',label:'sidebar.allSettings'},{to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
+  {id:'store',type:'group',icon:'Globe',label:'Store Settings',children:[
+    {to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
     {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'},{to:'/dashboard/tracking-orders',label:'sidebar.trackingOrders'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
@@ -675,7 +675,6 @@ export default function DashboardLayout({children}){
               </div>);
             })()}
           </div>
-          {currentStore?.is_live!==false&&<LiveBadge storeId={currentStore?.id}/>}
           {/* Header store switcher: shows a "+" when the owner has only one
               store (quick way to create a second), and a dropdown when 2+.
               Staff don't get the "+" (they can't create stores), but if they
@@ -708,6 +707,7 @@ export default function DashboardLayout({children}){
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
           <LanguageSwitcher/>
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
+          {currentStore?.is_live!==false&&<LiveBadge storeId={currentStore?.id}/>}
         </div>
         </div>
       </header>

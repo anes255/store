@@ -192,11 +192,11 @@ export default function TrackOrder() {
   const showOrderInput = method === 'order_id' || (method === 'both' && mode === 'order_id');
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden" style={{ background: 'radial-gradient(circle at 20% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%)' }}>
+    <div className="min-h-screen text-white relative overflow-hidden" style={{ background: `radial-gradient(circle at 20% 0%, ${pc}44 0%, #0f172a 50%, #020617 100%)` }}>
       <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${pc}66 0%, transparent 70%)` }} />
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
 
-      <header className="relative z-10 sticky top-0 bg-gray-900/70 backdrop-blur-xl border-b border-white/10">
+      <header className="relative z-10 sticky top-0 backdrop-blur-xl border-b border-white/10" style={{backgroundColor:`${pc}18`}}>
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link to={`/s/${storeSlug}`} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors shrink-0"><ArrowLeft size={16} /></Link>
           {store.logo

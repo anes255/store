@@ -67,9 +67,10 @@ const statusConfig = {
   failed_call_2:  { color: 'bg-orange-400',  bg: 'bg-orange-400',  text: 'text-white', label: 'CALL FAILED 2' },
   failed_call_3:  { color: 'bg-rose-400',    bg: 'bg-rose-400',    text: 'text-white', label: 'CALL FAILED 3' },
   returned:       { color: 'bg-gray-500',    bg: 'bg-gray-500',    text: 'text-white', label: 'RETURNED' },
+  awaiting_pickup:{ color: 'bg-amber-500',   bg: 'bg-amber-500',   text: 'text-white', label: 'AWAITING' },
   archived:       { color: 'bg-slate-500',   bg: 'bg-slate-500',   text: 'text-white', label: 'ARCHIVED' },
 };
-const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','archived'];
+const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','awaiting_pickup','archived'];
 
 const TRANSFER_COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', yalid: '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
 function transferBadge(o) {
@@ -333,6 +334,8 @@ export default function StoreOrders() {
     { key: 'ready',         label: 'Ready' },
     { key: 'shipped',       label: 'Shipped' },
     { key: 'delivered',     label: 'Delivered' },
+    { key: 'returned',      label: 'Returned' },
+    { key: 'awaiting_pickup', label: 'Awaiting' },
   ];
 
   const filteredOrders = useMemo(() => {
