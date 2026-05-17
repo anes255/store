@@ -675,6 +675,7 @@ export default function DashboardLayout({children}){
               </div>);
             })()}
           </div>
+          {currentStore?.is_live!==false&&<span className="hidden md:inline-flex"><LiveBadge storeId={currentStore?.id}/></span>}
           {/* Header store switcher: shows a "+" when the owner has only one
               store (quick way to create a second), and a dropdown when 2+.
               Staff don't get the "+" (they can't create stores), but if they
@@ -707,7 +708,7 @@ export default function DashboardLayout({children}){
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
           <LanguageSwitcher/>
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
-          {currentStore?.is_live!==false&&<LiveBadge storeId={currentStore?.id}/>}
+          {currentStore?.is_live!==false&&<span className="md:hidden"><LiveBadge storeId={currentStore?.id}/></span>}
         </div>
         </div>
       </header>
