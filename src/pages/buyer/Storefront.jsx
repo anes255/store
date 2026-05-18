@@ -389,6 +389,27 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
               </div>
             )}
 
+            {/* Quantity offers */}
+            {(() => {
+              let qOffers = product.quantity_offers || [];
+              if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+              if (!Array.isArray(qOffers) || qOffers.length === 0) return null;
+              return (
+                <div className="mt-4">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Quantity Offers</p>
+                  <div className="flex flex-wrap gap-2">
+                    {qOffers.map((qo, qi) => (
+                      <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${quantity === (parseInt(qo.quantity)||1) ? 'border-white bg-white/15' : 'border-white/15 hover:border-white/30 bg-white/5'}`}>
+                        <span className="text-xs font-extrabold text-white">{'×'}{qo.quantity}</span>
+                        <span className="text-xs font-bold text-white/70">{qo.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Quantity + Actions */}
             <div className="mt-5 space-y-3">
               <div className="flex items-center gap-3">
