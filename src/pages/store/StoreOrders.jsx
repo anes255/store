@@ -973,12 +973,12 @@ export default function StoreOrders() {
 
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl z-50 whitespace-nowrap max-w-[95vw]">
-          <span className="text-sm font-bold">{selectedItems.size} selected</span>
-          <div className="w-px h-5 bg-gray-600"/>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap max-w-[96vw] overflow-x-auto" style={{scrollbarWidth:'none'}}>
+          <span className="text-xs sm:text-sm font-bold shrink-0">{selectedItems.size} sel.</span>
+          <div className="w-px h-5 bg-gray-600 shrink-0"/>
           {/* Bulk status change */}
-          <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/>Status <ChevronDown size={10}/></button>
+          <div className="relative group shrink-0">
+            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
             <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {allStatuses.filter(s=>s!=='archived').map(s=>{const sc2=statusConfig[s];return(
                 <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
@@ -989,8 +989,8 @@ export default function StoreOrders() {
             </div></div>
           </div>
           {/* Bulk financial status change */}
-          <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/>Payment <ChevronDown size={10}/></button>
+          <div className="relative group shrink-0">
+            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">Payment</span> <ChevronDown size={10}/></button>
             <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {['pending','paid','refunded','failed'].map(ps=>{
                 const dot=ps==='paid'?'bg-emerald-500':ps==='refunded'?'bg-orange-500':ps==='failed'?'bg-red-500':'bg-amber-500';
@@ -1004,8 +1004,8 @@ export default function StoreOrders() {
             </div></div>
           </div>
           {/* Bulk transfer to delivery company */}
-          <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/>{t('orders.bulkTransfer','Transfer')} <ChevronDown size={10}/></button>
+          <div className="relative group shrink-0">
+            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
             <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {companies.length?companies.map(c=>(
                 <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;for(const id of ids){try{await api.post(`/manage/stores/${currentStore.id}/orders/${id}/dispatch`,{delivery_company_id:c.id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();loadOrders();}}
@@ -1015,10 +1015,10 @@ export default function StoreOrders() {
               )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
             </div></div>
           </div>
-          <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold"><Download size={12}/>Export</button>
-          <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold"><Printer size={12}/>Print</button>
-          <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold"><Trash2 size={12}/>Delete</button>
-          <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg"><X size={14}/></button>
+          <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">Export</span></button>
+          <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold shrink-0"><Printer size={12}/><span className="hidden sm:inline">Print</span></button>
+          <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold shrink-0"><Trash2 size={12}/><span className="hidden sm:inline">Delete</span></button>
+          <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg shrink-0"><X size={14}/></button>
         </div>
       )}
 
