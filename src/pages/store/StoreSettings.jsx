@@ -1085,23 +1085,7 @@ export default function StoreSettings(){
   </div>
 </div>
 
-{/* Store-wide coupon — applies a percentage discount to the cart total
-    when the buyer enters this code at checkout. Per-product coupons set
-    on individual products still apply on top. */}
-<div className="glass-card-solid p-4 sm:p-6 space-y-3">
-  <div className="flex items-center justify-between">
-    <h3 className="font-bold flex items-center gap-2"><Percent size={16} className="text-amber-500"/>{t('storePage.storeCoupon','Store-wide Coupon')}</h3>
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input type="checkbox" checked={!!s.store_coupon_active} onChange={e=>setV('store_coupon_active',e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-amber-600"/>
-      <span className="text-xs font-bold text-gray-600">{s.store_coupon_active?t('storePage.couponActive','Active'):t('storePage.couponInactive','Inactive')}</span>
-    </label>
-  </div>
-  <p className="text-[11px] text-gray-400">{t('storePage.storeCouponHelp','One coupon code that works on every product in this store. Applied to the cart subtotal at checkout.')}</p>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <div><label className="input-label text-xs">{t('storePage.couponCode','Code')}</label><input className="input-field uppercase font-mono" placeholder="SAVE10" value={s.store_coupon_code||''} onChange={e=>setV('store_coupon_code',e.target.value.toUpperCase())} disabled={!s.store_coupon_active}/></div>
-    <div><label className="input-label text-xs">{t('storePage.couponDiscountPercent','Discount %')}</label><input type="number" min="0" max="100" step="0.5" className="input-field" placeholder="10" value={s.store_coupon_discount_percent||''} onChange={set('store_coupon_discount_percent')} disabled={!s.store_coupon_active}/></div>
-  </div>
-</div>
+<div className="glass-card-solid p-4 sm:p-6"><p className="text-sm text-gray-500">Coupon settings have been moved to the <a href="/dashboard/offers" className="text-brand-500 font-bold hover:underline">Offers & Sales</a> page.</p></div>
 
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Lock size={16}/>Data Collection</h3><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">Full Name</p><p className="text-[10px] text-gray-400">Primary identifier</p></div><span className="badge badge-danger text-[10px]">REQUIRED</span></div><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">Phone Number</p><p className="text-[10px] text-gray-400">Delivery coordination</p></div><span className="badge badge-danger text-[10px]">REQUIRED</span></div><T label="Email Collection" desc="Automated invoice flow." checked={s.checkout_email} onChange={e=>setV('checkout_email',e.target.checked)}/></div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Zap size={16}/>Experience</h3><T label="Cart Drawer" desc="Side-cart on click." checked={s.cart_drawer} onChange={e=>setV('cart_drawer',e.target.checked)}/><T label="Order Notes" desc="Special instructions." checked={s.order_notes} onChange={e=>setV('order_notes',e.target.checked)}/><T label="Trust Signals" desc="Security badges." checked={s.trust_signals!==false} onChange={e=>setV('trust_signals',e.target.checked)}/><T label="Sticky Checkout" desc="Always visible Buy Now." checked={s.sticky_checkout} onChange={e=>setV('sticky_checkout',e.target.checked)}/><T label="Show Savings" desc="Highlight discounts." checked={s.show_savings} onChange={e=>setV('show_savings',e.target.checked)}/></div>

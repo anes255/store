@@ -2,9 +2,9 @@ import React,{useState,useEffect} from'react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
-import{productApi}from'../../utils/api';
+import{productApi,ownerApi}from'../../utils/api';
 import toast from'react-hot-toast';
-import{Tag,Search,Package,Plus,Trash2,Check,X,ChevronDown,ChevronUp,Edit2}from'lucide-react';
+import{Tag,Search,Package,Plus,Trash2,Check,X,ChevronDown,ChevronUp,Edit2,Percent,Ticket}from'lucide-react';
 
 const EMPTY_OFFER={name:'',is_on_sale:true,sale_badge_text:'SALE',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:'',quantity_offers:[],mode:'all',selectedIds:new Set(),expanded:true};
 
@@ -16,9 +16,32 @@ export default function StoreOffers(){
   const[search,setSearch]=useState('');
   const[offers,setOffers]=useState([{...EMPTY_OFFER,name:'Offer 1'}]);
   const[saving,setSaving]=useState(false);
+  const[coupons,setCoupons]=useState([{active:false,code:'',discount:''}]);
+  const[couponSaving,setCouponSaving]=useState(false);
 
   const load=()=>{if(!currentStore?.id)return;setLoading(true);productApi.getAll(currentStore.id,{}).then(r=>setProducts(r.data.products||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[currentStore?.id]);
+  useEffect(()=>{
+    if(!currentStore?.id)return;
+    const cfg=currentStore.config||currentStore;
+    const c=[{active:!!cfg.store_coupon_active,code:cfg.store_coupon_code||'',discount:cfg.store_coupon_discount_percent||''}];
+    const extra=cfg.extra_coupons;
+    if(Array.isArray(extra))extra.forEach(x=>c.push({active:!!x.active,code:x.code||'',discount:x.discount||''}));
+    setCoupons(c.length?c:[{active:false,code:'',discount:''}]);
+  },[currentStore?.id]);
+  const updateCoupon=(idx,patch)=>setCoupons(prev=>prev.map((c,i)=>i===idx?{...c,...patch}:c));
+  const addCoupon=()=>setCoupons(prev=>[...prev,{active:false,code:'',discount:''}]);
+  const removeCoupon=(idx)=>setCoupons(prev=>prev.filter((_,i)=>i!==idx));
+  const saveCoupons=async()=>{
+    if(!currentStore?.id)return;setCouponSaving(true);
+    try{
+      const first=coupons[0]||{};
+      const extra=coupons.slice(1).filter(c=>c.code.trim());
+      await ownerApi.updateStore(currentStore.id,{store_coupon_active:!!first.active,store_coupon_code:(first.code||'').toUpperCase(),store_coupon_discount_percent:parseFloat(first.discount)||0,extra_coupons:extra.map(c=>({active:!!c.active,code:(c.code||'').toUpperCase(),discount:parseFloat(c.discount)||0}))});
+      toast.success('Coupons saved');
+    }catch{toast.error('Failed to save coupons');}
+    setCouponSaving(false);
+  };
 
   const filtered=products.filter(p=>!search||(p.name_en||p.name||'').toLowerCase().includes(search.toLowerCase()));
 
@@ -84,6 +107,31 @@ export default function StoreOffers(){
       <div className="glass-card-solid p-4"><p className="text-xs text-gray-400">Total Products</p><p className="text-2xl font-black">{products.length}</p></div>
       <div className="glass-card-solid p-4"><p className="text-xs text-red-500 font-bold">On Sale</p><p className="text-2xl font-black text-red-600">{onSaleCount}</p></div>
       <div className="glass-card-solid p-4"><p className="text-xs text-gray-400">Not on Sale</p><p className="text-2xl font-black text-gray-600">{products.length-onSaleCount}</p></div>
+    </div>
+
+    {/* ═══ COUPON CONFIGURATION ═══ */}
+    <div className="glass-card-solid p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold flex items-center gap-2"><Ticket size={18} className="text-amber-500"/>Coupons</h3>
+        <div className="flex items-center gap-2">
+          <button onClick={addCoupon} className="btn-ghost text-xs flex items-center gap-1"><Plus size={12}/>Add Coupon</button>
+          <button onClick={saveCoupons} disabled={couponSaving} className="btn-primary text-xs">{couponSaving?'Saving...':'Save Coupons'}</button>
+        </div>
+      </div>
+      <p className="text-[11px] text-gray-400 mb-4">Store-wide coupons apply a percentage discount to the cart subtotal. Buyer enters the code at checkout.</p>
+      <div className="space-y-3">
+        {coupons.map((c,ci)=>(
+          <div key={ci} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+            <label className="flex items-center gap-2 cursor-pointer shrink-0">
+              <input type="checkbox" checked={!!c.active} onChange={e=>updateCoupon(ci,{active:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-amber-600"/>
+              <span className="text-[10px] font-bold text-gray-500">{c.active?'ON':'OFF'}</span>
+            </label>
+            <input className="input-field !py-1.5 text-xs uppercase font-mono flex-1" placeholder="CODE" value={c.code} onChange={e=>updateCoupon(ci,{code:e.target.value.toUpperCase()})}/>
+            <div className="flex items-center gap-1 shrink-0"><input type="number" min="0" max="100" step="0.5" className="input-field !py-1.5 text-xs !w-20 text-center" placeholder="%" value={c.discount} onChange={e=>updateCoupon(ci,{discount:e.target.value})}/><Percent size={12} className="text-gray-400"/></div>
+            {coupons.length>1&&<button onClick={()=>removeCoupon(ci)} className="p-1 text-red-400 hover:text-red-600"><Trash2 size={14}/></button>}
+          </div>
+        ))}
+      </div>
     </div>
 
     <div className="space-y-4">
