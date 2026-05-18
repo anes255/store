@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag, Zap, Minus, Plus, Check, Star, Truck, Shield, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, Heart, Search, User, X, Send, Bot, ChevronRight, Package, Menu, SlidersHorizontal, ArrowUpDown, ChevronDown, Sparkles, Tag, Zap, Minus, Plus, Check, Star, Truck, Shield } from 'lucide-react';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import { motion } from 'framer-motion';
@@ -906,7 +906,6 @@ export default function Storefront() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0 overflow-x-auto max-w-full" style={{scrollbarWidth:'none'}}>
-            {isStoreOwner && <Link to="/dashboard" className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full shrink-0" title="Dashboard"><LayoutDashboard size={18} className="sm:w-5 sm:h-5"/></Link>}
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full shrink-0"><User size={18} className="sm:w-5 sm:h-5"/></Link>

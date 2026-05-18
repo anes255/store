@@ -330,8 +330,8 @@ export default function ProductDetail() {
   const tplStyle = tplSec?.style || {};
   const headerBg = tplStyle.bg || pc;
   const headerText = tplStyle.textColor || '#ffffff';
-  const nameFont = store.header_font || tplStyle.fontFamily || 'Inter';
-  const headerFont = tplStyle.fontFamily || 'Inter';
+  const nameFont = store.header_font || tplStyle.fontFamily || 'Arial, sans-serif';
+  const headerFont = store.header_font || tplStyle.fontFamily || 'Arial, sans-serif';
 
   return (
     <div className={`min-h-screen ${buyerTheme.mode==='dark'?'buyer-theme-dark bg-[#0b1020] text-gray-100':'bg-[#f5f5f5] text-gray-900'}`}>
