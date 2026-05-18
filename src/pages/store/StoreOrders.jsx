@@ -212,7 +212,15 @@ export default function StoreOrders() {
   });
 
   const toggleSelect = (id) => setSelectedItems(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const toggleAll = () => setSelectedItems(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
+  const toggleAll = () => {
+    setSelectedItems(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
+    // Warn if there are more orders matching the filter than are currently
+    // loaded — bulk actions only operate on the loaded page, so the merchant
+    // should know they haven't actually selected every matching order.
+    if (orders.length < total) {
+      toast(`Selected ${orders.length} of ${total} matching orders. Older orders aren't loaded — refine the filter or scroll to load more before bulk-deleting.`, { duration: 5000, icon: '⚠️' });
+    }
+  };
   const clearSelection = () => setSelectedItems(new Set());
 
   const loadOrders = async (overrideFilter) => {
