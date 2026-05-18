@@ -991,12 +991,14 @@ export default function StoreOrders() {
           {/* Bulk financial status change */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/>Payment <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[140px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2">
+            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {['pending','paid','refunded','failed'].map(ps=>{
-                const cls=ps==='paid'?'text-emerald-700':ps==='refunded'?'text-orange-700':ps==='failed'?'text-red-700':'text-amber-700';
+                const dot=ps==='paid'?'bg-emerald-500':ps==='refunded'?'bg-orange-500':ps==='failed'?'bg-red-500':'bg-amber-500';
+                const label=ps.charAt(0).toUpperCase()+ps.slice(1);
                 return(
-                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${ps.toUpperCase()}`);clearSelection();loadOrders();}}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold ${cls} hover:bg-gray-50 uppercase`}>{ps}
+                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${label}`);clearSelection();loadOrders();}}
+                  className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
+                  <span className={`w-2.5 h-2.5 rounded-full ${dot}`}/>{label}
                 </button>
               );})}
             </div></div>
