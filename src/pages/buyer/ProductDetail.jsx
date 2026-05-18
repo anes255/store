@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, ArrowRight, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, ArrowRight, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap, ZoomIn, ZoomOut, Maximize2, Tag } from 'lucide-react';
 import Checkout from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
@@ -233,7 +233,9 @@ export default function ProductDetail() {
     return imgs;
   })();
 
-  const basePrice = parseFloat(product.price) || 0;
+  const rawBasePrice = parseFloat(product.price) || 0;
+  const offerPct = product.is_on_sale && product.offer_discount ? (parseFloat(String(product.offer_discount).replace(/[^0-9.]/g, '')) || 0) : 0;
+  const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   // Sum all price adjustments from selected variants
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
   const finalPrice = basePrice + priceAdj;
@@ -423,11 +425,29 @@ export default function ProductDetail() {
             {/* Price */}
             <div className="mt-4 flex items-baseline gap-3 flex-wrap">
               <span className="text-3xl font-extrabold" style={{color:pc}}>{finalPrice.toLocaleString()} {currency}</span>
-              {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
-                <span className="text-lg text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>
+              {((product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice) || offerPct > 0) && (
+                <span className="text-lg text-gray-400 line-through">{(offerPct > 0 ? rawBasePrice : parseFloat(product.compare_at_price)).toLocaleString()}</span>
               )}
               {priceAdj !== 0 && <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-500 font-bold">{priceAdj > 0 ? '+' : ''}{priceAdj.toLocaleString()} {currency}</span>}
+              {offerPct > 0 && <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-200">{product.sale_badge_text || 'SALE'} - {product.offer_discount}</span>}
             </div>
+            {/* Offer timer */}
+            {product.is_on_sale && (parseInt(product.offer_hours)||0 + parseInt(product.offer_minutes)||0) > 0 && (() => {
+              const h = parseInt(product.offer_hours) || 0;
+              const m = parseInt(product.offer_minutes) || 0;
+              if (!h && !m) return null;
+              const key = `poffer_${product.id}_${h}_${m}`;
+              let deadline;
+              try { const c = parseInt(localStorage.getItem(key)); deadline = (c && c > Date.now()) ? c : null; } catch { deadline = null; }
+              if (!deadline) { deadline = Date.now() + (h * 3600 + m * 60) * 1000; try { localStorage.setItem(key, String(deadline)); } catch {} }
+              const diff = Math.max(0, deadline - Date.now());
+              if (diff <= 0) return null;
+              const hh = Math.floor(diff / 3600000);
+              const mm = Math.floor((diff % 3600000) / 60000);
+              const ss = Math.floor((diff % 60000) / 1000);
+              const pad = n => String(n).padStart(2, '0');
+              return <div className="mt-2 flex items-center gap-2 text-sm font-bold text-red-600"><Tag size={14}/><span>{product.offer_title || 'Limited Offer'}</span><span className="font-mono bg-red-50 px-2 py-0.5 rounded-lg border border-red-200">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
+            })()}
 
             {/* Selected variant label */}
             {variantLabel && (

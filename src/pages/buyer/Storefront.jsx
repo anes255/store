@@ -295,6 +295,9 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
               )}
             </div>
 
+            {/* Offer timer */}
+            <div className="mt-2"><ProductOfferTimer product={product} /></div>
+
             {/* Stock */}
             <div className="mt-2">
               {stockCount > 0
@@ -501,6 +504,35 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
   );
 }
 
+// ============ PRODUCT OFFER COUNTDOWN ============
+function ProductOfferTimer({ product }) {
+  const h = parseInt(product.offer_hours) || 0;
+  const m = parseInt(product.offer_minutes) || 0;
+  if (!product.is_on_sale || (!h && !m)) return null;
+  const key = `poffer_${product.id}_${h}_${m}`;
+  const [deadline] = useState(() => {
+    try { const c = parseInt(localStorage.getItem(key)); if (c && c > Date.now()) return c; } catch {}
+    const d = Date.now() + (h * 3600 + m * 60) * 1000;
+    try { localStorage.setItem(key, String(d)); } catch {}
+    return d;
+  });
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const iv = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(iv); }, []);
+  const diff = Math.max(0, deadline - now);
+  if (diff <= 0) return null;
+  const hh = Math.floor(diff / 3600000);
+  const mm = Math.floor((diff % 3600000) / 60000);
+  const ss = Math.floor((diff % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return (
+    <div className="flex items-center gap-1 text-[10px] font-bold text-red-400">
+      <Tag size={10} />
+      <span>{product.offer_title || 'Offer'}</span>
+      <span className="font-mono bg-red-500/20 px-1.5 py-0.5 rounded text-red-300">{pad(hh)}:{pad(mm)}:{pad(ss)}</span>
+    </div>
+  );
+}
+
 // ============ DARK PRODUCT CARD ============
 function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart }) {
   const thumb = getThumb(product);
@@ -533,7 +565,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleWishlist(product); }}
           className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 touch-manipulation ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
-        {onSale && <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">SALE</span>}
+        {onSale && <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || 'SALE'}</span>}
         <button onClick={(e) => { e.stopPropagation(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
           className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
           aria-label={inCart ? "Remove from cart" : "Add to cart"}>{inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
@@ -544,6 +576,9 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         <div className="cursor-pointer" onClick={() => openDetail(product)}>
           <h3 className={`font-semibold text-sm truncate transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
         </div>
+
+        {/* Offer timer */}
+        <ProductOfferTimer product={product} />
 
         {/* Stock badge */}
         <div className="mt-1.5">
