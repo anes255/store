@@ -309,6 +309,8 @@ export default function StoreOrders() {
         status: data?.ok !== false ? 'shipped' : o.status,
         tracking_number: data?.tracking_number || o.tracking_number,
       } : o));
+      // Reload from server to ensure columns are not blank after dispatch
+      setTimeout(() => loadOrders(), 800);
       if (selectedOrder?.id === orderId) { const { data: o } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(o); }
     } catch (e) {
       toast.dismiss(tid);
@@ -484,11 +486,13 @@ export default function StoreOrders() {
           }
           return pages.join('');
         })()}
-        <script>window.onload=function(){setTimeout(function(){window.print();},300);};</script>
+        <script>window.onload=function(){setTimeout(function(){window.print();},500);window.onafterprint=function(){/* keep window open */};};</script>
       </body></html>`;
-    const w = window.open('', '_blank');
+    const w = window.open('about:blank', '_blank');
     if (!w) { toast.error('Allow pop-ups to print orders'); return; }
     w.document.open(); w.document.write(html); w.document.close();
+    // Prevent auto-close after print dialog
+    w.onbeforeunload = null;
   };
 
   const exportCsv = (rows) => {
@@ -1084,6 +1088,7 @@ export default function StoreOrders() {
           storeId={currentStore?.id}
           onClose={() => setCreateOpen(false)}
           onCreated={() => { setCreateOpen(false); loadOrders(); toast.success('Order created'); }}
+          companies={companies}
         />
       )}
 
@@ -1417,9 +1422,9 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'transfer') {
-    // Auto-dispatch to preferred company without showing picker
-    const prefId = o.delivery_company_id || o.preferred_delivery_company_id;
-    if (prefId && autoDispatch) { setTimeout(() => autoDispatch(), 0); return null; }
+    // Auto-dispatch to preferred company without showing picker (only if not already dispatched)
+    const prefId = o.preferred_delivery_company_id || o.delivery_company_id;
+    if (prefId && autoDispatch && !o.tracking_number) { setTimeout(() => autoDispatch(), 0); return null; }
     const COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', 'yalid': '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
     const companyColor = (name) => { const n = (name||'').toLowerCase(); for (const [k,v] of Object.entries(COMPANY_COLORS)) { if (n.includes(k)) return v; } return '#6366f1'; };
     const currentCompanyId = o.delivery_company_id || '';
@@ -1703,18 +1708,23 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
 // Lets the admin add a customer + pick products + set status without leaving
 // the orders page. POSTs to /manage/stores/:sid/orders.
 // ─────────────────────────────────────────────────────────────────────────────
-function CreateOrderModal({ storeId, onClose, onCreated }) {
+function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [searchP, setSearchP] = useState('');
   const [items, setItems] = useState([]); // {product_id, name, price, quantity}
+  const [wilayaCities, setWilayaCities] = useState({});
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '',
     shipping_type: 'home', shipping_cost: 0, payment_method: 'cod',
-    notes: '', status: 'new_order',
+    notes: '', status: 'new_order', delivery_company_id: '',
   });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    import('../../data/wilayaCities').then(m => setWilayaCities(m.default || {})).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!storeId) return;
@@ -1765,8 +1775,14 @@ function CreateOrderModal({ storeId, onClose, onCreated }) {
           <input className="input-field" placeholder={t('orders.customerName', 'Customer name *')} value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
           <input className="input-field" placeholder={t('orders.customerPhone', 'Phone *')} value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
           <input className="input-field" placeholder={t('orders.customerEmail', 'Email (optional)')} value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
-          <input className="input-field" placeholder={t('orders.wilaya', 'Wilaya')} value={form.shipping_wilaya} onChange={e => setForm({ ...form, shipping_wilaya: e.target.value })} />
-          <input className="input-field" placeholder={t('orders.commune', 'Commune')} value={form.shipping_city} onChange={e => setForm({ ...form, shipping_city: e.target.value })} />
+          <select className="input-field" value={form.shipping_wilaya} onChange={e => setForm({ ...form, shipping_wilaya: e.target.value, shipping_city: '' })}>
+            <option value="">{t('orders.selectWilaya', '— Select Wilaya —')}</option>
+            {Object.keys(wilayaCities).map(w => <option key={w} value={w}>{w}</option>)}
+          </select>
+          <select className="input-field" value={form.shipping_city} onChange={e => setForm({ ...form, shipping_city: e.target.value })}>
+            <option value="">{t('orders.selectCommune', '— Select Commune —')}</option>
+            {(wilayaCities[form.shipping_wilaya] || []).map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
           <input className="input-field" placeholder={t('orders.address', 'Address')} value={form.shipping_address} onChange={e => setForm({ ...form, shipping_address: e.target.value })} />
         </div>
 
@@ -1801,7 +1817,7 @@ function CreateOrderModal({ storeId, onClose, onCreated }) {
         )}
 
         {/* Shipping + status */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <select className="input-field" value={form.shipping_type} onChange={e => setForm({ ...form, shipping_type: e.target.value })}>
             <option value="home">{t('orders.homeDelivery', 'Home delivery')}</option>
             <option value="desk">{t('orders.deskDelivery', 'Desk pickup')}</option>
@@ -1811,6 +1827,10 @@ function CreateOrderModal({ storeId, onClose, onCreated }) {
             <option value="cod">COD</option>
             <option value="ccp">CCP</option>
             <option value="baridimob">BaridiPay</option>
+          </select>
+          <select className="input-field" value={form.delivery_company_id} onChange={e => setForm({ ...form, delivery_company_id: e.target.value })}>
+            <option value="">{t('orders.selectDeliveryCompany', '— Delivery Company —')}</option>
+            {(companies || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <textarea className="input-field mb-3" rows={2} placeholder={t('orders.notes', 'Notes (optional)')} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
