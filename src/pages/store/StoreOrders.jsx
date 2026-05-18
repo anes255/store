@@ -975,7 +975,7 @@ export default function StoreOrders() {
           {/* Bulk status change */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/>Status <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-2 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
+            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {allStatuses.filter(s=>s!=='archived').map(s=>{const sc2=statusConfig[s];return(
                 <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
@@ -987,7 +987,7 @@ export default function StoreOrders() {
           {/* Bulk financial status change */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/>Payment <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-2 hidden group-hover:block min-w-[140px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2">
+            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[140px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2">
               {['pending','paid','refunded','failed'].map(ps=>{
                 const cls=ps==='paid'?'text-emerald-700':ps==='refunded'?'text-orange-700':ps==='failed'?'text-red-700':'text-amber-700';
                 return(
@@ -1000,7 +1000,7 @@ export default function StoreOrders() {
           {/* Bulk transfer to delivery company */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/>{t('orders.bulkTransfer','Transfer')} <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-2 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
+            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {companies.length?companies.map(c=>(
                 <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;for(const id of ids){try{await api.post(`/manage/stores/${currentStore.id}/orders/${id}/dispatch`,{delivery_company_id:c.id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();loadOrders();}}
                   className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
@@ -1612,7 +1612,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'financial') {
     const opts = ['pending','paid','refunded','failed','partially_refunded'];
     return wrap(
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-col gap-2">
         {opts.map(s => {
           const active = (o.payment_status || 'pending') === s;
           const cls = s === 'paid' ? 'bg-emerald-500' : s === 'refunded' ? 'bg-orange-500' : s === 'failed' ? 'bg-red-500' : s === 'partially_refunded' ? 'bg-purple-500' : 'bg-amber-500';

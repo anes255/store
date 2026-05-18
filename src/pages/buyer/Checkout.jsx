@@ -136,13 +136,14 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
   const [deliveryCompanies, setDeliveryCompanies] = useState([]);
+  const [companiesLoaded, setCompaniesLoaded] = useState(false);
 
   useEffect(() => { storeApi.getStore(storeSlug).then(r => { setStore(r.data); try { initPixels(r.data?.tracking_pixels); trackInitiateCheckout(r.data?.tracking_pixels, items, items.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0)); } catch {} }).catch(() => {}); }, [storeSlug]); // eslint-disable-line
   // Load shipping wilayas for real pricing
   useEffect(() => {
     if (!storeSlug) return;
     storeApi.getShippingWilayas(storeSlug).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
-    if (storeApi.getDeliveryCompanies) storeApi.getDeliveryCompanies(storeSlug).then(r => { if (Array.isArray(r.data)) setDeliveryCompanies(r.data); }).catch(() => {});
+    if (storeApi.getDeliveryCompanies) storeApi.getDeliveryCompanies(storeSlug).then(r => { if (Array.isArray(r.data)) setDeliveryCompanies(r.data); setCompaniesLoaded(true); }).catch(() => { setCompaniesLoaded(true); });
   }, [storeSlug]);
   // Wilaya code lookup for zip auto-fill (works even when API fails)
   const WILAYA_CODES={'Adrar':'01','Chlef':'02','Laghouat':'03','Oum El Bouaghi':'04','Batna':'05','Béjaïa':'06','Biskra':'07','Béchar':'08','Blida':'09','Bouira':'10','Tamanrasset':'11','Tébessa':'12','Tlemcen':'13','Tiaret':'14','Tizi Ouzou':'15','Alger':'16','Djelfa':'17','Jijel':'18','Sétif':'19','Saïda':'20','Skikda':'21','Sidi Bel Abbès':'22','Annaba':'23','Guelma':'24','Constantine':'25','Médéa':'26','Mostaganem':'27',"M'Sila":'28','Mascara':'29','Ouargla':'30','Oran':'31','El Bayadh':'32','Illizi':'33','Bordj Bou Arréridj':'34','Boumerdès':'35','El Tarf':'36','Tindouf':'37','Tissemsilt':'38','El Oued':'39','Khenchela':'40','Souk Ahras':'41','Tipaza':'42','Mila':'43','Aïn Defla':'44','Naâma':'45','Aïn Témouchent':'46','Ghardaïa':'47','Relizane':'48'};
@@ -273,7 +274,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
-    if (deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
+    if (companiesLoaded && deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
     // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
       try {
