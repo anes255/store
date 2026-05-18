@@ -57,7 +57,9 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
   const selectedIdxes = Object.values(selectedVariants).filter(v => v !== null && v !== undefined);
   const primarySelected = selectedIdxes.length > 0 ? variants[selectedIdxes[0]] : null;
 
-  const basePrice = parseFloat(product?.price) || 0;
+  const rawBasePrice = parseFloat(product?.price) || 0;
+  const offerPct = product?.is_on_sale && product?.offer_discount ? (parseFloat(String(product.offer_discount).replace(/[^0-9.]/g, '')) || 0) : 0;
+  const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
   const finalPrice = basePrice + priceAdj;
 
@@ -161,10 +163,21 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
             {/* Name */}
             <h2 className="text-xl font-extrabold text-gray-900 pr-8">{getName(product)}</h2>
 
+            {/* Sale badge + offer timer */}
+            {product.is_on_sale && (
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                <span className="inline-block px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full uppercase">{product.sale_badge_text || 'SALE'}{offerPct > 0 ? ` -${offerPct}%` : ''}</span>
+                {product.offer_title && <span className="text-xs font-bold text-red-600">{product.offer_title}</span>}
+              </div>
+            )}
+
             {/* Price */}
             <div className="mt-2 flex items-baseline gap-2 flex-wrap">
               <span className="text-2xl font-extrabold" style={{ color: pc }}>{finalPrice.toLocaleString()} {currency}</span>
-              {product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
+              {offerPct > 0 && (
+                <span className="text-sm text-gray-400 line-through">{rawBasePrice.toLocaleString()} {currency}</span>
+              )}
+              {!offerPct && product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice && (
                 <span className="text-sm text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>
               )}
               {priceAdj !== 0 && (
