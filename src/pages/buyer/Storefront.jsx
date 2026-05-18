@@ -815,7 +815,13 @@ export default function Storefront() {
     if (Array.isArray(variants) && variants.length > 0) {
       setBuyNowProduct(p);
     } else {
-      const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant }];
+      // Apply offer discount for products without variants
+      let finalP = p.price;
+      if (p.is_on_sale && p.offer_discount) {
+        const opct = parseFloat(String(p.offer_discount).replace(/[^0-9.]/g, '')) || 0;
+        if (opct > 0) finalP = Math.round(finalP * (1 - opct / 100));
+      }
+      const items = [{ product_id: p.id, name: getName(p), price: finalP, image: getThumb(p), quantity: qty, variant }];
       setBuyNowItems(items);
       setBuyNowOpen(true);
     }
