@@ -281,28 +281,6 @@ export default function StoreProducts() {
                 </div>
               </label>
 
-              {/* ═══════ COUPON ═══════ */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="input-label text-xs flex items-center gap-1 mb-0"><Tag size={14}/>{t('storePage.couponLabel','Coupon (discount code for this product)')}</label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.coupon_active} onChange={e=>setForm({...form,coupon_active:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"/>
-                    <span className="text-xs font-bold text-gray-600">{form.coupon_active?(t('storePage.couponActive','Active')):(t('storePage.couponInactive','Inactive'))}</span>
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="input-label text-xs">{t('storePage.couponCode','Coupon Code')}</label>
-                    <input className="input-field uppercase font-mono" placeholder="SAVE10" value={form.coupon_code} onChange={e=>setForm({...form,coupon_code:e.target.value.toUpperCase()})} disabled={!form.coupon_active}/>
-                  </div>
-                  <div>
-                    <label className="input-label text-xs">{t('storePage.couponDiscountPercent','Discount %')}</label>
-                    <input type="number" min="0" max="100" step="0.5" className="input-field" placeholder="10" value={form.coupon_discount_percent} onChange={e=>setForm({...form,coupon_discount_percent:e.target.value})} disabled={!form.coupon_active}/>
-                  </div>
-                </div>
-                <p className="text-[11px] text-gray-400 mt-2">{t('storePage.couponHint','At checkout, if the buyer enters this code, the percentage is removed from this product\'s price.')}</p>
-              </div>
-
               {/* Images */}
               <div>
                 <label className="input-label text-xs flex items-center gap-1"><Image size={14}/>{t('storePage.mainImages','Main Images')}</label>
