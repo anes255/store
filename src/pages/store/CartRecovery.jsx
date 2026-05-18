@@ -243,6 +243,9 @@ function CartRecoveryConfig({ store, onSaved }) {
     cart_recovery_step2_minutes: store?.cart_recovery_step2_minutes ?? 360,
     cart_recovery_step3_minutes: store?.cart_recovery_step3_minutes ?? 1440,
     cart_recovery_channel: store?.cart_recovery_channel || 'whatsapp',
+    checkout_recovery_enabled: store?.checkout_recovery_enabled !== false,
+    checkout_recovery_delay_minutes: store?.checkout_recovery_delay_minutes ?? 60,
+    checkout_recovery_channel: store?.checkout_recovery_channel || 'whatsapp',
   });
   React.useEffect(() => {
     if (!store) return;
@@ -252,6 +255,9 @@ function CartRecoveryConfig({ store, onSaved }) {
       cart_recovery_step2_minutes: store?.cart_recovery_step2_minutes ?? 360,
       cart_recovery_step3_minutes: store?.cart_recovery_step3_minutes ?? 1440,
       cart_recovery_channel: store?.cart_recovery_channel || 'whatsapp',
+      checkout_recovery_enabled: store?.checkout_recovery_enabled !== false,
+      checkout_recovery_delay_minutes: store?.checkout_recovery_delay_minutes ?? 60,
+      checkout_recovery_channel: store?.checkout_recovery_channel || 'whatsapp',
     });
   }, [store?.id]);
   const fmt = (m) => m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m/60)}h` : `${Math.round(m/1440)}d`;
@@ -277,7 +283,10 @@ function CartRecoveryConfig({ store, onSaved }) {
           <Edit3 size={12}/>{t('storePage.configureTimings','Configure Timings')}
         </button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+      {/* Cart abandonment */}
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><ShoppingCart size={12}/> Cart Page Abandonment</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         {[
           { time: fmt(cfg.cart_recovery_step1_minutes), label: t('storePage.firstReminder','First Reminder'), desc: t('storePage.firstReminderDesc','Gentle nudge via preferred channel'), icon: Clock, color: 'bg-blue-100 text-blue-600' },
           { time: fmt(cfg.cart_recovery_step2_minutes), label: t('storePage.followUp','Follow Up'), desc: t('storePage.followUpDesc','Limited time urgency hook'), icon: Zap, color: 'bg-purple-100 text-purple-600' },
@@ -290,17 +299,48 @@ function CartRecoveryConfig({ store, onSaved }) {
         ))}
       </div>
 
+      {/* Checkout abandonment */}
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><MapPin size={12}/> Checkout Page Abandonment</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0"><Clock size={16}/></div>
+          <div>
+            <p className="font-bold text-sm text-gray-800 dark:text-gray-100">Checkout Recovery</p>
+            <p className="text-[10px] text-gray-400">After {fmt(cfg.checkout_recovery_delay_minutes)}</p>
+            <p className="text-xs text-gray-500 mt-1">Customer started checkout but didn't complete</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+          <div className="w-10 h-10 rounded-xl bg-cyan-100 text-cyan-600 flex items-center justify-center shrink-0"><Send size={16}/></div>
+          <div>
+            <p className="font-bold text-sm text-gray-800 dark:text-gray-100">Channel</p>
+            <p className="text-[10px] text-gray-400 capitalize">{cfg.checkout_recovery_channel}</p>
+            <p className="text-xs text-gray-500 mt-1">Includes shipping info and direct checkout link</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.checkout_recovery_enabled ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}><Zap size={16}/></div>
+          <div>
+            <p className="font-bold text-sm text-gray-800 dark:text-gray-100">Status</p>
+            <p className={`text-[10px] font-bold ${cfg.checkout_recovery_enabled ? 'text-emerald-500' : 'text-red-500'}`}>{cfg.checkout_recovery_enabled ? 'ENABLED' : 'DISABLED'}</p>
+            <p className="text-xs text-gray-500 mt-1">Auto-send when checkout is abandoned</p>
+          </div>
+        </div>
+      </div>
+
       {open && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setOpen(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-lg shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">{t('storePage.recoveryTimings','Cart Recovery Timings')}</h3>
+              <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">{t('storePage.recoveryTimings','Recovery Timings')}</h3>
               <button onClick={()=>setOpen(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-500"><X size={16}/></button>
             </div>
             <div className="space-y-4">
+              {/* Cart section */}
+              <p className="text-[10px] font-bold text-brand-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1">Cart Page Recovery</p>
               <label className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer">
                 <input type="checkbox" checked={!!cfg.cart_recovery_enabled} onChange={e=>setCfg({...cfg,cart_recovery_enabled:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-brand-500"/>
-                <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{t('storePage.enableAutoRecovery','Enable automatic recovery messages')}</span>
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{t('storePage.enableAutoRecovery','Enable cart recovery messages')}</span>
               </label>
               {[
                 { key: 'cart_recovery_step1_minutes', label: t('storePage.firstReminder','First Reminder'), defaultVal: 30 },
@@ -308,7 +348,7 @@ function CartRecoveryConfig({ store, onSaved }) {
                 { key: 'cart_recovery_step3_minutes', label: t('storePage.finalChance','Final Chance'), defaultVal: 1440 },
               ].map(row => (
                 <div key={row.key}>
-                  <label className="text-xs font-bold text-gray-600 dark:text-gray-300">{row.label} — {t('storePage.delayMinutes','delay (minutes after cart abandoned)')}</label>
+                  <label className="text-xs font-bold text-gray-600 dark:text-gray-300">{row.label} — {t('storePage.delayMinutes','delay (minutes)')}</label>
                   <div className="flex items-center gap-2 mt-1">
                     <input type="number" min="1" max="20160" value={cfg[row.key]} onChange={e=>setCfg({...cfg,[row.key]:Math.max(1,parseInt(e.target.value)||row.defaultVal)})} className="input-field w-32"/>
                     <span className="text-xs text-gray-400">≈ {fmt(cfg[row.key])}</span>
@@ -318,6 +358,27 @@ function CartRecoveryConfig({ store, onSaved }) {
               <div>
                 <label className="text-xs font-bold text-gray-600 dark:text-gray-300">{t('storePage.preferredChannel','Preferred channel')}</label>
                 <select value={cfg.cart_recovery_channel} onChange={e=>setCfg({...cfg,cart_recovery_channel:e.target.value})} className="input-field mt-1">
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="email">Email</option>
+                </select>
+              </div>
+
+              {/* Checkout section */}
+              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-1 mt-6">Checkout Page Recovery</p>
+              <label className="flex items-center gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer">
+                <input type="checkbox" checked={!!cfg.checkout_recovery_enabled} onChange={e=>setCfg({...cfg,checkout_recovery_enabled:e.target.checked})} className="w-4 h-4 rounded border-gray-300 text-amber-500"/>
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-100">Enable checkout abandonment recovery</span>
+              </label>
+              <div>
+                <label className="text-xs font-bold text-gray-600 dark:text-gray-300">Recovery delay — minutes after checkout abandoned</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input type="number" min="1" max="20160" value={cfg.checkout_recovery_delay_minutes} onChange={e=>setCfg({...cfg,checkout_recovery_delay_minutes:Math.max(1,parseInt(e.target.value)||60)})} className="input-field w-32"/>
+                  <span className="text-xs text-gray-400">≈ {fmt(cfg.checkout_recovery_delay_minutes)}</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 dark:text-gray-300">Preferred channel</label>
+                <select value={cfg.checkout_recovery_channel} onChange={e=>setCfg({...cfg,checkout_recovery_channel:e.target.value})} className="input-field mt-1">
                   <option value="whatsapp">WhatsApp</option>
                   <option value="email">Email</option>
                 </select>
