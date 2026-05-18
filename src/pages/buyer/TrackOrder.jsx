@@ -63,6 +63,7 @@ export default function TrackOrder() {
   const [mode, setMode] = useState('phone'); // active tab when method==='both'
   const [orders, setOrders] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [storeReady, setStoreReady] = useState(false);
 
   useEffect(() => {
     storeApi.getStore(storeSlug).then(r => {
@@ -85,6 +86,7 @@ export default function TrackOrder() {
         tracking_show_tracking_number: d.tracking_show_tracking_number !== false,
       }));
       setMode((d.tracking_search_method === 'order_id') ? 'order_id' : 'phone');
+      setStoreReady(true);
       if (d.id) {
         storeApi.getStatusTemplates(d.id).then(rr => {
           const rows = Array.isArray(rr.data) ? rr.data : [];
@@ -93,7 +95,7 @@ export default function TrackOrder() {
           setStatusMap(map);
         }).catch(() => {});
       }
-    }).catch(() => {});
+    }).catch(() => { setStoreReady(true); });
   }, [storeSlug]);
 
   const currency = store.currency || 'DZD';
@@ -175,6 +177,11 @@ export default function TrackOrder() {
     if (s === 'cancelled' || s === 'returned') return <Ban size={12} />;
     return <Clock size={12} />;
   };
+
+  // Wait for store data to load before rendering to avoid color flash
+  if (!storeReady) {
+    return <div className="min-h-screen" style={{ background: '#020617' }} />;
+  }
 
   // Tracking disabled → blocked screen
   if (!store.tracking_enabled) {

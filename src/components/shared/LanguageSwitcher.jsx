@@ -4,10 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { useLangStore } from '../../hooks/useStore';
 import { Check } from 'lucide-react';
 
-const languages = [
-  { code: 'en', label: 'English', short: 'EN', country: 'gb' },
-  { code: 'fr', label: 'Français', short: 'FR', country: 'fr' },
-  { code: 'ar', label: 'العربية', short: 'AR', country: 'dz' },
+const LANG_KEYS = {
+  en: 'lang.english',
+  fr: 'lang.french',
+  ar: 'lang.arabic',
+};
+const LANG_FALLBACKS = { en: 'English', fr: 'Français', ar: 'العربية' };
+const LANG_META = [
+  { code: 'en', short: 'EN', country: 'gb' },
+  { code: 'fr', short: 'FR', country: 'fr' },
+  { code: 'ar', short: 'AR', country: 'dz' },
 ];
 
 const Flag = ({ country, size = 20 }) => (
@@ -30,12 +36,13 @@ const Flag = ({ country, size = 20 }) => (
  * mobile inside the dashboard header).
  */
 export default function LanguageSwitcher({ variant }) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { lang, setLang } = useLangStore();
   const [open, setOpen] = useState(false);
   const btnRef = useRef(null);
   const [anchor, setAnchor] = useState(null);
 
+  const languages = LANG_META.map(l => ({ ...l, label: t(LANG_KEYS[l.code], LANG_FALLBACKS[l.code]) }));
   const current = languages.find(l => l.code === lang) || languages[0];
 
   const handleChange = (code) => {

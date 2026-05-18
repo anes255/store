@@ -417,7 +417,7 @@ export default function ShippingPartners(){
               </div>
             )}
 
-            {form.api_auth_type==='query_params'&&Object.keys(form.api_query_params).length>0&&(
+            {(form.api_auth_type==='query_params'||(form.api_auth_type==='bearer'&&Object.keys(form.api_query_params||{}).length>0))&&Object.keys(form.api_query_params||{}).length>0&&(
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-emerald-700 uppercase">Required query parameters (all must be filled):</p>
                 {Object.entries(form.api_query_params).map(([key],i)=>(

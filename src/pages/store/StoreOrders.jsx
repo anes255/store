@@ -50,7 +50,7 @@ const ALL_COLUMNS = [
   { key: 'notes',            label: 'Notes' },
   { key: 'payment_method',   label: 'Payment' },
 ];
-const DEFAULT_COLUMNS = ['order','products','wilaya','commune','transfer','phone','status','preferred_company','shipping_method','total','financial_status','notes','tracking_number'];
+const DEFAULT_COLUMNS = ['order','products','customer_name','phone','status','transfer','wilaya','commune','preferred_company','shipping_method','total','financial_status','payment_method','notes'];
 const PREPARING_COLUMNS = ['order','products','customer_name','phone','wilaya','commune','status','notes'];
 
 const statusConfig = {
@@ -175,10 +175,10 @@ export default function StoreOrders() {
   }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
     if (isPreparingPage) return PREPARING_COLUMNS;
-    try { const s = JSON.parse(localStorage.getItem('orders.columns.v5') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
+    try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
-  useEffect(() => { if (!isPreparingPage && activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v5', JSON.stringify(activeColumns)); } catch {} } }, [activeColumns, isPreparingPage]);
+  useEffect(() => { if (!isPreparingPage && activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v6', JSON.stringify(activeColumns)); } catch {} } }, [activeColumns, isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');
@@ -975,19 +975,19 @@ export default function StoreOrders() {
           {/* Bulk status change */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/>Status <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[160px] max-h-64 overflow-y-auto z-50">
+            <div className="absolute bottom-full left-0 pb-2 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {allStatuses.filter(s=>s!=='archived').map(s=>{const sc2=statusConfig[s];return(
                 <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
                   <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.label}
                 </button>
               );})}
-            </div>
+            </div></div>
           </div>
           {/* Bulk financial status change */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/>Payment <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[140px] z-50">
+            <div className="absolute bottom-full left-0 pb-2 hidden group-hover:block min-w-[140px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2">
               {['pending','paid','refunded','failed'].map(ps=>{
                 const cls=ps==='paid'?'text-emerald-700':ps==='refunded'?'text-orange-700':ps==='failed'?'text-red-700':'text-amber-700';
                 return(
@@ -995,19 +995,19 @@ export default function StoreOrders() {
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold ${cls} hover:bg-gray-50 uppercase`}>{ps}
                 </button>
               );})}
-            </div>
+            </div></div>
           </div>
           {/* Bulk transfer to delivery company */}
           <div className="relative group">
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/>{t('orders.bulkTransfer','Transfer')} <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-2xl border p-2 hidden group-hover:block min-w-[180px] max-h-64 overflow-y-auto z-50">
+            <div className="absolute bottom-full left-0 pb-2 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {companies.length?companies.map(c=>(
                 <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;for(const id of ids){try{await api.post(`/manage/stores/${currentStore.id}/orders/${id}/dispatch`,{delivery_company_id:c.id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();loadOrders();}}
                   className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
                   <Truck size={10} className="text-emerald-500"/>{c.name}
                 </button>
               )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
-            </div>
+            </div></div>
           </div>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold"><Download size={12}/>Export</button>
           <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold"><Printer size={12}/>Print</button>
@@ -1095,7 +1095,8 @@ export default function StoreOrders() {
           onOpenFullDetail={() => { const id = quickAction.order.id; setQuickAction(null); viewOrder(id); }}
           onUpdateStatus={(status) => updateStatus(quickAction.order.id, status)}
           onSaveField={(patch) => saveOrderField(quickAction.order.id, patch)}
-          onDispatch={(dcId) => dispatchOrder(quickAction.order.id, dcId)}
+          onDispatch={(dcId) => { dispatchOrder(quickAction.order.id, dcId); setQuickAction(null); }}
+          autoDispatch={() => { const o = quickAction.order; const prefId = o.delivery_company_id || o.preferred_delivery_company_id; if (prefId) { dispatchOrder(o.id, prefId); setQuickAction(null); } }}
           companies={companies}
           statusConfig={statusConfig}
           allStatuses={allStatuses}
@@ -1266,7 +1267,7 @@ export default function StoreOrders() {
 // ==========================================================================
 // Quick Action Drawer — one modal that switches on column type.
 // ==========================================================================
-function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, onDispatch, companies, statusConfig, allStatuses, isPreparingPage }) {
+function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, onDispatch, autoDispatch, companies, statusConfig, allStatuses, isPreparingPage }) {
   const { t } = useTranslation();
   const { type, order: o } = action;
   const [localPatch, setLocalPatch] = useState({});
@@ -1416,6 +1417,9 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'transfer') {
+    // Auto-dispatch to preferred company without showing picker
+    const prefId = o.delivery_company_id || o.preferred_delivery_company_id;
+    if (prefId && autoDispatch) { setTimeout(() => autoDispatch(), 0); return null; }
     const COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', 'yalid': '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
     const companyColor = (name) => { const n = (name||'').toLowerCase(); for (const [k,v] of Object.entries(COMPANY_COLORS)) { if (n.includes(k)) return v; } return '#6366f1'; };
     const currentCompanyId = o.delivery_company_id || '';
@@ -1586,7 +1590,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         {row('Subtotal', fmtMoney(o.subtotal, cur))}
         {row('Taxes', fmtMoney(o.tax_total || o.taxes || 0, cur))}
         {row('Shipping Cost', fmtMoney(o.shipping_cost, cur))}
-        {row('Discount', fmtMoney(o.discount_total || 0, cur))}
+        {row('Discount', fmtMoney(o.discount_total || o.discount_amount || o.discount || 0, cur))}
         {row('Total', <span className="font-black text-lg text-emerald-600">{fmtMoney(o.total, cur)}</span>)}
         {row('Currency', o.currency || 'DZD')}
       </div>
