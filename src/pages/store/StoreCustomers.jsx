@@ -1,4 +1,6 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Users,Download,Upload,Plus,Phone,X,User,ShoppingBag,MapPin,Mail,Calendar,ArrowLeft,Loader2}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Users,Download,Upload,Plus,Phone,X,User,ShoppingBag,MapPin,Mail,Calendar,ArrowLeft,Loader2,ChevronDown}from'lucide-react';
+import WILAYA_CITIES from'../../data/wilayaCities';
+const WILAYAS=Object.keys(WILAYA_CITIES).sort((a,b)=>a.localeCompare(b));
 
 export default function StoreCustomers(){
   const{t}=useTranslation();const{currentStore}=useStoreManagement();
@@ -32,8 +34,8 @@ export default function StoreCustomers(){
 <div className="flex gap-1">{[['all',t('storePage.all','all')],['VIP',t('storePage.vip','VIP')],['Repeat',t('storePage.repeat','Repeat')],['New',t('storePage.new','New')],['Inactive',t('storePage.inactive','Inactive')]].map(([f,label])=>(<button key={f} onClick={()=>setFilter(f.toLowerCase())} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${filter===f.toLowerCase()?'bg-brand-500 text-white':'text-gray-500 hover:bg-gray-100'}`}>{label}</button>))}</div></div>
 <div className="glass-card-solid overflow-hidden">
 {loading?<div className="p-12 text-center"><div className="w-8 h-8 border-3 border-brand-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>:filtered.length===0?<div className="p-12 text-center"><Users size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">{t('storePage.noCustomersFound','No customers found')}</p></div>:(
-<table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase"><th className="px-4 py-3">{t('storePage.customerName','Customer Name')}</th><th className="px-4 py-3">{t('storePage.status','Status')}</th><th className="px-4 py-3">{t('storePage.phone','Phone')}</th><th className="px-4 py-3">{t('storePage.location','Location')}</th><th className="px-4 py-3">{t('storePage.orders','Orders')}</th><th className="px-4 py-3">{t('storePage.totalSpent','Total Spent')}</th></tr></thead>
-<tbody>{filtered.map(c=>(<tr key={c.id} onClick={()=>openDetail(c)} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"><td className="px-4 py-3"><div><p className="font-semibold text-gray-800">{c.name||c.full_name}</p><p className="text-xs text-gray-400">{c.email||'—'}</p></div></td><td className="px-4 py-3"><span className={`badge text-[10px] ${c.total_orders>3?'badge-warning':c.total_orders>1?'badge-info':'badge-success'}`}>{c.total_orders>3?t('storePage.vip','VIP'):c.total_orders>1?t('storePage.repeat','Repeat'):t('storePage.new','New')}</span></td><td className="px-4 py-3 text-gray-600"><span className="flex items-center gap-1">{c.phone} <Phone size={12} className="text-green-500"/></span></td><td className="px-4 py-3 text-gray-500">{c.city||c.wilaya||t('storePage.unknown','Unknown')}</td><td className="px-4 py-3">{c.total_orders||0} {t('storePage.orders','orders')}</td><td className="px-4 py-3 font-bold">{parseFloat(c.total_spent||0).toLocaleString()} DZD</td></tr>))}</tbody></table>)}
+<table className="w-full text-sm"><thead><tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase"><th className="px-4 py-3">{t('storePage.customerName','Customer Name')}</th><th className="px-4 py-3">{t('storePage.phone','Phone')}</th><th className="px-4 py-3">{t('storePage.location','Location')}</th><th className="px-4 py-3">{t('storePage.orders','Orders')}</th><th className="px-4 py-3">{t('storePage.totalSpent','Total Spent')}</th></tr></thead>
+<tbody>{filtered.map(c=>(<tr key={c.id} onClick={()=>openDetail(c)} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"><td className="px-4 py-3"><div><p className="font-semibold text-gray-800">{c.name||c.full_name}</p><p className="text-xs text-gray-400">{c.email||'—'}</p></div></td><td className="px-4 py-3 text-gray-600"><span className="flex items-center gap-1">{c.phone} <Phone size={12} className="text-green-500"/></span></td><td className="px-4 py-3 text-gray-500">{c.city||c.wilaya||t('storePage.unknown','Unknown')}</td><td className="px-4 py-3">{c.total_orders||0} {t('storePage.orders','orders')}</td><td className="px-4 py-3 font-bold">{parseFloat(c.total_spent||0).toLocaleString()} DZD</td></tr>))}</tbody></table>)}
 </div>
 
 {/* Customer Detail Modal */}
@@ -74,8 +76,14 @@ export default function StoreCustomers(){
     <input className="input-field" placeholder="Name *" value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/>
     <input className="input-field" placeholder="Phone *" value={addForm.phone} onChange={e=>setAddForm({...addForm,phone:e.target.value})}/>
     <input className="input-field" placeholder="Email" value={addForm.email} onChange={e=>setAddForm({...addForm,email:e.target.value})}/>
-    <input className="input-field" placeholder="Wilaya" value={addForm.wilaya} onChange={e=>setAddForm({...addForm,wilaya:e.target.value})}/>
-    <input className="input-field" placeholder="City" value={addForm.city} onChange={e=>setAddForm({...addForm,city:e.target.value})}/>
+    <select className="input-field" value={addForm.wilaya} onChange={e=>setAddForm({...addForm,wilaya:e.target.value,city:''})}>
+      <option value="">Select Wilaya</option>
+      {WILAYAS.map(w=><option key={w} value={w}>{w}</option>)}
+    </select>
+    <select className="input-field" value={addForm.city} onChange={e=>setAddForm({...addForm,city:e.target.value})} disabled={!addForm.wilaya}>
+      <option value="">Select City</option>
+      {(WILAYA_CITIES[addForm.wilaya]||[]).map(c=><option key={c} value={c}>{c}</option>)}
+    </select>
     <input className="input-field" placeholder="Address" value={addForm.address} onChange={e=>setAddForm({...addForm,address:e.target.value})}/>
   </div>
   <div className="flex gap-2 justify-end mt-4">
