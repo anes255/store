@@ -1581,8 +1581,8 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
       <div className="space-y-3">
         <label className="text-[10px] font-bold text-gray-400 uppercase">Shipping Method</label>
         <div className="grid grid-cols-2 gap-2">
-          {['home','stop_desk'].map(m => {
-            const active = (o.shipping_type || 'home') === m;
+          {['home','desk'].map(m => {
+            const active = (o.shipping_type || 'home') === m || (m === 'desk' && o.shipping_type === 'stop_desk');
             return (
               <button key={m} onClick={() => { onSaveField({ shipping_type: m }); onClose(); }}
                 className={`py-4 rounded-xl font-bold text-xs flex flex-col items-center gap-1 ${active ? 'bg-emerald-500 text-white ring-2 ring-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
