@@ -179,6 +179,11 @@ export default function StoreOrders() {
     catch { return DEFAULT_COLUMNS; }
   });
   useEffect(() => { if (!isPreparingPage && activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v6', JSON.stringify(activeColumns)); } catch {} } }, [activeColumns, isPreparingPage]);
+  // Sync columns when switching between orders/preparing pages
+  useEffect(() => {
+    if (isPreparingPage) { setActiveColumns(PREPARING_COLUMNS); }
+    else { try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS); } catch { setActiveColumns(DEFAULT_COLUMNS); } }
+  }, [isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
   // View mode: 'cards' (responsive, fits any screen) or 'table' (old wide scroll table).
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders.viewMode') || 'table');
@@ -981,7 +986,7 @@ export default function StoreOrders() {
 
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap max-w-[96vw] overflow-x-auto" style={{scrollbarWidth:'none'}}>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap max-w-[96vw]" style={{scrollbarWidth:'none'}}>
           <span className="text-xs sm:text-sm font-bold shrink-0">{selectedItems.size} sel.</span>
           <div className="w-px h-5 bg-gray-600 shrink-0"/>
           {/* Bulk status change */}
@@ -1218,7 +1223,7 @@ export default function StoreOrders() {
                 <div className="p-4 bg-cyan-50 rounded-2xl space-y-3">
                   <p className="text-[10px] font-bold text-cyan-600 uppercase">Tracking</p>
                   {selectedOrder.tracking_number ? (
-                    <div className="flex items-center gap-3"><Truck size={16} className="text-cyan-600"/><div className="flex-1"><p className="font-mono font-bold text-sm">{selectedOrder.tracking_number}</p>{selectedOrder.tracking_status && <p className="text-xs text-cyan-600 capitalize">{selectedOrder.tracking_status.replace(/_/g,' ')}</p>}</div></div>
+                    <div className="flex items-center gap-3"><Truck size={16} className="text-cyan-600"/><div className="flex-1">{(() => { const dc = companies.find(c => c.id === selectedOrder.delivery_company_id); const tUrl = dc?.tracking_url ? dc.tracking_url.replace('{tracking_number}', selectedOrder.tracking_number).replace('{trackingNumber}', selectedOrder.tracking_number) : null; return tUrl ? <a href={tUrl} target="_blank" rel="noopener noreferrer" className="font-mono font-bold text-sm text-cyan-700 hover:underline flex items-center gap-1">{selectedOrder.tracking_number} <ExternalLink size={12}/></a> : <p className="font-mono font-bold text-sm">{selectedOrder.tracking_number}</p>; })()}{selectedOrder.tracking_status && <p className="text-xs text-cyan-600 capitalize">{selectedOrder.tracking_status.replace(/_/g,' ')}</p>}</div></div>
                   ) : (
                     <div className="space-y-2">
                       <select className="input-field !py-2 text-sm" value={trackingForm.delivery_company_id} onChange={e => setTrackingForm({...trackingForm, delivery_company_id: e.target.value})}>
@@ -1724,6 +1729,7 @@ function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
   const [searchP, setSearchP] = useState('');
   const [items, setItems] = useState([]); // {product_id, name, price, quantity}
   const [wilayaCities, setWilayaCities] = useState({});
+  const [shippingWilayas, setShippingWilayas] = useState([]);
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '',
@@ -1734,7 +1740,24 @@ function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
 
   useEffect(() => {
     import('../../data/wilayaCities').then(m => setWilayaCities(m.default || {})).catch(() => {});
-  }, []);
+    // Load shipping wilayas for auto-filling delivery cost
+    if (storeId) api.get(`/manage/stores/${storeId}/shipping-wilayas`).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
+  }, [storeId]);
+  // Auto-fill shipping cost when wilaya, shipping type, or delivery company changes
+  useEffect(() => {
+    if (!form.shipping_wilaya || !shippingWilayas.length) return;
+    const wRow = shippingWilayas.find(w => w.wilaya_name === form.shipping_wilaya);
+    if (!wRow) return;
+    let price = parseFloat(form.shipping_type === 'home' ? wRow.home_delivery_price : wRow.desk_delivery_price) || 0;
+    // Check per-company prices
+    if (form.delivery_company_id && wRow.company_prices) {
+      let cp = wRow.company_prices;
+      if (typeof cp === 'string') { try { cp = JSON.parse(cp); } catch { cp = null; } }
+      const perCo = cp?.[form.delivery_company_id];
+      if (perCo) price = parseFloat(form.shipping_type === 'home' ? (perCo.home || perCo.home_price) : (perCo.desk || perCo.desk_price)) || price;
+    }
+    setForm(prev => ({ ...prev, shipping_cost: price }));
+  }, [form.shipping_wilaya, form.shipping_type, form.delivery_company_id, shippingWilayas]);
 
   useEffect(() => {
     if (!storeId) return;

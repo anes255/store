@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
-import { useCartStore, useLangStore, useAuthStore } from '../../hooks/useStore';
+import { useCartStore, useLangStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 import i18n from '../../i18n';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck } from 'lucide-react';
@@ -45,6 +45,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     return () => { document.body.style.overflow = prev; };
   }, [isModal]);
   const cartStore = useCartStore();
+  const buyerTheme = useBuyerTheme();
+  useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
+  const isDark = buyerTheme.mode === 'dark';
   // "Buy Now" uses directItems; regular checkout uses the cart store.
   const isBuyNow = !!directItems;
   const [buyNowItems, setBuyNowItems] = useState(directItems || []);
@@ -274,7 +277,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
-    if (companiesLoaded && deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
+    if (deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
     // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
       try {
@@ -323,27 +326,27 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
           </div>
         </header>
-        <div className="max-w-lg mx-auto px-4 py-8">
+        <div className={`max-w-lg mx-auto px-4 py-8 ${isDark ? 'text-gray-100' : ''}`}>
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{backgroundColor: pc + '20'}}><CreditCard size={28} style={{color: pc}}/></div>
-            <h2 className="text-xl font-black text-gray-900">Order {orderNum} Placed!</h2>
+            <h2 className={`text-xl font-black ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Order {orderNum} Placed!</h2>
             <p className="text-3xl font-black mt-2" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} DZD</p>
           </div>
 
           {/* CCP Payment */}
           {paymentStep === 'ccp' && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center"><CreditCard size={20} className="text-amber-600"/></div><div><h3 className="font-bold text-gray-900">CCP Transfer</h3><p className="text-xs text-gray-400">Transfer to our CCP account</p></div></div>
-              <div className="bg-amber-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">CCP Account</span><div className="flex items-center gap-2"><span className="font-mono font-bold text-lg">{store.ccp_account || 'N/A'}</span><button onClick={() => copyToClipboard(store.ccp_account || '')} className="p-1 hover:bg-amber-100 rounded"><Copy size={14}/></button></div></div>
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">Account Name</span><span className="font-bold">{store.ccp_name || 'N/A'}</span></div>
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">Amount to Transfer</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} DZD</span></div>
-                <p className="text-[10px] text-gray-400 text-right">Product price only — shipping ({parseFloat(orderSuccess.shipping_cost||0).toLocaleString()} DZD) is paid on delivery</p>
+            <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-sm space-y-4`}>
+              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-amber-900/40' : 'bg-amber-50'} flex items-center justify-center`}><CreditCard size={20} className="text-amber-600"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>CCP Transfer</h3><p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>Transfer to our CCP account</p></div></div>
+              <div className={`${isDark ? 'bg-amber-900/30 border border-amber-800/40' : 'bg-amber-50'} rounded-xl p-4 space-y-3`}>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>CCP Account</span><div className="flex items-center gap-2"><span className={`font-mono font-bold text-lg ${isDark ? 'text-gray-100' : ''}`}>{store.ccp_account || 'N/A'}</span><button onClick={() => copyToClipboard(store.ccp_account || '')} className={`p-1 ${isDark ? 'hover:bg-amber-800/40' : 'hover:bg-amber-100'} rounded`}><Copy size={14}/></button></div></div>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Account Name</span><span className={`font-bold ${isDark ? 'text-gray-100' : ''}`}>{store.ccp_name || 'N/A'}</span></div>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Amount to Transfer</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} DZD</span></div>
+                <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'} text-right`}>Product price only — shipping ({parseFloat(orderSuccess.shipping_cost||0).toLocaleString()} DZD) is paid on delivery</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-3"><p className="text-xs text-blue-700">After transferring, upload your CCP receipt below to confirm your payment.</p></div>
-              <div><label className="input-label text-xs">Reference Number (optional)</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="CCP transfer reference"/></div>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-amber-400 transition-colors" onClick={() => document.getElementById('receipt-upload').click()}>
-                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ Receipt uploaded</p></div> : <div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">Click to upload receipt photo</p></div>}
+              <div className={`${isDark ? 'bg-blue-900/30 border border-blue-800/40' : 'bg-blue-50'} rounded-xl p-3`}><p className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>After transferring, upload your CCP receipt below to confirm your payment.</p></div>
+              <div><label className={`input-label text-xs ${isDark ? 'text-gray-300' : ''}`}>Reference Number (optional)</label><input className={`input-field ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : ''}`} value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="CCP transfer reference"/></div>
+              <div className={`border-2 border-dashed ${isDark ? 'border-gray-600 hover:border-amber-500' : 'border-gray-300 hover:border-amber-400'} rounded-xl p-6 text-center cursor-pointer transition-colors`} onClick={() => document.getElementById('receipt-upload').click()}>
+                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ Receipt uploaded</p></div> : <div><Upload size={24} className={`mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'} mb-2`}/><p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Click to upload receipt photo</p></div>}
               </div>
               <input id="receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
               <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>Submit Receipt <ArrowRight size={16}/></button>
@@ -352,25 +355,25 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
           {/* BaridiPay Payment */}
           {paymentStep === 'baridimob' && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className="font-bold text-gray-900">{t('checkout.baridiPayTitle','BaridiPay Payment')}</h3><p className="text-xs text-gray-400">{t('checkout.baridiPaySubtitle','Pay via BaridiPay app')}</p></div></div>
-              <div className="bg-emerald-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.ripNumber','RIP Number')}</span><div className="flex items-center gap-2"><span className="font-mono font-bold">{store.baridimob_rip || t('checkout.notAvailable','N/A')}</span><button onClick={() => copyToClipboard(store.baridimob_rip || '')} className="p-1 hover:bg-emerald-100 rounded"><Copy size={14}/></button></div></div>
-                <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.amount','Amount to Transfer')}</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} {store.currency||'DZD'}</span></div>
-                <p className="text-[10px] text-gray-400 text-right">{t('checkout.productPriceOnly','Product price only — shipping is paid on delivery')}</p>
+            <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-sm space-y-4`}>
+              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-emerald-900/40' : 'bg-emerald-50'} flex items-center justify-center`}><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('checkout.baridiPayTitle','BaridiPay Payment')}</h3><p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{t('checkout.baridiPaySubtitle','Pay via BaridiPay app')}</p></div></div>
+              <div className={`${isDark ? 'bg-emerald-900/30 border border-emerald-800/40' : 'bg-emerald-50'} rounded-xl p-4 space-y-3`}>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.ripNumber','RIP Number')}</span><div className="flex items-center gap-2"><span className={`font-mono font-bold ${isDark ? 'text-gray-100' : ''}`}>{store.baridimob_rip || t('checkout.notAvailable','N/A')}</span><button onClick={() => copyToClipboard(store.baridimob_rip || '')} className={`p-1 ${isDark ? 'hover:bg-emerald-800/40' : 'hover:bg-emerald-100'} rounded`}><Copy size={14}/></button></div></div>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.amount','Amount to Transfer')}</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} {store.currency||'DZD'}</span></div>
+                <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'} text-right`}>{t('checkout.productPriceOnly','Product price only — shipping is paid on delivery')}</p>
               </div>
-              {store.baridimob_qr && <div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">{t('checkout.scanToPay','Scan to Pay')}</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
-              <div className="bg-gray-50 rounded-xl p-4"><p className="text-xs font-bold text-gray-500 mb-2">{t('checkout.steps','Steps:')}</p>
-                <ol className="text-xs text-gray-600 space-y-1">
+              {store.baridimob_qr && <div className={`text-center p-4 ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-xl`}><p className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-400'} uppercase mb-2`}>{t('checkout.scanToPay','Scan to Pay')}</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
+              <div className={`${isDark ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-xl p-4`}><p className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>{t('checkout.steps','Steps:')}</p>
+                <ol className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'} space-y-1`}>
                   <li>1. {t('checkout.baridiStep1','Open BaridiPay app on your phone')}</li>
                   {store.baridimob_qr ? <li>2. {t('checkout.baridiStep2qr','Scan the QR code above OR transfer to RIP manually')}</li> : <li>2. {t('checkout.baridiStep2norip','Go to "Transfer" → "Transfer to RIP"')}</li>}
                   <li>3. {t('checkout.baridiStep3','Enter the exact amount:')} {parseFloat(orderSuccess.total).toLocaleString()} {store.currency||'DZD'}</li>
                   <li>4. {t('checkout.baridiStep4','Confirm and screenshot your receipt')}</li>
                 </ol>
               </div>
-              <div><label className="input-label text-xs">{t('checkout.txnRef','Transaction Reference')}</label><input className="input-field" value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder={t('checkout.baridiTxnPh','BaridiPay transaction ID')}/></div>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-emerald-400 transition-colors" onClick={() => document.getElementById('receipt-upload').click()}>
-                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ {t('checkout.receiptUploaded','Receipt uploaded')}</p></div> : <div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">{t('checkout.uploadBaridiReceipt','Upload your BaridiPay receipt')}</p></div>}
+              <div><label className={`input-label text-xs ${isDark ? 'text-gray-300' : ''}`}>{t('checkout.txnRef','Transaction Reference')}</label><input className={`input-field ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : ''}`} value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder={t('checkout.baridiTxnPh','BaridiPay transaction ID')}/></div>
+              <div className={`border-2 border-dashed ${isDark ? 'border-gray-600 hover:border-emerald-500' : 'border-gray-300 hover:border-emerald-400'} rounded-xl p-6 text-center cursor-pointer transition-colors`} onClick={() => document.getElementById('receipt-upload').click()}>
+                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ {t('checkout.receiptUploaded','Receipt uploaded')}</p></div> : <div><Upload size={24} className={`mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'} mb-2`}/><p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.uploadBaridiReceipt','Upload your BaridiPay receipt')}</p></div>}
               </div>
               <input id="receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
               <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>{t('checkout.submitReceipt','Submit Receipt')} <ArrowRight size={16}/></button>
@@ -379,8 +382,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
           {/* Bank Transfer - Under Development */}
           {paymentStep === 'bank_transfer' && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center"><Building size={20} className="text-gray-500"/></div><div><h3 className="font-bold text-gray-900">Bank Transfer</h3><p className="text-xs text-gray-400">Direct bank wire</p></div></div>
+            <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-sm space-y-4`}>
+              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}><Building size={20} className="text-gray-500"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Bank Transfer</h3><p className="text-xs text-gray-400">Direct bank wire</p></div></div>
               <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-center">
                 <AlertTriangle size={32} className="mx-auto text-amber-500 mb-3"/>
                 <h3 className="font-bold text-amber-800 text-lg mb-2">Under Development</h3>

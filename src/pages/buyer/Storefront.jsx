@@ -191,7 +191,18 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
   const modalOfferPct = product.is_on_sale && product.offer_discount ? (parseFloat(String(product.offer_discount).replace(/[^0-9.]/g, '')) || 0) : 0;
   const basePrice = modalOfferPct > 0 ? Math.round(rawBasePrice * (1 - modalOfferPct / 100)) : rawBasePrice;
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
-  const finalPrice = basePrice + priceAdj;
+  // Apply quantity offer discount when a matching tier is selected
+  const qtyOfferPct = (() => {
+    let qOffers = product.quantity_offers || [];
+    if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+    if (!Array.isArray(qOffers)) return 0;
+    const match = qOffers.find(qo => parseInt(qo.quantity) === quantity);
+    if (!match || !match.label) return 0;
+    const m = String(match.label).match(/(\d+(?:\.\d+)?)\s*%/);
+    return m ? parseFloat(m[1]) : 0;
+  })();
+  const priceBeforeQty = basePrice + priceAdj;
+  const finalPrice = qtyOfferPct > 0 ? Math.round(priceBeforeQty * (1 - qtyOfferPct / 100)) : priceBeforeQty;
   const stockCount = primarySelected ? (primarySelected.stock ?? product.stock_quantity) : product.stock_quantity;
 
   const variantLabel = selectedIdxes.map(idx => {
@@ -1090,9 +1101,35 @@ export default function Storefront() {
       </div>
       </>}
 
+      {/* ============ ABOUT US ============ */}
+      {(store.about_story || store.about_mission) && (
+        <section className="bg-gradient-to-b from-gray-50 to-white py-12 px-4 mt-8">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">{t('buyer.aboutUs','About Us')}</h2>
+            {store.about_story && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">{t('buyer.ourStory','Our Story')}</h3>
+                <p className="text-gray-600 leading-relaxed whitespace-pre-line">{store.about_story}</p>
+              </div>
+            )}
+            {store.about_mission && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">{t('buyer.ourMission','Our Mission')}</h3>
+                <p className="text-gray-600 leading-relaxed whitespace-pre-line">{store.about_mission}</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ============ FOOTER ============ */}
       <footer className="bg-white border-t border-gray-100 py-8 px-4 mt-8">
         <div className="max-w-7xl mx-auto text-center">
+          {/* Footer links */}
+          <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
+            <Link to={`/s/${storeSlug}/faq`} className="text-sm text-gray-500 hover:text-gray-700 transition-colors">{t('buyer.faq','FAQ')}</Link>
+            <Link to={`/s/${storeSlug}/track`} className="text-sm text-gray-500 hover:text-gray-700 transition-colors">{t('buyer.trackOrder','Track Order')}</Link>
+          </div>
           {(store.contact_phone || store.support_phone) && (
             <div className="flex items-center justify-center gap-6 mb-3 flex-wrap">
               {store.contact_phone && <a href={`tel:${String(store.contact_phone).replace(/[^\d+]/g,'')}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>{store.contact_phone}</a>}

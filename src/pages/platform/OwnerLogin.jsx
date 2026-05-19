@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { ownerApi, platformApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check, Shield, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check, Shield, RefreshCw, KeyRound, Phone, ArrowLeft } from 'lucide-react';
 import api from '../../utils/api';
 
 export default function OwnerLogin() {
@@ -23,6 +23,85 @@ export default function OwnerLogin() {
   const [twoFa, setTwoFa] = useState(null); // {otp_token, method, masked}
   const [twoFaCode, setTwoFaCode] = useState('');
   const [twoFaLoading, setTwoFaLoading] = useState(false);
+  // ═══ Forgot password flow ═══
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState('phone'); // phone | code | newpw
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotOtp, setForgotOtp] = useState(''); // otp_token from server
+  const [forgotCode, setForgotCode] = useState('');
+  const [forgotResetToken, setForgotResetToken] = useState('');
+  const [forgotNewPw, setForgotNewPw] = useState('');
+  const [forgotNewPw2, setForgotNewPw2] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMasked, setForgotMasked] = useState('');
+  const [forgotShowPw, setForgotShowPw] = useState(false);
+
+  const forgotReset = () => { setForgotStep('phone'); setForgotPhone(''); setForgotCode(''); setForgotOtp(''); setForgotResetToken(''); setForgotNewPw(''); setForgotNewPw2(''); setForgotShowPw(false); };
+  const openForgot = () => { forgotReset(); setForgotOpen(true); };
+  const closeForgot = () => { setForgotOpen(false); forgotReset(); };
+
+  const forgotRequestCode = async () => {
+    if (!forgotPhone.trim()) return toast.error(t('auth.phoneRequired', 'Phone or email is required'));
+    setForgotLoading(true);
+    try {
+      // Try owner endpoint first
+      try {
+        const { data } = await api.post('/owner/forgot-password', { identifier: forgotPhone.trim() });
+        setForgotOtp(data.otp_token); setForgotMasked(data.masked); setForgotStep('code');
+        toast.success(t('auth.resetCodeSent', 'Reset code sent via WhatsApp'));
+        setForgotLoading(false); return;
+      } catch (ownerErr) {
+        if (ownerErr.response?.status !== 404) throw ownerErr;
+      }
+      // Try admin endpoint
+      const { data } = await api.post('/admin/forgot-password', { phone: forgotPhone.trim() });
+      setForgotOtp(data.otp_token); setForgotMasked(data.masked); setForgotStep('code');
+      toast.success(t('auth.resetCodeSent', 'Reset code sent via WhatsApp'));
+    } catch (e) { toast.error(e.response?.data?.error || 'Failed to send reset code'); }
+    setForgotLoading(false);
+  };
+
+  const forgotVerifyCode = async () => {
+    if (!forgotCode || forgotCode.length < 6) return toast.error(t('auth.enter6Digit', 'Enter the 6-digit code'));
+    setForgotLoading(true);
+    try {
+      // Try owner verify first
+      try {
+        const { data } = await api.post('/owner/forgot-password/verify', { otp_token: forgotOtp, code: forgotCode });
+        setForgotResetToken(data.reset_token); setForgotStep('newpw');
+        setForgotLoading(false); return;
+      } catch (e) {
+        if (e.response?.status === 401 && e.response?.data?.error?.includes('Invalid')) throw e;
+        // Try admin verify
+      }
+      const { data } = await api.post('/admin/forgot-password/verify', { otp_token: forgotOtp, code: forgotCode });
+      setForgotResetToken(data.reset_token); setForgotStep('newpw');
+    } catch (e) { toast.error(e.response?.data?.error || 'Invalid code'); }
+    setForgotLoading(false);
+  };
+
+  const forgotSetNewPassword = async () => {
+    if (!forgotNewPw || forgotNewPw.length < 6) return toast.error(t('auth.pwMin6', 'Password must be at least 6 characters'));
+    if (forgotNewPw !== forgotNewPw2) return toast.error(t('auth.pwMismatch', 'Passwords do not match'));
+    setForgotLoading(true);
+    try {
+      // Try owner reset first
+      try {
+        await api.post('/owner/forgot-password/reset', { reset_token: forgotResetToken, new_password: forgotNewPw });
+        toast.success(t('auth.pwResetSuccess', 'Password reset successfully! You can now sign in.'));
+        closeForgot(); setForgotLoading(false); return;
+      } catch (e) {
+        if (e.response?.status === 401 && e.response?.data?.error?.includes('Invalid')) {
+          // Try admin reset
+        } else throw e;
+      }
+      await api.post('/admin/forgot-password/reset', { reset_token: forgotResetToken, new_password: forgotNewPw });
+      toast.success(t('auth.pwResetSuccess', 'Password reset successfully! You can now sign in.'));
+      closeForgot();
+    } catch (e) { toast.error(e.response?.data?.error || 'Failed to reset password'); }
+    setForgotLoading(false);
+  };
+
   // Brand comes exclusively from the super-admin's platform settings.
   // Empty until /platform/info responds; render the name only once set.
   const [brand, setBrand] = useState({ logo: '', favicon: '', name: '' });
@@ -174,7 +253,10 @@ export default function OwnerLogin() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-4 text-center">
+            <button onClick={openForgot} className="text-sm text-brand-600 font-semibold hover:underline">{t('auth.forgotPassword','Forgot password?')}</button>
+          </div>
+          <p className="mt-3 text-center text-sm text-gray-500">
             {t('auth.noAccount')}{' '}
             <Link to="/register" className="text-brand-600 font-semibold hover:underline">{t('auth.register')}</Link>
           </p>
@@ -212,6 +294,78 @@ export default function OwnerLogin() {
               <button onClick={() => { setTwoFa(null); setTwoFaCode(''); }} className="text-gray-500 hover:underline">{t('auth.cancel','Cancel')}</button>
               <button onClick={resendTwoFa} className="text-brand-600 font-bold hover:underline flex items-center gap-1"><RefreshCw size={11} />{t('auth.resendCode','Resend code')}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forgot password modal */}
+      {forgotOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl">
+            {forgotStep === 'phone' && (<>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-3"><KeyRound size={26} className="text-orange-500" /></div>
+                <h2 className="text-xl font-extrabold text-gray-900">{t('auth.forgotPassword','Forgot password?')}</h2>
+                <p className="text-sm text-gray-500 mt-1">{t('auth.forgotHelp','Enter your phone number or email. We\'ll send a reset code via WhatsApp.')}</p>
+              </div>
+              <div className="relative mb-3">
+                <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input autoFocus className="input-field !pl-11" placeholder={t('auth.emailOrPhonePlaceholder','Phone or email')}
+                  value={forgotPhone} onChange={e => setForgotPhone(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && forgotRequestCode()} />
+              </div>
+              <button onClick={forgotRequestCode} disabled={forgotLoading} className="btn-primary w-full !py-3.5 mb-2 disabled:opacity-50">
+                {forgotLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : t('auth.sendResetCode','Send reset code')}
+              </button>
+              <button onClick={closeForgot} className="w-full text-center text-sm text-gray-500 hover:underline">{t('auth.backToLogin','Back to login')}</button>
+            </>)}
+
+            {forgotStep === 'code' && (<>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3"><Shield size={26} className="text-emerald-500" /></div>
+                <h2 className="text-xl font-extrabold text-gray-900">{t('auth.enterCode','Enter code')}</h2>
+                <p className="text-sm text-gray-500 mt-1">{t('auth.resetCodeHelp','We sent a 6-digit code to {{m}}').replace('{{m}}', forgotMasked)}</p>
+              </div>
+              <input autoFocus inputMode="numeric" pattern="[0-9]*" maxLength={6}
+                value={forgotCode} onChange={e => setForgotCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => e.key === 'Enter' && forgotVerifyCode()}
+                className="input-field text-center text-3xl tracking-[0.6em] font-mono mb-3" placeholder="------" />
+              <button onClick={forgotVerifyCode} disabled={forgotLoading || forgotCode.length !== 6} className="btn-primary w-full !py-3.5 mb-2 disabled:opacity-50">
+                {forgotLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : t('auth.verify','Verify')}
+              </button>
+              <div className="flex items-center justify-between text-xs">
+                <button onClick={() => setForgotStep('phone')} className="text-gray-500 hover:underline flex items-center gap-1"><ArrowLeft size={11}/>{t('auth.back','Back')}</button>
+                <button onClick={forgotRequestCode} className="text-brand-600 font-bold hover:underline flex items-center gap-1"><RefreshCw size={11}/>{t('auth.resendCode','Resend code')}</button>
+              </div>
+            </>)}
+
+            {forgotStep === 'newpw' && (<>
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3"><Lock size={26} className="text-brand-500" /></div>
+                <h2 className="text-xl font-extrabold text-gray-900">{t('auth.setNewPassword','Set new password')}</h2>
+                <p className="text-sm text-gray-500 mt-1">{t('auth.newPwHelp','Choose a strong password for your account.')}</p>
+              </div>
+              <div className="space-y-3 mb-3">
+                <div className="relative">
+                  <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input type={forgotShowPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder={t('auth.newPassword','New password')}
+                    value={forgotNewPw} onChange={e => setForgotNewPw(e.target.value)} />
+                  <button type="button" onClick={() => setForgotShowPw(!forgotShowPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {forgotShowPw ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input type={forgotShowPw ? 'text' : 'password'} className="input-field !pl-11" placeholder={t('auth.confirmPassword','Confirm password')}
+                    value={forgotNewPw2} onChange={e => setForgotNewPw2(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && forgotSetNewPassword()} />
+                </div>
+              </div>
+              <button onClick={forgotSetNewPassword} disabled={forgotLoading} className="btn-primary w-full !py-3.5 mb-2 disabled:opacity-50">
+                {forgotLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : t('auth.resetPassword','Reset password')}
+              </button>
+              <button onClick={closeForgot} className="w-full text-center text-sm text-gray-500 hover:underline">{t('auth.cancel','Cancel')}</button>
+            </>)}
           </div>
         </div>
       )}

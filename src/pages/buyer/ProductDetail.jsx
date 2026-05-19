@@ -238,7 +238,18 @@ export default function ProductDetail() {
   const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   // Sum all price adjustments from selected variants
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
-  const finalPrice = basePrice + priceAdj;
+  // Apply quantity offer discount when a matching tier is selected
+  const qtyOfferPct = (() => {
+    let qOffers = product.quantity_offers || [];
+    if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+    if (!Array.isArray(qOffers)) return 0;
+    const match = qOffers.find(qo => parseInt(qo.quantity) === quantity);
+    if (!match || !match.label) return 0;
+    const m = String(match.label).match(/(\d+(?:\.\d+)?)\s*%/);
+    return m ? parseFloat(m[1]) : 0;
+  })();
+  const priceBeforeQty = basePrice + priceAdj;
+  const finalPrice = qtyOfferPct > 0 ? Math.round(priceBeforeQty * (1 - qtyOfferPct / 100)) : priceBeforeQty;
   const stockCount = sv ? (sv.stock ?? product.stock_quantity) : product.stock_quantity;
 
   // Build a variant label for display
@@ -384,9 +395,9 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-[4/5] sm:aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="sync" className="w-full h-full object-contain bg-white transition-transform group-hover:scale-105" style={{imageRendering:'auto'}} alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="sync" className="w-full h-full object-contain bg-white transition-transform group-hover:scale-105" style={{imageRendering:'auto',maxHeight:'100%',maxWidth:'100%'}} alt=""/>
                 : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
               {allImages[selectedImage] && (
                 <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -466,12 +477,15 @@ export default function ProductDetail() {
                 <div className="mt-3">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">{t('store.quantityOffers','Quantity Offers')}</p>
                   <div className="flex flex-wrap gap-2">
-                    {qOffers.map((qo, qi) => (
-                      <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all hover:scale-[1.02]" style={{ borderColor: pc + '40', backgroundColor: pc + '08', color: pc }}>
+                    {qOffers.map((qo, qi) => {
+                      const isActive = quantity === parseInt(qo.quantity);
+                      return (
+                      <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all hover:scale-[1.02] cursor-pointer ${isActive ? 'shadow-md scale-[1.02]' : ''}`} style={{ borderColor: isActive ? pc : pc + '40', backgroundColor: isActive ? pc + '18' : pc + '08', color: pc }}>
                         <span className="text-xs font-extrabold" style={{ color: pc }}>×{qo.quantity}</span>
-                        <span className="text-xs font-bold text-gray-700">{qo.label}</span>
+                        <span className={`text-xs font-bold ${isActive ? '' : 'text-gray-700'}`} style={isActive ? { color: pc } : {}}>{qo.label}</span>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );

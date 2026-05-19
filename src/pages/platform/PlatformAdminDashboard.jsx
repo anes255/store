@@ -11,7 +11,7 @@ import RoleTemplatesEditor from './RoleTemplatesEditor';
 import AdminWhatsApp from './AdminWhatsApp';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
-import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,Check,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu,Bell,Gift,Clock} from 'lucide-react';
+import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSign,Save,Globe,Eye,EyeOff,Ban,Check,CheckCircle,AlertTriangle,TrendingUp,BarChart3,Package,Search,Trash2,RefreshCw,Server,Database,Wifi,WifiOff,ChevronRight,X,ExternalLink,Activity,Zap,CreditCard,Mail,Smartphone,Bot,ArrowUp,ArrowDown,Calendar,Layers,Plus,GripVertical,Image,Type,Menu,Bell,Gift,Clock,KeyRound} from 'lucide-react';
 
 // Hook: track a button's bounding rect so a portal-rendered popover
 // positions itself relative to the viewport (escapes header's
@@ -272,6 +272,8 @@ function Overview(){
 function StoreOwners(){
   const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[owners,setOwners]=useState([]);const[search,setSearch]=useState('');const[loading,setLoading]=useState(true);
+  const[pwModal,setPwModal]=useState(null);const[pwNew,setPwNew]=useState('');const[pwSaving,setPwSaving]=useState(false);
+  const changeOwnerPw=async()=>{if(!pwNew||pwNew.length<6){toast.error('Password must be at least 6 characters');return;}setPwSaving(true);try{await api.put(`/platform/store-owners/${pwModal.id}/password`,{new_password:pwNew});toast.success('Password changed');setPwModal(null);setPwNew('');}catch(e){toast.error(e.response?.data?.error||'Failed');}setPwSaving(false);};
   const load=()=>{platformApi.getStoreOwners({search}).then(r=>setOwners(r.data.owners||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[search]);
   const toggle=async(id)=>{try{await platformApi.toggleOwner(id);toast.success('Updated');load();}catch{toast.error('Failed');}};
@@ -317,6 +319,7 @@ function StoreOwners(){
               {suspended?
                 <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}}} className="flex-1 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-bold">Activate</button>:
                 <button onClick={async()=>{if(!confirm('Suspend? Their stores go offline.'))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}}} className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold">Suspend</button>}
+              <button onClick={(e)=>{e.stopPropagation();setPwModal(o);setPwNew('');}} className="py-2 px-3 rounded-lg bg-blue-50 text-blue-500" title="Change password"><KeyRound size={14}/></button>
               <button onClick={()=>del(o.id)} className="py-2 px-3 rounded-lg bg-red-50 text-red-500"><Trash2 size={14}/></button>
             </div>
           </div>
@@ -336,10 +339,22 @@ function StoreOwners(){
           {o.subscription_status==='suspended'||o.is_active===false?
             <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}}} className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-500" title="Activate"><CheckCircle size={14}/></button>:
             <button onClick={async()=>{if(!confirm('Suspend? Their stores go offline.'))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}}} className="p-2 hover:bg-red-50 rounded-lg text-red-500" title="Suspend"><Ban size={14}/></button>}
+          <button onClick={(e)=>{e.stopPropagation();setPwModal(o);setPwNew('');}} className="p-2 hover:bg-blue-50 rounded-lg text-blue-400" title="Change password"><KeyRound size={14}/></button>
           <button onClick={()=>del(o.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14}/></button>
         </div></td>
       </tr>
-    ))}</tbody></table>{owners.length===0&&<p className="text-center py-12 text-gray-400">No owners found</p>}</div></>}
+    ))}</tbody></table>{owners.length===0&&<p className="text-center py-12 text-gray-400">No owners found</p>}</div>
+    {/* Change owner password modal */}
+    {pwModal&&(<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setPwModal(null)}><div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e=>e.stopPropagation()}>
+      <h2 className="text-lg font-bold mb-1">Change Password</h2>
+      <p className="text-sm text-gray-500 mb-4">Set a new password for <strong>{pwModal.full_name||pwModal.name}</strong></p>
+      <input type="password" className="input-field mb-3" placeholder="New password (min 6 chars)" value={pwNew} onChange={e=>setPwNew(e.target.value)} onKeyDown={e=>e.key==='Enter'&&changeOwnerPw()}/>
+      <div className="flex gap-2 justify-end">
+        <button onClick={()=>setPwModal(null)} className="btn-ghost px-4 py-2 text-sm">Cancel</button>
+        <button onClick={changeOwnerPw} disabled={pwSaving} className="btn-primary px-4 py-2 text-sm">{pwSaving?'Saving...':'Change Password'}</button>
+      </div>
+    </div></div>)}
+    </>}
   </div>);
 }
 
