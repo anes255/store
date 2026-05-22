@@ -174,14 +174,20 @@ export default function StoreOrders() {
     };
   }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
-    if (isPreparingPage) return PREPARING_COLUMNS;
+    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v1') || 'null'); return Array.isArray(s) && s.length ? s : PREPARING_COLUMNS; } catch { return PREPARING_COLUMNS; } }
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
-  useEffect(() => { if (!isPreparingPage && activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v6', JSON.stringify(activeColumns)); } catch {} } }, [activeColumns, isPreparingPage]);
+  // Persist column changes to the correct localStorage key per page
+  const isPreparingRef = useRef(isPreparingPage);
+  isPreparingRef.current = isPreparingPage;
+  useEffect(() => {
+    if (isPreparingRef.current) { try { localStorage.setItem('preparing.columns.v1', JSON.stringify(activeColumns)); } catch {} }
+    else if (activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v6', JSON.stringify(activeColumns)); } catch {} }
+  }, [activeColumns]);
   // Sync columns when switching between orders/preparing pages
   useEffect(() => {
-    if (isPreparingPage) { setActiveColumns(PREPARING_COLUMNS); }
+    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v1') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : PREPARING_COLUMNS); } catch { setActiveColumns(PREPARING_COLUMNS); } }
     else { try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS); } catch { setActiveColumns(DEFAULT_COLUMNS); } }
   }, [isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
