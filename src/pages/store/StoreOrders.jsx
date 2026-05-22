@@ -342,19 +342,19 @@ export default function StoreOrders() {
   };
 
   const filters = [
-    { key: 'all',           label: 'All' },
-    { key: 'new_order',     label: 'New' },
-    { key: 'pending',       label: 'Pending' },
-    { key: 'failed_call_1', label: 'Call Failed 1' },
-    { key: 'failed_call_2', label: 'Call Failed 2' },
-    { key: 'failed_call_3', label: 'Call Failed 3' },
-    { key: 'confirmed',     label: 'Confirmed' },
-    { key: 'preparing',     label: 'Preparing' },
-    { key: 'ready',         label: 'Ready' },
-    { key: 'shipped',       label: 'Shipped' },
-    { key: 'delivered',     label: 'Delivered' },
-    { key: 'returned',      label: 'Returned' },
-    { key: 'awaiting_pickup', label: 'Awaiting' },
+    { key: 'all',           label: t('orders.all','All') },
+    { key: 'new_order',     label: t('statusMgmt.new_order','New') },
+    { key: 'pending',       label: t('orders.pending','Pending') },
+    { key: 'failed_call_1', label: t('statusMgmt.failed_call_1','Call Failed 1') },
+    { key: 'failed_call_2', label: t('statusMgmt.failed_call_2','Call Failed 2') },
+    { key: 'failed_call_3', label: t('statusMgmt.failed_call_3','Call Failed 3') },
+    { key: 'confirmed',     label: t('orders.confirmed','Confirmed') },
+    { key: 'preparing',     label: t('orders.preparing','Preparing') },
+    { key: 'ready',         label: t('statusMgmt.ready','Ready') },
+    { key: 'shipped',       label: t('orders.shipped','Shipped') },
+    { key: 'delivered',     label: t('orders.delivered','Delivered') },
+    { key: 'returned',      label: t('orders.returned','Returned') },
+    { key: 'awaiting_pickup', label: t('statusMgmt.awaiting_pickup','Awaiting') },
   ];
 
   const filteredOrders = useMemo(() => {
@@ -795,32 +795,32 @@ export default function StoreOrders() {
 
       {/* Filters card */}
       {!isPreparingPage && <div className="glass-card-solid p-4 mb-4">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">All statuses</p>
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">{t('orders.allStatuses','All statuses')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Status</label>
-            <select value={filter} onChange={e => setFilter(e.target.value)} disabled={isPreparingPage} title={isPreparingPage ? 'Locked to Preparing on this page' : ''} className={`input-field !py-2 text-sm w-full ${isPreparingPage ? 'opacity-60 cursor-not-allowed' : ''}`}>
-              <option value="all">All statuses</option>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.status','Status')}</label>
+            <select value={filter} onChange={e => setFilter(e.target.value)} disabled={isPreparingPage} title={isPreparingPage ? t('orders.lockedPreparing','Locked to Preparing on this page') : ''} className={`input-field !py-2 text-sm w-full ${isPreparingPage ? 'opacity-60 cursor-not-allowed' : ''}`}>
+              <option value="all">{t('orders.allStatuses','All statuses')}</option>
               {allStatuses.map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Date: Oldest</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateOldest','Date: Oldest')}</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0" />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Date: Newest</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateNewest','Date: Newest')}</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0" />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Search</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('common.search','Search')}</label>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-              <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder="Search orders..." value={search} onChange={e => setSearch(e.target.value)}/>
+              <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder={t('orders.searchOrders','Search orders...')} value={search} onChange={e => setSearch(e.target.value)}/>
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Rows per page</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.rowsPerPage','Rows per page')}</label>
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="input-field !py-2 text-sm w-full">
               {[10,20,25,50,100].map(n => <option key={n} value={n}>{n} results</option>)}
               <option value={0}>All</option>
@@ -1035,9 +1035,9 @@ export default function StoreOrders() {
               )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
             </div></div>
           </div>
-          <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">Export</span></button>
-          <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold shrink-0"><Printer size={12}/><span className="hidden sm:inline">Print</span></button>
-          <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold shrink-0"><Trash2 size={12}/><span className="hidden sm:inline">Delete</span></button>
+          <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
+          <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold shrink-0"><Printer size={12}/><span className="hidden sm:inline">{t('orders.print','Print')}</span></button>
+          <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold shrink-0"><Trash2 size={12}/><span className="hidden sm:inline">{t('common.delete','Delete')}</span></button>
           <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg shrink-0"><X size={14}/></button>
         </div>
       )}
@@ -1315,21 +1315,21 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     shipping_method: t('orders.qa.shippingMethod','Shipping Method'),
     totals: t('orders.qa.totals','Totals Breakdown'),
     processed_at: t('orders.qa.processedAt','Processed At'),
-    financial: 'Financial Status',
-    currency: 'Currency',
-    discount: 'Discount Code',
-    source: 'Created Via',
-    billing: 'Billing Address',
-    tracking: 'Tracking Number',
-    notes: 'Notes',
-  }[type] || 'Details';
+    financial: t('col.financialStatus','Financial Status'),
+    currency: t('col.currency','Currency'),
+    discount: t('col.discountCode','Discount Code'),
+    source: t('col.createdVia','Created Via'),
+    billing: t('orders.qa.billing','Billing Address'),
+    tracking: t('col.trackingNumber','Tracking Number'),
+    notes: t('col.notes','Notes'),
+  }[type] || t('orders.qa.details','Details');
 
   const wrap = (body) => (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="p-5 border-b flex items-start justify-between gap-3 sticky top-0 bg-white z-10">
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order {o.order_number}</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('orders.orderNumber','Order #')}{o.order_number}</p>
             <h3 className="text-lg font-black text-gray-900">{title}</h3>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0"><X size={16}/></button>
