@@ -49,7 +49,7 @@ const ALL_COLUMNS = [
   { key: 'payment_method',   label: 'Payment',          tKey: 'col.payment' },
 ];
 const DEFAULT_COLUMNS = ['order','products','customer_name','phone','status','transfer','wilaya','commune','preferred_company','shipping_method','total','financial_status','payment_method','notes'];
-const PREPARING_COLUMNS = ['order','products','customer_name','phone','wilaya','commune','status','notes'];
+const PREPARING_COLUMNS = DEFAULT_COLUMNS;
 
 const statusConfig = {
   new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW' },
@@ -1338,7 +1338,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
           {body}
           <div className="pt-3 border-t">
             <button onClick={onOpenFullDetail} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 flex items-center justify-center gap-1.5">
-              <ExternalLink size={12}/>Open full order detail
+              <ExternalLink size={12}/>{t('orders.qa.openFull','Open full order detail')}
             </button>
           </div>
         </div>
@@ -1358,7 +1358,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     return wrap(
       <div className="space-y-3">
         {o.first_image ? <img src={o.first_image} alt="" className="w-full rounded-2xl object-cover max-h-80 border border-gray-200"/> : <div className="w-full h-64 rounded-2xl bg-gray-100 flex items-center justify-center"><ImgIcon size={48} className="text-gray-300"/></div>}
-        <p className="text-xs text-gray-500 text-center">First product image for this order.</p>
+        <p className="text-xs text-gray-500 text-center">{t('orders.qa.firstImage','First product image for this order.')}</p>
       </div>
     );
   }
@@ -1368,7 +1368,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     const cap = (s) => typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s;
     return wrap(
       <div className="space-y-2">
-        {items.length === 0 && <p className="text-sm text-gray-500 text-center py-6">No items.</p>}
+        {items.length === 0 && <p className="text-sm text-gray-500 text-center py-6">{t('orders.qa.noItems','No items.')}</p>}
         {items.map((it,i) => {
           const img = it.product_image || it.image || (o.first_image && i === 0 ? o.first_image : null);
           let v = it.variant_info ?? it.variant;
@@ -1433,11 +1433,11 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
             const{orderApi}=await import('../../utils/api');
             const storeId=o.store_id||o.shop_id||'';
             await orderApi.archive(storeId, o.id, !o.is_archived);
-            toast.success(o.is_archived?'Restored from archive':'Archived');
+            toast.success(o.is_archived?t('orders.qa.restoredArchive','Restored from archive'):t('orders.qa.archived','Archived'));
             onClose();
           } catch { toast.error('Failed'); }
         }} className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${o.is_archived?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}>
-          {o.is_archived?'📤 Restore from archive':'📦 Archive order'}
+          {o.is_archived?t('orders.qa.restoreArchive','📤 Restore from archive'):t('orders.qa.archiveOrder','📦 Archive order')}
         </button>
       </div>
     );
@@ -1477,14 +1477,14 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'tracking') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Tracking Number</label>
-        <input defaultValue={o.tracking_number || ''} onChange={set('tracking_number')} className="input-field w-full font-mono" placeholder="Enter tracking number"/>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Delivery Company</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.trackingNumber','Tracking Number')}</label>
+        <input defaultValue={o.tracking_number || ''} onChange={set('tracking_number')} className="input-field w-full font-mono" placeholder={t('orders.qa.enterTracking','Enter tracking number')}/>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.deliveryCompany','Delivery Company')}</label>
         <select defaultValue={o.delivery_company_id || ''} onChange={set('delivery_company_id')} className="input-field w-full">
-          <option value="">— None —</option>
+          <option value="">{t('orders.qa.none','— None —')}</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm">Save</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm">{t('common.save','Save')}</button>
       </div>
     );
   }
@@ -1492,9 +1492,9 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'notes') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Order Notes</label>
-        <textarea defaultValue={o.notes || ''} onChange={set('notes')} rows={6} className="input-field w-full" placeholder="Private note about this order..."/>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm">Save Note</button>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.orderNotes','Order Notes')}</label>
+        <textarea defaultValue={o.notes || ''} onChange={set('notes')} rows={6} className="input-field w-full" placeholder={t('orders.qa.notePlaceholder','Private note about this order...')}/>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm">{t('orders.qa.saveNote','Save Note')}</button>
       </div>
     );
   }
@@ -1502,17 +1502,17 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'customer') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Customer Name</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.customerName','Customer Name')}</label>
         <input defaultValue={o.customer_name || ''} onChange={set('customer_name')} className="input-field w-full"/>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Phone</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.phone','Phone')}</label>
         <input defaultValue={o.customer_phone || ''} onChange={set('customer_phone')} className="input-field w-full font-mono"/>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Email</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.email','Email')}</label>
         <input defaultValue={o.customer_email || ''} onChange={set('customer_email')} className="input-field w-full"/>
         <div className="flex gap-2 pt-2">
-          {o.customer_phone && <a href={`tel:${o.customer_phone}`} className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><Phone size={12}/>Call</a>}
-          {waLink(o.customer_phone) && <a href={waLink(o.customer_phone)} target="_blank" rel="noreferrer" className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><MessageCircle size={12}/>WhatsApp</a>}
+          {o.customer_phone && <a href={`tel:${o.customer_phone}`} className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><Phone size={12}/>{t('orders.qa.call','Call')}</a>}
+          {waLink(o.customer_phone) && <a href={waLink(o.customer_phone)} target="_blank" rel="noreferrer" className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><MessageCircle size={12}/>{t('orders.qa.whatsapp','WhatsApp')}</a>}
         </div>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">Save</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">{t('common.save','Save')}</button>
       </div>
     );
   }
@@ -1522,13 +1522,13 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     return wrap(
       <div className="space-y-3">
         <div className="p-4 rounded-2xl bg-gray-50 text-center">
-          <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Customer Phone</p>
+          <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">{t('orders.qa.customerPhone','Customer Phone')}</p>
           <p className="font-mono text-2xl font-black">{o.customer_phone || '—'}</p>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <a href={`tel:${o.customer_phone}`} className="py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex flex-col items-center gap-1"><Phone size={14}/>Call</a>
-          {link && <a href={link} target="_blank" rel="noreferrer" className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex flex-col items-center gap-1"><MessageCircle size={14}/>WhatsApp</a>}
-          <button onClick={() => copy(o.customer_phone || '')} className="py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex flex-col items-center gap-1"><Copy size={14}/>Copy</button>
+          <a href={`tel:${o.customer_phone}`} className="py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex flex-col items-center gap-1"><Phone size={14}/>{t('orders.qa.call','Call')}</a>
+          {link && <a href={link} target="_blank" rel="noreferrer" className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex flex-col items-center gap-1"><MessageCircle size={14}/>{t('orders.qa.whatsapp','WhatsApp')}</a>}
+          <button onClick={() => copy(o.customer_phone || '')} className="py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex flex-col items-center gap-1"><Copy size={14}/>{t('orders.qa.copy','Copy')}</button>
         </div>
       </div>
     );
@@ -1548,13 +1548,13 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     })();
     return wrap(
       <div className="space-y-3">
-        {!o.shipping_city && <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium">Commune is required for carrier dispatch. Please fill in the City (Commune) field.</div>}
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Street</label>
+        {!o.shipping_city && <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium">{t('orders.qa.communeRequired','Commune is required for carrier dispatch. Please fill in the City (Commune) field.')}</div>}
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.street','Street')}</label>
         <input defaultValue={o.shipping_address || ''} onChange={set('shipping_address')} className="input-field w-full"/>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">City (Commune) *</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className={`input-field w-full ${!o.shipping_city ? 'border-amber-400 ring-1 ring-amber-300' : ''}`} placeholder="Required for dispatch"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.cityCommune','City (Commune) *')}</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className={`input-field w-full ${!o.shipping_city ? 'border-amber-400 ring-1 ring-amber-300' : ''}`} placeholder={t('orders.qa.requiredForDispatch','Required for dispatch')}/></div>
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase">Wilaya</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.wilaya','Wilaya')}</label>
             <input defaultValue={o.shipping_wilaya || ''} onChange={set('shipping_wilaya')} className="input-field w-full"/>
             {(o.shipping_wilaya_code || wnFromName) && (
               <p className="text-[10px] text-gray-400 mt-1">N°: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{o.shipping_wilaya_code || wnFromName}</span></p>
@@ -1562,10 +1562,10 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">Zip</label><input defaultValue={o.shipping_zip || ''} onChange={set('shipping_zip')} className="input-field w-full font-mono"/></div>
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">N° Wilaya</label><input defaultValue={o.shipping_wilaya_code || wnFromName || ''} onChange={set('shipping_wilaya_code')} className="input-field w-full font-mono" placeholder="01-58"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.zip','Zip')}</label><input defaultValue={o.shipping_zip || ''} onChange={set('shipping_zip')} className="input-field w-full font-mono"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.wilayaNumber','N° Wilaya')}</label><input defaultValue={o.shipping_wilaya_code || wnFromName || ''} onChange={set('shipping_wilaya_code')} className="input-field w-full font-mono" placeholder="01-58"/></div>
         </div>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">Save Address</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">{t('orders.qa.saveAddress','Save Address')}</button>
       </div>
     );
   }
@@ -1573,17 +1573,17 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'billing') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Billing Name</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.billingName','Billing Name')}</label>
         <input defaultValue={o.billing_name || o.customer_name || ''} onChange={set('billing_name')} className="input-field w-full"/>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Street</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.street','Street')}</label>
         <input defaultValue={o.billing_street || o.billing_address || ''} onChange={set('billing_street')} className="input-field w-full"/>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">City</label><input defaultValue={o.billing_city || ''} onChange={set('billing_city')} className="input-field w-full"/></div>
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">Zip</label><input defaultValue={o.billing_zip || ''} onChange={set('billing_zip')} className="input-field w-full font-mono"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.city','City')}</label><input defaultValue={o.billing_city || ''} onChange={set('billing_city')} className="input-field w-full"/></div>
+          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.zip','Zip')}</label><input defaultValue={o.billing_zip || ''} onChange={set('billing_zip')} className="input-field w-full font-mono"/></div>
         </div>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Country</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.country','Country')}</label>
         <input defaultValue={o.billing_country || 'DZ'} onChange={set('billing_country')} className="input-field w-full"/>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm">Save Billing</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm">{t('orders.qa.saveBilling','Save Billing')}</button>
       </div>
     );
   }
@@ -1591,7 +1591,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'shipping_method') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Shipping Method</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.shippingMethod','Shipping Method')}</label>
         <div className="grid grid-cols-2 gap-2">
           {['home','desk'].map(m => {
             const active = (o.shipping_type || 'home') === m || (m === 'desk' && o.shipping_type === 'stop_desk');
@@ -1599,14 +1599,14 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
               <button key={m} onClick={() => { onSaveField({ shipping_type: m }); onClose(); }}
                 className={`py-4 rounded-xl font-bold text-xs flex flex-col items-center gap-1 ${active ? 'bg-emerald-500 text-white ring-2 ring-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                 {m === 'home' ? <Home size={18}/> : <Package size={18}/>}
-                {m === 'home' ? 'Home Delivery' : 'Stop Desk'}
+                {m === 'home' ? t('checkout.homeDelivery','Home Delivery') : t('checkout.deskDelivery','Stop Desk')}
               </button>
             );
           })}
         </div>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Shipping Cost ({cur})</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.shippingCost','Shipping Cost')} ({cur})</label>
         <input type="number" defaultValue={o.shipping_cost || 0} onChange={set('shipping_cost')} className="input-field w-full"/>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">Save</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">{t('common.save','Save')}</button>
       </div>
     );
   }
@@ -1614,12 +1614,12 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'totals') {
     return wrap(
       <div className="space-y-1">
-        {row('Subtotal', fmtMoney(o.subtotal, cur))}
-        {row('Taxes', fmtMoney(o.tax_total || o.taxes || 0, cur))}
-        {row('Shipping Cost', fmtMoney(o.shipping_cost, cur))}
-        {row('Discount', fmtMoney(o.discount_total || o.discount_amount || o.discount || 0, cur))}
-        {row('Total', <span className="font-black text-lg text-emerald-600">{fmtMoney(o.total, cur)}</span>)}
-        {row('Currency', o.currency || 'DZD')}
+        {row(t('orders.subtotal','Subtotal'), fmtMoney(o.subtotal, cur))}
+        {row(t('col.taxes','Taxes'), fmtMoney(o.tax_total || o.taxes || 0, cur))}
+        {row(t('col.shippingCost','Shipping Cost'), fmtMoney(o.shipping_cost, cur))}
+        {row(t('orders.discount','Discount'), fmtMoney(o.discount_total || o.discount_amount || o.discount || 0, cur))}
+        {row(t('orders.total','Total'), <span className="font-black text-lg text-emerald-600">{fmtMoney(o.total, cur)}</span>)}
+        {row(t('col.currency','Currency'), o.currency || 'DZD')}
       </div>
     );
   }
@@ -1628,10 +1628,10 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     const d = o.processed_at || o.updated_at;
     return wrap(
       <div className="space-y-3">
-        {row('Created', new Date(o.created_at).toLocaleString())}
-        {row('Last Updated', o.updated_at ? new Date(o.updated_at).toLocaleString() : '—')}
-        {row('Processed', d ? new Date(d).toLocaleString() : 'Not processed')}
-        {!o.processed_at && <button onClick={() => { onSaveField({ processed_at: new Date().toISOString() }); onClose(); }} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">Mark as Processed Now</button>}
+        {row(t('orders.qa.created','Created'), new Date(o.created_at).toLocaleString())}
+        {row(t('orders.qa.lastUpdated','Last Updated'), o.updated_at ? new Date(o.updated_at).toLocaleString() : '—')}
+        {row(t('orders.qa.processed','Processed'), d ? new Date(d).toLocaleString() : t('orders.qa.notProcessed','Not processed'))}
+        {!o.processed_at && <button onClick={() => { onSaveField({ processed_at: new Date().toISOString() }); onClose(); }} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">{t('orders.qa.markProcessed','Mark as Processed Now')}</button>}
       </div>
     );
   }
@@ -1669,11 +1669,11 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   if (type === 'discount') {
     return wrap(
       <div className="space-y-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Discount Code</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.discountCode','Discount Code')}</label>
         <input defaultValue={o.discount_code || ''} onChange={set('discount_code')} className="input-field w-full uppercase font-mono" placeholder="SUMMER10"/>
-        <label className="text-[10px] font-bold text-gray-400 uppercase">Discount Amount ({cur})</label>
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.discountAmount','Discount Amount')} ({cur})</label>
         <input type="number" defaultValue={o.discount_total || 0} onChange={set('discount_total')} className="input-field w-full"/>
-        <button onClick={save} className="w-full py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-sm">Save Discount</button>
+        <button onClick={save} className="w-full py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-sm">{t('orders.qa.saveDiscount','Save Discount')}</button>
       </div>
     );
   }
@@ -1698,18 +1698,18 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
     return wrap(
       <div className="space-y-3">
         <div className="p-4 rounded-2xl bg-gray-50 text-center">
-          <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Payment Method</p>
+          <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">{t('orders.paymentMethod','Payment Method')}</p>
           <p className="text-xl font-black text-gray-900">{method}</p>
         </div>
         {o.receipt_image && (
           <div className="space-y-2">
-            <p className="text-[10px] font-bold text-gray-400 uppercase">Payment Receipt</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.paymentReceipt','Payment Receipt')}</p>
             <img src={o.receipt_image} alt="Receipt" className="w-full rounded-2xl border border-gray-200 max-h-96 object-contain bg-white"/>
           </div>
         )}
-        {o.payment_reference && row('Reference', o.payment_reference)}
-        {row('Status', (o.payment_status || 'pending').toUpperCase())}
-        {row('Total', fmtMoney(o.total, cur))}
+        {o.payment_reference && row(t('orders.qa.reference','Reference'), o.payment_reference)}
+        {row(t('orders.status','Status'), (o.payment_status || 'pending').toUpperCase())}
+        {row(t('orders.total','Total'), fmtMoney(o.total, cur))}
       </div>
     );
   }
@@ -1717,10 +1717,10 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   // Default: generic order summary fallback.
   return wrap(
     <div>
-      {row('Order N', o.order_number)}
-      {row('Customer', o.customer_name)}
-      {row('Phone', o.customer_phone)}
-      {row('Total', fmtMoney(o.total, cur))}
+      {row(t('col.order','Order N'), o.order_number)}
+      {row(t('orders.customer','Customer'), o.customer_name)}
+      {row(t('orders.phone','Phone'), o.customer_phone)}
+      {row(t('orders.total','Total'), fmtMoney(o.total, cur))}
     </div>
   );
 }
