@@ -884,10 +884,10 @@ export default function Storefront() {
   // Owner-customised scrollbar (Settings → Customization → Scrollbar Studio).
   const sb = store.scrollbar || {};
   const sbCss = sb.enabled !== false ? `
-    .storefront-scope::-webkit-scrollbar,.storefront-scope *::-webkit-scrollbar{width:${sb.width??8}px;height:${sb.height??8}px;}
-    .storefront-scope::-webkit-scrollbar-track,.storefront-scope *::-webkit-scrollbar-track{background:${sb.track||'#f3f4f6'};border-radius:${sb.radius??8}px;}
-    .storefront-scope::-webkit-scrollbar-thumb,.storefront-scope *::-webkit-scrollbar-thumb{background:${sb.thumb||'#9ca3af'};border-radius:${sb.radius??8}px;}
-    .storefront-scope{scrollbar-width:${(sb.width??8)<3?'none':'thin'};scrollbar-color:${sb.thumb||'#9ca3af'} ${sb.track||'#f3f4f6'};}
+    html::-webkit-scrollbar,body::-webkit-scrollbar,.storefront-scope::-webkit-scrollbar,.storefront-scope *::-webkit-scrollbar{width:${sb.width??8}px;height:${sb.height??8}px;}
+    html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,.storefront-scope::-webkit-scrollbar-track,.storefront-scope *::-webkit-scrollbar-track{background:${sb.track||'#f3f4f6'};border-radius:${sb.radius??8}px;}
+    html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb,.storefront-scope::-webkit-scrollbar-thumb,.storefront-scope *::-webkit-scrollbar-thumb{background:${sb.thumb||'#9ca3af'};border-radius:${sb.radius??8}px;}
+    html,body,.storefront-scope{scrollbar-width:${(sb.width??8)<3?'none':'thin'};scrollbar-color:${sb.thumb||'#9ca3af'} ${sb.track||'#f3f4f6'};}
   ` : '';
 
   return (

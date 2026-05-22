@@ -12,43 +12,41 @@ import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, Credi
 
 // All columns available to toggle / reorder.
 const ALL_COLUMNS = [
-  { key: 'photo',            label: 'Photo' },
-  { key: 'order',            label: 'Order N' },
-  { key: 'products',         label: 'Products' },
-  { key: 'wilaya',           label: 'Wilaya' },
-  { key: 'wilaya_number',    label: 'N° Wilaya' },
-  { key: 'commune',          label: 'Commune' },
-  { key: 'customer_name',    label: 'Name' },
-
-  { key: 'phone',            label: 'Phone N' },
-  { key: 'transfer',         label: 'Transfer' },
-
-  { key: 'status',           label: 'Status' },
-  { key: 'shipping_method',  label: 'Shipping Method' },
-  { key: 'shipping_cost',    label: 'Shipping Cost' },
-  { key: 'total',            label: 'Total' },
-  { key: 'processed_at',     label: 'Processed At' },
-  { key: 'financial_status', label: 'Financial Status' },
-  { key: 'currency',         label: 'Currency' },
-  { key: 'whatsapp',         label: 'WhatsApp' },
-  { key: 'subtotal',         label: 'Sub Total' },
-  { key: 'taxes',            label: 'Taxes' },
-  { key: 'discount_code',    label: 'Discount Code' },
-  { key: 'created_via',      label: 'Created Via' },
-  { key: 'email',            label: 'Email' },
-  { key: 'billing_name',     label: 'Billing Name' },
-  { key: 'billing_street',   label: 'Billing Street' },
-  { key: 'billing_city',     label: 'Billing City' },
-  { key: 'billing_zip',      label: 'Billing Zip' },
-  { key: 'billing_country',  label: 'Billing Country' },
-  { key: 'shipping_street',  label: 'Shipping Street' },
-  { key: 'shipping_city',    label: 'Shipping City' },
-  { key: 'shipping_zip',     label: 'Shipping Zip' },
-  { key: 'tracking_number',  label: 'Tracking Number' },
-  { key: 'company_name',     label: 'Company Name' },
-  { key: 'preferred_company', label: 'Preferred Delivery' },
-  { key: 'notes',            label: 'Notes' },
-  { key: 'payment_method',   label: 'Payment' },
+  { key: 'photo',            label: 'Photo',            tKey: 'col.photo' },
+  { key: 'order',            label: 'Order N',          tKey: 'col.order' },
+  { key: 'products',         label: 'Products',         tKey: 'col.products' },
+  { key: 'wilaya',           label: 'Wilaya',           tKey: 'col.wilaya' },
+  { key: 'wilaya_number',    label: 'N° Wilaya',        tKey: 'col.wilayaNumber' },
+  { key: 'commune',          label: 'Commune',          tKey: 'col.commune' },
+  { key: 'customer_name',    label: 'Name',             tKey: 'col.customerName' },
+  { key: 'phone',            label: 'Phone N',          tKey: 'col.phone' },
+  { key: 'transfer',         label: 'Transfer',         tKey: 'col.transfer' },
+  { key: 'status',           label: 'Status',           tKey: 'col.status' },
+  { key: 'shipping_method',  label: 'Shipping Method',  tKey: 'col.shippingMethod' },
+  { key: 'shipping_cost',    label: 'Shipping Cost',    tKey: 'col.shippingCost' },
+  { key: 'total',            label: 'Total',            tKey: 'col.total' },
+  { key: 'processed_at',     label: 'Processed At',     tKey: 'col.processedAt' },
+  { key: 'financial_status', label: 'Financial Status', tKey: 'col.financialStatus' },
+  { key: 'currency',         label: 'Currency',         tKey: 'col.currency' },
+  { key: 'whatsapp',         label: 'WhatsApp',         tKey: 'col.whatsapp' },
+  { key: 'subtotal',         label: 'Sub Total',        tKey: 'col.subtotal' },
+  { key: 'taxes',            label: 'Taxes',            tKey: 'col.taxes' },
+  { key: 'discount_code',    label: 'Discount Code',    tKey: 'col.discountCode' },
+  { key: 'created_via',      label: 'Created Via',      tKey: 'col.createdVia' },
+  { key: 'email',            label: 'Email',            tKey: 'col.email' },
+  { key: 'billing_name',     label: 'Billing Name',     tKey: 'col.billingName' },
+  { key: 'billing_street',   label: 'Billing Street',   tKey: 'col.billingStreet' },
+  { key: 'billing_city',     label: 'Billing City',     tKey: 'col.billingCity' },
+  { key: 'billing_zip',      label: 'Billing Zip',      tKey: 'col.billingZip' },
+  { key: 'billing_country',  label: 'Billing Country',  tKey: 'col.billingCountry' },
+  { key: 'shipping_street',  label: 'Shipping Street',  tKey: 'col.shippingStreet' },
+  { key: 'shipping_city',    label: 'Shipping City',    tKey: 'col.shippingCity' },
+  { key: 'shipping_zip',     label: 'Shipping Zip',     tKey: 'col.shippingZip' },
+  { key: 'tracking_number',  label: 'Tracking Number',  tKey: 'col.trackingNumber' },
+  { key: 'company_name',     label: 'Company Name',     tKey: 'col.companyName' },
+  { key: 'preferred_company', label: 'Preferred Delivery', tKey: 'col.preferredCompany' },
+  { key: 'notes',            label: 'Notes',            tKey: 'col.notes' },
+  { key: 'payment_method',   label: 'Payment',          tKey: 'col.payment' },
 ];
 const DEFAULT_COLUMNS = ['order','products','customer_name','phone','status','transfer','wilaya','commune','preferred_company','shipping_method','total','financial_status','payment_method','notes'];
 const PREPARING_COLUMNS = ['order','products','customer_name','phone','wilaya','commune','status','notes'];
@@ -649,12 +647,13 @@ export default function StoreOrders() {
 
       case 'financial_status': {
         const ps = (o.payment_status || 'pending').toLowerCase();
+        const psLabel = ps === 'pending' ? t('orders.verification','Verification') : ps === 'paid' ? t('orders.paid','Paid') : ps === 'refunded' ? t('orders.refunded','Refunded') : ps === 'failed' ? t('orders.failed','Failed') : ps;
         const cls = ps === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : ps === 'refunded' ? 'bg-orange-50 text-orange-700 border-orange-200'
                   : ps === 'failed' ? 'bg-red-50 text-red-700 border-red-200'
                   : 'bg-amber-50 text-amber-700 border-amber-200';
         return <td className="px-3 py-3">{cellBtn(o, 'financial',
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase ${cls}`}>{ps}</span>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase ${cls}`}>{psLabel}</span>
         )}</td>;
       }
 
@@ -959,7 +958,7 @@ export default function StoreOrders() {
                       >
                         <span className="flex items-center gap-1.5">
                           <GripVertical size={10} className="text-gray-300 group-hover:text-gray-500"/>
-                          {col.label}
+                          {t(col.tKey, col.label)}
                         </span>
                         {/* Right-edge resize handle */}
                         <span
@@ -1022,6 +1021,8 @@ export default function StoreOrders() {
               );})}
             </div></div>
           </div>
+          {/* Auto transfer – uses each order's preferred delivery company */}
+          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;for(const o of eligible){try{await api.post(`/manage/stores/${currentStore.id}/orders/${o.id}/dispatch`,{delivery_company_id:o.preferred_delivery_company_id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${eligible.length} auto-transferred`);clearSelection();loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
           {/* Bulk transfer to delivery company */}
           <div className="relative group shrink-0">
             <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
@@ -1747,7 +1748,7 @@ function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
   useEffect(() => {
     import('../../data/wilayaCities').then(m => setWilayaCities(m.default || {})).catch(() => {});
     // Load shipping wilayas for auto-filling delivery cost
-    if (storeId) api.get(`/manage/stores/${storeId}/shipping-wilayas`).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
+    if (storeId) api.get(`/manage/stores/${storeId}/shipping-wilayas`).then(r => { const d = r.data; setShippingWilayas(Array.isArray(d) ? d : Array.isArray(d?.wilayas) ? d.wilayas : []); }).catch(() => {});
   }, [storeId]);
   // Auto-fill shipping cost when wilaya, shipping type, or delivery company changes
   useEffect(() => {
