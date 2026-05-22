@@ -320,12 +320,26 @@ export default function StoreOffers(){
                       </div>
                     </div>
                   </div>
-                  {/* Timer preview */}
-                  <div className="flex items-center justify-center gap-2">
-                    {['15','33','42'].map((n,i)=>(
-                      <div key={i} className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black" style={{backgroundColor:form.timer_bg||'#1F2937',color:form.timer_text_color||'#FFF'}}>{n}</div>
-                    ))}
-                  </div>
+                  {/* Timer preview — uses the actual hours/minutes set for this offer */}
+                  {(()=>{
+                    const totalSec=((parseInt(form.offer_hours)||0)*3600)+((parseInt(form.offer_minutes)||0)*60);
+                    const h=Math.floor(totalSec/3600);
+                    const m=Math.floor((totalSec%3600)/60);
+                    const s=totalSec%60;
+                    const pad=v=>String(v).padStart(2,'0');
+                    const labels=[t('offers.timerHoursLabel','HRS'),t('offers.timerMinLabel','MIN'),t('offers.timerSecLabel','SEC')];
+                    const vals=totalSec>0?[pad(h),pad(m),pad(s)]:['00','00','00'];
+                    return(
+                      <div className="flex items-center justify-center gap-3">
+                        {vals.map((v,i)=>(
+                          <div key={i} className="flex flex-col items-center gap-0.5">
+                            <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-black" style={{backgroundColor:form.timer_bg||'#1F2937',color:form.timer_text_color||'#FFF'}}>{v}</div>
+                            <span className="text-[8px] font-bold text-gray-400 uppercase">{labels[i]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </>}
               </div>
             </div>
