@@ -94,7 +94,7 @@ function wilayaCodeFor(o) {
   return '';
 }
 function waLink(phone) { if (!phone) return null; const clean = String(phone).replace(/[^\d+]/g,''); return `https://wa.me/${clean.replace(/^\+/,'')}`; }
-function copy(text) { try { navigator.clipboard.writeText(text); toast.success('Copied'); } catch { toast.error('Copy failed'); } }
+function copy(text) { try { navigator.clipboard.writeText(text); toast.success('✓'); } catch { toast.error('✗'); } }
 
 export default function StoreOrders() {
   const { t } = useTranslation();
@@ -174,7 +174,7 @@ export default function StoreOrders() {
     };
   }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
-    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v1') || 'null'); return Array.isArray(s) && s.length ? s : PREPARING_COLUMNS; } catch { return PREPARING_COLUMNS; } }
+    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v2') || 'null'); return Array.isArray(s) && s.length ? s : PREPARING_COLUMNS; } catch { return PREPARING_COLUMNS; } }
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
@@ -182,12 +182,12 @@ export default function StoreOrders() {
   const isPreparingRef = useRef(isPreparingPage);
   isPreparingRef.current = isPreparingPage;
   useEffect(() => {
-    if (isPreparingRef.current) { try { localStorage.setItem('preparing.columns.v1', JSON.stringify(activeColumns)); } catch {} }
+    if (isPreparingRef.current) { try { localStorage.setItem('preparing.columns.v2', JSON.stringify(activeColumns)); } catch {} }
     else if (activeColumns.length > 0) { try { localStorage.setItem('orders.columns.v6', JSON.stringify(activeColumns)); } catch {} }
   }, [activeColumns]);
   // Sync columns when switching between orders/preparing pages
   useEffect(() => {
-    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v1') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : PREPARING_COLUMNS); } catch { setActiveColumns(PREPARING_COLUMNS); } }
+    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v2') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : PREPARING_COLUMNS); } catch { setActiveColumns(PREPARING_COLUMNS); } }
     else { try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS); } catch { setActiveColumns(DEFAULT_COLUMNS); } }
   }, [isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
@@ -282,23 +282,23 @@ export default function StoreOrders() {
       await orderApi.updateStatus(currentStore.id, orderId, { status });
       toast.success(`${t('orders.orderArrow','Order')} → ${sl(statusConfig[status]) || status}`);
       if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
-    } catch { toast.error('Failed'); loadOrders(); /* roll back from server on failure */ }
+    } catch { toast.error(t('store.failed','Failed')); loadOrders(); /* roll back from server on failure */ }
     setUpdatingStatus(null);
   };
 
   const viewOrder = async (orderId) => {
     try { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
-    catch { toast.error('Failed'); }
+    catch { toast.error(t('store.failed','Failed')); }
   };
 
   // Save any field of an order via PATCH.
   const saveOrderField = async (orderId, patch) => {
     try {
       await api.patch(`/manage/stores/${currentStore.id}/orders/${orderId}`, patch);
-      toast.success('Saved');
+      toast.success(t('store.saved','Saved'));
       loadOrders();
       if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
-    } catch { toast.error('Failed to save'); }
+    } catch { toast.error(t('store.failedToSave','Failed to save')); }
   };
 
   // Dispatch order: create the parcel on the carrier's platform via API and
@@ -328,8 +328,8 @@ export default function StoreOrders() {
         status: data?.ok !== false ? 'shipped' : o.status,
         tracking_number: data?.tracking_number || o.tracking_number,
       } : o));
-      // Reload from server to ensure columns are not blank after dispatch
-      setTimeout(() => loadOrders(), 800);
+      // Reload from server to ensure columns are fully populated after dispatch
+      setTimeout(() => loadOrders(), 1200);
       if (selectedOrder?.id === orderId) { const { data: o } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(o); }
     } catch (e) {
       toast.dismiss(tid);
@@ -508,7 +508,7 @@ export default function StoreOrders() {
         <script>window.onload=function(){setTimeout(function(){window.print();},500);window.onafterprint=function(){/* keep window open */};};</script>
       </body></html>`;
     const w = window.open('about:blank', '_blank');
-    if (!w) { toast.error('Allow pop-ups to print orders'); return; }
+    if (!w) { toast.error(t('orders.allowPopups','Allow pop-ups to print orders')); return; }
     w.document.open(); w.document.write(html); w.document.close();
     // Prevent auto-close after print dialog
     w.onbeforeunload = null;
@@ -519,7 +519,7 @@ export default function StoreOrders() {
       ...rows.map(o => `${o.order_number},"${o.customer_name||''}",${o.customer_phone||''},${o.shipping_wilaya||''},${o.shipping_city||''},${o.status},${o.shipping_type||''},${o.total},${o.created_at}`)
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'orders.csv'; a.click(); URL.revokeObjectURL(url); toast.success('Exported');
+    const a = document.createElement('a'); a.href = url; a.download = 'orders.csv'; a.click(); URL.revokeObjectURL(url); toast.success(t('orders.exported','Exported'));
   };
 
   const stats = useMemo(() => {
@@ -668,9 +668,9 @@ export default function StoreOrders() {
           <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
             {link ? (
               <a href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-green-500 hover:bg-green-600 text-white">
-                <MessageCircle size={11}/>WhatsApp
+                <MessageCircle size={11}/>{t('orders.qa.whatsapp','WhatsApp')}
               </a>
-            ) : <span className="text-[10px] text-gray-400">No phone</span>}
+            ) : <span className="text-[10px] text-gray-400">{t('orders.noPhone','No phone')}</span>}
           </td>
         );
       }
@@ -837,10 +837,10 @@ export default function StoreOrders() {
         <div className="overflow-x-auto -mx-1 px-1 flex-1 min-w-0">
         <div className="flex items-center gap-2 w-max">
           <button onClick={() => exportCsv(filteredOrders)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-            <Download size={13}/>Export
+            <Download size={13}/>{t('orders.export','Export')}
           </button>
           <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-            <BarChart3 size={13}/>Admin Stats
+            <BarChart3 size={13}/>{t('orders.adminStats','Admin Stats')}
           </button>
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Order row size">
             {[['compact','S'],['normal','M'],['large','L']].map(([k,lbl]) => (
@@ -864,7 +864,7 @@ export default function StoreOrders() {
             moveColumn={moveColumn}
           />
           <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
-            <Plus size={13}/>Create Order
+            <Plus size={13}/>{t('orders.createOrder','Create Order')}
           </button>
         </div>
         </div>
@@ -882,8 +882,8 @@ export default function StoreOrders() {
         ) : pageOrders.length === 0 ? (
           <div className="p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4"><ShoppingBag size={28} className="text-purple-400"/></div>
-            <p className="text-gray-700 font-bold">No orders found</p>
-            <p className="text-xs text-gray-400 mt-1">When your customers place orders, they will appear here.</p>
+            <p className="text-gray-700 font-bold">{t('orders.noOrders','No orders found')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('orders.noOrdersDesc','When your customers place orders, they will appear here.')}</p>
           </div>
         ) : (
           <div className="relative">
@@ -1016,7 +1016,7 @@ export default function StoreOrders() {
                 const dot=ps==='paid'?'bg-emerald-500':ps==='refunded'?'bg-orange-500':ps==='failed'?'bg-red-500':'bg-amber-500';
                 const label=ps.charAt(0).toUpperCase()+ps.slice(1);
                 return(
-                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${label}`);clearSelection();loadOrders();}}
+                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${label}`);clearSelection();await loadOrders();}}
                   className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
                   <span className={`w-2.5 h-2.5 rounded-full ${dot}`}/>{label}
                 </button>
@@ -1024,13 +1024,13 @@ export default function StoreOrders() {
             </div></div>
           </div>
           {/* Auto transfer – uses each order's preferred delivery company */}
-          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;for(const o of eligible){try{await api.post(`/manage/stores/${currentStore.id}/orders/${o.id}/dispatch`,{delivery_company_id:o.preferred_delivery_company_id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${eligible.length} auto-transferred`);clearSelection();loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
+          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;for(const o of eligible){try{await api.post(`/manage/stores/${currentStore.id}/orders/${o.id}/dispatch`,{delivery_company_id:o.preferred_delivery_company_id});ok++;}catch{}}toast.dismiss(tid);if(alreadyTransferred.length>0){toast.success(`${ok}/${eligible.length} auto-transferred (${alreadyTransferred.length} already transferred, skipped)`);}else{toast.success(`${ok}/${eligible.length} auto-transferred`);}clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
           {/* Bulk transfer to delivery company */}
           <div className="relative group shrink-0">
             <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
             <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {companies.length?companies.map(c=>(
-                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;for(const id of ids){try{await api.post(`/manage/stores/${currentStore.id}/orders/${id}/dispatch`,{delivery_company_id:c.id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();loadOrders();}}
+                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;for(const id of ids){try{await api.post(`/manage/stores/${currentStore.id}/orders/${id}/dispatch`,{delivery_company_id:c.id});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();await loadOrders();}}
                   className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
                   <Truck size={10} className="text-emerald-500"/>{c.name}
                 </button>
@@ -1093,14 +1093,14 @@ export default function StoreOrders() {
       {adminStatsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setAdminStatsOpen(false)}>
           <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-black">Admin Stats</h2><button onClick={() => setAdminStatsOpen(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16}/></button></div>
+            <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-black">{t('orders.adminStats','Admin Stats')}</h2><button onClick={() => setAdminStatsOpen(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16}/></button></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 bg-gray-50 rounded-2xl"><p className="text-[10px] font-bold text-gray-400 uppercase">Total</p><p className="text-2xl font-black">{stats.total}</p></div>
-              <div className="p-4 bg-emerald-50 rounded-2xl"><p className="text-[10px] font-bold text-emerald-600 uppercase">Revenue</p><p className="text-2xl font-black text-emerald-700">{stats.revenue.toLocaleString()} <span className="text-xs">DZD</span></p></div>
-              <div className="p-4 bg-amber-50 rounded-2xl"><p className="text-[10px] font-bold text-amber-600 uppercase">Pending</p><p className="text-2xl font-black text-amber-700">{stats.pending}</p></div>
-              <div className="p-4 bg-cyan-50 rounded-2xl"><p className="text-[10px] font-bold text-cyan-600 uppercase">Shipped</p><p className="text-2xl font-black text-cyan-700">{stats.shipped}</p></div>
-              <div className="p-4 bg-emerald-50 rounded-2xl"><p className="text-[10px] font-bold text-emerald-600 uppercase">Delivered</p><p className="text-2xl font-black text-emerald-700">{stats.delivered}</p></div>
-              <div className="p-4 bg-red-50 rounded-2xl"><p className="text-[10px] font-bold text-red-600 uppercase">Cancelled</p><p className="text-2xl font-black text-red-700">{stats.cancelled}</p></div>
+              <div className="p-4 bg-gray-50 rounded-2xl"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.total','Total')}</p><p className="text-2xl font-black">{stats.total}</p></div>
+              <div className="p-4 bg-emerald-50 rounded-2xl"><p className="text-[10px] font-bold text-emerald-600 uppercase">{t('admin.revenue','Revenue')}</p><p className="text-2xl font-black text-emerald-700">{stats.revenue.toLocaleString()} <span className="text-xs">DZD</span></p></div>
+              <div className="p-4 bg-amber-50 rounded-2xl"><p className="text-[10px] font-bold text-amber-600 uppercase">{t('orders.pending','Pending')}</p><p className="text-2xl font-black text-amber-700">{stats.pending}</p></div>
+              <div className="p-4 bg-cyan-50 rounded-2xl"><p className="text-[10px] font-bold text-cyan-600 uppercase">{t('orders.shipped','Shipped')}</p><p className="text-2xl font-black text-cyan-700">{stats.shipped}</p></div>
+              <div className="p-4 bg-emerald-50 rounded-2xl"><p className="text-[10px] font-bold text-emerald-600 uppercase">{t('orders.delivered','Delivered')}</p><p className="text-2xl font-black text-emerald-700">{stats.delivered}</p></div>
+              <div className="p-4 bg-red-50 rounded-2xl"><p className="text-[10px] font-bold text-red-600 uppercase">{t('orders.cancelled','Cancelled')}</p><p className="text-2xl font-black text-red-700">{stats.cancelled}</p></div>
             </div>
           </div>
         </div>
@@ -1111,7 +1111,7 @@ export default function StoreOrders() {
         <CreateOrderModal
           storeId={currentStore?.id}
           onClose={() => setCreateOpen(false)}
-          onCreated={() => { setCreateOpen(false); loadOrders(); toast.success('Order created'); }}
+          onCreated={() => { setCreateOpen(false); loadOrders(); toast.success(t('orders.orderCreated','Order created')); }}
           companies={companies}
         />
       )}
@@ -1154,13 +1154,13 @@ export default function StoreOrders() {
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Customer</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('orders.customer','Customer')}</p>
                   <p className="font-bold flex items-center gap-2"><User size={14} className="text-gray-400"/>{selectedOrder.customer_name}</p>
                   <p className="text-sm text-gray-500 flex items-center gap-2 mt-1"><Phone size={14} className="text-gray-400"/>{selectedOrder.customer_phone}</p>
                   {selectedOrder.customer_email && <p className="text-sm text-gray-500 flex items-center gap-2 mt-1"><Mail size={14} className="text-gray-400"/>{selectedOrder.customer_email}</p>}
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Delivery</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('orders.delivery','Delivery')}</p>
                   <p className="text-sm text-gray-700 flex items-center gap-2"><MapPin size={14} className="text-gray-400"/>{selectedOrder.shipping_address}</p>
                   <p className="text-sm text-gray-500 mt-1">{[selectedOrder.shipping_city, selectedOrder.shipping_wilaya].filter(Boolean).join(', ')}</p>
                   <p className="text-sm mt-2 flex items-center gap-2"><CreditCard size={14} className="text-gray-400"/><span className="uppercase text-xs font-bold">{selectedOrder.payment_method?.replace('_',' ')}</span></p>
@@ -1168,7 +1168,7 @@ export default function StoreOrders() {
               </div>
 
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">Items ({selectedOrder.items?.length || 0})</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">{t('orders.items','Items')} ({selectedOrder.items?.length || 0})</p>
                 <div className="space-y-2">
                   {selectedOrder.items?.map((it,i) => {
                     // Pull every variant detail the order stored: variant_info
@@ -1223,9 +1223,9 @@ export default function StoreOrders() {
               </div>
 
               <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>{parseFloat(selectedOrder.subtotal).toLocaleString()} DZD</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Shipping</span><span>{parseFloat(selectedOrder.shipping_cost).toLocaleString()} DZD</span></div>
-                <div className="flex justify-between font-black text-xl pt-2 border-t"><span>Total</span><span className="text-brand-600">{parseFloat(selectedOrder.total).toLocaleString()} DZD</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('orders.subtotal','Subtotal')}</span><span>{parseFloat(selectedOrder.subtotal).toLocaleString()} DZD</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('orders.shipping','Shipping')}</span><span>{parseFloat(selectedOrder.shipping_cost).toLocaleString()} DZD</span></div>
+                <div className="flex justify-between font-black text-xl pt-2 border-t"><span>{t('orders.total','Total')}</span><span className="text-brand-600">{parseFloat(selectedOrder.total).toLocaleString()} DZD</span></div>
               </div>
 
               {(selectedOrder.status === 'shipped' || selectedOrder.status === 'confirmed' || selectedOrder.status === 'preparing' || selectedOrder.status === 'under_preparation') && (
@@ -1240,11 +1240,11 @@ export default function StoreOrders() {
                         {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                       <div className="flex gap-2">
-                        <input className="input-field !py-2 text-sm flex-1" placeholder="Tracking number" value={trackingForm.tracking_number} onChange={e => setTrackingForm({...trackingForm, tracking_number: e.target.value})}/>
+                        <input className="input-field !py-2 text-sm flex-1" placeholder={t('orders.trackingNumber','Tracking number')} value={trackingForm.tracking_number} onChange={e => setTrackingForm({...trackingForm, tracking_number: e.target.value})}/>
                         <button disabled={!trackingForm.tracking_number || savingTracking} onClick={async () => {
                           setSavingTracking(true);
-                          try { await api.patch(`/manage/stores/${currentStore.id}/orders/${selectedOrder.id}/tracking`, trackingForm); toast.success('Saved'); setTrackingForm({tracking_number:'',delivery_company_id:''}); const { data } = await orderApi.getOne(currentStore.id, selectedOrder.id); setSelectedOrder(data); loadOrders(); }
-                          catch { toast.error('Failed'); }
+                          try { await api.patch(`/manage/stores/${currentStore.id}/orders/${selectedOrder.id}/tracking`, trackingForm); toast.success(t('store.saved','Saved')); setTrackingForm({tracking_number:'',delivery_company_id:''}); const { data } = await orderApi.getOne(currentStore.id, selectedOrder.id); setSelectedOrder(data); loadOrders(); }
+                          catch { toast.error(t('store.failed','Failed')); }
                           setSavingTracking(false);
                         }} className="px-4 py-2 bg-cyan-600 text-white rounded-xl text-xs font-bold disabled:opacity-50 flex items-center gap-1 shrink-0">{savingTracking ? <Loader2 size={12} className="animate-spin"/> : <Truck size={12}/>}Save</button>
                       </div>
@@ -1437,7 +1437,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
             await orderApi.archive(storeId, o.id, !o.is_archived);
             toast.success(o.is_archived?t('orders.qa.restoredArchive','Restored from archive'):t('orders.qa.archived','Archived'));
             onClose();
-          } catch { toast.error('Failed'); }
+          } catch { toast.error(t('store.failed','Failed')); }
         }} className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${o.is_archived?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}>
           {o.is_archived?t('orders.qa.restoreArchive','📤 Restore from archive'):t('orders.qa.archiveOrder','📦 Archive order')}
         </button>
@@ -1896,6 +1896,7 @@ function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
 // containing blocks (header backdrop-blur, transformed wrappers, etc.).
 // ─────────────────────────────────────────────────────────────────────────────
 function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn, moveColumn }) {
+  const { t } = useTranslation();
   const btnRef = useRef(null);
   const [anchor, setAnchor] = useState(null);
   useLayoutEffect(() => {
@@ -1912,7 +1913,7 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
   return (
     <>
       <button ref={btnRef} onClick={() => setOpen(v => !v)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-[11px] font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-wider">
-        <Columns size={13} />Columns<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500 text-white">{activeColumns.length}</span>
+        <Columns size={13} />{t('orders.columns','Columns')}<span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500 text-white">{activeColumns.length}</span>
       </button>
       {open && anchor && createPortal(
         <>
@@ -1935,11 +1936,11 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
             <div className="sticky top-0 bg-white dark:bg-gray-900 p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
               {/* Drag-handle on mobile to indicate it's a bottom sheet */}
               <span className="absolute left-1/2 -translate-x-1/2 top-1.5 w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600 sm:hidden"/>
-              <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mt-1 sm:mt-0">Customize Columns</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mt-1 sm:mt-0">{t('orders.customizeColumns','Customize Columns')}</p>
               <button onClick={() => setOpen(false)} className="w-8 h-8 sm:w-auto sm:h-auto flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X size={16} /></button>
             </div>
             <div className="p-2 overflow-y-auto flex-1 overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Active ({activeColumns.length})</p>
+              <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('orders.activeCol','Active')} ({activeColumns.length})</p>
               {activeColumns.map((key, idx) => {
                 const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
                 return (
@@ -1947,22 +1948,22 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
                     <GripVertical size={12} className="text-gray-300 dark:text-gray-500" />
                     <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={12} /></button>
                     <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={12} /></button>
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{col.label}</span>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{t(col.tKey, col.label)}</span>
                     <button onClick={() => toggleColumn(key)} title="Hide" className="w-7 h-7 flex items-center justify-center rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Eye size={13} /></button>
                   </div>
                 );
               })}
               <div className="border-t border-gray-100 dark:border-gray-700 my-2" />
-              <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Available</p>
+              <p className="px-2 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('orders.availableCol','Available')}</p>
               {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).map(col => (
                 <button key={col.key} onClick={() => toggleColumn(col.key)} className="w-full flex items-center gap-2 px-2 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-left">
                   <Square size={14} className="text-gray-300 dark:text-gray-500" />
-                  <span className="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate">{col.label}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate">{t(col.tKey, col.label)}</span>
                   <Plus size={13} className="text-brand-500"/>
                 </button>
               ))}
               {ALL_COLUMNS.filter(c => !activeColumns.includes(c.key)).length === 0 && (
-                <p className="px-2 py-3 text-[11px] text-gray-400 text-center">All columns are visible.</p>
+                <p className="px-2 py-3 text-[11px] text-gray-400 text-center">{t('orders.allColumnsVisible','All columns are visible.')}</p>
               )}
             </div>
           </div>

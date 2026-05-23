@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Save, Star, X, Loader2, Check, Shield, Zap, Package, Users, ShoppingCart, Bot, BarChart3, Globe, Layout, Code, MessageSquare, Lock, Unlock, Crown, DollarSign, Settings2, Languages, Sparkles, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { platformApi } from '../../utils/api';
@@ -341,6 +342,7 @@ function Toggle({ checked, onChange, label, color = 'brand', isDark }) {
 }
 
 export default function PlansEditor() {
+  const { t } = useTranslation();
   const theme = usePlatformTheme();
   const isDark = theme.mode === 'dark';
   const u = ui(isDark);
@@ -362,17 +364,17 @@ export default function PlansEditor() {
   const save = async (i) => {
     const p = plans[i]; setSavingId(i);
     try {
-      if (p._new) { const { data } = await platformApi.createPlan(p); setPlans(plans.map((pp, idx) => idx === i ? data : pp)); toast.success('Plan created'); }
-      else { const { data } = await platformApi.updatePlan(p.id, p); setPlans(plans.map((pp, idx) => idx === i ? data : pp)); toast.success('Plan updated'); }
-    } catch (e) { toast.error(e.response?.data?.error || 'Failed to save'); }
+      if (p._new) { const { data } = await platformApi.createPlan(p); setPlans(plans.map((pp, idx) => idx === i ? data : pp)); toast.success(t('platform.planCreated','Plan created')); }
+      else { const { data } = await platformApi.updatePlan(p.id, p); setPlans(plans.map((pp, idx) => idx === i ? data : pp)); toast.success(t('platform.planUpdated','Plan updated')); }
+    } catch (e) { toast.error(e.response?.data?.error || t('store.failedToSave','Failed to save')); }
     setSavingId(null);
   };
   const remove = async (i) => {
     const p = plans[i];
-    if (!confirm('Delete this plan?')) return;
+    if (!confirm(t('platform.deletePlanConfirm','Delete this plan?'))) return;
     if (p._new) { setPlans(plans.filter((_, idx) => idx !== i)); return; }
-    try { await platformApi.deletePlan(p.id); setPlans(plans.filter((_, idx) => idx !== i)); toast.success('Deleted'); }
-    catch (e) { toast.error(e.response?.data?.error || 'Failed to delete'); }
+    try { await platformApi.deletePlan(p.id); setPlans(plans.filter((_, idx) => idx !== i)); toast.success(t('store.deleted','Deleted')); }
+    catch (e) { toast.error(e.response?.data?.error || t('store.failed','Failed')); }
   };
 
   const filtered = useMemo(() => {

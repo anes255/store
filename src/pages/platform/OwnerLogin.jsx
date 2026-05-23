@@ -57,7 +57,7 @@ export default function OwnerLogin() {
       const { data } = await api.post('/admin/forgot-password', { phone: forgotPhone.trim() });
       setForgotOtp(data.otp_token); setForgotMasked(data.masked); setForgotStep('code');
       toast.success(t('auth.resetCodeSent', 'Reset code sent via WhatsApp'));
-    } catch (e) { toast.error(e.response?.data?.error || 'Failed to send reset code'); }
+    } catch (e) { toast.error(e.response?.data?.error || t('auth.failedSendCode','Failed to send reset code')); }
     setForgotLoading(false);
   };
 
@@ -76,7 +76,7 @@ export default function OwnerLogin() {
       }
       const { data } = await api.post('/admin/forgot-password/verify', { otp_token: forgotOtp, code: forgotCode });
       setForgotResetToken(data.reset_token); setForgotStep('newpw');
-    } catch (e) { toast.error(e.response?.data?.error || 'Invalid code'); }
+    } catch (e) { toast.error(e.response?.data?.error || t('auth.invalidCode','Invalid code')); }
     setForgotLoading(false);
   };
 
@@ -98,7 +98,7 @@ export default function OwnerLogin() {
       await api.post('/admin/forgot-password/reset', { reset_token: forgotResetToken, new_password: forgotNewPw });
       toast.success(t('auth.pwResetSuccess', 'Password reset successfully! You can now sign in.'));
       closeForgot();
-    } catch (e) { toast.error(e.response?.data?.error || 'Failed to reset password'); }
+    } catch (e) { toast.error(e.response?.data?.error || t('auth.failedResetPassword','Failed to reset password')); }
     setForgotLoading(false);
   };
 
@@ -122,13 +122,13 @@ export default function OwnerLogin() {
       const { data } = await ownerApi.login({ identifier, password });
       if (data.requires_2fa) {
         setTwoFa({ otp_token: data.otp_token, method: data.method, masked: data.masked });
-        toast.success(data.message || `Code sent to your ${data.method === 'email' ? 'email' : 'WhatsApp'}`);
+        toast.success(data.message || t('auth.codeSentMethod',`Code sent to your ${data.method === 'email' ? 'email' : 'WhatsApp'}`));
         setLoading(false);
         return;
       }
       if (data.redirect === '/admin/dashboard') {
         setAuth(data.owner, data.token, 'platform_admin');
-        toast.success('Welcome, Super Admin!');
+        toast.success(t('auth.welcomeSuperAdmin','Welcome, Super Admin!'));
         window.location.href = '/admin/dashboard';
         return;
       }
@@ -146,7 +146,7 @@ export default function OwnerLogin() {
         return;
       }
       if (data.stores.length > 0) setCurrentStore(data.stores[0]);
-      toast.success(`Welcome back, ${data.owner.name}!`);
+      toast.success(`${t('store.welcomeBackShort','Welcome back')}, ${data.owner.name}!`);
       navigate('/dashboard');
       setLoading(false);
       return;
@@ -164,7 +164,7 @@ export default function OwnerLogin() {
     try {
       const { data } = await platformApi.login({ phone: identifier, password });
       setAuth(data.admin, data.token, 'platform_admin');
-      toast.success('Welcome, Super Admin!');
+      toast.success(t('auth.welcomeSuperAdmin','Welcome, Super Admin!'));
       window.location.href = '/admin/dashboard';
       return;
     } catch (err) {
@@ -188,10 +188,10 @@ export default function OwnerLogin() {
         return;
       }
       if (data.stores.length > 0) setCurrentStore(data.stores[0]);
-      toast.success(`Welcome back, ${data.owner.name}!`);
+      toast.success(`${t('store.welcomeBackShort','Welcome back')}, ${data.owner.name}!`);
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Invalid code');
+      toast.error(err.response?.data?.error || t('auth.invalidCode','Invalid code'));
     }
     setTwoFaLoading(false);
   };

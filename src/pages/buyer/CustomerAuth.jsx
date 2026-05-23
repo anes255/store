@@ -3,11 +3,13 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { User, Phone, Lock, Mail, MapPin, ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBag, Heart, ShoppingCart } from 'lucide-react';
 
 export default function CustomerAuth() {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { setAuth } = useAuthStore();
   const [store, setStore] = useState(null);
   const [storeLoading, setStoreLoading] = useState(true);
@@ -28,16 +30,16 @@ export default function CustomerAuth() {
       if (mode === 'login') {
         const { data } = await storeApi.loginCustomer(storeSlug, { phone: form.phone, password: form.password });
         setAuth(data.customer, data.token, 'customer');
-        toast.success('Welcome back!');
+        toast.success(t('store.welcomeBackShort','Welcome back!'));
         navigate(`/s/${storeSlug}`);
       } else {
-        if (!form.name || !form.phone || !form.password) { toast.error('Name, phone, and password required'); setLoading(false); return; }
+        if (!form.name || !form.phone || !form.password) { toast.error(t('store.namePhonePasswordRequired','Name, phone, and password required')); setLoading(false); return; }
         const { data } = await storeApi.registerCustomer(storeSlug, form);
         setAuth(data.customer, data.token, 'customer');
-        toast.success('Account created!');
+        toast.success(t('auth.accountCreated','Account created!'));
         navigate(`/s/${storeSlug}`);
       }
-    } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
+    } catch (err) { toast.error(err.response?.data?.error || t('storePage.failed','Failed')); }
     setLoading(false);
   };
 
@@ -58,7 +60,7 @@ export default function CustomerAuth() {
             <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
+            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
             <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><ShoppingCart size={20}/></Link>
           </div>
@@ -71,31 +73,31 @@ export default function CustomerAuth() {
           <div className="flex justify-center mb-6">
             {store?.logo ? <img src={store.logo} className="w-14 h-14 rounded-2xl object-cover shadow-lg" alt=""/> : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
           </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{mode === 'login' ? 'Log In' : 'Create Account'}</h1>
-            <p className="text-gray-500 mb-8">{mode === 'login' ? 'Enter your phone number and password' : 'Fill in your details to get started'}</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{mode === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')}</h1>
+            <p className="text-gray-500 mb-8">{mode === 'login' ? t('store.enterPhonePassword','Enter your phone number and password') : t('store.fillDetails','Fill in your details to get started')}</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <div>
-                  <label className="input-label">Full Name</label>
-                  <div className="relative"><User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder="Your full name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
+                  <label className="input-label">{t('auth.name','Full Name')}</label>
+                  <div className="relative"><User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder={t('auth.namePlaceholder','Your full name')} value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></div>
                 </div>
               )}
 
               <div>
-                <label className="input-label">Phone Number</label>
+                <label className="input-label">{t('auth.phone','Phone Number')}</label>
                 <div className="relative"><Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" className="input-field !pl-11" placeholder="0555123456" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required /></div>
               </div>
 
               {mode === 'register' && (
                 <div>
-                  <label className="input-label">Email (optional)</label>
+                  <label className="input-label">{t('auth.email','Email')} ({t('store.optional','optional')})</label>
                   <div className="relative"><Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input type="email" className="input-field !pl-11" placeholder="email@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
                 </div>
               )}
 
               <div>
-                <label className="input-label">Password</label>
+                <label className="input-label">{t('auth.password','Password')}</label>
                 <div className="relative">
                   <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
@@ -109,25 +111,25 @@ export default function CustomerAuth() {
               {mode === 'register' && (
                 <>
                   <div>
-                    <label className="input-label">{'الدائرة'} (City)</label>
-                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder="Your city" value={form.city} onChange={e => setForm({...form, city: e.target.value})} /></div>
+                    <label className="input-label">{t('auth.city','الدائرة (City)')}</label>
+                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder={t('store.yourCity','Your city')} value={form.city} onChange={e => setForm({...form, city: e.target.value})} /></div>
                   </div>
                   <div>
-                    <label className="input-label">Address</label>
-                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder="Your address" value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
+                    <label className="input-label">{t('auth.address','Address')}</label>
+                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder={t('auth.addressPlaceholder','Your address')} value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
                   </div>
                 </>
               )}
 
               <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90 transition-all" style={{backgroundColor:pc}}>
-                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{mode === 'login' ? 'Log In' : 'Create Account'} <ArrowRight size={18}/></>}
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{mode === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')} <ArrowRight size={18}/></>}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-500">
-              {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+              {mode === 'login' ? t('auth.noAccount',"Don't have an account?") + ' ' : t('auth.hasAccount','Already have an account?') + ' '}
               <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="font-semibold hover:underline" style={{color:pc}}>
-                {mode === 'login' ? 'Create Account' : 'Log In'}
+                {mode === 'login' ? t('auth.register','Create Account') : t('auth.login','Log In')}
               </button>
             </p>
         </div>

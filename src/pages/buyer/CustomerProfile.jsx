@@ -16,7 +16,11 @@ import {
 // Constants
 // ---------------------------------------------------------------------------
 const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered'];
-const statusLabels = {
+const statusLabelKeys = {
+  pending: 'track.statusPending', confirmed: 'track.statusConfirmed', preparing: 'track.statusPreparing',
+  shipped: 'track.statusShipped', delivered: 'track.statusDelivered', cancelled: 'track.statusCancelled',
+};
+const statusLabelsFallback = {
   pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing',
   shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
 };
@@ -71,7 +75,7 @@ function TrackingModal({ order, onClose, pc }) {
                       {i < STATUS_FLOW.length - 1 && <div className={`w-0.5 h-8 ${i < currentIdx ? 'bg-emerald-500' : 'bg-gray-700'}`} />}
                     </div>
                     <div className="pt-1">
-                      <p className={`font-semibold text-sm ${done ? 'text-white' : 'text-gray-500'}`}>{statusLabels[s]}</p>
+                      <p className={`font-semibold text-sm ${done ? 'text-white' : 'text-gray-500'}`}>{t(statusLabelKeys[s], statusLabelsFallback[s])}</p>
                       {active && <p className="text-xs text-emerald-400 mt-0.5">{t('store.currentStatus', 'Current status')}</p>}
                     </div>
                   </div>
@@ -712,7 +716,7 @@ export default function CustomerProfile() {
                             </div>
                             <div className="text-right">
                               <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${statusColors[order.status] || 'bg-gray-700 text-gray-300'} capitalize`}>
-                                {statusLabels[order.status] || order.status}
+                                {t(statusLabelKeys[order.status], statusLabelsFallback[order.status] || order.status)}
                               </span>
                               <p className="text-lg font-extrabold text-white mt-1">{parseFloat(order.total).toLocaleString()} {currency}</p>
                             </div>
@@ -722,7 +726,7 @@ export default function CustomerProfile() {
                               <span className="uppercase">{(order.payment_method || 'cod').replace('_', ' ')}</span>
                               {order.tracking_number && <span className="font-mono text-gray-400">#{order.tracking_number}</span>}
                               {orderItems.length > 0 && (
-                                <span className="text-gray-400">{orderItems.length} {orderItems.length === 1 ? 'item' : 'items'}</span>
+                                <span className="text-gray-400">{orderItems.length} {orderItems.length === 1 ? t('track.item','item') : t('track.items','items')}</span>
                               )}
                             </div>
                             <div className="flex items-center gap-2">

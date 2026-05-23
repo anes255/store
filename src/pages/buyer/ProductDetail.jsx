@@ -282,8 +282,8 @@ export default function ProductDetail() {
 
   const requireSelections = () => {
     const missing = groupTypes.filter(t => selectedVariants[t] == null);
-    if (missing.length) { toast.error('Please choose: ' + missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')); return false; }
-    if (!quantity || quantity < 1) { toast.error('Pick a quantity'); return false; }
+    if (missing.length) { toast.error(t('store.pleaseChoose','Please choose: ') + missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')); return false; }
+    if (!quantity || quantity < 1) { toast.error(t('store.pickQuantity','Pick a quantity')); return false; }
     return true;
   };
 
@@ -321,7 +321,7 @@ export default function ProductDetail() {
     };
     const added = wishlistStore.toggle(productWithVariant);
     if (added) toast.success(variantLabel ? `"${variantLabel}" added to favorites` : 'Added to favorites');
-    else toast.success('Removed from favorites');
+    else toast.success(t('store.removedFromFavorites','Removed from favorites'));
   };
 
   const inWishlist = wishlistStore.has(product.id);
@@ -369,11 +369,11 @@ export default function ProductDetail() {
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{wishlistStore.count()}</span>}
+              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{wishlistStore.count()}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{getCount()}</span>}
             </button>
           </div>
         </div>
@@ -457,7 +457,7 @@ export default function ProductDetail() {
               const mm = Math.floor((diff % 3600000) / 60000);
               const ss = Math.floor((diff % 60000) / 1000);
               const pad = n => String(n).padStart(2, '0');
-              return <div className="mt-2 flex items-center gap-2 text-sm font-bold text-red-600"><Tag size={14}/><span>{product.offer_title || 'Limited Offer'}</span><span className="font-mono bg-red-50 px-2 py-0.5 rounded-lg border border-red-200">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
+              return <div className="mt-3 flex items-center gap-3 text-lg font-extrabold text-red-600"><Tag size={20}/><span className="text-base sm:text-lg">{product.offer_title || 'Limited Offer'}</span><span className="font-mono bg-red-50 px-3 py-1.5 rounded-xl border-2 border-red-200 text-base sm:text-lg tracking-wider">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
             })()}
 
             {/* Selected variant label */}
@@ -674,7 +674,7 @@ function ReviewsSection({storeSlug,productSlug,pc}){
     setSubmitting(true);
     try{
       await storeApi.submitReview(storeSlug,productSlug,form);
-      toast.success('Review submitted! It will appear after approval.');
+      toast.success(t('store.reviewSubmitted','Review submitted! It will appear after approval.'));
       setShowForm(false);setForm({customer_name:'',customer_phone:'',rating:5,title:'',content:''});
       const r=await storeApi.getProductReviews(storeSlug,productSlug);setReviews(r.data.reviews||[]);setStats(r.data.stats||{});
     }catch(e){toast.error(e.response?.data?.error||'Failed to submit review');}

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Minus, Plus, ShoppingCart, Package, Check, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -18,6 +19,7 @@ import toast from 'react-hot-toast';
 //   onAddToCart   – ({ product, selectedVariant, quantity }) => void
 // =============================================================================
 export default function ProductQuickAdd({ show, onClose, product, storeSlug, primaryColor, currency = 'DZD', onAddToCart, mode = 'cart' }) {
+  const { t } = useTranslation();
   const pc = primaryColor || '#7C3AED';
 
   // ---- local state ----
@@ -113,10 +115,10 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
     // Require a selection from every variant group before allowing add/order
     const missing = groupTypes.filter(t => selectedVariants[t] == null);
     if (missing.length) {
-      toast.error('Please choose: ' + missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', '));
+      toast.error(t('product.pleaseChoose','Please choose:') + ' ' + missing.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', '));
       return;
     }
-    if (!quantity || quantity < 1) { toast.error('Please pick a quantity'); return; }
+    if (!quantity || quantity < 1) { toast.error(t('product.pleasePickQuantity','Please pick a quantity')); return; }
     onAddToCart({
       product: { ...product, price: finalPrice },
       selectedVariant: buildVariantObj(),

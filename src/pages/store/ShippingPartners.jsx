@@ -206,7 +206,7 @@ export default function ShippingPartners(){
   const copyWebhookUrl=async(c)=>{
     const base=import.meta.env.VITE_API_URL||'https://test-t2d4.onrender.com/api';
     const url=`${base}/webhook/carrier/${currentStore.id}/${c.id}`;
-    try{await navigator.clipboard.writeText(url);toast.success('Webhook URL copied');}catch{toast.error('Copy failed');}
+    try{await navigator.clipboard.writeText(url);toast.success(t('storePage.copied','Copied!'));}catch{toast.error(t('storePage.failed','Failed'));}
   };
 
   const[diagnosing,setDiagnosing]=useState(null);
@@ -243,7 +243,7 @@ export default function ShippingPartners(){
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
       <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.partners','Partners')}</p><p className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{companies.length}</p></div>
       <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-emerald-500 uppercase">{t('storePage.apiConnected','API Connected')}</p><p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{companies.filter(c=>c.api_base_url).length}</p></div>
-      <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-blue-500 uppercase">Auto-Syncing</p><p className="text-xl sm:text-2xl font-black text-blue-600 mt-1">{companies.filter(c=>c.api_base_url).length}</p></div>
+      <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-blue-500 uppercase">{t('storePage.autoSyncing','Auto-Syncing')}</p><p className="text-xl sm:text-2xl font-black text-blue-600 mt-1">{companies.filter(c=>c.api_base_url).length}</p></div>
       <div className="glass-card-solid p-3 sm:p-4"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.avgRate','Avg Rate')}</p><p className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{companies.length?Math.round(companies.reduce((s,c)=>s+parseFloat(c.base_rate||0),0)/companies.length):0} <span className="text-xs font-normal text-gray-400">DZD</span></p></div>
     </div>
 
@@ -398,7 +398,7 @@ export default function ShippingPartners(){
 
           {/* API Credentials — simplified view: only show what user needs to paste */}
           {form.use_api&&(<div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-3">
-            <p className="text-sm font-bold text-emerald-800 flex items-center gap-2"><Zap size={14}/>API Credentials</p>
+            <p className="text-sm font-bold text-emerald-800 flex items-center gap-2"><Zap size={14}/>{t('storePage.apiCredentials','API Credentials')}</p>
 
             {form.api_auth_type==='bearer'&&(
               <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/><p className="text-[10px] text-emerald-700 mt-1">Sent as: Authorization: Bearer &lt;token&gt;</p></div>
@@ -440,7 +440,7 @@ export default function ShippingPartners(){
             {/* Test connection */}
             <button onClick={testFormConfig} disabled={testingForm} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50">
               {testingForm?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<RefreshCw size={14}/>}
-              Test Connection
+              {t('storePage.testConnection','Test Connection')}
             </button>
 
             {testResult&&(
@@ -493,15 +493,15 @@ export default function ShippingPartners(){
           </div>)}
 
           {!form.use_api&&(
-            <div><label className="input-label">Tracking URL (optional)</label><input className="input-field text-sm" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://company.com/track/{tracking_number}"/><p className="text-[10px] text-gray-400 mt-1">Use {'{tracking_number}'} as placeholder</p></div>
+            <div><label className="input-label">{t('storePage.trackingUrlOptional','Tracking URL (optional)')}</label><input className="input-field text-sm" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://company.com/track/{tracking_number}"/><p className="text-[10px] text-gray-400 mt-1">Use {'{tracking_number}'} as placeholder</p></div>
           )}
 
           {/* Advanced toggle — hidden by default */}
           <details className="border-t pt-3">
-            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 font-medium">Advanced Configuration</summary>
+            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 font-medium">{t('storePage.advancedConfig','Advanced Configuration')}</summary>
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="font-bold text-sm text-gray-900">Enable API Tracking</label>
+                <label className="font-bold text-sm text-gray-900">{t('storePage.enableApiTracking','Enable API Tracking')}</label>
                 <button onClick={()=>{setForm({...form,use_api:!form.use_api});setTestResult(null);}} className={`w-11 h-6 rounded-full transition-colors relative ${form.use_api?'bg-brand-500':'bg-gray-300'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.use_api?'translate-x-5':'translate-x-0.5'}`}/></button>
               </div>
               {form.use_api&&<>
@@ -551,7 +551,7 @@ export default function ShippingPartners(){
 
     {diagnoseResult&&<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={()=>setDiagnoseResult(null)}><div className="bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold flex items-center gap-2"><Stethoscope size={18} className="text-amber-500"/>API Diagnosis</h2>
+        <h2 className="text-lg font-bold flex items-center gap-2"><Stethoscope size={18} className="text-amber-500"/>{t('storePage.apiDiagnosis','API Diagnosis')}</h2>
         <button onClick={()=>setDiagnoseResult(null)}><X size={20}/></button>
       </div>
       {diagnoseResult.error&&<div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">{diagnoseResult.error}</div>}

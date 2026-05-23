@@ -247,13 +247,13 @@ function NotifBell(){
   };
   const removeSelected=async()=>{
     if(!selected.size)return;
-    if(!confirm('Delete '+selected.size+' notification'+(selected.size>1?'s':'')+'?'))return;
+    if(!confirm(t('notifications.deleteSelected','Delete {{count}} notification(s)?',{count:selected.size})))return;
     for(const id of Array.from(selected))await removeOne(id);
     setSelected(new Set());setSelectMode(false);
   };
   const removeAll=async()=>{
     if(!notifs.length)return;
-    if(!confirm('Delete all notifications?'))return;
+    if(!confirm(t('notifications.deleteAll','Delete all notifications?')))return;
     for(const n of notifs)await removeOne(n.id);
   };
 
@@ -297,8 +297,8 @@ const DEFAULT_ITEMS = [
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'},{to:'/dashboard/orders-archive',label:'sidebar.ordersArchive'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
-    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/offers',label:'Offers'},{to:'/dashboard/landing-pages',label:'sidebar.landingPages'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
-  {id:'store',type:'group',icon:'Globe',label:'Store Settings',children:[
+    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/offers',label:'sidebar.offers'},{to:'/dashboard/landing-pages',label:'sidebar.landingPages'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
+  {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
     {to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
     {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'},{to:'/dashboard/tracking-orders',label:'sidebar.trackingOrders'}]},

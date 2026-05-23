@@ -240,24 +240,24 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     }
     // Fall back to legacy store-wide coupon endpoint if it exists.
     try { const { data } = await storeApi.validateCoupon(storeSlug, { code, subtotal }); setCouponDiscount(data.discount); toast.success(`-${data.discount.toLocaleString()} ${store?.currency||'DZD'}`); }
-    catch { toast.error('Invalid coupon'); setCouponDiscount(0); }
+    catch { toast.error(t('checkout.invalidCoupon','Invalid coupon')); setCouponDiscount(0); }
   };
 
   const handleReceiptUpload = (e) => {
     const f = e.target.files?.[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = () => { setReceiptImage(r.result); toast.success('Receipt uploaded!'); };
+    r.onload = () => { setReceiptImage(r.result); toast.success(t('checkout.receiptUploaded','Receipt uploaded!')); };
     r.readAsDataURL(f);
   };
 
   const submitReceipt = async () => {
-    if (!receiptImage) return toast.error('Please upload your receipt');
+    if (!receiptImage) return toast.error(t('checkout.uploadBaridiReceipt','Please upload your receipt'));
     if (!orderSuccess?.id) return;
     try {
       await paymentApi.uploadReceipt({ store_slug: storeSlug, order_id: orderSuccess.id, receipt_image: receiptImage, payment_method: form.payment_method, reference_number: receiptRef });
-      toast.success('Receipt submitted! Will be verified within 24 hours.');
+      toast.success(t('checkout.receiptSubmitted','Receipt submitted! Will be verified within 24 hours.'));
       setPaymentStep(null);
-    } catch { toast.error('Upload failed'); }
+    } catch { toast.error(t('checkout.uploadFailed','Upload failed')); }
   };
 
   const placeOrder = async () => {
@@ -304,7 +304,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     setLoading(false);
   };
 
-  const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Copied!'); };
+  const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success(t('storePage.copied','Copied!')); };
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   // Wrapper that renders as full page or modal depending on isModal.
@@ -401,7 +401,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <p className="text-sm text-gray-500">You will be redirected to a secure payment page to complete your transaction.</p>
               <button onClick={async () => {
                 try { const { data } = await paymentApi.chargilyCheckout({ store_slug: storeSlug, order_id: orderSuccess.id }); window.location.href = data.checkoutUrl; }
-                catch { toast.error('Payment gateway unavailable'); }
+                catch { toast.error(t('checkout.paymentUnavailable','Payment gateway unavailable')); }
               }} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>Pay Now with Card <ArrowRight size={16}/></button>
             </div>
           )}

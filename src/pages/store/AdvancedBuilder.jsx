@@ -141,7 +141,7 @@ const defaultSection=(type)=>{
   return{...base,content:defs[type]||{}};
 };
 
-function pickImage(cb){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>5*1024*1024){toast.error('Max 5MB');return;}const r=new FileReader();r.onload=ev=>cb(ev.target.result);r.readAsDataURL(f);};i.click();}
+function pickImage(cb){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>5*1024*1024){toast.error('Max 5 MB');return;}const r=new FileReader();r.onload=ev=>cb(ev.target.result);r.readAsDataURL(f);};i.click();}
 function ImgField({label,value,onChange}){return<div><p className="text-[10px] text-gray-400">{label}</p>{value&&<img src={value} alt="" className="w-full h-16 object-cover rounded-lg mb-1 border border-gray-200"/>}<div className="flex gap-1"><button type="button" onClick={()=>pickImage(onChange)} className="flex-1 py-1 bg-brand-50 text-brand-600 rounded text-[10px] font-bold hover:bg-brand-100">{value?'Change':'Upload'}</button>{value&&<button type="button" onClick={()=>onChange('')} className="px-2 py-1 bg-red-50 text-red-500 rounded text-[10px] font-bold hover:bg-red-100">✕</button>}</div><input className="input-field !py-0.5 text-[10px] mt-1" placeholder="or paste URL" value={value||''} onChange={e=>onChange(e.target.value)}/></div>;}
 function StylePanel({section,onChange}){
   const s=section.style||{};const c=section.content||{};
@@ -191,6 +191,7 @@ const ANIMATION_PRESETS=[
 ];
 
 export default function AdvancedBuilder(){
+  const{t}=useTranslation();
   const{currentStore,setCurrentStore}=useStoreManagement();
   const[sections,setSections]=useState([]);
   const[selected,setSelected]=useState(null);
@@ -217,8 +218,8 @@ export default function AdvancedBuilder(){
   // Apply a template — but preserve every store-level customization (colors,
   // fonts, logo, cover, store name, welcome message). Templates are starting
   // points, not destructive overwrites.
-  const applyTemplate=(t)=>{
-    const anim=t.animation||'calm';
+  const applyTemplate=(tmpl)=>{
+    const anim=tmpl.animation||'calm';
     const cs=currentStore||{};
     const cfg=cs.config||{};
     const cover=cs.cover_image||cfg.cover_image||'';
@@ -228,7 +229,7 @@ export default function AdvancedBuilder(){
     const font=cs.header_font||cfg.header_font||'';
     const storeName=cs.name||cs.store_name||cfg.name||'';
     const welcome=cs.welcome_message||cfg.welcome_message||'';
-    const fresh=JSON.parse(JSON.stringify(t.sections)).map((s,i)=>{
+    const fresh=JSON.parse(JSON.stringify(tmpl.sections)).map((s,i)=>{
       const sec={...s,id:uid(),animation:anim,animationIndex:i};
       sec.style=sec.style||{};
       sec.content=sec.content||{};
@@ -257,7 +258,7 @@ export default function AdvancedBuilder(){
     setDirty(true);
     toast.success(`"${t.name}" applied — your colors, fonts and brand assets are preserved.`);
   };
-  const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections,animation_style:animStyle,animations_enabled:animEnabled});setCurrentStore(data);setDirty(false);toast.success('Saved!');}catch{toast.error('Failed');}setSaving(false);};
+  const save=async()=>{setSaving(true);try{const{data}=await ownerApi.updateStore(currentStore.id,{page_builder:sections,animation_style:animStyle,animations_enabled:animEnabled});setCurrentStore(data);setDirty(false);toast.success(t('storePage.changesSaved','Saved!'));}catch{toast.error(t('storePage.failed','Failed'));}setSaving(false);};
   const selectSection=(i)=>{setSelected(i);if(isMobile)setMobileTab('style');};
   const setAnim=(v)=>{setAnimStyle(v);setDirty(true);};
   const setAnimEn=(v)=>{setAnimEnabled(v);setDirty(true);};
@@ -318,32 +319,32 @@ export default function AdvancedBuilder(){
     {showTemplates&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setShowTemplates(false)}><div className="bg-white rounded-3xl p-6 w-full max-w-6xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
       <div className="flex items-center justify-between mb-6"><div><h2 className="text-2xl font-bold">Choose a Template</h2><p className="text-sm text-gray-500 mt-1">Pick a starting design — everything is fully customizable after you apply it</p></div><button onClick={()=>setShowTemplates(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={20}/></button></div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {TEMPLATES.map((t,ti)=>{const hero=t.sections.find(s=>s.type==='hero');const heroStyle=hero?.style||{};const heroContent=hero?.content||{};const bgImg=heroContent.bgImage;return(
-          <button key={ti} onClick={()=>{if(sections.length>0&&!confirm('Replace current page with this template?'))return;applyTemplate(t);}} className="group text-left rounded-2xl border-2 border-gray-200 hover:border-brand-400 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5 bg-white flex flex-col">
+        {TEMPLATES.map((tpl,ti)=>{const hero=tpl.sections.find(s=>s.type==='hero');const heroStyle=hero?.style||{};const heroContent=hero?.content||{};const bgImg=heroContent.bgImage;return(
+          <button key={ti} onClick={()=>{if(sections.length>0&&!confirm(t('storePage.replaceWithTemplate','Replace current page with this template?')))return;applyTemplate(tpl);}} className="group text-left rounded-2xl border-2 border-gray-200 hover:border-brand-400 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-0.5 bg-white flex flex-col">
             {/* Realistic hero preview using the template's actual style */}
             <div className="relative h-56 overflow-hidden" style={{backgroundColor:heroStyle.bg||'#ffffff',backgroundImage:bgImg?`url(${bgImg})`:'none',backgroundSize:'cover',backgroundPosition:'center',fontFamily:heroStyle.fontFamily||'Inter'}}>
               {bgImg&&<div className="absolute inset-0" style={{backgroundColor:`rgba(0,0,0,${heroContent.overlay||0.3})`}}/>}
               <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6" style={{color:heroStyle.textColor||'#1f2937',textAlign:heroContent.align||'center'}}>
-                <p className="font-black leading-[1.05] mb-2 line-clamp-2" style={{fontSize:`${Math.min(parseInt(heroContent.titleSize)||48,64)*0.42}px`,fontFamily:heroStyle.fontFamily||'Inter'}}>{heroContent.title||t.name}</p>
+                <p className="font-black leading-[1.05] mb-2 line-clamp-2" style={{fontSize:`${Math.min(parseInt(heroContent.titleSize)||48,64)*0.42}px`,fontFamily:heroStyle.fontFamily||'Inter'}}>{heroContent.title||tpl.name}</p>
                 {heroContent.subtitle&&<p className="opacity-75 mb-3 line-clamp-2 max-w-[90%]" style={{fontSize:`${Math.min(parseInt(heroContent.subtitleSize)||16,20)*0.7}px`}}>{heroContent.subtitle}</p>}
                 {heroContent.btnText&&<span className="inline-block px-3 py-1.5 rounded-md font-bold text-[11px]" style={{backgroundColor:heroContent.btnColor||'#7C3AED',color:'#ffffff'}}>{heroContent.btnText}</span>}
               </div>
               {/* Section strip below hero preview - shows the template's color rhythm */}
               <div className="absolute bottom-0 left-0 right-0 h-3 flex">
-                {t.sections.filter(s=>s.visible).slice(1,8).map((sec,si)=>(<div key={si} className="flex-1" style={{backgroundColor:sec.style?.bg||'#f3f4f6'}}/>))}
+                {tpl.sections.filter(s=>s.visible).slice(1,8).map((sec,si)=>(<div key={si} className="flex-1" style={{backgroundColor:sec.style?.bg||'#f3f4f6'}}/>))}
               </div>
             </div>
             {/* Info footer */}
             <div className="p-4 border-t border-gray-100 flex-1 flex flex-col">
               <div className="flex items-start justify-between gap-2 mb-1.5">
-                <p className="font-bold text-gray-900 text-base leading-tight">{t.name}</p>
-                <div className="flex gap-1 shrink-0 mt-0.5">{t.colors.map((c,ci)=><div key={ci} style={{backgroundColor:c}} className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"/>)}</div>
+                <p className="font-bold text-gray-900 text-base leading-tight">{tpl.name}</p>
+                <div className="flex gap-1 shrink-0 mt-0.5">{tpl.colors.map((c,ci)=><div key={ci} style={{backgroundColor:c}} className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"/>)}</div>
               </div>
-              {t.animation&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-gradient-to-r from-violet-50 to-pink-50 text-violet-600 rounded-full w-fit mb-1.5"><Sparkles size={9}/>{t.animation} motion</span>}
-              <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2 flex-1">{t.desc}</p>
+              {tpl.animation&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 bg-gradient-to-r from-violet-50 to-pink-50 text-violet-600 rounded-full w-fit mb-1.5"><Sparkles size={9}/>{tpl.animation} motion</span>}
+              <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2 flex-1">{tpl.desc}</p>
               <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {[...new Set(t.sections.filter(s=>s.visible).map(s=>s.type))].slice(0,5).map((st,i)=>{const T=SECTION_TYPES.find(x=>x.type===st);return T?<span key={i} className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{T.label.split(' ')[0]}</span>:null;})}
+                  {[...new Set(tpl.sections.filter(s=>s.visible).map(s=>s.type))].slice(0,5).map((st,i)=>{const T=SECTION_TYPES.find(x=>x.type===st);return T?<span key={i} className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{T.label.split(' ')[0]}</span>:null;})}
                 </div>
                 <span className="text-[10px] font-bold text-brand-500 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">Use this →</span>
               </div>

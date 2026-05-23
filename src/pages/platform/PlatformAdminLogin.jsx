@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { platformApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import { ShieldCheck, Phone, Lock, ArrowRight } from 'lucide-react';
 
 export default function PlatformAdminLogin() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { setAuth, logout } = useAuthStore();
   const { setCurrentStore } = useStoreManagement();
@@ -24,11 +26,11 @@ export default function PlatformAdminLogin() {
       // Use setAuth for proper zustand + localStorage persistence
       setAuth(data.admin, data.token, 'platform_admin');
       
-      toast.success('Welcome, Admin!');
+      toast.success(t('platform.welcomeAdmin','Welcome, Admin!'));
       
       // Force navigation with window.location to ensure clean state
       window.location.href = '/admin/dashboard';
-    } catch (err) { toast.error(err.response?.data?.error || 'Login failed'); setLoading(false); }
+    } catch (err) { toast.error(err.response?.data?.error || t('auth.loginFailed','Login failed')); setLoading(false); }
   };
 
   return (

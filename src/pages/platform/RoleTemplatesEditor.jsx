@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Save, X, Loader2, Shield, Edit3, Check, Search, Users, Lock, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { platformApi } from '../../utils/api';
@@ -246,6 +247,7 @@ function Modal({ title, onClose, isDark, children, footer }) {
 }
 
 export default function RoleTemplatesEditor() {
+  const { t } = useTranslation();
   const theme = usePlatformTheme();
   const isDark = theme.mode === 'dark';
   const u = ui(isDark);
@@ -273,29 +275,29 @@ export default function RoleTemplatesEditor() {
   const openEdit = (r) => setEditing(JSON.parse(JSON.stringify(r)));
 
   const saveCreate = async () => {
-    if (!creating.name.en.trim()) return toast.error('English name is required');
+    if (!creating.name.en.trim()) return toast.error(t('platform.englishNameRequired','English name is required'));
     setSaving(true);
     try {
       await platformApi.createRoleTemplate(creating);
-      toast.success('Role created');
+      toast.success(t('platform.roleCreated','Role created'));
       setCreating(null);
       load();
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Failed to create role');
+      toast.error(e.response?.data?.error || t('store.failed','Failed'));
     }
     setSaving(false);
   };
 
   const saveEdit = async () => {
-    if (!editing.name.en.trim()) return toast.error('English name is required');
+    if (!editing.name.en.trim()) return toast.error(t('platform.englishNameRequired','English name is required'));
     setSaving(true);
     try {
       await platformApi.updateRoleTemplate(editing.id, editing);
-      toast.success('Role updated');
+      toast.success(t('platform.roleUpdated','Role updated'));
       setEditing(null);
       load();
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Failed to update role');
+      toast.error(e.response?.data?.error || t('store.failed','Failed'));
     }
     setSaving(false);
   };
@@ -304,10 +306,10 @@ export default function RoleTemplatesEditor() {
     if (!confirm(`Delete role "${r.name?.en || ''}"?`)) return;
     try {
       await platformApi.deleteRoleTemplate(r.id);
-      toast.success('Deleted');
+      toast.success(t('store.deleted','Deleted'));
       load();
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Failed to delete');
+      toast.error(e.response?.data?.error || t('store.failed','Failed'));
     }
   };
 

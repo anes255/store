@@ -58,7 +58,11 @@ export default function StoreOffers(){
   const selectAll=(offerIdx)=>setOffers(prev=>prev.map((o,i)=>i===offerIdx?{...o,selectedIds:new Set(filtered.map(p=>p.id))}:o));
   const clearSel=(offerIdx)=>setOffers(prev=>prev.map((o,i)=>i===offerIdx?{...o,selectedIds:new Set()}:o));
   const addOffer=()=>setOffers(prev=>[...prev,{...EMPTY_OFFER,name:`${t('offers.offer','Offer')} ${prev.length+1}`,selectedIds:new Set()}]);
-  const removeOffer=(idx)=>setOffers(prev=>prev.filter((_,i)=>i!==idx));
+  const removeOffer=async(idx)=>{
+    // Clear offer from products via API before removing from local state
+    await clearOffer(idx);
+    setOffers(prev=>prev.filter((_,i)=>i!==idx));
+  };
 
   const computeDiscountText=(form)=>{
     if(form.offer_discount)return form.offer_discount;
@@ -181,7 +185,7 @@ export default function StoreOffers(){
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">{form.mode==='all'?t('offers.allProducts','All products'):`${form.selectedIds.size} ${t('offers.selected','selected')}`}</span>
             </div>
             <div className="flex items-center gap-2">
-              {offers.length>1&&<button onClick={(e)=>{e.stopPropagation();removeOffer(oi);}} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>}
+              {offers.length>1&&<button onClick={(e)=>{e.stopPropagation();if(saving)return;removeOffer(oi);}} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg" disabled={saving}><Trash2 size={14}/></button>}
               {form.expanded?<ChevronUp size={16} className="text-gray-400"/>:<ChevronDown size={16} className="text-gray-400"/>}
             </div>
           </button>

@@ -561,10 +561,10 @@ function ProductOfferTimer({ product }) {
   const ss = Math.floor((diff % 60000) / 1000);
   const pad = n => String(n).padStart(2, '0');
   return (
-    <div className="flex items-center gap-1 text-[10px] font-bold text-red-400">
-      <Tag size={10} />
+    <div className="flex items-center gap-1.5 text-xs font-bold text-red-400 mt-1">
+      <Tag size={12} />
       <span>{product.offer_title || 'Offer'}</span>
-      <span className="font-mono bg-red-500/20 px-1.5 py-0.5 rounded text-red-300">{pad(hh)}:{pad(mm)}:{pad(ss)}</span>
+      <span className="font-mono bg-red-500/20 px-2 py-0.5 rounded-md text-red-300 text-[11px]">{pad(hh)}:{pad(mm)}:{pad(ss)}</span>
     </div>
   );
 }
@@ -928,11 +928,11 @@ export default function Storefront() {
             {/* Favourites sits right beside the cart in the header */}
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{wishlist.length}</span>}
+              {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{wishlist.length}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{getCount()}</span>}
             </button>
           </div>
         </div>
@@ -1198,13 +1198,13 @@ export default function Storefront() {
         <Link to={`/s/${storeSlug}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl active:bg-gray-100 dark:active:bg-white/10" style={{color:pc}}><Package size={20}/><span className="text-[10px] font-bold">{t('store.shop','Shop')}</span></Link>
         <Link to={`/s/${storeSlug}/favorites`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <Heart size={20}/>
-          {wishlist.length>0&&<span className="absolute top-1 right-1/4 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{wishlist.length}</span>}
+          {wishlist.length>0&&<span className="absolute top-0 right-1/4 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{wishlist.length}</span>}
           <span className="text-[10px] font-bold">{t('store.favorites','Favs')}</span>
         </Link>
         {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><Truck size={20}/><span className="text-[10px] font-bold">{t('store.track','Track')}</span></Link>}
         <button onClick={()=>setCartOpen(true)} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <ShoppingCart size={20}/>
-          {getCount()>0&&<span className="absolute top-1 right-1/4 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{getCount()}</span>}
+          {getCount()>0&&<span className="absolute top-0 right-1/4 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{getCount()}</span>}
           <span className="text-[10px] font-bold">{t('store.cart','Cart')}</span>
         </button>
         <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><User size={20}/><span className="text-[10px] font-bold">{t('store.account','Account')}</span></Link>

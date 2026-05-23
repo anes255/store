@@ -320,8 +320,8 @@ function StoreOwners(){
             </div>
             <div className="flex gap-1 mt-3 justify-end">
               {suspended?
-                <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}}} className="flex-1 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-bold">Activate</button>:
-                <button onClick={async()=>{if(!confirm('Suspend? Their stores go offline.'))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}}} className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold">Suspend</button>}
+                <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success(t('platform.activated','Activated'));load();}catch{toast.error(t('store.failed','Failed'));}}} className="flex-1 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-bold">Activate</button>:
+                <button onClick={async()=>{if(!confirm(t('platform.suspendConfirm','Suspend? Their stores go offline.')))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success(t('platform.suspended','Suspended'));load();}catch{toast.error(t('store.failed','Failed'));}}} className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold">Suspend</button>}
               <button onClick={(e)=>{e.stopPropagation();setPwModal(o);setPwNew('');}} className="py-2 px-3 rounded-lg bg-blue-50 text-blue-500" title="Change password"><KeyRound size={14}/></button>
               <button onClick={()=>del(o.id)} className="py-2 px-3 rounded-lg bg-red-50 text-red-500"><Trash2 size={14}/></button>
             </div>
@@ -340,8 +340,8 @@ function StoreOwners(){
         <td className="px-5 py-4">{o.subscription_status==='suspended'||o.is_active===false?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Suspended</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Active</span>}</td>
         <td className="px-5 py-4"><div className="flex gap-1">
           {o.subscription_status==='suspended'||o.is_active===false?
-            <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}}} className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-500" title="Activate"><CheckCircle size={14}/></button>:
-            <button onClick={async()=>{if(!confirm('Suspend? Their stores go offline.'))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}}} className="p-2 hover:bg-red-50 rounded-lg text-red-500" title="Suspend"><Ban size={14}/></button>}
+            <button onClick={async()=>{try{await platformApi.setOwnerSubscription(o.id,{action:'activate'});toast.success(t('platform.activated','Activated'));load();}catch{toast.error(t('store.failed','Failed'));}}} className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-500" title="Activate"><CheckCircle size={14}/></button>:
+            <button onClick={async()=>{if(!confirm(t('platform.suspendConfirm','Suspend? Their stores go offline.')))return;try{await platformApi.setOwnerSubscription(o.id,{action:'suspend'});toast.success(t('platform.suspended','Suspended'));load();}catch{toast.error(t('store.failed','Failed'));}}} className="p-2 hover:bg-red-50 rounded-lg text-red-500" title="Suspend"><Ban size={14}/></button>}
           <button onClick={(e)=>{e.stopPropagation();setPwModal(o);setPwNew('');}} className="p-2 hover:bg-blue-50 rounded-lg text-blue-400" title="Change password"><KeyRound size={14}/></button>
           <button onClick={()=>del(o.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400"><Trash2 size={14}/></button>
         </div></td>
@@ -369,8 +369,8 @@ function AllStores(){
   const[storeSearch,setStoreSearch]=useState('');const[storeFilter,setStoreFilter]=useState('all');
   const load=()=>{platformApi.getStores().then(r=>setStores(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[]);
-  const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success('Toggled');load();}catch{toast.error('Failed');}};
-  const del=async(id)=>{if(!confirm('Delete this store and ALL its data? This cannot be undone.'))return;try{await api.delete(`/platform/stores/${id}`);toast.success('Deleted');setDetail(null);load();}catch{toast.error('Failed');}};
+  const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success(t('platform.toggled','Toggled'));load();}catch{toast.error(t('store.failed','Failed'));}};
+  const del=async(id)=>{if(!confirm(t('platform.deleteStoreConfirm','Delete this store and ALL its data? This cannot be undone.')))return;try{await api.delete(`/platform/stores/${id}`);toast.success(t('store.deleted','Deleted'));setDetail(null);load();}catch{toast.error(t('store.failed','Failed'));}};
   const filteredStores=stores.filter(s=>{
     if(storeFilter==='live'&&!s.is_published)return false;
     if(storeFilter==='offline'&&s.is_published)return false;
@@ -411,7 +411,7 @@ function AllStores(){
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Created</p><p className="text-sm">{new Date(s.created_at).toLocaleDateString()}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Status</p><p className="text-sm">{s.is_published?'🟢 Live':'🔴 Offline'}</p></div>
           <div><p className="text-[10px] text-gray-400 uppercase font-bold">Visit</p><a href={`/s/${s.slug}`} target="_blank" className="text-sm text-brand-600 hover:underline">Open Store →</a></div>
-          {(s.owner_active===false||s.subscription_status==='suspended')&&<div><p className="text-[10px] text-gray-400 uppercase font-bold">Action</p><button onClick={async()=>{try{await platformApi.setOwnerSubscription(s.owner_id,{action:'activate'});toast.success('Owner activated!');load();}catch{toast.error('Failed');}}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold mt-1">Activate Owner</button></div>}
+          {(s.owner_active===false||s.subscription_status==='suspended')&&<div><p className="text-[10px] text-gray-400 uppercase font-bold">Action</p><button onClick={async()=>{try{await platformApi.setOwnerSubscription(s.owner_id,{action:'activate'});toast.success(t('platform.ownerActivated','Owner activated!'));load();}catch{toast.error(t('store.failed','Failed'));}}} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold mt-1">Activate Owner</button></div>}
         </div>}
       </div>
     ))}{stores.length===0&&<p className="text-center py-12 text-gray-400">No stores yet</p>}</div>}
@@ -494,8 +494,8 @@ function SiteSettings(){
   const[s,setS]=useState({});const[loading,setLoading]=useState(false);const logoRef=useRef(null);const favRef=useRef(null);
   const theme=usePlatformTheme();const pc=theme.primaryColor;
   useEffect(()=>{platformApi.getSettings().then(r=>setS(r.data)).catch(()=>{});},[]);
-  const save=async()=>{setLoading(true);try{const{data}=await platformApi.updateSettings(s);setS(data);toast.success('Saved!');}catch{toast.error('Failed');}setLoading(false);};
-  const imgUp=(field)=>(e)=>{const f=e.target.files?.[0];if(!f){toast.error('No file');return;}const reader=new FileReader();reader.onerror=()=>toast.error('Read failed');reader.onload=()=>{const img=new window.Image();img.onerror=()=>toast.error('Image invalid');img.onload=()=>{try{const c=document.createElement('canvas');const max=field==='favicon'?128:400;const ratio=Math.min(max/img.width,max/img.height,1);c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);const compressed=c.toDataURL('image/png');setS(prev=>({...(prev||{}),[field]:compressed}));toast.success('Uploaded — click Save to apply');}catch(err){toast.error('Compress failed');}};img.src=reader.result;};reader.readAsDataURL(f);e.target.value='';};
+  const save=async()=>{setLoading(true);try{const{data}=await platformApi.updateSettings(s);setS(data);toast.success(t('store.saved','Saved'));}catch{toast.error(t('store.failed','Failed'));}setLoading(false);};
+  const imgUp=(field)=>(e)=>{const f=e.target.files?.[0];if(!f){toast.error(t('store.noFile','No file'));return;}const reader=new FileReader();reader.onerror=()=>toast.error(t('store.readFailed','Read failed'));reader.onload=()=>{const img=new window.Image();img.onerror=()=>toast.error(t('store.badImage','Image invalid'));img.onload=()=>{try{const c=document.createElement('canvas');const max=field==='favicon'?128:400;const ratio=Math.min(max/img.width,max/img.height,1);c.width=Math.max(1,Math.round(img.width*ratio));c.height=Math.max(1,Math.round(img.height*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);const compressed=c.toDataURL('image/png');setS(prev=>({...(prev||{}),[field]:compressed}));toast.success(t('platform.uploadedClickSave','Uploaded — click Save to apply'));}catch(err){toast.error(t('store.failed','Failed'));}};img.src=reader.result;};reader.readAsDataURL(f);e.target.value='';};
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Site & Branding</h1><button onClick={save} disabled={loading} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:opacity-90 disabled:opacity-50"><Save size={16}/>Save Changes</button></div>
     <div className="grid lg:grid-cols-2 gap-6">
@@ -558,12 +558,12 @@ function Subscriptions({isDark}){
   const load=()=>{setLoading(true);platformApi.getSubscriptions({status:filter==='expiring'||filter==='deactivated'||filter==='new'?'all':filter}).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));
     platformApi.getExpiringSubscriptions().then(r=>setExpiring(r.data?.owners||[])).catch(()=>setExpiring([]));};
   useEffect(()=>{load();},[filter]);
-  const approve=async(pid)=>{try{await platformApi.approvePayment(pid);toast.success('Payment approved! Subscription activated.');load();}catch{toast.error('Failed');}};
-  const reject=async()=>{if(!rejectModal)return;try{await platformApi.rejectPayment(rejectModal,{notes:rejectNotes});toast.success('Rejected');setRejectModal(null);setRejectNotes('');load();}catch{toast.error('Failed');}};
-  const suspend=async(oid)=>{if(!confirm('Suspend this owner? Their stores will go offline.'))return;try{await platformApi.setOwnerSubscription(oid,{action:'suspend'});toast.success('Suspended');load();}catch{toast.error('Failed');}};
-  const activate=async(oid)=>{try{await platformApi.setOwnerSubscription(oid,{action:'activate'});toast.success('Activated');load();}catch{toast.error('Failed');}};
-  const grant=async()=>{if(!grantModal)return;const d=parseInt(grantDays,10);if(!d||d<1)return toast.error('Enter valid days');
-    try{await platformApi.extendSubscription(grantModal.id,{days:d});toast.success(`Granted ${d} free day(s) to ${grantModal.name||grantModal.full_name}`);setGrantModal(null);setGrantDays(7);load();}catch{toast.error('Failed');}};
+  const approve=async(pid)=>{try{await platformApi.approvePayment(pid);toast.success(t('platform.paymentApproved','Payment approved! Subscription activated.'));load();}catch{toast.error(t('store.failed','Failed'));}};
+  const reject=async()=>{if(!rejectModal)return;try{await platformApi.rejectPayment(rejectModal,{notes:rejectNotes});toast.success(t('platform.rejected','Rejected'));setRejectModal(null);setRejectNotes('');load();}catch{toast.error(t('store.failed','Failed'));}};
+  const suspend=async(oid)=>{if(!confirm(t('platform.suspendOwnerConfirm','Suspend this owner? Their stores will go offline.')))return;try{await platformApi.setOwnerSubscription(oid,{action:'suspend'});toast.success(t('platform.suspended','Suspended'));load();}catch{toast.error(t('store.failed','Failed'));}};
+  const activate=async(oid)=>{try{await platformApi.setOwnerSubscription(oid,{action:'activate'});toast.success(t('platform.activated','Activated'));load();}catch{toast.error(t('store.failed','Failed'));}};
+  const grant=async()=>{if(!grantModal)return;const d=parseInt(grantDays,10);if(!d||d<1)return toast.error(t('platform.enterValidDays','Enter valid days'));
+    try{await platformApi.extendSubscription(grantModal.id,{days:d});toast.success(t('platform.grantedDays','Granted {{d}} free day(s) to {{name}}',{d,name:grantModal.name||grantModal.full_name}));setGrantModal(null);setGrantDays(7);load();}catch{toast.error(t('store.failed','Failed'));}};
   const stats=data.stats||{};
   const toggleSelect=(id)=>setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
   const toggleSelectAll=()=>{const visible=filteredPayments.map(p=>p.id);setSelectedIds(prev=>prev.length===visible.length?[]:visible);};
@@ -720,7 +720,7 @@ function BillingConfig(){
     platformApi.getSettings().then(r=>{const s=r.data||{};setConfig({billing_ccp_account:s.billing_ccp_account||'',billing_ccp_name:s.billing_ccp_name||'',billing_baridimob_rip:s.billing_baridimob_rip||'',billing_baridimob_qr:s.billing_baridimob_qr||''});}).catch(()=>{});
     platformApi.getPlans().then(r=>{setPlans(r.data?.plans||[]);}).catch(()=>{});
   },[]);
-  const save=async()=>{setSaving(true);try{await platformApi.updateBillingConfig(config);toast.success('Billing config saved!');}catch{toast.error('Failed');}setSaving(false);};
+  const save=async()=>{setSaving(true);try{await platformApi.updateBillingConfig(config);toast.success(t('platform.billingConfigSaved','Billing config saved!'));}catch{toast.error(t('store.failed','Failed'));}setSaving(false);};
   const uploadQR=(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setConfig({...config,billing_baridimob_qr:r.result});r.readAsDataURL(f);};
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">Billing Configuration</h1><button onClick={save} disabled={saving} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2"><Save size={16}/>{saving?'Saving...':'Save'}</button></div>
@@ -841,7 +841,7 @@ function PageBuilder(){
 
   useEffect(()=>{platformApi.getSettings().then(r=>{try{setBlocks(JSON.parse(r.data?.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
 
-  const save=async(overrideBlocks)=>{setSaving(true);try{await platformApi.updateSettings({landing_blocks:JSON.stringify(overrideBlocks!==undefined?overrideBlocks:blocks)});toast.success('Page saved!');}catch(e){toast.error('Failed');}setSaving(false);};
+  const save=async(overrideBlocks)=>{setSaving(true);try{await platformApi.updateSettings({landing_blocks:JSON.stringify(overrideBlocks!==undefined?overrideBlocks:blocks)});toast.success(t('platform.pageSaved','Page saved!'));}catch(e){toast.error(t('store.failed','Failed'));}setSaving(false);};
   const addBlock=(type)=>{const t=BLOCK_TYPES.find(b=>b.type===type);if(t)setBlocks([...blocks,{type:t.type,...JSON.parse(JSON.stringify(t.defaults)),id:Date.now()}]);};
   const removeBlock=(idx)=>setBlocks(blocks.filter((_,i)=>i!==idx));
   const moveBlock=(from,to)=>{if(to<0||to>=blocks.length)return;const n=[...blocks];const[m]=n.splice(from,1);n.splice(to,0,m);setBlocks(n);};
@@ -992,24 +992,24 @@ function MyProfile(){
   },[]);
 
   const saveProfile=async()=>{
-    if(!form.name||!form.email)return toast.error('Name and email are required');
+    if(!form.name||!form.email)return toast.error(t('platform.nameEmailRequired','Name and email are required'));
     setSaving(true);
     try{
       const{data}=await platformApi.updateAdminProfile(form);
       if(data&&setUser)setUser({...user,...data});
-      toast.success('Profile updated');
+      toast.success(t('platform.profileUpdated','Profile updated'));
     }catch(e){toast.error(e.response?.data?.error||'Failed to update profile');}
     setSaving(false);
   };
 
   const changePassword=async()=>{
-    if(!pwForm.current_password||!pwForm.new_password)return toast.error('All password fields required');
-    if(pwForm.new_password!==pwForm.confirm_password)return toast.error('Passwords do not match');
-    if(pwForm.new_password.length<6)return toast.error('Password must be at least 6 characters');
+    if(!pwForm.current_password||!pwForm.new_password)return toast.error(t('platform.allPasswordFieldsRequired','All password fields required'));
+    if(pwForm.new_password!==pwForm.confirm_password)return toast.error(t('storePage.passwordsDontMatch','Passwords do not match'));
+    if(pwForm.new_password.length<6)return toast.error(t('auth.minChars','Password must be at least 6 characters'));
     setChangingPw(true);
     try{
       await platformApi.changeAdminPassword(pwForm);
-      toast.success('Password changed');
+      toast.success(t('platform.passwordChanged','Password changed'));
       setPwForm({current_password:'',new_password:'',confirm_password:''});
     }catch(e){toast.error(e.response?.data?.error||'Failed to change password');}
     setChangingPw(false);
@@ -1066,14 +1066,14 @@ function AdminManagement(){
   useEffect(()=>{load();},[]);
 
   const add=async()=>{
-    if(!form.name||!form.email||!form.password)return toast.error('Name, email and password are required');
+    if(!form.name||!form.email||!form.password)return toast.error(t('platform.nameEmailPasswordRequired','Name, email and password are required'));
     setSaving(true);
-    try{await platformApi.addAdmin(form);toast.success('Super admin added!');setShowAdd(false);setForm({name:'',email:'',phone:'',password:''});load();}catch(e){toast.error(e.response?.data?.error||'Failed');}
+    try{await platformApi.addAdmin(form);toast.success(t('platform.superAdminAdded','Super admin added!'));setShowAdd(false);setForm({name:'',email:'',phone:'',password:''});load();}catch(e){toast.error(e.response?.data?.error||'Failed');}
     setSaving(false);
   };
 
-  const remove=async(id)=>{if(!confirm('Remove this admin? They will lose all super admin access.'))return;try{await platformApi.removeAdmin(id);toast.success('Removed');load();}catch(e){toast.error(e?.response?.data?.error||'Failed');}};
-  const toggle=async(id)=>{try{await platformApi.toggleAdmin(id);load();}catch{toast.error('Failed');}};
+  const remove=async(id)=>{if(!confirm(t('platform.removeAdminConfirm','Remove this admin? They will lose all super admin access.')))return;try{await platformApi.removeAdmin(id);toast.success(t('store.removed','Removed'));load();}catch(e){toast.error(e?.response?.data?.error||'Failed');}};
+  const toggle=async(id)=>{try{await platformApi.toggleAdmin(id);load();}catch{toast.error(t('store.failed','Failed'));}};
 
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6">

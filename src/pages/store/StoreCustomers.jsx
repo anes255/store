@@ -21,10 +21,10 @@ export default function StoreCustomers(){
   };
 
   const addCustomer=async()=>{
-    if(!addForm.name.trim()||!addForm.phone.trim()){toast.error('Name and phone are required');return;}
+    if(!addForm.name.trim()||!addForm.phone.trim()){toast.error(t('storePage.namePhoneRequired','Name and phone are required'));return;}
     setAddSaving(true);
-    try{await api.post(`/manage/stores/${currentStore.id}/customers`,addForm);toast.success('Customer added');setAddOpen(false);setAddForm({name:'',phone:'',email:'',address:'',city:'',wilaya:''});loadCustomers();}
-    catch(e){toast.error(e.response?.data?.error||'Failed');}
+    try{await api.post(`/manage/stores/${currentStore.id}/customers`,addForm);toast.success(t('storePage.customerAdded','Customer added'));setAddOpen(false);setAddForm({name:'',phone:'',email:'',address:'',city:'',wilaya:''});loadCustomers();}
+    catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}
     setAddSaving(false);
   };
 
@@ -43,20 +43,20 @@ export default function StoreCustomers(){
 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setSelectedCustomer(null)}>
 <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
   <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-3xl">
-    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center font-bold">{(selectedCustomer.name||selectedCustomer.full_name||'?')[0].toUpperCase()}</div><div><h2 className="font-bold text-gray-900">{selectedCustomer.name||selectedCustomer.full_name}</h2><p className="text-xs text-gray-400">{selectedCustomer.email||'No email'}</p></div></div>
+    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center font-bold">{(selectedCustomer.name||selectedCustomer.full_name||'?')[0].toUpperCase()}</div><div><h2 className="font-bold text-gray-900">{selectedCustomer.name||selectedCustomer.full_name}</h2><p className="text-xs text-gray-400">{selectedCustomer.email||t('storePage.noEmail','No email')}</p></div></div>
     <button onClick={()=>setSelectedCustomer(null)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16}/></button>
   </div>
   <div className="p-5 space-y-4">
     <div className="grid grid-cols-2 gap-3">
-      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">Phone</p><p className="text-sm font-semibold flex items-center gap-1.5 mt-1"><Phone size={12} className="text-green-500"/>{selectedCustomer.phone}</p></div>
-      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">Location</p><p className="text-sm font-semibold flex items-center gap-1.5 mt-1"><MapPin size={12} className="text-gray-400"/>{selectedCustomer.city||selectedCustomer.wilaya||'—'}</p></div>
-      <div className="p-3 bg-emerald-50 rounded-xl"><p className="text-[10px] font-bold text-emerald-600 uppercase">Total Spent</p><p className="text-lg font-black text-emerald-700">{parseFloat(selectedCustomer.total_spent||0).toLocaleString()} DZD</p></div>
-      <div className="p-3 bg-blue-50 rounded-xl"><p className="text-[10px] font-bold text-blue-600 uppercase">Orders</p><p className="text-lg font-black text-blue-700">{selectedCustomer.total_orders||0}</p></div>
+      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.phone','Phone')}</p><p className="text-sm font-semibold flex items-center gap-1.5 mt-1"><Phone size={12} className="text-green-500"/>{selectedCustomer.phone}</p></div>
+      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.location','Location')}</p><p className="text-sm font-semibold flex items-center gap-1.5 mt-1"><MapPin size={12} className="text-gray-400"/>{selectedCustomer.city||selectedCustomer.wilaya||'—'}</p></div>
+      <div className="p-3 bg-emerald-50 rounded-xl"><p className="text-[10px] font-bold text-emerald-600 uppercase">{t('storePage.totalSpent','Total Spent')}</p><p className="text-lg font-black text-emerald-700">{parseFloat(selectedCustomer.total_spent||0).toLocaleString()} DZD</p></div>
+      <div className="p-3 bg-blue-50 rounded-xl"><p className="text-[10px] font-bold text-blue-600 uppercase">{t('storePage.orders','Orders')}</p><p className="text-lg font-black text-blue-700">{selectedCustomer.total_orders||0}</p></div>
     </div>
-    {selectedCustomer.address&&<div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">Address</p><p className="text-sm mt-1">{selectedCustomer.address}</p></div>}
+    {selectedCustomer.address&&<div className="p-3 bg-gray-50 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">{t('storePage.address','Address')}</p><p className="text-sm mt-1">{selectedCustomer.address}</p></div>}
     <div>
-      <p className="text-xs font-bold text-gray-400 uppercase mb-2">Recent Orders</p>
-      {loadingDetail?<div className="py-6 text-center"><Loader2 size={20} className="animate-spin mx-auto text-gray-400"/></div>:customerOrders.length===0?<p className="text-sm text-gray-400 text-center py-4">No orders yet</p>:(
+      <p className="text-xs font-bold text-gray-400 uppercase mb-2">{t('storePage.recentOrders','Recent Orders')}</p>
+      {loadingDetail?<div className="py-6 text-center"><Loader2 size={20} className="animate-spin mx-auto text-gray-400"/></div>:customerOrders.length===0?<p className="text-sm text-gray-400 text-center py-4">{t('storePage.noOrdersYet','No orders yet')}</p>:(
       <div className="space-y-2 max-h-60 overflow-y-auto">{customerOrders.slice(0,20).map(o=>(
         <div key={o.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
           <div><p className="text-sm font-bold">{o.order_number||`#${o.id}`}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div>
@@ -73,22 +73,22 @@ export default function StoreCustomers(){
 <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl" onClick={e=>e.stopPropagation()}>
   <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold">{t('storePage.addCustomer','Add Customer')}</h2><button onClick={()=>setAddOpen(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16}/></button></div>
   <div className="space-y-3">
-    <input className="input-field" placeholder="Name *" value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/>
-    <input className="input-field" placeholder="Phone *" value={addForm.phone} onChange={e=>setAddForm({...addForm,phone:e.target.value})}/>
-    <input className="input-field" placeholder="Email" value={addForm.email} onChange={e=>setAddForm({...addForm,email:e.target.value})}/>
+    <input className="input-field" placeholder={t('storePage.namePlaceholder','Name *')} value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/>
+    <input className="input-field" placeholder={t('storePage.phonePlaceholder','Phone *')} value={addForm.phone} onChange={e=>setAddForm({...addForm,phone:e.target.value})}/>
+    <input className="input-field" placeholder={t('storePage.emailPlaceholder','Email')} value={addForm.email} onChange={e=>setAddForm({...addForm,email:e.target.value})}/>
     <select className="input-field" value={addForm.wilaya} onChange={e=>setAddForm({...addForm,wilaya:e.target.value,city:''})}>
-      <option value="">Select Wilaya</option>
+      <option value="">{t('checkout.selectWilaya','Select Wilaya')}</option>
       {WILAYAS.map(w=><option key={w} value={w}>{w}</option>)}
     </select>
     <select className="input-field" value={addForm.city} onChange={e=>setAddForm({...addForm,city:e.target.value})} disabled={!addForm.wilaya}>
-      <option value="">Select City</option>
+      <option value="">{t('checkout.selectCity','Select City')}</option>
       {(WILAYA_CITIES[addForm.wilaya]||[]).map(c=><option key={c} value={c}>{c}</option>)}
     </select>
-    <input className="input-field" placeholder="Address" value={addForm.address} onChange={e=>setAddForm({...addForm,address:e.target.value})}/>
+    <input className="input-field" placeholder={t('storePage.address','Address')} value={addForm.address} onChange={e=>setAddForm({...addForm,address:e.target.value})}/>
   </div>
   <div className="flex gap-2 justify-end mt-4">
-    <button onClick={()=>setAddOpen(false)} className="btn-ghost px-4 py-2 text-sm">Cancel</button>
-    <button onClick={addCustomer} disabled={addSaving} className="btn-primary px-4 py-2 text-sm flex items-center gap-1.5">{addSaving?<Loader2 size={14} className="animate-spin"/>:<Plus size={14}/>}Add</button>
+    <button onClick={()=>setAddOpen(false)} className="btn-ghost px-4 py-2 text-sm">{t('storePage.cancel','Cancel')}</button>
+    <button onClick={addCustomer} disabled={addSaving} className="btn-primary px-4 py-2 text-sm flex items-center gap-1.5">{addSaving?<Loader2 size={14} className="animate-spin"/>:<Plus size={14}/>}{t('storePage.add','Add')}</button>
   </div>
 </div></div>)}
 

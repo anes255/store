@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { platformApi } from '../../utils/api';
 import { MessageCircle, Smartphone, CheckCircle2, XCircle, RefreshCw, LogOut, Send } from 'lucide-react';
 
 export default function AdminWhatsApp() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState({ status: 'loading', connected: false, qr: null });
   const [loading, setLoading] = useState(false);
   const [testPhone, setTestPhone] = useState('');
@@ -23,26 +25,26 @@ export default function AdminWhatsApp() {
 
   const handleConnect = async () => {
     setLoading(true);
-    try { await platformApi.waStart(); toast.success('Starting — scan the QR code with WhatsApp'); refresh(); }
-    catch (e) { toast.error(e.response?.data?.error || 'Failed to start'); }
+    try { await platformApi.waStart(); toast.success(t('platform.scanQR','Starting — scan the QR code with WhatsApp')); refresh(); }
+    catch (e) { toast.error(e.response?.data?.error || t('store.failed','Failed')); }
     setLoading(false);
   };
 
   const handleDisconnect = async () => {
-    if (!confirm('Disconnect the platform WhatsApp? Users will no longer be able to register until you reconnect.')) return;
+    if (!confirm(t('platform.disconnectConfirm','Disconnect the platform WhatsApp? Users will no longer be able to register until you reconnect.'))) return;
     setLoading(true);
-    try { await platformApi.waDisconnect(); toast.success('Disconnected'); refresh(); }
-    catch (e) { toast.error(e.response?.data?.error || 'Failed'); }
+    try { await platformApi.waDisconnect(); toast.success(t('platform.disconnected','Disconnected')); refresh(); }
+    catch (e) { toast.error(e.response?.data?.error || t('store.failed','Failed')); }
     setLoading(false);
   };
 
   const handleTest = async () => {
-    if (!testPhone) { toast.error('Enter a phone number'); return; }
+    if (!testPhone) { toast.error(t('platform.enterPhone','Enter a phone number')); return; }
     setSending(true);
     try {
       const { data } = await platformApi.waTestSend({ phone: testPhone, message: '✅ Platform WhatsApp test — this number will send registration verification codes to new store owners.' });
-      if (data.success) toast.success('Test message sent'); else toast.error(data.reason || data.error || 'Send failed');
-    } catch (e) { toast.error(e.response?.data?.error || 'Send failed'); }
+      if (data.success) toast.success(t('platform.testMessageSent','Test message sent')); else toast.error(data.reason || data.error || t('platform.sendFailed','Send failed'));
+    } catch (e) { toast.error(e.response?.data?.error || t('platform.sendFailed','Send failed')); }
     setSending(false);
   };
 

@@ -71,7 +71,7 @@ export default function TrackingPixels(){
   const testPixel=async(px)=>{
     const c=config[px.id]||{};
     const val=(c.value||'').trim();
-    if(!val){toast.error('Enter a value first');return;}
+    if(!val){toast.error(t('storePage.enterValueFirst','Enter a value first'));return;}
     if(!formatValid(px.id,val)){toast.error(`✗ ${px.name}: invalid ${px.field} format`);return;}
     setTesting(px.id);
     // REAL connection test — backend hits the vendor and reports whether the
@@ -93,7 +93,7 @@ export default function TrackingPixels(){
         window.fbq('init',val);
         window.fbq('track','PageView');
         window.fbq('trackCustom','TestEvent',{source:'store-admin-test',ts:Date.now()});
-        toast.success('Facebook test event fired! Check Events Manager → Test Events.');
+        toast.success(t('storePage.fbTestFired','Facebook test event fired! Check Events Manager → Test Events.'));
       }else if(px.id==='tiktok_pixel'){
         if(!window.ttq){
           /* eslint-disable */
@@ -103,7 +103,7 @@ export default function TrackingPixels(){
         window.ttq.load(val);
         window.ttq.page();
         window.ttq.track('ViewContent',{content_id:'test-'+Date.now()});
-        toast.success('TikTok test event fired! Check Events Debugger.');
+        toast.success(t('storePage.ttTestFired','TikTok test event fired! Check Events Debugger.'));
       }else if(px.id==='google_analytics'){
         await loadScript('https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(val),'gtag-'+val);
         window.dataLayer=window.dataLayer||[];
@@ -111,10 +111,10 @@ export default function TrackingPixels(){
         window.gtag('js',new Date());
         window.gtag('config',val,{debug_mode:true});
         window.gtag('event','test_event',{event_category:'admin_test',event_label:'TrackingPixels',value:1});
-        toast.success('GA4 test event sent! Check Realtime → DebugView.');
+        toast.success(t('storePage.gaTestFired','GA4 test event sent! Check Realtime → DebugView.'));
       }else if(px.id==='google_sheets'){
         const res=await fetch(val,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true,timestamp:new Date().toISOString(),source:'admin-test-button',order_id:'TEST-'+Date.now()})});
-        toast.success('Test row sent to Google Sheets webhook!');
+        toast.success(t('storePage.sheetsTestFired','Test row sent to Google Sheets webhook!'));
       }else if(px.id==='snapchat_pixel'){
         if(!window.snaptr){
           /* eslint-disable */
@@ -124,9 +124,9 @@ export default function TrackingPixels(){
         window.snaptr('init',val,{});
         window.snaptr('track','PAGE_VIEW');
         window.snaptr('track','VIEW_CONTENT',{item_ids:['test-'+Date.now()]});
-        toast.success('Snapchat test event fired! Check Events Manager.');
+        toast.success(t('storePage.snapTestFired','Snapchat test event fired! Check Events Manager.'));
       }
-    }catch(e){toast.error('Test failed: '+(e?.message||'unknown error'));}
+    }catch(e){toast.error(t('storePage.testFailed','Test failed: ')+(e?.message||t('storePage.unknownError','unknown error')));}
     finally{setTesting(null);}
   };
 
@@ -149,8 +149,8 @@ export default function TrackingPixels(){
     setSaving(true);
     try{
       await ownerApi.updateStore(currentStore.id,{tracking_pixels:config});
-      toast.success('Tracking pixels saved!');
-    }catch{toast.error('Failed to save');}
+      toast.success(t('storePage.trackingPixelsSaved','Tracking pixels saved!'));
+    }catch{toast.error(t('storePage.failed','Failed to save'));}
     setSaving(false);
   };
 
@@ -234,7 +234,7 @@ export default function TrackingPixels(){
     <div className="flex justify-end">
       <button onClick={save} disabled={saving} className="btn-primary flex items-center gap-2 px-6 py-3">
         {saving?<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Save size={16}/>}
-        {saving?'Saving...':'Save Tracking Pixels'}
+        {saving?t('common.loading','Saving...'):t('storePage.saveTrackingPixels','Save Tracking Pixels')}
       </button>
     </div>
   </DashboardLayout>);

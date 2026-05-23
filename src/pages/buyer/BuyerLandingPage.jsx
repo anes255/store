@@ -1,10 +1,130 @@
-import React,{useState,useEffect,useRef}from'react';
+import React,{useState,useEffect,useRef,useCallback}from'react';
 import{useParams,Link}from'react-router-dom';
 import{useTranslation}from'react-i18next';
 import{storeApi}from'../../utils/api';
 import{useAuthStore}from'../../hooks/useStore';
 import toast from'react-hot-toast';
-import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package}from'lucide-react';
+import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown}from'lucide-react';
+
+/* ───── scroll-reveal hook ───── */
+function useReveal(threshold=0.15){
+  const ref=useRef(null);
+  const[visible,setVisible]=useState(false);
+  useEffect(()=>{
+    const el=ref.current;if(!el)return;
+    const obs=new IntersectionObserver(([e])=>{if(e.isIntersecting){setVisible(true);obs.disconnect();}},{threshold});
+    obs.observe(el);
+    return()=>obs.disconnect();
+  },[threshold]);
+  return[ref,visible];
+}
+
+/* ───── animated counter ───── */
+function AnimatedNumber({value,duration=1200}){
+  const[display,setDisplay]=useState(0);
+  const ref=useRef(null);
+  const[started,setStarted]=useState(false);
+  useEffect(()=>{
+    const el=ref.current;if(!el)return;
+    const obs=new IntersectionObserver(([e])=>{if(e.isIntersecting){setStarted(true);obs.disconnect();}},{threshold:0.5});
+    obs.observe(el);
+    return()=>obs.disconnect();
+  },[]);
+  useEffect(()=>{
+    if(!started)return;
+    const start=performance.now();
+    const tick=(now)=>{
+      const p=Math.min((now-start)/duration,1);
+      const eased=1-Math.pow(1-p,4);
+      setDisplay(Math.round(eased*value));
+      if(p<1)requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  },[started,value,duration]);
+  return <span ref={ref}>{display.toLocaleString()}</span>;
+}
+
+/* ───── countdown timer ───── */
+function CountdownTimer({hours=0,minutes=0,accent}){
+  const endTime=useRef(Date.now()+(hours*3600+minutes*60)*1000);
+  const[left,setLeft]=useState(()=>{const d=endTime.current-Date.now();return d>0?d:0;});
+  useEffect(()=>{
+    const iv=setInterval(()=>{const d=endTime.current-Date.now();setLeft(d>0?d:0);},1000);
+    return()=>clearInterval(iv);
+  },[]);
+  const h=Math.floor(left/3600000);
+  const m=Math.floor((left%3600000)/60000);
+  const s=Math.floor((left%60000)/1000);
+  const pad=n=>String(n).padStart(2,'0');
+  if(left<=0)return null;
+  return(
+    <div className="inline-flex items-center gap-1.5 text-sm font-bold" style={{color:accent}}>
+      <Clock size={14}/>
+      <span className="tabular-nums">{pad(h)}:{pad(m)}:{pad(s)}</span>
+    </div>
+  );
+}
+
+/* ───── reveal wrapper with animation ───── */
+function Reveal({children,animation='slide-up',delay=0,className=''}){
+  const[ref,visible]=useReveal(0.12);
+  const baseStyle={transition:`opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`};
+  const hidden={opacity:0,transform:animation==='slide-up'?'translateY(40px)':animation==='zoom'?'scale(0.92)':'translateY(0)'};
+  const shown={opacity:1,transform:'translateY(0) scale(1)'};
+  if(animation==='none')return <div ref={ref} className={className}>{children}</div>;
+  return(
+    <div ref={ref} className={className} style={{...baseStyle,...(visible?shown:hidden)}}>
+      {children}
+    </div>
+  );
+}
+
+/* ───── trust badges ───── */
+function TrustBadges({accent,textColor}){
+  const{t}=useTranslation();
+  const badges=[
+    {icon:<Truck size={20}/>,label:t('lp.fastDelivery','Fast Delivery'),sub:t('lp.fastDeliverySub','48h across Algeria')},
+    {icon:<Shield size={20}/>,label:t('lp.securePayment','Secure Payment'),sub:t('lp.securePaymentSub','100% protected')},
+    {icon:<Award size={20}/>,label:t('lp.topQuality','Top Quality'),sub:t('lp.topQualitySub','Satisfaction guaranteed')},
+  ];
+  return(
+    <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
+      {badges.map((b,i)=>(
+        <div key={i} className="text-center space-y-1.5">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto" style={{backgroundColor:accent+'18',color:accent}}>{b.icon}</div>
+          <p className="text-xs font-bold" style={{color:textColor}}>{b.label}</p>
+          <p className="text-[10px] opacity-60" style={{color:textColor}}>{b.sub}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ───── social proof ───── */
+function SocialProof({accent}){
+  const{t}=useTranslation();
+  const[ref,visible]=useReveal(0.3);
+  return(
+    <div ref={ref} className="flex items-center justify-center gap-6 flex-wrap text-sm" style={{opacity:visible?1:0,transition:'opacity 0.6s ease'}}>
+      <div className="flex items-center gap-2">
+        <div className="flex -space-x-2">
+          {[...Array(4)].map((_,i)=>(
+            <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white" style={{backgroundColor:accent,filter:`brightness(${1-i*0.1})`}}>
+              {['A','S','M','K'][i]}
+            </div>
+          ))}
+        </div>
+        <span className="text-gray-500 text-xs">
+          <AnimatedNumber value={127}/> {t('lp.recentOrders','recent orders')}
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        {[...Array(5)].map((_,i)=><Star key={i} size={14} fill={accent} color={accent}/>)}
+        <span className="text-xs text-gray-500 ml-1">4.9/5</span>
+      </div>
+    </div>
+  );
+}
 
 export default function BuyerLandingPage(){
   const{storeSlug,landingSlug}=useParams();
@@ -13,9 +133,7 @@ export default function BuyerLandingPage(){
   const[page,setPage]=useState(null);
   const[loading,setLoading]=useState(true);
   const[notFound,setNotFound]=useState(false);
-  // Cart: each item can have quantity
   const[cart,setCart]=useState({});
-  // Checkout form
   const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp'});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
@@ -26,7 +144,6 @@ export default function BuyerLandingPage(){
   const checkoutRef=useRef(null);
   const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
 
-  // Load saved info
   useEffect(()=>{
     try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s)setForm(f=>({...f,...s}));}catch{}
   },[]);
@@ -37,42 +154,35 @@ export default function BuyerLandingPage(){
       try{
         const{data:storeData}=await storeApi.getStore(storeSlug);
         setStore(storeData);
-        // Find landing page — check both top-level and config
         const lps=Array.isArray(storeData.landing_pages)?storeData.landing_pages:
                   Array.isArray(storeData.config?.landing_pages)?storeData.config.landing_pages.filter(p=>p.enabled):[];
         const lp=lps.find(p=>p.slug===landingSlug&&p.enabled);
         if(!lp){setNotFound(true);setLoading(false);return;}
         setPage(lp);
-        // Init cart with qty 1 for first product
         const initCart={};
         lp.items.forEach((it,i)=>{initCart[it.product_id]=i===0?1:0;});
         setCart(initCart);
-        // Load shipping
         try{
           const{data:wData}=await storeApi.getShippingWilayas(storeSlug);
           const w=Array.isArray(wData)?wData:(wData?.wilayas||[]);
           setWilayas(w.filter(x=>x.is_active!==false));
         }catch{}
-        // Load delivery companies
         try{
           const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};
           if(Array.isArray(cData))setCompanies(cData);
         }catch{}
       }catch(e){
-        if(e.response?.status===403)setNotFound(true);
-        else setNotFound(true);
+        setNotFound(true);
       }
       setLoading(false);
     })();
   },[storeSlug,landingSlug]);
 
-  // Update shipping when wilaya changes
   useEffect(()=>{
     if(!form.shipping_wilaya||!wilayas.length)return;
     const w=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya)||x.name===form.shipping_wilaya);
     if(w){
       setShippingPrice(form.shipping_type==='desk'?(w.desk_price||w.home_price||400):(w.home_price||400));
-      // Get communes
       if(w.communes){
         const c=typeof w.communes==='string'?w.communes.split(',').map(s=>s.trim()):Array.isArray(w.communes)?w.communes:[];
         setCommunes(c);
@@ -87,6 +197,12 @@ export default function BuyerLandingPage(){
   const subtotal=cartItems.reduce((s,it)=>s+(parseFloat(it.price)||0)*(cart[it.product_id]||0),0);
   const total=subtotal+shippingPrice;
   const pc=page?.accent_color||store?.primary_color||'#7C3AED';
+  const anim=page?.animation_style||'slide-up';
+  const heroStyle=page?.hero_style||'centered';
+  const layoutStyle=page?.layout_style||'alternating';
+  const showTrust=page?.show_trust_badges!==false;
+  const showSocial=page?.show_social_proof!==false;
+  const showCountdown=page?.show_countdown&&(page?.countdown_hours||page?.countdown_minutes);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
 
@@ -97,7 +213,6 @@ export default function BuyerLandingPage(){
     if(!form.shipping_city)return toast.error(t('checkout.errCity','Please choose your commune'));
     if(!form.payment_method)return toast.error(t('checkout.errPay','Please choose a payment method'));
     if(!cartItems.length)return toast.error(t('lp.noItemsInCart','Add at least one product'));
-    // Save info
     try{localStorage.setItem('checkout.savedInfo',JSON.stringify({customer_name:form.customer_name,customer_phone:form.customer_phone,customer_email:form.customer_email,shipping_wilaya:form.shipping_wilaya,shipping_city:form.shipping_city,shipping_address:form.shipping_address}));}catch{}
     setSubmitting(true);
     try{
@@ -115,181 +230,494 @@ export default function BuyerLandingPage(){
     setSubmitting(false);
   };
 
-  if(loading)return(<div className="min-h-screen flex items-center justify-center bg-white"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-violet-500 animate-spin"/></div>);
-  if(notFound)return(<div className="min-h-screen flex flex-col items-center justify-center bg-white"><Package size={48} className="text-gray-300 mb-3"/><p className="text-gray-500 font-bold">{t('lp.pageNotFound','Page not found')}</p><Link to={`/s/${storeSlug}`} className="text-violet-500 text-sm mt-2 hover:underline">{t('lp.goToStore','Go to store')}</Link></div>);
-  if(orderSuccess)return(
-    <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor:page.hero_bg||'#7C3AED'}}>
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4"><Check size={32} className="text-emerald-600"/></div>
-        <h2 className="text-2xl font-black text-gray-900 mb-2">{t('lp.orderSuccess','Order Placed Successfully!')}</h2>
-        <p className="text-sm text-gray-500 mb-4">{t('lp.orderSuccessDesc','Thank you for your order. We will contact you shortly to confirm.')}</p>
-        <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2">
-          <div className="flex justify-between text-sm"><span className="text-gray-500">{t('lp.orderNumber','Order')}</span><span className="font-mono font-bold">#{orderSuccess.order_number||orderSuccess.id}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-gray-500">{t('lp.orderTotal','Total')}</span><span className="font-bold">{total.toLocaleString()} {store?.currency||'DZD'}</span></div>
-        </div>
-        <Link to={`/s/${storeSlug}`} className="inline-block mt-6 px-6 py-3 rounded-xl text-white font-bold text-sm" style={{backgroundColor:pc}}>{t('lp.continueShopping','Continue Shopping')}</Link>
+  /* ─── Loading ─── */
+  if(loading)return(
+    <div className="min-h-screen flex items-center justify-center" style={{background:'oklch(0.17 0.01 280)'}}>
+      <div className="relative">
+        <div className="w-12 h-12 rounded-full border-[3px] border-white/10 border-t-white/80 animate-spin"/>
+        <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-b-white/30 animate-spin" style={{animationDirection:'reverse',animationDuration:'1.5s'}}/>
       </div>
     </div>
   );
 
-  return(
-    <div className="min-h-screen" style={{backgroundColor:page.bg_color||'#FFFFFF',color:page.text_color||'#1F2937'}}>
-      {/* ═══ HERO ═══ */}
-      <section className="relative overflow-hidden" style={{backgroundColor:page.hero_bg||'#7C3AED'}}>
-        <div className="absolute inset-0 opacity-10" style={{backgroundImage:'radial-gradient(circle at 20% 80%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 50%)'}}/>
-        <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-          {store?.logo&&<img src={store.logo} alt="" className="w-14 h-14 rounded-xl mx-auto mb-4 shadow-lg"/>}
-          <h1 className="text-3xl sm:text-5xl font-black leading-tight" style={{color:page.hero_text||'#FFF'}}>{page.hero_title||store?.name}</h1>
-          <p className="mt-4 text-base sm:text-lg opacity-90 max-w-2xl mx-auto" style={{color:page.hero_text||'#FFF'}}>{page.hero_subtitle}</p>
-          <button onClick={scrollToCheckout} className="mt-8 px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5 transition-all inline-flex items-center gap-2" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
-            <ShoppingBag size={20}/>{page.cta_text||t('lp.orderNow','Order Now')}
-          </button>
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm opacity-80" style={{color:page.hero_text||'#FFF'}}>
-            <span className="flex items-center gap-1"><Truck size={14}/>{t('lp.freeDelivery','Fast Delivery')}</span>
-            <span className="flex items-center gap-1"><Shield size={14}/>{t('lp.secure','Secure Payment')}</span>
-            <span className="flex items-center gap-1"><Check size={14}/>{t('lp.guarantee','Guaranteed')}</span>
-          </div>
+  /* ─── Not Found ─── */
+  if(notFound)return(
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{background:'oklch(0.17 0.01 280)'}}>
+      <div className="text-center space-y-4">
+        <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto">
+          <Package size={36} className="text-white/30"/>
         </div>
-      </section>
+        <p className="text-white/60 font-semibold text-lg">{t('lp.pageNotFound','Page not found')}</p>
+        <Link to={`/s/${storeSlug}`} className="text-sm text-white/40 hover:text-white/70 transition-colors underline underline-offset-4">{t('lp.goToStore','Go to store')}</Link>
+      </div>
+    </div>
+  );
 
-      {/* ═══ PRODUCTS — each is a full-screen section ═══ */}
-      {page.items.map((item,idx)=>{
-        const qty=cart[item.product_id]||0;
-        const isEven=idx%2===0;
-        return(
-        <section key={item.product_id} className={`py-12 sm:py-20 ${isEven?'':'bg-gray-50'}`}>
-          <div className="max-w-5xl mx-auto px-4">
-            {item.headline&&<p className="text-sm font-bold uppercase tracking-wider mb-2" style={{color:pc}}>{item.headline}</p>}
-            <div className={`flex flex-col ${isEven?'md:flex-row':'md:flex-row-reverse'} gap-8 items-center`}>
-              {/* Image */}
-              <div className="flex-1 w-full">
-                {(item.custom_image||item.image)?
-                  <img src={item.custom_image||item.image} alt={item.name} className="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-square"/>
-                  :<div className="w-full max-w-md mx-auto aspect-square rounded-2xl bg-gray-200 flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>
-                }
-              </div>
-              {/* Info */}
-              <div className="flex-1 space-y-4">
-                <h2 className="text-2xl sm:text-3xl font-black">{item.name}</h2>
-                <p className="text-gray-500 leading-relaxed">{item.description}</p>
-                {/* Features */}
-                {item.features?.length>0&&<ul className="space-y-2">
-                  {item.features.filter(f=>f.trim()).map((f,i)=>(
-                    <li key={i} className="flex items-start gap-2 text-sm"><Check size={16} className="shrink-0 mt-0.5" style={{color:pc}}/><span>{f}</span></li>
-                  ))}
-                </ul>}
-                {/* Price */}
-                <div className="flex items-end gap-3">
-                  <span className="text-3xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} {store?.currency||'DZD'}</span>
-                  {item.compare_price&&<span className="text-lg text-gray-400 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
+  /* ─── Order Success ─── */
+  if(orderSuccess)return(
+    <div className="min-h-screen flex items-center justify-center p-4" style={{background:`linear-gradient(135deg, ${page.hero_bg||'oklch(0.35 0.15 280)'}, oklch(0.15 0.01 280))`}}>
+      <Reveal animation="zoom">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-10 max-w-md w-full text-center">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{backgroundColor:pc+'18'}}>
+            <Check size={28} style={{color:pc}}/>
+          </div>
+          <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 mb-2">{t('lp.orderSuccess','Order Placed Successfully!')}</h2>
+          <p className="text-sm text-gray-500 leading-relaxed mb-6">{t('lp.orderSuccessDesc','Thank you for your order. We will contact you shortly to confirm.')}</p>
+          <div className="rounded-2xl p-5 space-y-3" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+            <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderNumber','Order')}</span><span className="font-mono font-bold text-gray-900">#{orderSuccess.order_number||orderSuccess.id}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderTotal','Total')}</span><span className="font-bold" style={{color:pc}}>{total.toLocaleString()} {store?.currency||'DZD'}</span></div>
+          </div>
+          <Link to={`/s/${storeSlug}`} className="inline-block mt-7 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:brightness-110 active:scale-[0.97]" style={{backgroundColor:pc}}>{t('lp.continueShopping','Continue Shopping')}</Link>
+        </div>
+      </Reveal>
+    </div>
+  );
+
+  /* ─── Hero sections by style ─── */
+  const renderHero=()=>{
+    const heroBg=page.hero_bg||'oklch(0.22 0.04 280)';
+    const heroText=page.hero_text||'#FFFFFF';
+
+    if(heroStyle==='split'){
+      return(
+        <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
+          <div className="absolute inset-0 opacity-[0.04]" style={{backgroundImage:`radial-gradient(circle at 70% 30%, ${heroText} 0%, transparent 60%)`}}/>
+          <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24">
+            <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
+              <Reveal animation={anim} className="flex-1 space-y-6">
+                <div>
+                  {showCountdown&&<div className="mb-4"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={page.cta_bg||'#10B981'}/></div>}
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.1] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
+                  {page.hero_subtitle&&<p className="mt-4 text-base sm:text-lg opacity-75 leading-relaxed max-w-lg" style={{color:heroText}}>{page.hero_subtitle}</p>}
                 </div>
-                {/* Quantity + Add */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3 py-2 hover:bg-gray-100 transition-colors"><Minus size={16}/></button>
-                    <span className="px-4 py-2 font-bold text-lg min-w-[3rem] text-center">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-3 py-2 hover:bg-gray-100 transition-colors"><Plus size={16}/></button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button onClick={scrollToCheckout} className="px-7 py-3.5 rounded-2xl font-bold text-sm inline-flex items-center gap-2 transition-all hover:brightness-110 active:scale-[0.97] shadow-lg" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
+                    <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
+                  </button>
+                  <button onClick={scrollToCheckout} className="px-5 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:bg-white/10 flex items-center gap-1.5" style={{color:heroText,border:`1px solid ${heroText}30`}}>
+                    <ArrowDown size={14}/>{t('lp.seeProducts','See Products')}
+                  </button>
+                </div>
+                {showTrust&&<div className="pt-4"><TrustBadges accent={page.cta_bg||'#10B981'} textColor={heroText}/></div>}
+              </Reveal>
+              {page.hero_image&&(
+                <Reveal animation={anim} delay={200} className="flex-1 w-full md:w-auto">
+                  <div className="relative">
+                    <div className="absolute -inset-4 rounded-3xl opacity-20 blur-2xl" style={{backgroundColor:pc}}/>
+                    <img src={page.hero_image} alt="" className="relative w-full max-w-md mx-auto rounded-2xl shadow-2xl object-cover aspect-[4/3]"/>
                   </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all" style={{backgroundColor:pc}}>
-                    <ShoppingBag size={14} className="inline mr-1"/>{t('lp.addToOrder','Add to Order')}
-                  </button>}
-                </div>
-              </div>
+                </Reveal>
+              )}
             </div>
           </div>
         </section>
-        );
-      })}
+      );
+    }
 
-      {/* ═══ CHECKOUT SECTION ═══ */}
-      <section ref={checkoutRef} className="py-12 sm:py-20" style={{backgroundColor:page.hero_bg||'#7C3AED'}}>
-        <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-8" style={{color:page.hero_text||'#FFF'}}>{t('lp.completeOrder','Complete Your Order')}</h2>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6" style={{color:'#1F2937'}}>
-            {/* Order summary */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-bold text-gray-500 uppercase">{t('lp.yourOrder','Your Order')}</p>
-              {cartItems.length===0&&<p className="text-sm text-gray-400 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
-              {cartItems.map(it=>(
-                <div key={it.product_id} className="flex items-center justify-between py-1.5">
-                  <div className="flex items-center gap-2">
-                    {it.image&&<img src={it.image} className="w-8 h-8 rounded object-cover"/>}
-                    <span className="text-sm font-medium">{it.name} × {cart[it.product_id]}</span>
-                  </div>
-                  <span className="text-sm font-bold">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {store?.currency||'DZD'}</span>
+    if(heroStyle==='minimal'){
+      return(
+        <section className="relative" style={{backgroundColor:heroBg}}>
+          <div className="max-w-3xl mx-auto px-5 py-20 sm:py-32 text-center">
+            <Reveal animation={anim}>
+              {showCountdown&&<div className="mb-5 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={page.cta_bg||'#10B981'}/></div>}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
+              {page.hero_subtitle&&<p className="mt-5 text-base sm:text-lg opacity-60 max-w-xl mx-auto leading-relaxed" style={{color:heroText}}>{page.hero_subtitle}</p>}
+              <button onClick={scrollToCheckout} className="mt-8 px-8 py-4 rounded-2xl font-bold text-base inline-flex items-center gap-2 transition-all hover:brightness-110 active:scale-[0.97] shadow-lg" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
+                <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
+              </button>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    /* centered (default) */
+    return(
+      <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
+        <div className="absolute inset-0 opacity-[0.06]" style={{backgroundImage:`radial-gradient(circle at 25% 80%, ${heroText} 0%, transparent 50%), radial-gradient(circle at 75% 20%, ${heroText} 0%, transparent 50%)`}}/>
+        <div className="relative max-w-4xl mx-auto px-5 py-16 sm:py-28 text-center">
+          <Reveal animation={anim}>
+            {store?.logo&&<img src={store.logo} alt="" className="w-14 h-14 rounded-2xl mx-auto mb-5 shadow-lg ring-2 ring-white/10"/>}
+            {showCountdown&&<div className="mb-5 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={page.cta_bg||'#10B981'}/></div>}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
+            {page.hero_subtitle&&<p className="mt-5 text-base sm:text-lg opacity-75 max-w-2xl mx-auto leading-relaxed" style={{color:heroText}}>{page.hero_subtitle}</p>}
+            <button onClick={scrollToCheckout} className="mt-9 px-9 py-4 rounded-2xl font-bold text-base shadow-xl hover:shadow-2xl transition-all hover:brightness-110 active:scale-[0.97] inline-flex items-center gap-2" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
+              <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
+            </button>
+            {showTrust&&<div className="mt-10"><TrustBadges accent={page.cta_bg||'#10B981'} textColor={heroText}/></div>}
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Alternating ─── */
+  const renderAlternating=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const isEven=idx%2===0;
+    const sectionBg=isEven?page.bg_color||'#FAFAFA':'oklch(0.97 0.005 280)';
+    return(
+      <section key={item.product_id} style={{backgroundColor:sectionBg}}>
+        <div className="max-w-5xl mx-auto px-5 py-14 sm:py-24">
+          <Reveal animation={anim} delay={100}>
+            <div className={`flex flex-col ${isEven?'md:flex-row':'md:flex-row-reverse'} gap-8 md:gap-14 items-center`}>
+              {/* Image */}
+              <div className="flex-1 w-full">
+                <div className="relative group">
+                  {item.compare_price&&(
+                    <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>
+                      -{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%
+                    </div>
+                  )}
+                  {(item.custom_image||item.image)?
+                    <img src={item.custom_image||item.image} alt={item.name} className="w-full max-w-lg mx-auto rounded-2xl shadow-xl object-cover aspect-square transition-transform duration-500 group-hover:scale-[1.02]"/>
+                    :<div className="w-full max-w-lg mx-auto aspect-square rounded-2xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>
+                  }
                 </div>
-              ))}
-              <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('lp.subtotal','Subtotal')}</span><span className="font-bold">{subtotal.toLocaleString()} {store?.currency||'DZD'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('lp.shipping','Shipping')}</span><span className="font-bold">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${store?.currency||'DZD'}`:'—'}</span></div>
-                <div className="flex justify-between text-lg font-black pt-1 border-t border-gray-200"><span>{t('lp.total','Total')}</span><span style={{color:pc}}>{total.toLocaleString()} {store?.currency||'DZD'}</span></div>
+              </div>
+              {/* Info */}
+              <div className="flex-1 space-y-5">
+                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
+                {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:page.text_color||'#1F2937'}}>{item.description}</p>}
+                {item.features?.length>0&&(
+                  <ul className="space-y-2.5">
+                    {item.features.filter(f=>f.trim()).map((f,i)=>(
+                      <li key={i} className="flex items-start gap-2.5 text-sm">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center mt-0.5 shrink-0" style={{backgroundColor:pc+'18'}}>
+                          <Check size={12} style={{color:pc}}/>
+                        </div>
+                        <span style={{color:page.text_color||'#1F2937'}}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {/* Price */}
+                <div className="flex items-end gap-3 pt-1">
+                  <span className="text-3xl font-extrabold tracking-tight" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-base font-bold opacity-70">{store?.currency||'DZD'}</span></span>
+                  {item.compare_price&&<span className="text-lg text-gray-400 line-through font-medium">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                </div>
+                {/* Quantity */}
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors active:bg-gray-200"><Minus size={15}/></button>
+                    <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors active:bg-gray-200"><Plus size={15}/></button>
+                  </div>
+                  {qty===0&&(
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg transition-all hover:brightness-110 active:scale-[0.97] flex items-center gap-1.5" style={{backgroundColor:pc}}>
+                      <ShoppingBag size={14}/>{t('lp.addToOrder','Add to Order')}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
 
-            {/* Form */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="text-xs font-bold text-gray-500 flex items-center gap-1"><User size={12}/>{t('lp.fullName','Full Name')} *</label><input className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent" value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')}/></div>
-              <div><label className="text-xs font-bold text-gray-500 flex items-center gap-1"><Phone size={12}/>{t('lp.phone','Phone')} *</label><input className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent" value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456"/></div>
-              {store?.checkout_email&&<div><label className="text-xs font-bold text-gray-500 flex items-center gap-1"><Mail size={12}/>{t('lp.email','Email')}</label><input className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com"/></div>}
-              <div>
-                <label className="text-xs font-bold text-gray-500 flex items-center gap-1"><MapPin size={12}/>{t('lp.wilaya','Wilaya')} *</label>
-                <select className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white" value={form.shipping_wilaya} onChange={set('shipping_wilaya')}>
-                  <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
-                  {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500">{t('lp.commune','Commune')} *</label>
-                {communes.length>0?
-                  <select className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white" value={form.shipping_city} onChange={set('shipping_city')}>
-                    <option value="">{t('checkout.selectCity','Select commune...')}</option>
-                    {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
-                  </select>
-                  :<input className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent" value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}/>
+  /* ─── Product Card: Stacked ─── */
+  const renderStacked=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const sectionBg=idx%2===0?page.bg_color||'#FAFAFA':'oklch(0.97 0.005 280)';
+    return(
+      <section key={item.product_id} style={{backgroundColor:sectionBg}}>
+        <div className="max-w-3xl mx-auto px-5 py-14 sm:py-20">
+          <Reveal animation={anim} delay={80}>
+            <div className="space-y-6">
+              {/* Image */}
+              <div className="relative group">
+                {item.compare_price&&(
+                  <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>
+                    -{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%
+                  </div>
+                )}
+                {(item.custom_image||item.image)?
+                  <img src={item.custom_image||item.image} alt={item.name} className="w-full rounded-2xl shadow-xl object-cover aspect-[16/9] transition-transform duration-500 group-hover:scale-[1.01]"/>
+                  :<div className="w-full aspect-[16/9] rounded-2xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>
                 }
               </div>
-              <div className="sm:col-span-2"><label className="text-xs font-bold text-gray-500">{t('lp.address','Address')}</label><input className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent" value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')}/></div>
-            </div>
-
-            {/* Delivery type */}
-            {wilayas.length>0&&form.shipping_wilaya&&<div>
-              <label className="text-xs font-bold text-gray-500 mb-2 block">{t('checkout.deliveryType','Delivery Type')}</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={()=>setForm(f=>({...f,shipping_type:'home'}))} className={`p-3 rounded-xl border-2 text-sm font-bold text-left transition-all ${form.shipping_type==='home'?'border-violet-500 bg-violet-50':'border-gray-200 hover:border-gray-300'}`}>
-                  <Truck size={16} className="mb-1"/>{t('checkout.homeDelivery','Home Delivery')}
-                </button>
-                <button onClick={()=>setForm(f=>({...f,shipping_type:'desk'}))} className={`p-3 rounded-xl border-2 text-sm font-bold text-left transition-all ${form.shipping_type==='desk'?'border-violet-500 bg-violet-50':'border-gray-200 hover:border-gray-300'}`}>
-                  <Package size={16} className="mb-1"/>{t('checkout.deskDelivery','Desk / Relay')}
-                </button>
+              {/* Content */}
+              <div className="space-y-4">
+                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
+                {item.description&&<p className="text-sm leading-relaxed opacity-60 max-w-2xl" style={{color:page.text_color||'#1F2937'}}>{item.description}</p>}
+                {item.features?.length>0&&(
+                  <div className="flex flex-wrap gap-2">
+                    {item.features.filter(f=>f.trim()).map((f,i)=>(
+                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style={{backgroundColor:pc+'12',color:pc}}>
+                        <Check size={11}/>{f}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <div className="flex items-end gap-3">
+                    <span className="text-3xl font-extrabold tracking-tight" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-base font-bold opacity-70">{store?.currency||'DZD'}</span></span>
+                    {item.compare_price&&<span className="text-lg text-gray-400 line-through font-medium">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
+                      <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Minus size={15}/></button>
+                      <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center tabular-nums">{qty}</span>
+                      <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Plus size={15}/></button>
+                    </div>
+                    {qty===0&&(
+                      <button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg transition-all hover:brightness-110 active:scale-[0.97] flex items-center gap-1.5" style={{backgroundColor:pc}}>
+                        <ShoppingBag size={14}/>{t('lp.addToOrder','Add to Order')}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
 
-            {/* Payment */}
-            <div>
-              <label className="text-xs font-bold text-gray-500 mb-2 block">{t('checkout.paymentMethod','Payment Method')}</label>
-              <div className="space-y-2">
-                {store?.enable_cod!==false&&<button onClick={()=>setForm(f=>({...f,payment_method:'cod'}))} className={`w-full p-3 rounded-xl border-2 text-sm font-bold text-left flex items-center gap-3 transition-all ${form.payment_method==='cod'?'border-violet-500 bg-violet-50':'border-gray-200 hover:border-gray-300'}`}><CreditCard size={16}/>{t('lp.cod','Cash on Delivery')}</button>}
-                {store?.enable_ccp&&<button onClick={()=>setForm(f=>({...f,payment_method:'ccp'}))} className={`w-full p-3 rounded-xl border-2 text-sm font-bold text-left flex items-center gap-3 transition-all ${form.payment_method==='ccp'?'border-violet-500 bg-violet-50':'border-gray-200 hover:border-gray-300'}`}><CreditCard size={16}/>CCP</button>}
-                {store?.enable_baridimob&&<button onClick={()=>setForm(f=>({...f,payment_method:'baridimob'}))} className={`w-full p-3 rounded-xl border-2 text-sm font-bold text-left flex items-center gap-3 transition-all ${form.payment_method==='baridimob'?'border-violet-500 bg-violet-50':'border-gray-200 hover:border-gray-300'}`}><CreditCard size={16}/>BaridiPay</button>}
+  /* ─── Product Card: Showcase ─── */
+  const renderShowcase=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const hasImage=item.custom_image||item.image;
+    return(
+      <section key={item.product_id} className="relative overflow-hidden" style={{backgroundColor:idx%2===0?'oklch(0.14 0.01 280)':'oklch(0.18 0.015 280)'}}>
+        {hasImage&&<div className="absolute inset-0"><img src={item.custom_image||item.image} alt="" className="w-full h-full object-cover opacity-20 blur-sm scale-105"/><div className="absolute inset-0" style={{background:'linear-gradient(to top, oklch(0.14 0.01 280) 20%, transparent 80%)'}}/></div>}
+        <div className="relative max-w-4xl mx-auto px-5 py-20 sm:py-32 text-center">
+          <Reveal animation={anim} delay={100}>
+            <div className="space-y-6">
+              {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">{item.headline}</p>}
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">{item.name}</h2>
+              {item.description&&<p className="text-sm sm:text-base text-white/60 leading-relaxed max-w-xl mx-auto">{item.description}</p>}
+              {hasImage&&(
+                <div className="relative max-w-sm mx-auto mt-4">
+                  <div className="absolute -inset-3 rounded-3xl blur-xl" style={{backgroundColor:pc,opacity:0.15}}/>
+                  <img src={item.custom_image||item.image} alt={item.name} className="relative w-full rounded-2xl shadow-2xl object-cover aspect-square"/>
+                </div>
+              )}
+              {item.features?.length>0&&(
+                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                  {item.features.filter(f=>f.trim()).map((f,i)=>(
+                    <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white/80">
+                      <Check size={11}/>{f}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-extrabold text-white">{parseFloat(item.price).toLocaleString()} <span className="text-base font-bold text-white/60">{store?.currency||'DZD'}</span></span>
+                  {item.compare_price&&<span className="text-lg text-white/40 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <div className="flex items-center rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm">
+                  <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 text-white hover:bg-white/10 transition-colors"><Minus size={15}/></button>
+                  <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center text-white tabular-nums">{qty}</span>
+                  <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 text-white hover:bg-white/10 transition-colors"><Plus size={15}/></button>
+                </div>
+                {qty===0&&(
+                  <button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.97] flex items-center gap-1.5" style={{backgroundColor:pc}}>
+                    <ShoppingBag size={14}/>{t('lp.addToOrder','Add to Order')}
+                  </button>
+                )}
               </div>
             </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
 
-            {/* Submit */}
-            <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50" style={{backgroundColor:page.cta_bg||pc}}>
-              {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={20}/>{page.cta_text||t('lp.placeOrder','Place Order')} — {total.toLocaleString()} {store?.currency||'DZD'}</>}
-            </button>
-            <div className="flex items-center justify-center gap-4 text-[10px] text-gray-400">
-              <span className="flex items-center gap-1"><Lock size={10}/>{t('lp.secureCheckout','Secure checkout')}</span>
-              <span className="flex items-center gap-1"><Shield size={10}/>{t('lp.moneyBack','Money-back guarantee')}</span>
+  const renderProduct=(item,idx)=>{
+    if(layoutStyle==='stacked')return renderStacked(item,idx);
+    if(layoutStyle==='showcase')return renderShowcase(item,idx);
+    return renderAlternating(item,idx);
+  };
+
+  /* ─── Floating cart indicator ─── */
+  const FloatingCart=()=>{
+    if(totalQty===0)return null;
+    return(
+      <button onClick={scrollToCheckout} className="fixed bottom-5 right-5 z-50 flex items-center gap-2 pl-5 pr-4 py-3 rounded-2xl text-white font-bold text-sm shadow-xl transition-all hover:shadow-2xl hover:scale-105 active:scale-95" style={{backgroundColor:pc}}>
+        <ShoppingBag size={18}/>
+        <span>{totalQty} {t('lp.items','items')}</span>
+        <span className="opacity-70">|</span>
+        <span>{subtotal.toLocaleString()} {store?.currency||'DZD'}</span>
+      </button>
+    );
+  };
+
+  /* ─── Input component ─── */
+  const Input=({icon:Icon,label,required,...props})=>(
+    <div>
+      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
+        {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:pc}}>*</span>}
+      </label>
+      <input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)',focusRingColor:pc}} {...props}
+        onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
+        onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
+      />
+    </div>
+  );
+
+  const Select=({icon:Icon,label,required,children,...props})=>(
+    <div>
+      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
+        {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:pc}}>*</span>}
+      </label>
+      <select className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 appearance-none bg-no-repeat" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:`oklch(0.99 0.002 280) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/16px no-repeat`}} {...props}
+        onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
+        onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
+      >{children}</select>
+    </div>
+  );
+
+  /* ─── MAIN RENDER ─── */
+  return(
+    <div className="min-h-screen" style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937'}}>
+      <FloatingCart/>
+
+      {renderHero()}
+
+      {/* Social proof between hero and products */}
+      {showSocial&&(
+        <div className="py-8" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+          <SocialProof accent={pc}/>
+        </div>
+      )}
+
+      {/* Products */}
+      {page.items.map((item,idx)=>renderProduct(item,idx))}
+
+      {/* CTA divider before checkout */}
+      <Reveal animation={anim}>
+        <div className="py-12 text-center" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+          <p className="text-sm font-semibold opacity-50 mb-3" style={{color:page.text_color||'#1F2937'}}>{t('lp.readyToOrder','Ready to order?')}</p>
+          <button onClick={scrollToCheckout} className="px-8 py-3.5 rounded-2xl text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.97] inline-flex items-center gap-2" style={{backgroundColor:pc}}>
+            <ShoppingBag size={16}/>{page.cta_text||t('lp.orderNow','Order Now')}
+          </button>
+        </div>
+      </Reveal>
+
+      {/* ═══ CHECKOUT ═══ */}
+      <section ref={checkoutRef} className="relative overflow-hidden" style={{background:`linear-gradient(160deg, ${page.hero_bg||'oklch(0.22 0.04 280)'}, oklch(0.12 0.01 280))`}}>
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:`radial-gradient(circle at 30% 70%, white 0%, transparent 50%)`}}/>
+        <div className="relative max-w-3xl mx-auto px-5 py-14 sm:py-20">
+          <Reveal animation={anim}>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-center mb-8" style={{color:page.hero_text||'#FFF'}}>{t('lp.completeOrder','Complete Your Order')}</h2>
+          </Reveal>
+          <Reveal animation={anim} delay={150}>
+            <div className="rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6" style={{backgroundColor:'#FFFFFF',color:'#1F2937'}}>
+              {/* Order summary */}
+              <div className="rounded-2xl p-5 space-y-3" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+                <p className="text-xs font-bold uppercase tracking-wider" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.yourOrder','Your Order')}</p>
+                {cartItems.length===0&&<p className="text-sm opacity-40 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
+                {cartItems.map(it=>(
+                  <div key={it.product_id} className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-3">
+                      {it.image&&<img src={it.image} className="w-10 h-10 rounded-lg object-cover shadow-sm"/>}
+                      <div>
+                        <span className="text-sm font-semibold">{it.name}</span>
+                        <span className="text-xs opacity-40 ml-2">x{cart[it.product_id]}</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {store?.currency||'DZD'}</span>
+                  </div>
+                ))}
+                <div className="border-t pt-3 mt-3 space-y-2" style={{borderColor:'oklch(0.9 0.005 280)'}}>
+                  <div className="flex justify-between text-sm"><span className="opacity-50">{t('lp.subtotal','Subtotal')}</span><span className="font-semibold tabular-nums">{subtotal.toLocaleString()} {store?.currency||'DZD'}</span></div>
+                  <div className="flex justify-between text-sm"><span className="opacity-50">{t('lp.shipping','Shipping')}</span><span className="font-semibold tabular-nums">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${store?.currency||'DZD'}`:'—'}</span></div>
+                  <div className="flex justify-between text-lg font-extrabold pt-2 border-t" style={{borderColor:'oklch(0.9 0.005 280)'}}><span>{t('lp.total','Total')}</span><span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {store?.currency||'DZD'}</span></div>
+                </div>
+              </div>
+
+              {/* Form */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')}/>
+                <Input icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456"/>
+                {store?.checkout_email&&<Input icon={Mail} label={t('lp.email','Email')} value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com"/>}
+                <Select icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')}>
+                  <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
+                  {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
+                </Select>
+                <div>
+                  <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
+                  {communes.length>0?
+                    <select className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 appearance-none bg-no-repeat" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:`oklch(0.99 0.002 280) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/16px no-repeat`}} value={form.shipping_city} onChange={set('shipping_city')}
+                      onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
+                      onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
+                    >
+                      <option value="">{t('checkout.selectCity','Select commune...')}</option>
+                      {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
+                    </select>
+                    :<input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}
+                      onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
+                      onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
+                    />
+                  }
+                </div>
+                <div className="sm:col-span-2">
+                  <Input icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')}/>
+                </div>
+              </div>
+
+              {/* Delivery type */}
+              {wilayas.length>0&&form.shipping_wilaya&&(
+                <div>
+                  <label className="text-xs font-semibold mb-2.5 block" style={{color:'oklch(0.55 0.01 280)'}}>{t('checkout.deliveryType','Delivery Type')}</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','Home Delivery')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','Desk / Relay')}].map(d=>(
+                      <button key={d.type} onClick={()=>setForm(f=>({...f,shipping_type:d.type}))} className="p-3.5 rounded-xl text-sm font-semibold text-left transition-all flex items-center gap-2.5" style={{
+                        border:`2px solid ${form.shipping_type===d.type?pc:'oklch(0.9 0.005 280)'}`,
+                        backgroundColor:form.shipping_type===d.type?pc+'08':'transparent',
+                      }}>
+                        <d.icon size={16} style={{color:form.shipping_type===d.type?pc:'oklch(0.55 0.01 280)'}}/>{d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment */}
+              <div>
+                <label className="text-xs font-semibold mb-2.5 block" style={{color:'oklch(0.55 0.01 280)'}}>{t('checkout.paymentMethod','Payment Method')}</label>
+                <div className="space-y-2">
+                  {[
+                    store?.enable_cod!==false&&{method:'cod',label:t('lp.cod','Cash on Delivery')},
+                    store?.enable_ccp&&{method:'ccp',label:'CCP'},
+                    store?.enable_baridimob&&{method:'baridimob',label:'BaridiPay'},
+                  ].filter(Boolean).map(p=>(
+                    <button key={p.method} onClick={()=>setForm(f=>({...f,payment_method:p.method}))} className="w-full p-3.5 rounded-xl text-sm font-semibold text-left flex items-center gap-3 transition-all" style={{
+                      border:`2px solid ${form.payment_method===p.method?pc:'oklch(0.9 0.005 280)'}`,
+                      backgroundColor:form.payment_method===p.method?pc+'08':'transparent',
+                    }}>
+                      <CreditCard size={16} style={{color:form.payment_method===p.method?pc:'oklch(0.55 0.01 280)'}}/>{p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none" style={{backgroundColor:page.cta_bg||pc}}>
+                {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={18}/>{page.cta_text||t('lp.placeOrder','Place Order')} — {total.toLocaleString()} {store?.currency||'DZD'}</>}
+              </button>
+              <div className="flex items-center justify-center gap-5 text-[11px]" style={{color:'oklch(0.65 0.01 280)'}}>
+                <span className="flex items-center gap-1.5"><Lock size={11}/>{t('lp.secureCheckout','Secure checkout')}</span>
+                <span className="flex items-center gap-1.5"><Shield size={11}/>{t('lp.moneyBack','Money-back guarantee')}</span>
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-xs text-gray-400 bg-gray-50">
-        <p>© {new Date().getFullYear()} {store?.name}. {t('lp.allRights','All rights reserved.')}</p>
-        <Link to={`/s/${storeSlug}`} className="text-violet-500 hover:underline mt-1 inline-block">{t('lp.visitStore','Visit our full store')}</Link>
+      <footer className="py-8 text-center space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+        <p className="text-xs" style={{color:'oklch(0.6 0.01 280)'}}>© {new Date().getFullYear()} {store?.name}. {t('lp.allRights','All rights reserved.')}</p>
+        <Link to={`/s/${storeSlug}`} className="text-xs font-semibold hover:underline underline-offset-4 transition-colors" style={{color:pc}}>{t('lp.visitStore','Visit our full store')}</Link>
       </footer>
     </div>
   );
