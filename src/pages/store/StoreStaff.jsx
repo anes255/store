@@ -24,31 +24,32 @@ function roleEmoji(label = '') {
 }
 
 // All granular permissions available in the system
+// Labels and groups are translation keys resolved at render time via t()
 const ALL_PERMISSIONS = [
-  { key: 'dashboard_view', label: 'View Dashboard', group: 'Dashboard' },
-  { key: 'analytics_view', label: 'View Analytics', group: 'Dashboard' },
-  { key: 'orders_view', label: 'View Orders', group: 'Orders' },
-  { key: 'orders_edit', label: 'Edit / Update Orders', group: 'Orders' },
-  { key: 'orders_confirm', label: 'Confirm Orders', group: 'Orders' },
-  { key: 'orders_prepare', label: 'Prepare Orders', group: 'Orders' },
-  { key: 'orders_delete', label: 'Delete Orders', group: 'Orders' },
-  { key: 'products_view', label: 'View Products', group: 'Products' },
-  { key: 'products_edit', label: 'Add / Edit Products', group: 'Products' },
-  { key: 'products_delete', label: 'Delete Products', group: 'Products' },
-  { key: 'stock_manage', label: 'Manage Stock', group: 'Products' },
-  { key: 'customers_view', label: 'View Customers', group: 'Customers' },
-  { key: 'customers_edit', label: 'Edit Customers', group: 'Customers' },
-  { key: 'customers_blacklist', label: 'Manage Blacklist', group: 'Customers' },
-  { key: 'finances_view', label: 'View Costs & Revenue', group: 'Finances' },
-  { key: 'finances_edit', label: 'Add / Edit Expenses', group: 'Finances' },
-  { key: 'taxes_view', label: 'View Taxes', group: 'Finances' },
-  { key: 'settings_view', label: 'View Settings', group: 'Settings' },
-  { key: 'settings_edit', label: 'Edit Store Settings', group: 'Settings' },
-  { key: 'staff_manage', label: 'Manage Staff', group: 'Settings' },
-  { key: 'builder_edit', label: 'Edit Page Builder', group: 'Settings' },
-  { key: 'shipping_manage', label: 'Manage Shipping', group: 'Shipping' },
-  { key: 'reviews_manage', label: 'Manage Reviews', group: 'Content' },
-  { key: 'domains_manage', label: 'Manage Domains', group: 'Settings' },
+  { key: 'dashboard_view', labelKey: 'staff.perm.dashboardView', label: 'View Dashboard', groupKey: 'staff.group.dashboard', group: 'Dashboard' },
+  { key: 'analytics_view', labelKey: 'staff.perm.analyticsView', label: 'View Analytics', groupKey: 'staff.group.dashboard', group: 'Dashboard' },
+  { key: 'orders_view', labelKey: 'staff.perm.ordersView', label: 'View Orders', groupKey: 'staff.group.orders', group: 'Orders' },
+  { key: 'orders_edit', labelKey: 'staff.perm.ordersEdit', label: 'Edit / Update Orders', groupKey: 'staff.group.orders', group: 'Orders' },
+  { key: 'orders_confirm', labelKey: 'staff.perm.ordersConfirm', label: 'Confirm Orders', groupKey: 'staff.group.orders', group: 'Orders' },
+  { key: 'orders_prepare', labelKey: 'staff.perm.ordersPrepare', label: 'Prepare Orders', groupKey: 'staff.group.orders', group: 'Orders' },
+  { key: 'orders_delete', labelKey: 'staff.perm.ordersDelete', label: 'Delete Orders', groupKey: 'staff.group.orders', group: 'Orders' },
+  { key: 'products_view', labelKey: 'staff.perm.productsView', label: 'View Products', groupKey: 'staff.group.products', group: 'Products' },
+  { key: 'products_edit', labelKey: 'staff.perm.productsEdit', label: 'Add / Edit Products', groupKey: 'staff.group.products', group: 'Products' },
+  { key: 'products_delete', labelKey: 'staff.perm.productsDelete', label: 'Delete Products', groupKey: 'staff.group.products', group: 'Products' },
+  { key: 'stock_manage', labelKey: 'staff.perm.stockManage', label: 'Manage Stock', groupKey: 'staff.group.products', group: 'Products' },
+  { key: 'customers_view', labelKey: 'staff.perm.customersView', label: 'View Customers', groupKey: 'staff.group.customers', group: 'Customers' },
+  { key: 'customers_edit', labelKey: 'staff.perm.customersEdit', label: 'Edit Customers', groupKey: 'staff.group.customers', group: 'Customers' },
+  { key: 'customers_blacklist', labelKey: 'staff.perm.customersBlacklist', label: 'Manage Blacklist', groupKey: 'staff.group.customers', group: 'Customers' },
+  { key: 'finances_view', labelKey: 'staff.perm.financesView', label: 'View Costs & Revenue', groupKey: 'staff.group.finances', group: 'Finances' },
+  { key: 'finances_edit', labelKey: 'staff.perm.financesEdit', label: 'Add / Edit Expenses', groupKey: 'staff.group.finances', group: 'Finances' },
+  { key: 'taxes_view', labelKey: 'staff.perm.taxesView', label: 'View Taxes', groupKey: 'staff.group.finances', group: 'Finances' },
+  { key: 'settings_view', labelKey: 'staff.perm.settingsView', label: 'View Settings', groupKey: 'staff.group.settings', group: 'Settings' },
+  { key: 'settings_edit', labelKey: 'staff.perm.settingsEdit', label: 'Edit Store Settings', groupKey: 'staff.group.settings', group: 'Settings' },
+  { key: 'staff_manage', labelKey: 'staff.perm.staffManage', label: 'Manage Staff', groupKey: 'staff.group.settings', group: 'Settings' },
+  { key: 'builder_edit', labelKey: 'staff.perm.builderEdit', label: 'Edit Page Builder', groupKey: 'staff.group.settings', group: 'Settings' },
+  { key: 'shipping_manage', labelKey: 'staff.perm.shippingManage', label: 'Manage Shipping', groupKey: 'staff.group.shipping', group: 'Shipping' },
+  { key: 'reviews_manage', labelKey: 'staff.perm.reviewsManage', label: 'Manage Reviews', groupKey: 'staff.group.content', group: 'Content' },
+  { key: 'domains_manage', labelKey: 'staff.perm.domainsManage', label: 'Manage Domains', groupKey: 'staff.group.settings', group: 'Settings' },
 ];
 
 const PERM_GROUPS = [...new Set(ALL_PERMISSIONS.map(p => p.group))];
@@ -98,7 +99,7 @@ export default function StoreStaff() {
 
   const cloneTemplate = (tpl) => {
     const lang = (document.documentElement.lang || 'en').slice(0, 2);
-    const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || 'Custom Role';
+    const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || t('staff.customRole','Custom Role');
     setRoleForm({ name, permissions: [...(tpl.permissions || [])] });
     setShowRoleCreator(true);
   };
@@ -127,8 +128,8 @@ export default function StoreStaff() {
   // so store owners can directly assign them (and still clone+tweak if they want)
   platformTemplates.forEach(tpl => {
     const lang = (document.documentElement.lang || 'en').slice(0, 2);
-    const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || 'Role';
-    const desc = (tpl.description && (tpl.description[lang] || tpl.description.en)) || `Platform template · ${(tpl.permissions || []).length} permissions`;
+    const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || t('staff.role','Role');
+    const desc = (tpl.description && (tpl.description[lang] || tpl.description.en)) || t('staff.platformTemplateDesc','Platform template') + ` · ${(tpl.permissions || []).length} ` + t('staff.permissionsCount','permissions');
     allRoles['tpl_' + tpl.id] = {
       label: name,
       icon: Shield,
@@ -138,7 +139,7 @@ export default function StoreStaff() {
       _platform: true,
     };
   });
-  customRoles.forEach(r => { allRoles[r.key] = { label: r.name, icon: Settings, color: 'bg-indigo-100 text-indigo-600', desc: `Custom role · ${r.permissions.length} permissions`, permissions: r.permissions }; });
+  customRoles.forEach(r => { allRoles[r.key] = { label: r.name, icon: Settings, color: 'bg-indigo-100 text-indigo-600', desc: t('staff.customRoleDesc','Custom role') + ` · ${r.permissions.length} ` + t('staff.permissionsCount','permissions'), permissions: r.permissions }; });
 
   const openAdd = () => {
     setEditing(null);
@@ -264,7 +265,7 @@ export default function StoreStaff() {
           <div className="flex flex-wrap gap-2">
             {platformTemplates.map(tpl => {
               const lang = (document.documentElement.lang || 'en').slice(0, 2);
-              const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || 'Template';
+              const name = (tpl.name && (tpl.name[lang] || tpl.name.en)) || t('staff.template','Template');
               const desc = (tpl.description && (tpl.description[lang] || tpl.description.en)) || '';
               return (
                 <button key={tpl.id} onClick={() => cloneTemplate(tpl)} className="flex items-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-100 transition-colors" title={desc}>
@@ -518,12 +519,13 @@ export default function StoreStaff() {
                     const checkedCount = groupPerms.filter(p => form.permissions.includes(p.key)).length;
                     const allChecked = checkedCount === groupPerms.length;
                     const expanded = expandedGroups[group] !== false;
+                    const groupLabel = groupPerms[0]?.groupKey ? t(groupPerms[0].groupKey, group) : group;
                     return (
                       <div key={group}>
                         <button onClick={() => setExpandedGroups(prev => ({ ...prev, [group]: !expanded }))} className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
                           <div className="flex items-center gap-2">
                             <ChevronDown size={14} className={`text-gray-400 transition-transform ${expanded ? '' : '-rotate-90'}`} />
-                            <span className="text-sm font-bold text-gray-700">{group}</span>
+                            <span className="text-sm font-bold text-gray-700">{groupLabel}</span>
                             <span className="text-[10px] text-gray-400">{checkedCount}/{groupPerms.length}</span>
                           </div>
                           <button onClick={e => { e.stopPropagation(); toggleGroup(group); }} className={`text-[10px] font-bold px-2 py-0.5 rounded ${allChecked ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-500'}`}>
@@ -535,7 +537,7 @@ export default function StoreStaff() {
                             {groupPerms.map(p => (
                               <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
                                 <input type="checkbox" checked={form.permissions.includes(p.key)} onChange={() => togglePerm(p.key)} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
-                                <span className="text-xs text-gray-700">{p.label}</span>
+                                <span className="text-xs text-gray-700">{p.labelKey ? t(p.labelKey, p.label) : p.label}</span>
                               </label>
                             ))}
                           </div>
@@ -570,14 +572,15 @@ export default function StoreStaff() {
                 <div className="border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
                   {PERM_GROUPS.map(group => {
                     const groupPerms = ALL_PERMISSIONS.filter(p => p.group === group);
+                    const groupLabel = groupPerms[0]?.groupKey ? t(groupPerms[0].groupKey, group) : group;
                     return (
                       <div key={group} className="p-3">
-                        <p className="text-xs font-bold text-gray-500 mb-2">{group}</p>
+                        <p className="text-xs font-bold text-gray-500 mb-2">{groupLabel}</p>
                         <div className="grid grid-cols-2 gap-1">
                           {groupPerms.map(p => (
                             <label key={p.key} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-50 cursor-pointer">
                               <input type="checkbox" checked={roleForm.permissions.includes(p.key)} onChange={() => toggleRolePerm(p.key)} className="w-3.5 h-3.5 rounded border-gray-300 text-brand-500" />
-                              <span className="text-[11px] text-gray-700">{p.label}</span>
+                              <span className="text-[11px] text-gray-700">{p.labelKey ? t(p.labelKey, p.label) : p.label}</span>
                             </label>
                           ))}
                         </div>

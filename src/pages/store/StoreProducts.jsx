@@ -20,9 +20,9 @@ export default function StoreProducts() {
   const loadCategories = () => { if (!currentStore?.id) return; productApi.getCategories(currentStore.id).then(r => setCategories(r.data || [])).catch(() => {}); };
   useEffect(() => { loadCategories(); }, [currentStore?.id]);
   const addCategory = async () => {
-    const name = prompt('New category name:'); if (!name) return;
-    try { await productApi.createCategory(currentStore.id, { name_en: name }); toast.success('Category added'); loadCategories(); }
-    catch { toast.error('Failed'); }
+    const name = prompt(t('products.newCategoryName','New category name:')); if (!name) return;
+    try { await productApi.createCategory(currentStore.id, { name_en: name }); toast.success(t('products.categoryAdded','Category added')); loadCategories(); }
+    catch { toast.error(t('products.failed','Failed')); }
   };
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -59,8 +59,8 @@ export default function StoreProducts() {
       const imgs = [];
       for (const f of files) { if (f.size>10*1024*1024) continue; imgs.push(await compress(await toB64(f))); }
       setForm(p => ({...p, images: [...p.images, ...imgs]}));
-      if (imgs.length) toast.success(`${imgs.length} ${t('storePage.imagesAdded','image(s) added')}`);
-    } catch { toast.error(t('storePage.failed','Failed')); }
+      if (imgs.length) toast.success(`${imgs.length} ${t('products.imagesAdded','image(s) added')}`);
+    } catch { toast.error(t('products.failed','Failed')); }
     setUploading(false);
     if(fileInputRef.current) fileInputRef.current.value='';
   };
@@ -74,7 +74,7 @@ export default function StoreProducts() {
       const v = [...form.variants];
       v[activeVarIdx] = {...v[activeVarIdx], images: [...(v[activeVarIdx].images||[]), ...imgs]};
       setForm({...form, variants:v});
-      toast.success(`${imgs.length} ${t('storePage.variantImagesAdded','variant image(s) added')}`);
+      toast.success(`${imgs.length} ${t('products.variantImagesAdded','variant image(s) added')}`);
     } catch {}
     if(variantFileRef.current) variantFileRef.current.value='';
   };
@@ -88,38 +88,38 @@ export default function StoreProducts() {
   const [descLang, setDescLang] = useState('en');
 
   const generateDesc = async () => {
-    if (!form.name_en && !form.name_fr) return toast.error(t('storePage.enterProductNameFirst','Enter product name first'));
+    if (!form.name_en && !form.name_fr) return toast.error(t('products.enterProductNameFirst','Enter product name first'));
     setAiLoading(true);
     try {
       const{data}=await aiApi.generateDescription({product_name:form.name_en||form.name_fr,category:'',language:descLang});
       setForm({...form, description_en: data.description});
-      toast.success(t('storePage.aiDescGenerated','AI description generated!'));
-    } catch { toast.error(t('storePage.aiGenFailed','AI generation failed')); }
+      toast.success(t('products.aiDescGenerated','AI description generated!'));
+    } catch { toast.error(t('products.aiGenFailed','AI generation failed')); }
     setAiLoading(false);
   };
 
   const generateDescAll = async () => {
-    if (!form.name_en && !form.name_fr) return toast.error(t('storePage.enterProductNameFirst','Enter product name first'));
+    if (!form.name_en && !form.name_fr) return toast.error(t('products.enterProductNameFirst','Enter product name first'));
     setAiLoading(true);
     try {
       const{data}=await aiApi.generateDescriptionMulti({product_name:form.name_en||form.name_fr,category:''});
       const combined = [data.en, data.fr ? `\n\n🇫🇷 ${data.fr}` : '', data.ar ? `\n\n🇩🇿 ${data.ar}` : ''].join('');
       setForm({...form, description_en: combined.trim()});
-      toast.success(t('storePage.aiDescGenerated3Lang','AI descriptions generated in 3 languages!'));
-    } catch { toast.error(t('storePage.aiGenFailed','AI generation failed')); }
+      toast.success(t('products.aiDescGenerated3Lang','AI descriptions generated in 3 languages!'));
+    } catch { toast.error(t('products.aiGenFailed','AI generation failed')); }
     setAiLoading(false);
   };
 
   const handleSave = async () => {
-    if (!form.price||!form.name_en) { toast.error(t('storePage.nameAndPriceRequired','Name and price required')); return; }
+    if (!form.price||!form.name_en) { toast.error(t('products.nameAndPriceRequired','Name and price required')); return; }
     try {
-      if (editing) { await productApi.update(currentStore.id,editing.id,form); toast.success(t('storePage.updated','Updated!')); }
-      else { await productApi.create(currentStore.id,form); toast.success(t('storePage.created','Created!')); }
+      if (editing) { await productApi.update(currentStore.id,editing.id,form); toast.success(t('products.updated','Updated!')); }
+      else { await productApi.create(currentStore.id,form); toast.success(t('products.created','Created!')); }
       setShowModal(false); setEditing(null); setForm({...empty}); loadProducts();
-    } catch(err) { toast.error(err.response?.data?.error||t('storePage.failed','Failed')); }
+    } catch(err) { toast.error(err.response?.data?.error||t('products.failed','Failed')); }
   };
 
-  const handleDelete = async (id) => { if(!confirm(t('storePage.deleteConfirm','Delete?'))) return; try{await productApi.delete(currentStore.id,id);toast.success(t('storePage.deleted','Deleted'));loadProducts();}catch{toast.error(t('storePage.failed','Failed'));} };
+  const handleDelete = async (id) => { if(!confirm(t('products.deleteConfirm','Delete?'))) return; try{await productApi.delete(currentStore.id,id);toast.success(t('products.deleted','Deleted'));loadProducts();}catch{toast.error(t('products.failed','Failed'));} };
 
   const openEdit = (p) => {
     setEditing(p);
@@ -141,19 +141,19 @@ export default function StoreProducts() {
         <button onClick={()=>{setEditing(null);setForm({...empty});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('products.addProduct')}</button>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
-        <button onClick={toggleAll} className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === products.length ? t('storePage.deselectAll','Deselect All') : t('storePage.selectAll','Select All')}>
+        <button onClick={toggleAll} className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === products.length ? t('products.deselectAll','Deselect All') : t('products.selectAll','Select All')}>
           {selectedItems.size > 0 && selectedItems.size === products.length ? <CheckSquare size={18} className="text-brand-600" /> : <Square size={18} className="text-gray-400" />}
-          <span className="text-[11px] sm:text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} ${t('storePage.selectedCount','selected')}` : t('storePage.selectAll','Select All')}</span>
+          <span className="text-[11px] sm:text-xs font-bold text-gray-500">{selectedItems.size > 0 ? `${selectedItems.size} ${t('products.selectedCount','selected')}` : t('products.selectAll','Select All')}</span>
         </button>
-        <div className="relative flex-1 basis-full sm:basis-auto sm:max-w-sm order-last sm:order-none"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"/><input className="input-field !pl-9 !py-2 text-sm w-full bg-white text-gray-900 placeholder-gray-400" placeholder={t('storePage.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)} style={{color:'#111827',backgroundColor:'#ffffff'}}/></div>
+        <div className="relative flex-1 basis-full sm:basis-auto sm:max-w-sm order-last sm:order-none"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"/><input className="input-field !pl-9 !py-2 text-sm w-full bg-white text-gray-900 placeholder-gray-400" placeholder={t('products.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)} style={{color:'#111827',backgroundColor:'#ffffff'}}/></div>
         <select className="input-field !py-2 text-sm w-full sm:!w-44 shrink-0" value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}>
-          <option value="">{t('storePage.allCategories','All Categories')}</option>
+          <option value="">{t('products.allCategories','All Categories')}</option>
           {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name} ({c.product_count||0})</option>))}
         </select>
-        <button onClick={addCategory} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title={t('storePage.addCategory','Add category')}><Plus size={12}/>{t('storePage.category','Category')}</button>
+        <button onClick={addCategory} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title={t('products.addCategory','Add category')}><Plus size={12}/>{t('products.category','Category')}</button>
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0 ml-auto sm:ml-0">
-          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title={t('storePage.gridView','Grid view')}><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
-          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title={t('storePage.listView','List view')}><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title={t('products.gridView','Grid view')}><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title={t('products.listView','List view')}><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
         </div>
       </div>
 
@@ -165,13 +165,13 @@ export default function StoreProducts() {
         <div className="glass-card-solid rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-              <tr><th className="p-3 w-8"></th><th className="p-3 text-left">Product</th><th className="p-3 text-left">Price</th><th className="p-3 text-left">Stock</th><th className="p-3 text-left">Variants</th><th className="p-3 text-right">Actions</th></tr>
+              <tr><th className="p-3 w-8"></th><th className="p-3 text-left">{t('products.product','Product')}</th><th className="p-3 text-left">{t('products.price','Price')}</th><th className="p-3 text-left">{t('products.stock','Stock')}</th><th className="p-3 text-left">{t('products.variants','Variants')}</th><th className="p-3 text-right">{t('products.actions','Actions')}</th></tr>
             </thead>
             <tbody>
               {displayProducts.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
                 <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''}`}>
                   <td className="p-3"><button onClick={()=>toggleSelect(p.id)}>{selectedItems.has(p.id)?<CheckSquare size={16} className="text-brand-600"/>:<Square size={16} className="text-gray-400"/>}</button></td>
-                  <td className="p-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">{thumb?<img src={thumb} className="w-full h-full object-cover"/>:<div className="flex items-center justify-center h-full"><Image size={14} className="text-gray-300"/></div>}</div><div className="min-w-0"><p className="font-semibold text-gray-800 truncate">{p.name_en||p.name}</p>{p.is_featured&&<span className="text-[9px] font-bold text-brand-600">FEATURED</span>}</div></div></td>
+                  <td className="p-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">{thumb?<img src={thumb} className="w-full h-full object-cover"/>:<div className="flex items-center justify-center h-full"><Image size={14} className="text-gray-300"/></div>}</div><div className="min-w-0"><p className="font-semibold text-gray-800 truncate">{p.name_en||p.name}</p>{p.is_featured&&<span className="text-[9px] font-bold text-brand-600">{t('products.featured','FEATURED')}</span>}</div></div></td>
                   <td className="p-3 font-bold text-brand-600">{parseFloat(p.price).toLocaleString()} DZD</td>
                   <td className="p-3 text-gray-600">{p.stock_quantity||0}</td>
                   <td className="p-3"><span className="text-xs text-gray-400">{vc}</span></td>
@@ -195,14 +195,14 @@ export default function StoreProducts() {
                 <button onClick={(e)=>{e.stopPropagation();toggleSelect(p.id);}} className="absolute top-2 left-2 z-10">
                   {selectedItems.has(p.id) ? <CheckSquare size={20} className="text-brand-600 bg-white rounded" /> : <Square size={20} className="text-gray-400 bg-white/80 rounded opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </button>
-                {p.is_featured&&<span className="absolute top-9 left-2 badge bg-brand-500 text-white text-[9px]">{t('storePage.featured','FEATURED')}</span>}
+                {p.is_featured&&<span className="absolute top-9 left-2 badge bg-brand-500 text-white text-[9px]">{t('products.featuredBadge','FEATURED')}</span>}
               </div>
               <div className="p-3">
                 <h3 className="font-semibold text-sm text-gray-800 truncate">{p.name_en||p.name}</h3>
                 {cat&&<span className="inline-block px-1.5 py-0.5 mt-0.5 bg-purple-100 text-purple-600 rounded text-[9px] font-bold">{cat.name_en||cat.name}</span>}
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-brand-600 font-bold text-sm">{parseFloat(p.price).toLocaleString()} DZD</span>
-                  <span className="text-xs text-gray-400">{t('storePage.stock','Stock')}: {p.stock_quantity||0}</span>
+                  <span className="text-xs text-gray-400">{t('products.stock','Stock')}: {p.stock_quantity||0}</span>
                 </div>
                 {vc>0&&<div className="flex items-center gap-1 mt-1.5">{vars.slice(0,4).map((v,i)=>v.type==='color'?<div key={i} className="w-4 h-4 rounded-full border border-gray-200" style={{backgroundColor:v.value}}/>:<span key={i} className="px-1.5 py-0.5 bg-gray-100 rounded text-[9px] font-bold text-gray-500">{v.name}</span>)}{vc>4&&<span className="text-[9px] text-gray-400">+{vc-4}</span>}</div>}
               </div>
@@ -216,13 +216,13 @@ export default function StoreProducts() {
       {/* Floating Bulk Action Bar */}
       {selectedItems.size > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-6 py-3 flex items-center gap-4 shadow-2xl z-50">
-          <span className="text-sm font-bold">{selectedItems.size} selected</span>
+          <span className="text-sm font-bold">{selectedItems.size} {t('products.selected','selected')}</span>
           <div className="w-px h-6 bg-gray-600" />
-          <button onClick={() => { const selectedData = products.filter(p => selectedItems.has(p.id)); const csv = ['Name,Price,Stock,SKU', ...selectedData.map(p => `"${p.name_en||p.name}",${p.price},${p.stock_quantity||0},"${p.sku||''}"`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'products-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(`Exported ${selectedItems.size} products`); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
-            <Download size={13} />Export Selected
+          <button onClick={() => { const selectedData = products.filter(p => selectedItems.has(p.id)); const csv = ['Name,Price,Stock,SKU', ...selectedData.map(p => `"${p.name_en||p.name}",${p.price},${p.stock_quantity||0},"${p.sku||''}"`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'products-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(t('products.exportedCount',`Exported ${selectedItems.size} products`,{count:selectedItems.size})); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
+            <Download size={13} />{t('products.exportSelected','Export Selected')}
           </button>
-          <button onClick={async () => { if(!confirm(`Delete ${selectedItems.size} selected products?`)) return; for (const id of selectedItems) { try { await productApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadProducts(); toast.success('Deleted selected products'); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
-            <Trash2 size={13} />Delete Selected
+          <button onClick={async () => { if(!confirm(t('products.deleteSelectedConfirm',`Delete ${selectedItems.size} selected products?`,{count:selectedItems.size}))) return; for (const id of selectedItems) { try { await productApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadProducts(); toast.success(t('products.deletedSelected','Deleted selected products')); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
+            <Trash2 size={13} />{t('products.deleteSelected','Delete Selected')}
           </button>
           <button onClick={clearSelection} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-700 rounded-lg text-xs transition-colors">
             <X size={14} />
@@ -234,40 +234,40 @@ export default function StoreProducts() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={()=>setShowModal(false)}>
           <div className="bg-white rounded-3xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold">{editing?t('storePage.editProduct','Edit Product'):t('products.addProduct')}</h2>
+              <h2 className="text-xl font-bold">{editing?t('products.editProduct','Edit Product'):t('products.addProduct')}</h2>
               <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20}/></button>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div><label className="input-label text-xs">{t('storePage.nameEn','Name (EN)')} *</label><input className="input-field" value={form.name_en} onChange={set('name_en')}/></div>
-                <div><label className="input-label text-xs">{t('storePage.nameFr','Name (FR)')}</label><input className="input-field" value={form.name_fr} onChange={set('name_fr')}/></div>
-                <div><label className="input-label text-xs">{t('storePage.nameAr','Name (AR)')}</label><input className="input-field" value={form.name_ar} onChange={set('name_ar')}/></div>
+                <div><label className="input-label text-xs">{t('products.nameEn','Name (EN)')} *</label><input className="input-field" value={form.name_en} onChange={set('name_en')}/></div>
+                <div><label className="input-label text-xs">{t('products.nameFr','Name (FR)')}</label><input className="input-field" value={form.name_fr} onChange={set('name_fr')}/></div>
+                <div><label className="input-label text-xs">{t('products.nameAr','Name (AR)')}</label><input className="input-field" value={form.name_ar} onChange={set('name_ar')}/></div>
               </div>
 
               {/* Description with AI generate */}
               <div>
-                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('storePage.description','Description')}</label>
+                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('products.description','Description')}</label>
                   <div className="flex items-center gap-2">
                     <select className="text-[10px] border rounded-lg px-2 py-1 text-gray-500" value={descLang} onChange={e=>setDescLang(e.target.value)}><option value="en">EN</option><option value="fr">FR</option><option value="ar">AR</option></select>
-                    <button onClick={generateDesc} disabled={aiLoading} className="text-xs text-brand-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50">{aiLoading?<div className="w-3 h-3 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin"/>:<Sparkles size={12}/>}{t('storePage.aiGenerate','AI Generate')}</button>
-                    <button onClick={generateDescAll} disabled={aiLoading} className="text-xs text-purple-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50"><Sparkles size={12}/>{t('storePage.all3Languages','All 3 Languages')}</button>
+                    <button onClick={generateDesc} disabled={aiLoading} className="text-xs text-brand-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50">{aiLoading?<div className="w-3 h-3 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin"/>:<Sparkles size={12}/>}{t('products.aiGenerate','AI Generate')}</button>
+                    <button onClick={generateDescAll} disabled={aiLoading} className="text-xs text-purple-600 font-bold flex items-center gap-1 hover:underline disabled:opacity-50"><Sparkles size={12}/>{t('products.all3Languages','All 3 Languages')}</button>
                   </div>
                 </div>
-                <textarea className="input-field" rows={3} value={form.description_en} onChange={set('description_en')} placeholder={t('storePage.productDescriptionPlaceholder','Product description...')}/>
+                <textarea className="input-field" rows={3} value={form.description_en} onChange={set('description_en')} placeholder={t('products.productDescriptionPlaceholder','Product description...')}/>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                <div><label className="input-label text-xs">{t('storePage.price','Price')} *</label><input type="number" className="input-field" value={form.price} onChange={set('price')}/></div>
-                <div><label className="input-label text-xs">{t('storePage.buyingPrice','Buying Price')}</label><input type="number" className="input-field" placeholder="0" value={form.cost_price} onChange={set('cost_price')}/></div>
-                <div><label className="input-label text-xs">{t('storePage.comparePrice','Compare Price')}</label><input type="number" className="input-field" value={form.compare_at_price} onChange={set('compare_at_price')}/></div>
-                <div><label className="input-label text-xs">{t('storePage.stock','Stock')}</label><input type="number" className="input-field" value={form.stock_quantity} onChange={set('stock_quantity')}/></div>
-                <div><label className="input-label text-xs">{t('storePage.sku','SKU')}</label><input className="input-field" value={form.sku} onChange={set('sku')}/></div>
+                <div><label className="input-label text-xs">{t('products.price','Price')} *</label><input type="number" className="input-field" value={form.price} onChange={set('price')}/></div>
+                <div><label className="input-label text-xs">{t('products.buyingPrice','Buying Price')}</label><input type="number" className="input-field" placeholder="0" value={form.cost_price} onChange={set('cost_price')}/></div>
+                <div><label className="input-label text-xs">{t('products.comparePrice','Compare Price')}</label><input type="number" className="input-field" value={form.compare_at_price} onChange={set('compare_at_price')}/></div>
+                <div><label className="input-label text-xs">{t('products.stock','Stock')}</label><input type="number" className="input-field" value={form.stock_quantity} onChange={set('stock_quantity')}/></div>
+                <div><label className="input-label text-xs">{t('products.sku','SKU')}</label><input className="input-field" value={form.sku} onChange={set('sku')}/></div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('storePage.category','Category')}</label><button type="button" onClick={addCategory} className="text-xs text-brand-600 font-bold hover:underline flex items-center gap-1"><Plus size={10}/>New</button></div>
+                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('products.category','Category')}</label><button type="button" onClick={addCategory} className="text-xs text-brand-600 font-bold hover:underline flex items-center gap-1"><Plus size={10}/>{t('products.new','New')}</button></div>
                 <select className="input-field" value={form.category_id||''} onChange={set('category_id')}>
-                  <option value="">— {t('storePage.uncategorized','Uncategorized')} —</option>
+                  <option value="">— {t('products.uncategorized','Uncategorized')} —</option>
                   {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name}</option>))}
                 </select>
               </div>
@@ -276,14 +276,14 @@ export default function StoreProducts() {
               <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors">
                 <input type="checkbox" checked={form.allow_oversell} onChange={e=>setForm({...form,allow_oversell:e.target.checked})} className="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"/>
                 <div>
-                  <p className="text-sm font-bold text-amber-800">{t('storePage.allowOversell','Allow selling when out of stock')}</p>
-                  <p className="text-[11px] text-amber-600">{t('storePage.allowOversellDesc','Customers can still buy this product even if stock reaches 0')}</p>
+                  <p className="text-sm font-bold text-amber-800">{t('products.allowOversell','Allow selling when out of stock')}</p>
+                  <p className="text-[11px] text-amber-600">{t('products.allowOversellDesc','Customers can still buy this product even if stock reaches 0')}</p>
                 </div>
               </label>
 
               {/* Images */}
               <div>
-                <label className="input-label text-xs flex items-center gap-1"><Image size={14}/>{t('storePage.mainImages','Main Images')}</label>
+                <label className="input-label text-xs flex items-center gap-1"><Image size={14}/>{t('products.mainImages','Main Images')}</label>
                 {form.images.length>0&&<div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 mb-2">{form.images.map((img,i)=>(<div key={i} className="relative aspect-square rounded-xl overflow-hidden border group"><img src={img} className="w-full h-full object-cover" alt=""/><button onClick={()=>rmImg(i)} className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Trash2 size={14} className="text-white"/></button>{i===0&&<span className="absolute bottom-0 left-0 right-0 bg-brand-500 text-white text-[7px] text-center font-bold py-0.5">{t('storePage.main','MAIN')}</span>}</div>))}</div>}
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-brand-400" onClick={()=>fileInputRef.current?.click()} onDrop={e=>{e.preventDefault();handleFiles({target:{files:Array.from(e.dataTransfer.files)}});}} onDragOver={e=>e.preventDefault()}>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles}/>

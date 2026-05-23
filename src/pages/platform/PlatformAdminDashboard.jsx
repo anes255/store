@@ -35,6 +35,7 @@ function useAnchorRect(open){
 }
 
 function NotificationsBell({isDark,pc}){
+  const {t}=useTranslation();
   const nav=useNavigate();
   const[open,setOpen]=useState(false);
   const[items,setItems]=useState([]);
@@ -45,7 +46,7 @@ function NotificationsBell({isDark,pc}){
   useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[]);
   const markRead=async(id)=>{try{await platformApi.markNotificationRead(id);load();}catch{}};
   const markAll=async()=>{try{await platformApi.markAllNotificationsRead();load();}catch{}};
-  const clearAll=async()=>{if(!confirm('Clear all notifications?'))return;try{await platformApi.clearNotifications();load();}catch{}};
+  const clearAll=async()=>{if(!confirm(t('admin.clearAllNotifications','Clear all notifications?')))return;try{await platformApi.clearNotifications();load();}catch{}};
   const del=async(id,e)=>{e.stopPropagation();try{await platformApi.deleteNotification(id);load();}catch{}};
   const iconFor=(t)=>{
     if(t==='subscription_payment')return{I:CreditCard,c:'text-amber-500',bg:'bg-amber-100'};
@@ -58,7 +59,7 @@ function NotificationsBell({isDark,pc}){
   const click=(n)=>{if(!n.is_read)markRead(n.id);if(n.link){setOpen(false);nav(n.link);}};
   return(
     <div className="relative">
-      <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Notifications">
+      <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.notifications','Notifications')}>
         <Bell size={18}/>
         {unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unread>99?'99+':unread}</span>}
       </button>
@@ -67,16 +68,16 @@ function NotificationsBell({isDark,pc}){
         <div className={`fixed w-[calc(100vw-24px)] sm:w-[380px] max-h-[75vh] overflow-y-auto rounded-2xl shadow-2xl border z-[101] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`} style={{top:anchor.top,...(anchor.left!=null?{left:anchor.left}:{right:anchor.right})}}>
           <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
             <div>
-              <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Notifications</div>
-              <div className="text-[11px] text-gray-400">{unread} unread · {items.length} total</div>
+              <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.notifications','Notifications')}</div>
+              <div className="text-[11px] text-gray-400">{unread} {t('admin.unread','unread')} · {items.length} {t('admin.total','total')}</div>
             </div>
             <div className="flex items-center gap-1">
-              {unread>0&&<button onClick={markAll} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-600'}`} title="Mark all read">Mark all</button>}
-              <button onClick={load} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={14}/></button>
-              {items.length>0&&<button onClick={clearAll} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-red-400':'hover:bg-red-50 text-red-500'}`} title="Clear all"><Trash2 size={14}/></button>}
+              {unread>0&&<button onClick={markAll} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-600'}`} title={t('admin.markAllRead','Mark all read')}>{t('admin.markAll','Mark all')}</button>}
+              <button onClick={load} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title={t('common.refresh','Refresh')}><RefreshCw size={14}/></button>
+              {items.length>0&&<button onClick={clearAll} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-red-400':'hover:bg-red-50 text-red-500'}`} title={t('admin.clearAll','Clear all')}><Trash2 size={14}/></button>}
             </div>
           </div>
-          {loading?<div className="p-6 text-center text-xs text-gray-400">Loading...</div>:items.length===0?<div className="p-8 text-center text-xs text-gray-400">No notifications</div>:(
+          {loading?<div className="p-6 text-center text-xs text-gray-400">{t('common.loading','Loading...')}</div>:items.length===0?<div className="p-8 text-center text-xs text-gray-400">{t('admin.noNotifications','No notifications')}</div>:(
             <div className={isDark?'divide-y divide-gray-800':'divide-y divide-gray-100'}>
               {items.map(n=>{const ic=iconFor(n.type);const I=ic.I;return(
                 <div key={n.id} onClick={()=>click(n)} className={`p-3 cursor-pointer flex items-start gap-3 ${n.is_read?'':(isDark?'bg-blue-950/30':'bg-blue-50/50')} ${isDark?'hover:bg-white/5':'hover:bg-gray-50'}`}>
@@ -101,6 +102,7 @@ function NotificationsBell({isDark,pc}){
 }
 
 function ExpiringSubscriptionsBell({isDark,pc}){
+  const {t}=useTranslation();
   const [open,setOpen]=useState(false);
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -111,16 +113,16 @@ function ExpiringSubscriptionsBell({isDark,pc}){
   useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[]);
   const extend=async(ownerId)=>{
     const days=parseInt(daysMap[ownerId]||7,10);
-    if(!days||days<1)return toast.error('Enter days');
+    if(!days||days<1)return toast.error(t('admin.enterDays','Enter days'));
     setExtending(ownerId);
-    try{await platformApi.extendSubscription(ownerId,{days});toast.success(`Granted ${days} free day(s)`);load();}
+    try{await platformApi.extendSubscription(ownerId,{days});toast.success(t('admin.grantedFreeDays',`Granted ${days} free day(s)`,{days}));load();}
     catch(e){toast.error(e?.response?.data?.error||'Failed');}
     setExtending(null);
   };
   const urgentCount=items.filter(i=>i.hours_remaining<=24).length;
   return(
     <div className="relative">
-      <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title="Expiring subscriptions">
+      <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.expiringSubscriptions','Expiring subscriptions')}>
         <Bell size={18}/>
         {urgentCount>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{urgentCount}</span>}
       </button>
@@ -130,22 +132,22 @@ function ExpiringSubscriptionsBell({isDark,pc}){
           <div className={`fixed w-[calc(100vw-24px)] sm:w-[360px] max-h-[70vh] overflow-y-auto rounded-2xl shadow-2xl border z-[101] ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`} style={{top:anchor.top,right:anchor.right}}>
             <div className={`sticky top-0 px-4 py-3 border-b flex items-center justify-between ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'}`}>
               <div>
-                <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>Expiring Subscriptions</div>
-                <div className="text-[11px] text-gray-400">Owners within 24h of expiry or recently expired</div>
+                <div className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.expiringSubscriptions','Expiring Subscriptions')}</div>
+                <div className="text-[11px] text-gray-400">{t('admin.ownersWithin24h','Owners within 24h of expiry or recently expired')}</div>
               </div>
-              <button onClick={load} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={14}/></button>
+              <button onClick={load} className={`p-1.5 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title={t('common.refresh','Refresh')}><RefreshCw size={14}/></button>
             </div>
-            {loading?<div className="p-6 text-center text-xs text-gray-400">Loading...</div>:items.length===0?<div className="p-6 text-center text-xs text-gray-400">No expiring subscriptions</div>:(
+            {loading?<div className="p-6 text-center text-xs text-gray-400">{t('common.loading','Loading...')}</div>:items.length===0?<div className="p-6 text-center text-xs text-gray-400">{t('admin.noExpiringSubscriptions','No expiring subscriptions')}</div>:(
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {items.map(o=>{
                   const hrs=o.hours_remaining;
                   const expired=hrs<0;
-                  const badge=expired?{bg:'bg-red-100 text-red-700',t:`Expired ${Math.abs(hrs)}h ago`}:hrs<=24?{bg:'bg-amber-100 text-amber-700',t:`${hrs}h left`}:{bg:'bg-blue-100 text-blue-700',t:`${hrs}h left`};
+                  const badge=expired?{bg:'bg-red-100 text-red-700',t:t('admin.expiredHrsAgo',`Expired ${Math.abs(hrs)}h ago`,{hrs:Math.abs(hrs)})}:hrs<=24?{bg:'bg-amber-100 text-amber-700',t:t('admin.hrsLeft',`${hrs}h left`,{hrs})}:{bg:'bg-blue-100 text-blue-700',t:t('admin.hrsLeft',`${hrs}h left`,{hrs})};
                   return(
                     <div key={o.id} className="p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
-                          <div className={`text-sm font-bold truncate ${isDark?'text-gray-100':'text-gray-900'}`}>{o.name||'Owner'}</div>
+                          <div className={`text-sm font-bold truncate ${isDark?'text-gray-100':'text-gray-900'}`}>{o.name||t('admin.owner','Owner')}</div>
                           <div className="text-[11px] text-gray-400 truncate">{o.phone||o.email}</div>
                           <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1"><Clock size={10}/>{new Date(o.subscription_expires_at).toLocaleString()}</div>
                         </div>
@@ -153,9 +155,9 @@ function ExpiringSubscriptionsBell({isDark,pc}){
                       </div>
                       <div className="flex items-center gap-2">
                         <input type="number" min="1" max="365" placeholder="7" value={daysMap[o.id]||''} onChange={e=>setDaysMap(m=>({...m,[o.id]:e.target.value}))} className={`w-16 px-2 py-1.5 rounded-lg border text-xs ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200 text-gray-900'}`}/>
-                        <span className="text-[11px] text-gray-400">days</span>
+                        <span className="text-[11px] text-gray-400">{t('admin.days','days')}</span>
                         <button disabled={extending===o.id} onClick={()=>extend(o.id)} className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-bold disabled:opacity-50" style={{backgroundColor:pc}}>
-                          <Gift size={12}/>{extending===o.id?'...':'Grant Free'}
+                          <Gift size={12}/>{extending===o.id?'...':t('admin.grantFree','Grant Free')}
                         </button>
                       </div>
                     </div>
@@ -200,7 +202,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
         <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-600"><X size={18}/></button>
       </div>
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>Main Menu</p>
+        <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>{t('admin.mainMenu','Main Menu')}</p>
         {links.map(l=>{const I=l.icon;const active=loc.pathname===l.path;
           // Generate palette for platform primary color
           return(
@@ -217,7 +219,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
       <div className={`p-3 border-t ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div>
-          <div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'Admin'}</p><p className="text-[10px] text-gray-400">Super Admin</p></div>
+          <div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('admin.admin','Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.superAdmin','Super Admin')}</p></div>
         </div>
         <button onClick={()=>{logout();nav('/admin/login');}} className={`w-full flex items-center gap-2 px-3 py-2 text-red-500 rounded-xl text-sm font-medium ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}><LogOut size={14}/>{t('admin.logout','Logout')}</button>
       </div>
@@ -259,7 +261,7 @@ function Overview(){
       <div className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl p-6 shadow-sm`}><h3 className={`font-bold ${isDark?'text-gray-100':'text-gray-900'} mb-4 flex items-center gap-2`}><Store size={16}/>{t('admin.recentStores','Recent Stores')}</h3>
         <div className="space-y-2">{(data?.recentStores||[]).slice(0,8).map(s=>(
           <div key={s.id} className={`flex items-center justify-between p-3 ${isDark?'bg-gray-900':'bg-gray-50'} rounded-xl`}>
-            <div><p className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{s.name||s.store_name}</p><p className="text-[10px] text-gray-400">{s.owner_name} · {s.product_count||0} products</p></div>
+            <div><p className={`text-sm font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{s.name||s.store_name}</p><p className="text-[10px] text-gray-400">{s.owner_name} · {s.product_count||0} {t('admin.products','products')}</p></div>
             <div className="flex items-center gap-2"><span className={`text-sm font-bold ${isDark?'text-gray-300':'text-gray-600'}`}>{parseFloat(s.revenue||0).toLocaleString()} DZD</span>{s.is_published?<span className="w-2 h-2 rounded-full bg-emerald-400"/>:<span className="w-2 h-2 rounded-full bg-gray-300"/>}</div>
           </div>
         ))}</div>
@@ -270,34 +272,35 @@ function Overview(){
 
 // ═══════ STORE OWNERS ═══════
 function StoreOwners(){
+  const {t}=useTranslation();
   const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[owners,setOwners]=useState([]);const[search,setSearch]=useState('');const[loading,setLoading]=useState(true);
   const[pwModal,setPwModal]=useState(null);const[pwNew,setPwNew]=useState('');const[pwSaving,setPwSaving]=useState(false);
-  const changeOwnerPw=async()=>{if(!pwNew||pwNew.length<6){toast.error('Password must be at least 6 characters');return;}setPwSaving(true);try{await api.put(`/platform/store-owners/${pwModal.id}/password`,{new_password:pwNew});toast.success('Password changed');setPwModal(null);setPwNew('');}catch(e){toast.error(e.response?.data?.error||'Failed');}setPwSaving(false);};
+  const changeOwnerPw=async()=>{if(!pwNew||pwNew.length<6){toast.error(t('admin.passwordMin6','Password must be at least 6 characters'));return;}setPwSaving(true);try{await api.put(`/platform/store-owners/${pwModal.id}/password`,{new_password:pwNew});toast.success(t('admin.passwordChanged','Password changed'));setPwModal(null);setPwNew('');}catch(e){toast.error(e.response?.data?.error||t('common.failed','Failed'));}setPwSaving(false);};
   const load=()=>{platformApi.getStoreOwners({search}).then(r=>setOwners(r.data.owners||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[search]);
-  const toggle=async(id)=>{try{await platformApi.toggleOwner(id);toast.success('Updated');load();}catch{toast.error('Failed');}};
+  const toggle=async(id)=>{try{await platformApi.toggleOwner(id);toast.success(t('common.updated','Updated'));load();}catch{toast.error(t('common.failed','Failed'));}};
   const del=async(id)=>{
-    if(!confirm('Delete this owner and deactivate their stores?'))return;
+    if(!confirm(t('admin.confirmDeleteOwner','Delete this owner and deactivate their stores?')))return;
     try{
       await platformApi.deleteOwner(id);
-      toast.success('Owner deleted');
+      toast.success(t('admin.ownerDeleted','Owner deleted'));
       // Optimistically remove from the list so the UI updates even if the
       // reload race-conditions or returns a cached response.
       setOwners(prev=>prev.filter(o=>o.id!==id));
       load();
     }catch(e){
-      const msg=e?.response?.data?.error||e?.response?.data?.message||e?.message||'Failed to delete owner';
+      const msg=e?.response?.data?.error||e?.response?.data?.message||e?.message||t('admin.failedDeleteOwner','Failed to delete owner');
       toast.error(msg);
     }
   };
   return(<div>
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>Store Owners</h1><span className="text-xs md:text-sm text-gray-400">{owners.length} total</span></div>
-    <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-3 ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'} rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20`} placeholder="Search by name, email, phone..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.storeOwners','Store Owners')}</h1><span className="text-xs md:text-sm text-gray-400">{owners.length} {t('admin.total','total')}</span></div>
+    <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-3 ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'} rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20`} placeholder={t('admin.searchByNameEmailPhone','Search by name, email, phone...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile card list */}
     <div className="md:hidden space-y-3">
-      {owners.length===0?<p className="text-center py-12 text-gray-400">No owners found</p>:owners.map(o=>{
+      {owners.length===0?<p className="text-center py-12 text-gray-400">{t('admin.noOwnersFound','No owners found')}</p>:owners.map(o=>{
         const suspended=o.subscription_status==='suspended'||o.is_active===false;
         return(
           <div key={o.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm p-4`}>
@@ -308,12 +311,12 @@ function StoreOwners(){
                 <p className="text-[11px] text-gray-400 truncate">{o.email}</p>
                 <p className="text-[11px] text-gray-400 truncate">{o.phone}</p>
               </div>
-              {suspended?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 shrink-0">Suspended</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 shrink-0">Active</span>}
+              {suspended?<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 shrink-0">{t('admin.suspended','Suspended')}</span>:<span className="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 shrink-0">{t('admin.active','Active')}</span>}
             </div>
             <div className="grid grid-cols-3 gap-2 mt-3">
-              <div><p className="text-[9px] uppercase font-bold text-gray-400">Stores</p><p className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{o.store_count||0}</p></div>
-              <div><p className="text-[9px] uppercase font-bold text-gray-400">Revenue</p><p className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{parseFloat(o.total_revenue||0).toLocaleString()} DZD</p></div>
-              <div><p className="text-[9px] uppercase font-bold text-gray-400">Plan</p><p className="text-sm font-bold text-brand-600 capitalize">{o.subscription_plan||'free'}</p></div>
+              <div><p className="text-[9px] uppercase font-bold text-gray-400">{t('admin.stores','Stores')}</p><p className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{o.store_count||0}</p></div>
+              <div><p className="text-[9px] uppercase font-bold text-gray-400">{t('admin.revenue','Revenue')}</p><p className={`text-sm font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{parseFloat(o.total_revenue||0).toLocaleString()} DZD</p></div>
+              <div><p className="text-[9px] uppercase font-bold text-gray-400">{t('admin.plan','Plan')}</p><p className="text-sm font-bold text-brand-600 capitalize">{o.subscription_plan||'free'}</p></div>
             </div>
             <div className="flex gap-1 mt-3 justify-end">
               {suspended?

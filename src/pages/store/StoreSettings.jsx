@@ -55,17 +55,18 @@ function SubscriptionSection(){
 
 // ============ CHECKOUT PREVIEW ============
 function CheckoutPreview({ s }) {
+  const{t}=useTranslation();
   const theme = useAdminTheme();
   const isDark = theme.mode === 'dark';
   const pc = s.primary_color || '#7C3AED';
-  const storeName = s.name || s.store_name || 'My Store';
+  const storeName = s.name || s.store_name || t('storePage.myStore','My Store');
 
   return (
     <div className="glass-card-solid p-4 sm:p-6">
       <div className="flex items-center gap-2 mb-4">
         <Eye size={16} className="text-purple-500" />
-        <h3 className="font-bold">Checkout Preview</h3>
-        <span className="text-[10px] text-gray-400 ml-auto">Live preview</span>
+        <h3 className="font-bold">{t('storePage.checkoutPreview','Checkout Preview')}</h3>
+        <span className="text-[10px] text-gray-400 ml-auto">{t('storePage.livePreviewLabel','Live preview')}</span>
       </div>
 
       {/* Phone frame */}
@@ -88,7 +89,7 @@ function CheckoutPreview({ s }) {
               {storeName[0]}
             </div>
             <span className="text-white text-sm font-bold truncate">{storeName}</span>
-            <span className="ml-auto text-white/60 text-[10px]">Checkout</span>
+            <span className="ml-auto text-white/60 text-[10px]">{t('storePage.checkout','Checkout')}</span>
           </div>
 
           {/* Scrollable content */}
@@ -111,12 +112,12 @@ function CheckoutPreview({ s }) {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: pc }}
               >
-                Customer Info
+                {t('storePage.customerInfo','Customer Info')}
               </p>
               {/* Full Name - always required */}
               <div>
                 <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
-                  Full Name *
+                  {t('storePage.fullNameRequired','Full Name *')}
                 </p>
                 <div
                   className="h-7 rounded-lg mt-0.5 flex items-center px-2"
@@ -133,7 +134,7 @@ function CheckoutPreview({ s }) {
               {/* Phone - always required */}
               <div>
                 <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
-                  Phone *
+                  {t('storePage.phoneRequired','Phone *')}
                 </p>
                 <div
                   className="h-7 rounded-lg mt-0.5 flex items-center px-2"
@@ -151,7 +152,7 @@ function CheckoutPreview({ s }) {
               {s.checkout_email && (
                 <div>
                   <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
-                    Email
+                    {t('storePage.emailLabel','Email')}
                   </p>
                   <div
                     className="h-7 rounded-lg mt-0.5 flex items-center px-2"
@@ -180,7 +181,7 @@ function CheckoutPreview({ s }) {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: pc }}
               >
-                Shipping
+                {t('storePage.shipping','Shipping')}
               </p>
               <label className="flex items-center gap-2 p-2 rounded-lg cursor-default" style={{ background: isDark ? '#111827' : '#f3f4f6' }}>
                 <div
@@ -190,8 +191,8 @@ function CheckoutPreview({ s }) {
                   <div className="w-2 h-2 rounded-full" style={{ background: pc }} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>Home Delivery</p>
-                  <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>2-4 days</p>
+                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>{t('storePage.homeDelivery','Home Delivery')}</p>
+                  <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.twoFourDays','2-4 days')}</p>
                 </div>
                 <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>500 {s.currency || 'DZD'}</span>
               </label>
@@ -201,8 +202,8 @@ function CheckoutPreview({ s }) {
                   style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }}
                 />
                 <div className="flex-1">
-                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Desk Pickup</p>
-                  <p className="text-[9px]" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>1-2 days</p>
+                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('storePage.deskPickup','Desk Pickup')}</p>
+                  <p className="text-[9px]" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>{t('storePage.oneTwoDays','1-2 days')}</p>
                 </div>
                 <span className="text-[10px]" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>300 {s.currency || 'DZD'}</span>
               </label>
@@ -218,7 +219,7 @@ function CheckoutPreview({ s }) {
                 }}
               >
                 <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: pc }}>
-                  Order Notes
+                  {t('storePage.orderNotes','Order Notes')}
                 </p>
                 <div
                   className="h-12 rounded-lg mt-1.5 px-2 pt-1"
@@ -228,7 +229,7 @@ function CheckoutPreview({ s }) {
                   }}
                 >
                   <span className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
-                    Special instructions...
+                    {t('storePage.specialInstructions','Special instructions...')}
                   </span>
                 </div>
               </div>
@@ -246,13 +247,13 @@ function CheckoutPreview({ s }) {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: pc }}
               >
-                Order Summary
+                {t('storePage.orderSummary','Order Summary')}
               </p>
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-lg" style={{ background: isDark ? '#374151' : '#e5e7eb' }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold truncate" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>
-                    Sample Product
+                    {t('storePage.sampleProduct','Sample Product')}
                   </p>
                   <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Qty: 1</p>
                 </div>
@@ -262,7 +263,7 @@ function CheckoutPreview({ s }) {
               </div>
               {s.show_savings && (
                 <div className="flex justify-between text-[9px] px-1 pt-1" style={{ color: '#10b981' }}>
-                  <span>You save</span>
+                  <span>{t('storePage.youSave','You save')}</span>
                   <span className="font-bold">-500 {s.currency || 'DZD'}</span>
                 </div>
               )}
@@ -270,18 +271,18 @@ function CheckoutPreview({ s }) {
                 className="border-t pt-1.5 mt-1 flex justify-between"
                 style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
               >
-                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Subtotal</span>
+                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('storePage.subtotal','Subtotal')}</span>
                 <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>2,500 {s.currency || 'DZD'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Shipping</span>
+                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('storePage.shippingLabel','Shipping')}</span>
                 <span className="text-[10px]" style={{ color: isDark ? '#d1d5db' : '#374151' }}>500 {s.currency || 'DZD'}</span>
               </div>
               <div
                 className="border-t pt-1.5 flex justify-between"
                 style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
               >
-                <span className="text-xs font-bold" style={{ color: isDark ? '#ffffff' : '#1f2937' }}>Total</span>
+                <span className="text-xs font-bold" style={{ color: isDark ? '#ffffff' : '#1f2937' }}>{t('storePage.total','Total')}</span>
                 <span className="text-xs font-black" style={{ color: pc }}>3,000 {s.currency || 'DZD'}</span>
               </div>
             </div>
@@ -291,15 +292,15 @@ function CheckoutPreview({ s }) {
               <div className="flex items-center justify-center gap-3 py-1">
                 <div className="flex items-center gap-1">
                   <Lock size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
-                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Secure</span>
+                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.secure','Secure')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Shield size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
-                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Protected</span>
+                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.protected','Protected')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Check size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
-                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Verified</span>
+                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.verified','Verified')}</span>
                 </div>
               </div>
             )}
@@ -309,13 +310,13 @@ function CheckoutPreview({ s }) {
               className="w-full py-2.5 rounded-xl text-white text-xs font-bold"
               style={{ backgroundColor: pc }}
             >
-              {s.btn_order_now || 'Place Order'} - 3,000 {s.currency || 'DZD'}
+              {s.btn_order_now || t('storePage.placeOrder','Place Order')} - 3,000 {s.currency || 'DZD'}
             </button>
 
             {/* Sticky Checkout indicator */}
             {s.sticky_checkout && (
               <p className="text-[8px] text-center" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>
-                Sticky checkout bar enabled
+                {t('storePage.stickyCheckoutEnabled','Sticky checkout bar enabled')}
               </p>
             )}
           </div>
@@ -462,35 +463,35 @@ function ROLE_META(name) {
 
 // Pretty labels for the most-impactful permissions, used to highlight the
 // "main functions" of each role on its card.
-const PERM_HIGHLIGHTS = {
-  manage_orders: 'Confirm & manage orders',
-  orders_edit: 'Confirm & manage orders',
-  orders_confirm: 'Confirm orders',
-  orders_prepare: 'Prepare orders',
-  orders_delete: 'Delete orders',
-  manage_products: 'Add / edit products',
-  products_edit: 'Add / edit products',
-  products_delete: 'Delete products',
-  stock_manage: 'Manage stock',
-  manage_customers: 'Manage customers',
-  customers_edit: 'Edit customers',
-  customers_blacklist: 'Blacklist customers',
-  view_analytics: 'View analytics',
-  analytics_view: 'View analytics',
-  finances_view: 'View finances',
-  finances_edit: 'Manage expenses',
-  manage_settings: 'Edit store settings',
-  settings_edit: 'Edit store settings',
-  staff_manage: 'Manage staff',
-  shipping_manage: 'Manage shipping',
-  reviews_manage: 'Moderate reviews',
-  domains_manage: 'Manage domains',
-  builder_edit: 'Edit page builder',
-};
-function highlightedPerms(perms) {
+function PERM_HIGHLIGHTS(t) { return {
+  manage_orders: t('storePage.permConfirmManageOrders','Confirm & manage orders'),
+  orders_edit: t('storePage.permConfirmManageOrders','Confirm & manage orders'),
+  orders_confirm: t('storePage.permConfirmOrders','Confirm orders'),
+  orders_prepare: t('storePage.permPrepareOrders','Prepare orders'),
+  orders_delete: t('storePage.permDeleteOrders','Delete orders'),
+  manage_products: t('storePage.permAddEditProducts','Add / edit products'),
+  products_edit: t('storePage.permAddEditProducts','Add / edit products'),
+  products_delete: t('storePage.permDeleteProducts','Delete products'),
+  stock_manage: t('storePage.permManageStock','Manage stock'),
+  manage_customers: t('storePage.permManageCustomers','Manage customers'),
+  customers_edit: t('storePage.permEditCustomers','Edit customers'),
+  customers_blacklist: t('storePage.permBlacklistCustomers','Blacklist customers'),
+  view_analytics: t('storePage.permViewAnalytics','View analytics'),
+  analytics_view: t('storePage.permViewAnalytics','View analytics'),
+  finances_view: t('storePage.permViewFinances','View finances'),
+  finances_edit: t('storePage.permManageExpenses','Manage expenses'),
+  manage_settings: t('storePage.permEditStoreSettings','Edit store settings'),
+  settings_edit: t('storePage.permEditStoreSettings','Edit store settings'),
+  staff_manage: t('storePage.permManageStaff','Manage staff'),
+  shipping_manage: t('storePage.permManageShipping','Manage shipping'),
+  reviews_manage: t('storePage.permModerateReviews','Moderate reviews'),
+  domains_manage: t('storePage.permManageDomains','Manage domains'),
+  builder_edit: t('storePage.permEditPageBuilder','Edit page builder'),
+};}
+function highlightedPerms(perms, t) {
   if (!Array.isArray(perms)) return [];
-  // Preserve admin order so the role's "first defined" perm leads.
-  return perms.map(k => PERM_HIGHLIGHTS[k]).filter(Boolean);
+  const map = PERM_HIGHLIGHTS(t);
+  return perms.map(k => map[k]).filter(Boolean);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -540,31 +541,31 @@ function UsersActivityLog({ storeId, isDark, t }) {
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-lg shrink-0">📋</div>
           <div className="min-w-0">
-            <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Activity Log</p>
-            <p className="text-[11px] text-gray-400 truncate">{view === 'feed' ? 'Latest actions by your team' : 'Per-user totals — use this for payroll'}</p>
+            <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('storePage.activityLog','Activity Log')}</p>
+            <p className="text-[11px] text-gray-400 truncate">{view === 'feed' ? t('storePage.latestActions','Latest actions by your team') : t('storePage.perUserTotals','Per-user totals — use this for payroll')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* View switch: feed (raw entries) vs payroll (per-user totals) */}
           <div className={`flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <button onClick={() => setView('feed')} className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${view === 'feed' ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 shadow-sm') : 'text-gray-500'}`}>Feed</button>
-            <button onClick={() => setView('payroll')} className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${view === 'payroll' ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 shadow-sm') : 'text-gray-500'}`}>Per User</button>
+            <button onClick={() => setView('feed')} className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${view === 'feed' ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 shadow-sm') : 'text-gray-500'}`}>{t('storePage.feed','Feed')}</button>
+            <button onClick={() => setView('payroll')} className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${view === 'payroll' ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900 shadow-sm') : 'text-gray-500'}`}>{t('storePage.perUser','Per User')}</button>
           </div>
           <button onClick={load} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={13} /></button>
-          <button onClick={() => setOpen(o => !o)} className="text-[11px] text-brand-500 font-bold hover:underline">{open ? 'Hide' : 'Show'}</button>
+          <button onClick={() => setOpen(o => !o)} className="text-[11px] text-brand-500 font-bold hover:underline">{open ? t('storePage.hide','Hide') : t('storePage.show','Show')}</button>
         </div>
       </div>
       {open && view === 'payroll' && (
         loading ? (
-          <p className="text-xs text-gray-400 py-4 text-center">Loading…</p>
+          <p className="text-xs text-gray-400 py-4 text-center">{t('storePage.loading','Loading…')}</p>
         ) : summary.length === 0 ? (
-          <p className="text-xs text-gray-400 py-6 text-center">No team activity yet.</p>
+          <p className="text-xs text-gray-400 py-6 text-center">{t('storePage.noTeamActivity','No team activity yet.')}</p>
         ) : (
           <div>
             {/* Time-window selector for the count column */}
             <div className="flex items-center gap-1 mb-3 text-[11px]">
               <span className="text-gray-400 font-bold uppercase mr-1">Range:</span>
-              {[{k:'day',l:'Today'},{k:'week',l:'This week'},{k:'month',l:'This month'}].map(r => (
+              {[{k:'day',l:t('storePage.today','Today')},{k:'week',l:t('storePage.thisWeek','This week')},{k:'month',l:t('storePage.thisMonth','This month')}].map(r => (
                 <button key={r.k} onClick={() => setRange(r.k)} className={`px-2 py-1 rounded-md font-bold transition-all ${range === r.k ? 'bg-brand-500 text-white' : (isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}`}>{r.l}</button>
               ))}
             </div>
@@ -1008,7 +1009,7 @@ export default function StoreSettings(){
       const desc=(tpl.description&&(tpl.description[lang]||tpl.description.en))||'';
       const meta=ROLE_META(name);
       const perms=tpl.permissions||[];
-      const highlights=highlightedPerms(perms).slice(0,4);
+      const highlights=highlightedPerms(perms,t).slice(0,4);
       return(
         <div key={'tpl_'+tpl.id} className={`relative overflow-hidden rounded-2xl border ${settingsIsDark?'border-gray-700 bg-gray-800':'border-gray-100 bg-white'} transition-all hover:shadow-lg hover:-translate-y-0.5`}>
           <div className="absolute inset-x-0 top-0 h-1.5" style={{background:`linear-gradient(90deg, ${meta.color1}, ${meta.color2})`}}/>

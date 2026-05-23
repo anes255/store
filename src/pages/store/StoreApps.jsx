@@ -21,11 +21,11 @@ function WhatsAppQR({ storeId }) {
   const [sending, setSending] = React.useState(false);
   const [log, setLog] = React.useState({ messages: [], stats: { total: '0', sent: '0', failed: '0' } });
   const [templates, setTemplates] = React.useState({
-    confirmed: 'Your order {order} from {store} has been confirmed! Total: {total} DZD',
-    preparing: 'Your order {order} from {store} is being prepared!',
-    shipped: 'Your order {order} from {store} has been shipped! You will receive it soon.',
-    delivered: 'Your order {order} from {store} has been delivered! Thank you for shopping with us.',
-    cancelled: 'Your order {order} from {store} has been cancelled.',
+    confirmed: t('apps.tplConfirmed','Your order {order} from {store} has been confirmed! Total: {total} DZD'),
+    preparing: t('apps.tplPreparing','Your order {order} from {store} is being prepared!'),
+    shipped: t('apps.tplShipped','Your order {order} from {store} has been shipped! You will receive it soon.'),
+    delivered: t('apps.tplDelivered','Your order {order} from {store} has been delivered! Thank you for shopping with us.'),
+    cancelled: t('apps.tplCancelled','Your order {order} from {store} has been cancelled.'),
   });
 
   const checkStatus = async () => {
@@ -396,7 +396,7 @@ export default function StoreApps() {
         const app = allApps.find(a => a.slug === slug);
         const installed = isInstalled(slug);
         const isRtl = rcLang === 'ar';
-        const previewText = rcMsg || 'Configure a message template...';
+        const previewText = rcMsg || t('apps.configureMessageTemplate','Configure a message template...');
         return (
           <div className="p-5 space-y-4 overflow-y-auto">
             {/* Enable/Disable Toggle */}
@@ -414,11 +414,11 @@ export default function StoreApps() {
 
             {/* WhatsApp Preview */}
             <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">WhatsApp Preview</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('apps.whatsappPreview','WhatsApp Preview')}</p>
               <div className="bg-[#0b141a] rounded-2xl overflow-hidden shadow-xl max-w-[300px] mx-auto">
                 <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">{(currentStore?.name||'S')[0]?.toUpperCase()}</div>
-                  <div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{currentStore?.name||'My Store'}</p><p className="text-[10px] text-emerald-400">online</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-white text-sm font-semibold truncate">{currentStore?.name||'My Store'}</p><p className="text-[10px] text-emerald-400">{t('apps.online','online')}</p></div>
                   <Phone size={16} className="text-gray-400"/>
                 </div>
                 <div className="p-3 min-h-[200px] max-h-[260px] overflow-y-auto" style={{backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
@@ -434,22 +434,22 @@ export default function StoreApps() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">Type a message</span></div><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div></div>
+                <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2"><div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1.5"><span className="text-gray-500 text-xs">{t('apps.typeAMessage','Type a message')}</span></div><div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><Send size={14} className="text-white"/></div></div>
               </div>
             </div>
 
             {/* Mode tabs */}
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message Source</label>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">{t('apps.messageSource','Message Source')}</label>
               <div className="flex gap-2">
-                <button onClick={() => setRcMode('ai')} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${rcMode==='ai'?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Sparkles size={14}/>AI Generated</button>
-                <button onClick={() => setRcMode('custom')} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${rcMode==='custom'?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Edit3 size={14}/>Custom Message</button>
+                <button onClick={() => setRcMode('ai')} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${rcMode==='ai'?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Sparkles size={14}/>{t('apps.aiGenerated','AI Generated')}</button>
+                <button onClick={() => setRcMode('custom')} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${rcMode==='custom'?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Edit3 size={14}/>{t('apps.customMessage','Custom Message')}</button>
               </div>
             </div>
 
             {rcMode==='ai' && (
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex items-center gap-1"><Languages size={12}/>Language</label>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex items-center gap-1"><Languages size={12}/>{t('apps.language','Language')}</label>
                 <div className="flex gap-2">
                   {[{c:'en',l:'English',f:'🇬🇧'},{c:'fr',l:'Français',f:'🇫🇷'},{c:'ar',l:'العربية',f:'🇩🇿'}].map(lg => (
                     <button key={lg.c} onClick={() => generateRcMessage(lg.c)} disabled={rcGen} className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 ${rcLang===lg.c?'bg-emerald-500 text-white shadow':'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
@@ -457,21 +457,21 @@ export default function StoreApps() {
                     </button>
                   ))}
                 </div>
-                {rcGen && <p className="text-[11px] text-purple-500 mt-2 flex items-center gap-1"><div className="w-3 h-3 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"/>Generating AI message...</p>}
-                <div className="mt-2"><label className="input-label text-xs">Sample items (for AI context)</label><input className="input-field" value={recoveryItems} onChange={e => setRecoveryItems(e.target.value)} placeholder="Shoes, T-Shirt, Watch"/></div>
+                {rcGen && <p className="text-[11px] text-purple-500 mt-2 flex items-center gap-1"><div className="w-3 h-3 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"/>{t('apps.generatingAiMessage','Generating AI message...')}</p>}
+                <div className="mt-2"><label className="input-label text-xs">{t('apps.sampleItems','Sample items (for AI context)')}</label><input className="input-field" value={recoveryItems} onChange={e => setRecoveryItems(e.target.value)} placeholder="Shoes, T-Shirt, Watch"/></div>
               </div>
             )}
 
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Message</label>
-              <textarea className="input-field" rows={4} value={rcMsg} onChange={e => setRcMsg(e.target.value)} placeholder={rcMode==='ai'?'Click a language above to generate...':'Type your custom recovery message...'} dir={isRtl?'rtl':'ltr'}/>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">{t('apps.message','Message')}</label>
+              <textarea className="input-field" rows={4} value={rcMsg} onChange={e => setRcMsg(e.target.value)} placeholder={rcMode==='ai'?t('apps.clickLanguageToGenerate','Click a language above to generate...'):t('apps.typeCustomRecoveryMsg','Type your custom recovery message...')} dir={isRtl?'rtl':'ltr'}/>
             </div>
 
             {/* Schedule */}
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex items-center gap-1"><Calendar size={12}/>When to Send</label>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex items-center gap-1"><Calendar size={12}/>{t('apps.whenToSend','When to Send')}</label>
               <div className="grid grid-cols-2 gap-2">
-                {[{k:'now',l:'Send Now'},{k:'in_30m',l:'In 30 min'},{k:'in_6h',l:'In 6 hours'},{k:'in_24h',l:'In 24 hours'},{k:'custom',l:'Pick date & time'}].map(o => (
+                {[{k:'now',l:t('apps.sendNow','Send Now')},{k:'in_30m',l:t('apps.in30Min','In 30 min')},{k:'in_6h',l:t('apps.in6Hours','In 6 hours')},{k:'in_24h',l:t('apps.in24Hours','In 24 hours')},{k:'custom',l:t('apps.pickDateTime','Pick date & time')}].map(o => (
                   <button key={o.k} onClick={() => setRcSchedule(o.k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${rcSchedule===o.k?'bg-purple-500 text-white shadow':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{o.l}</button>
                 ))}
               </div>

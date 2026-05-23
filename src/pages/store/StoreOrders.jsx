@@ -52,21 +52,21 @@ const DEFAULT_COLUMNS = ['order','products','customer_name','phone','status','tr
 const PREPARING_COLUMNS = DEFAULT_COLUMNS;
 
 const statusConfig = {
-  new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW' },
-  pending:        { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW' },
-  confirmed:      { color: 'bg-blue-500',    bg: 'bg-blue-500',    text: 'text-white', label: 'CONFIRMED' },
-  preparing:      { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING' },
-  under_preparation: { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING' },
-  ready:          { color: 'bg-teal-500',    bg: 'bg-teal-500',    text: 'text-white', label: 'READY' },
-  shipped:        { color: 'bg-blue-600',    bg: 'bg-blue-600',    text: 'text-white', label: 'SHIPPED' },
-  delivered:      { color: 'bg-emerald-500', bg: 'bg-emerald-500', text: 'text-white', label: 'DELIVERED' },
-  cancelled:      { color: 'bg-red-500',     bg: 'bg-red-500',     text: 'text-white', label: 'CANCELLED' },
-  failed_call_1:  { color: 'bg-yellow-500',  bg: 'bg-yellow-500',  text: 'text-white', label: 'CALL FAILED 1' },
-  failed_call_2:  { color: 'bg-orange-400',  bg: 'bg-orange-400',  text: 'text-white', label: 'CALL FAILED 2' },
-  failed_call_3:  { color: 'bg-rose-400',    bg: 'bg-rose-400',    text: 'text-white', label: 'CALL FAILED 3' },
-  returned:       { color: 'bg-gray-500',    bg: 'bg-gray-500',    text: 'text-white', label: 'RETURNED' },
-  awaiting_pickup:{ color: 'bg-amber-500',   bg: 'bg-amber-500',   text: 'text-white', label: 'AWAITING' },
-  archived:       { color: 'bg-slate-500',   bg: 'bg-slate-500',   text: 'text-white', label: 'ARCHIVED' },
+  new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.status.new' },
+  pending:        { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.status.new' },
+  confirmed:      { color: 'bg-blue-500',    bg: 'bg-blue-500',    text: 'text-white', label: 'CONFIRMED',     tKey: 'orders.status.confirmed' },
+  preparing:      { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING',     tKey: 'orders.status.preparing' },
+  under_preparation: { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING',  tKey: 'orders.status.preparing' },
+  ready:          { color: 'bg-teal-500',    bg: 'bg-teal-500',    text: 'text-white', label: 'READY',         tKey: 'orders.status.ready' },
+  shipped:        { color: 'bg-blue-600',    bg: 'bg-blue-600',    text: 'text-white', label: 'SHIPPED',       tKey: 'orders.status.shipped' },
+  delivered:      { color: 'bg-emerald-500', bg: 'bg-emerald-500', text: 'text-white', label: 'DELIVERED',     tKey: 'orders.status.delivered' },
+  cancelled:      { color: 'bg-red-500',     bg: 'bg-red-500',     text: 'text-white', label: 'CANCELLED',     tKey: 'orders.status.cancelled' },
+  failed_call_1:  { color: 'bg-yellow-500',  bg: 'bg-yellow-500',  text: 'text-white', label: 'CALL FAILED 1', tKey: 'orders.status.callFailed1' },
+  failed_call_2:  { color: 'bg-orange-400',  bg: 'bg-orange-400',  text: 'text-white', label: 'CALL FAILED 2', tKey: 'orders.status.callFailed2' },
+  failed_call_3:  { color: 'bg-rose-400',    bg: 'bg-rose-400',    text: 'text-white', label: 'CALL FAILED 3', tKey: 'orders.status.callFailed3' },
+  returned:       { color: 'bg-gray-500',    bg: 'bg-gray-500',    text: 'text-white', label: 'RETURNED',      tKey: 'orders.status.returned' },
+  awaiting_pickup:{ color: 'bg-amber-500',   bg: 'bg-amber-500',   text: 'text-white', label: 'AWAITING',      tKey: 'orders.status.awaiting' },
+  archived:       { color: 'bg-slate-500',   bg: 'bg-slate-500',   text: 'text-white', label: 'ARCHIVED',      tKey: 'orders.status.archived' },
 };
 const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','awaiting_pickup','archived'];
 
@@ -98,6 +98,8 @@ function copy(text) { try { navigator.clipboard.writeText(text); toast.success('
 
 export default function StoreOrders() {
   const { t } = useTranslation();
+  // Resolve status label via translation key, falling back to the hardcoded English label
+  const sl = (sc) => sc?.tKey ? t(sc.tKey, sc.label) : (sc?.label || '');
   const { currentStore } = useStoreManagement();
   const location = useLocation();
 
@@ -278,7 +280,7 @@ export default function StoreOrders() {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o).filter(o => o.id !== orderId || fitsCurrentFilter(status)));
     try {
       await orderApi.updateStatus(currentStore.id, orderId, { status });
-      toast.success(`Order → ${statusConfig[status]?.label || status}`);
+      toast.success(`${t('orders.orderArrow','Order')} → ${sl(statusConfig[status]) || status}`);
       if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
     } catch { toast.error('Failed'); loadOrders(); /* roll back from server on failure */ }
     setUpdatingStatus(null);

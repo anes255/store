@@ -15,6 +15,7 @@ import { initPixels, trackAddToCart, trackViewContent } from '../../utils/tracki
 // Ending-soon offer banner with live countdown. Merchants configure it in
 // Settings → Customization → Offer & Sale Branding (offer_enabled + fields).
 function OfferBanner({ store }) {
+  const { t } = useTranslation();
   const hours = parseInt(store.offer_hours) || 0;
   const minutes = parseInt(store.offer_minutes) || 0;
   const key = `offer_deadline_${store.id}_${hours}_${minutes}`;
@@ -39,8 +40,8 @@ function OfferBanner({ store }) {
   const tc = store.offer_tc || '#ffffff';
   return (
     <div className="w-full text-center py-2 px-3 text-sm font-bold flex flex-wrap items-center justify-center gap-x-3 gap-y-1" style={{ background: bg, color: tc }}>
-      <span className="inline-flex items-center gap-1.5"><Tag size={14}/>{store.offer_title || 'Limited Offer'} — {store.offer_discount || '40% OFF'}</span>
-      <span className="opacity-80 text-xs">{store.offer_label || 'Ends in:'}</span>
+      <span className="inline-flex items-center gap-1.5"><Tag size={14}/>{store.offer_title || t('store.limitedOffer','Limited Offer')} — {store.offer_discount || '40% OFF'}</span>
+      <span className="opacity-80 text-xs">{store.offer_label || t('store.endsIn','Ends in:')}</span>
       <span className="font-mono tabular-nums bg-white/20 rounded px-2 py-0.5 text-xs">{pad(h)}:{pad(m)}:{pad(s)}</span>
     </div>
   );
@@ -80,6 +81,7 @@ const getPreset = (key) => ANIM_PRESETS[key] || ANIM_PRESETS.fade;
 
 // ============ AI CHATBOT WIDGET ============
 function AIChatbot({ store, slug }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -89,7 +91,7 @@ function AIChatbot({ store, slug }) {
 
   useEffect(() => {
     if (open && messages.length === 0)
-      setMessages([{ role:'bot', text: store.ai_chatbot_greeting || `Welcome to ${store.name}! How can I help you today?` }]);
+      setMessages([{ role:'bot', text: store.ai_chatbot_greeting || t('store.chatbotGreeting',`Welcome to ${store.name}! How can I help you today?`) }]);
   }, [open]);
 
   // Auto-scroll on ANY change
@@ -115,7 +117,7 @@ function AIChatbot({ store, slug }) {
     try {
       const{data}=await aiApi.chat(slug,{message:text,history:messages,language:msgLang});
       setMessages(prev=>[...prev,{role:'bot',text:data.response}]);
-    } catch(e) { setMessages(prev=>[...prev,{role:'bot',text:e.response?.data?.error || "Sorry, I'm having trouble. Please try again!"}]); }
+    } catch(e) { setMessages(prev=>[...prev,{role:'bot',text:e.response?.data?.error || t('store.chatbotError',"Sorry, I'm having trouble. Please try again!")}]); }
     setLoading(false);
   };
 
@@ -129,7 +131,7 @@ function AIChatbot({ store, slug }) {
           <div className="p-4" style={{background:'linear-gradient(135deg, #7C3AED, #9333EA)'}}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"><Bot size={20} className="text-white"/></div>
-              <div className="flex-1"><h3 className="font-bold text-sm text-white">{store.ai_chatbot_name || 'Kyo-Bot Support Unit'}</h3><p className="text-white/70 text-xs flex items-center gap-1"><span className="w-2 h-2 bg-emerald-400 rounded-full"/>Operational</p></div>
+              <div className="flex-1"><h3 className="font-bold text-sm text-white">{store.ai_chatbot_name || t('store.chatbotName','Kyo-Bot Support Unit')}</h3><p className="text-white/70 text-xs flex items-center gap-1"><span className="w-2 h-2 bg-emerald-400 rounded-full"/>{t('store.chatbotOperational','Operational')}</p></div>
               <button onClick={()=>setOpen(false)} className="text-white/60 hover:text-white"><X size={18}/></button>
             </div>
           </div>
@@ -143,19 +145,19 @@ function AIChatbot({ store, slug }) {
             {loading&&(<div className="flex justify-start"><div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center mr-2 shrink-0"><Bot size={14} className="text-gray-500"/></div><div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3"><div className="flex gap-1"><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"/><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.15s'}}/><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:'0.3s'}}/></div></div></div>)}
           </div>
           <div className="px-4 pb-2">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">SUGGESTED ACTIONS</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">{t('store.suggestedActions','SUGGESTED ACTIONS')}</p>
             <div className="flex flex-wrap gap-1.5">
-              {['Shipping rates','Best sellers','Contact info'].map((s,i)=>(
+              {[t('store.shippingRates','Shipping rates'),t('store.bestSellers','Best sellers'),t('store.contactInfo','Contact info')].map((s,i)=>(
                 <button key={i} onClick={()=>sendMessage(s)} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 transition-all">{s} <ChevronRight size={10} className="inline"/></button>
               ))}
             </div>
           </div>
           <div className="p-3 border-t border-gray-100">
             <div className="flex gap-2">
-              <input className="flex-1 px-3 py-2.5 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-brand-400" placeholder="Enter command..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)}/>
+              <input className="flex-1 px-3 py-2.5 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-brand-400" placeholder={t('store.chatbotPlaceholder','Enter command...')} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)}/>
               <button onClick={()=>sendMessage(input)} className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-colors" style={{backgroundColor:store.primary_color||'#7C3AED'}}><Send size={14}/></button>
             </div>
-            <p className="text-[9px] text-gray-300 text-center mt-1.5">Powered by {store.name} KyoBot V2</p>
+            <p className="text-[9px] text-gray-300 text-center mt-1.5">{t('store.poweredBy','Powered by')} {store.name} KyoBot V2</p>
           </div>
         </div>
       )}
@@ -165,6 +167,7 @@ function AIChatbot({ store, slug }) {
 
 // ============ PRODUCT DETAIL MODAL ============
 function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, getThumb, onClose, onAddToCart, onBuyNow, wishlistStore }) {
+  const { t } = useTranslation();
   const [selectedVariants, setSelectedVariants] = React.useState({});
   const [quantity, setQuantity] = React.useState(1);
   const [selectedImage, setSelectedImage] = React.useState(0);
@@ -263,7 +266,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
 
         {/* Wishlist */}
         <button
-          onClick={() => { const added = wishlistStore.toggle(product); if (added) toast.success('Added to favorites'); else toast.success('Removed from favorites'); }}
+          onClick={() => { const added = wishlistStore.toggle(product); if (added) toast.success(t('store.addedToFavorites','Added to favorites')); else toast.success(t('store.removedFromFavorites','Removed from favorites')); }}
           className="absolute top-4 right-16 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
         >
           <Heart size={18} className={inWishlist ? 'text-red-400' : 'text-white/70'} fill={inWishlist ? 'currentColor' : 'none'} />
@@ -312,10 +315,10 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
             {/* Stock */}
             <div className="mt-2">
               {stockCount > 0
-                ? <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-semibold"><span className="w-2 h-2 bg-emerald-400 rounded-full" />{store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}</span>
+                ? <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-semibold"><span className="w-2 h-2 bg-emerald-400 rounded-full" />{store.show_stock_storefront ? `${stockCount} ${t('store.inStockCount','in stock')}` : t('store.inStock','In Stock')}</span>
                 : product.allow_oversell
-                  ? <span className="inline-flex items-center gap-1.5 text-amber-400 text-sm font-semibold"><span className="w-2 h-2 bg-amber-400 rounded-full" />Available for order</span>
-                  : <span className="text-red-400 text-sm font-semibold">Out of stock</span>}
+                  ? <span className="inline-flex items-center gap-1.5 text-amber-400 text-sm font-semibold"><span className="w-2 h-2 bg-amber-400 rounded-full" />{t('store.availableForOrder','Available for order')}</span>
+                  : <span className="text-red-400 text-sm font-semibold">{t('store.outOfStock','Out of stock')}</span>}
             </div>
 
             {/* Description */}
@@ -324,7 +327,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
             {/* Selected variant label */}
             {variantLabel && (
               <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs text-white/40">Selected:</span>
+                <span className="text-xs text-white/40">{t('store.selected','Selected:')}</span>
                 <span className="text-xs font-bold text-white px-2.5 py-1 bg-white/10 rounded-lg">{variantLabel}</span>
               </div>
             )}
@@ -334,7 +337,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
               <div className="mt-4 space-y-4 flex-1">
                 {groupTypes.map(type => {
                   const group = variantGroups[type];
-                  const typeLabel = type === 'color' ? 'Color' : type === 'size' ? 'Size' : type === 'material' ? 'Material' : type === 'style' ? 'Style' : type.charAt(0).toUpperCase() + type.slice(1);
+                  const typeLabel = type === 'color' ? t('store.variantColor','Color') : type === 'size' ? t('store.variantSize','Size') : type === 'material' ? t('store.variantMaterial','Material') : type === 'style' ? t('store.variantStyle','Style') : type.charAt(0).toUpperCase() + type.slice(1);
                   const selectedInGroup = selectedVariants[type];
                   const selName = selectedInGroup != null ? variants[selectedInGroup]?.name : null;
 
@@ -407,7 +410,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
               if (!Array.isArray(qOffers) || qOffers.length === 0) return null;
               return (
                 <div className="mt-4">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Quantity Offers</p>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">{t('store.quantityOffers','Quantity Offers')}</p>
                   <div className="flex flex-wrap gap-2">
                     {qOffers.map((qo, qi) => (
                       <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)}
@@ -433,37 +436,37 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
               <button
                 onClick={() => {
                   const missing = groupTypes.filter(t => selectedVariants[t] == null);
-                  if (missing.length) { toast.error('Please choose: ' + missing.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')); return; }
-                  if (!quantity || quantity < 1) { toast.error('Pick a quantity'); return; }
+                  if (missing.length) { toast.error(t('store.pleaseChoose','Please choose:') + ' ' + missing.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')); return; }
+                  if (!quantity || quantity < 1) { toast.error(t('store.pickQuantity','Pick a quantity')); return; }
                   onAddToCart({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose();
                 }}
                 disabled={stockCount <= 0 && !product.allow_oversell}
                 className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all text-sm"
                 style={{ backgroundColor: pc }}
               >
-                <ShoppingCart size={16} /> {store.btn_add_cart || 'Add to Cart'}
+                <ShoppingCart size={16} /> {store.btn_add_cart || t('store.addToCart','Add to Cart')}
               </button>
               <button
                 onClick={() => {
                   const missing = groupTypes.filter(t => selectedVariants[t] == null);
-                  if (missing.length) { toast.error('Please choose: ' + missing.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')); return; }
-                  if (!quantity || quantity < 1) { toast.error('Pick a quantity'); return; }
+                  if (missing.length) { toast.error(t('store.pleaseChoose','Please choose:') + ' ' + missing.map(m=>m.charAt(0).toUpperCase()+m.slice(1)).join(', ')); return; }
+                  if (!quantity || quantity < 1) { toast.error(t('store.pickQuantity','Pick a quantity')); return; }
                   onBuyNow({ ...product, price: finalPrice }, quantity, buildVariantObj()); onClose();
                 }}
                 disabled={stockCount <= 0 && !product.allow_oversell}
                 className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 disabled:opacity-50 transition-all text-sm"
                 style={{ borderColor: pc, color: pc, backgroundColor: pc + '15' }}
               >
-                <Zap size={16} /> {store.btn_buy_now || 'Buy Now'}
+                <Zap size={16} /> {store.btn_buy_now || t('store.buyNow','Buy Now')}
               </button>
             </div>
 
             {/* Trust badges */}
             <div className="mt-5 grid grid-cols-3 gap-2">
               {[
-                { icon: Truck, label: 'Fast Delivery' },
-                { icon: Shield, label: 'Secure' },
-                { icon: Package, label: 'Returns' },
+                { icon: Truck, label: t('store.fastDelivery','Fast Delivery') },
+                { icon: Shield, label: t('store.secure','Secure') },
+                { icon: Package, label: t('store.returns','Returns') },
               ].map((f, i) => {
                 const I = f.icon;
                 return (
@@ -487,6 +490,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
 // quantity, shipping estimate and total. "Continue" advances to the real
 // Checkout, "Cancel" closes the preview without losing the buy-now selection.
 function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfirm, onClose }) {
+  const { t } = useTranslation();
   if (!items || items.length === 0) return null;
   const subtotal = items.reduce((s, i) => s + (parseFloat(i.price) || 0) * (i.quantity || 1), 0);
   return (
@@ -495,8 +499,8 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
         <div className="p-5 text-white" style={{ background: `linear-gradient(135deg, ${pc}, ${pc}cc)` }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Checkout Preview</p>
-              <h2 className="text-xl font-extrabold mt-0.5">Confirm your order</h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t('store.checkoutPreview','Checkout Preview')}</p>
+              <h2 className="text-xl font-extrabold mt-0.5">{t('store.confirmOrder','Confirm your order')}</h2>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30"><X size={16}/></button>
           </div>
@@ -510,7 +514,7 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm text-gray-800 dark:text-gray-100 truncate">{it.name}</p>
                 {it.variant && <p className="text-[11px] text-gray-400">{it.variant.label || it.variant.name || (it.variant.type === 'color' && it.variant.value && /^#[0-9a-f]{3,8}$/i.test(it.variant.value) ? '' : it.variant.value) || ''}</p>}
-                <p className="text-[11px] text-gray-500">Qty: {it.quantity}</p>
+                <p className="text-[11px] text-gray-500">{t('store.qty','Qty')}: {it.quantity}</p>
               </div>
               <p className="font-extrabold text-sm" style={{ color: pc }}>
                 {(parseFloat(it.price) * (it.quantity || 1)).toLocaleString()} {currency}
@@ -518,9 +522,9 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
             </div>
           ))}
           <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5 text-sm">
-            <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{subtotal.toLocaleString()} {currency}</span></div>
+            <div className="flex justify-between text-gray-500"><span>{t('store.subtotal','Subtotal')}</span><span>{subtotal.toLocaleString()} {currency}</span></div>
             <div className="flex justify-between text-base font-extrabold pt-2 border-t border-gray-100 dark:border-gray-800">
-              <span className="text-gray-800 dark:text-gray-100">Total</span>
+              <span className="text-gray-800 dark:text-gray-100">{t('store.total','Total')}</span>
               <span style={{ color: pc }}>{subtotal.toLocaleString()} {currency}</span>
             </div>
           </div>

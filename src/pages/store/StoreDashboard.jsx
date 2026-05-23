@@ -143,9 +143,9 @@ export default function StoreDashboard() {
 
   const statCards = [
     { icon: Eye, label: t('dashboard.storeVisits'), value: stats.storeVisits?.toLocaleString() || '0', color: 'from-blue-500 to-cyan-500', change: '+8.2%' },
-    { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} DZD`, color: 'from-emerald-500 to-teal-500', change: '+12.5%' },
+    { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${t('storePage.dzd','DZD')}`, color: 'from-emerald-500 to-teal-500', change: '+12.5%' },
     { icon: ShoppingCart, label: t('dashboard.totalOrders'), value: stats.totalOrders || 0, color: 'from-purple-500 to-pink-500', change: '+8.2%' },
-    { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} DZD`, color: 'from-amber-500 to-orange-500', change: '+5.1%' },
+    { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${t('storePage.dzd','DZD')}`, color: 'from-amber-500 to-orange-500', change: '+5.1%' },
   ];
 
   return (
@@ -255,7 +255,7 @@ export default function StoreDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                 <XAxis dataKey="date" tickFormatter={v => {try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}}} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?' DZD':''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${t('storePage.dzd','DZD')}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]} />
                 <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" name="revenue" />
                 <Area type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} fill="url(#colorOrd)" name="orders" />
               </AreaChart>
@@ -322,7 +322,7 @@ export default function StoreDashboard() {
                     {o.first_image ? <img src={o.first_image} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 flex-shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0"><Package size={16} className="text-gray-400"/></div>}
                     <div className="min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{o.order_number}</p><p className="text-xs text-gray-400 truncate">{o.customer_name}{o.items?.length>1?` · +${o.items.length-1} more`:''}</p></div>
                   </div>
-                  <div className="text-right flex-shrink-0"><p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} DZD</p><span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
+                  <div className="text-right flex-shrink-0"><p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} {t('storePage.dzd','DZD')}</p><span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
                 </div>
               ))}
             </div>
@@ -357,7 +357,7 @@ export default function StoreDashboard() {
                 </div>
                 <h4 className="text-sm font-semibold text-gray-900 truncate">{p.name}</h4>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm font-bold text-brand-600">{parseFloat(p.price || 0).toLocaleString()} DZD</span>
+                  <span className="text-sm font-bold text-brand-600">{parseFloat(p.price || 0).toLocaleString()} {t('storePage.dzd','DZD')}</span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     (p.stock ?? p.quantity ?? 0) > 10
                       ? 'bg-emerald-100 text-emerald-700'

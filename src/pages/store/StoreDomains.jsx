@@ -137,7 +137,7 @@ export default function StoreDomains() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {d.status === 'active' && <a href={`https://${d.domain_name}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 font-bold px-3 py-1.5 rounded-lg border border-brand-200 hover:bg-brand-50">Visit</a>}
+                    {d.status === 'active' && <a href={`https://${d.domain_name}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 font-bold px-3 py-1.5 rounded-lg border border-brand-200 hover:bg-brand-50">{t('storePage.visit','Visit')}</a>}
                     <button onClick={() => verifyDomain(d.id)} disabled={verifyingId === d.id} className="text-xs text-blue-600 font-bold px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 disabled:opacity-50 flex items-center gap-1">
                       <RefreshCw size={12} className={verifyingId === d.id ? 'animate-spin' : ''} />{t('storePage.verifyDns','Verify DNS')}
                     </button>

@@ -270,7 +270,7 @@ function CartRecoveryConfig({ store, onSaved }) {
       toast.success(t('storePage.savedConfig','Saved'));
       setOpen(false);
       onSaved && onSaved();
-    } catch (e) { toast.error(e?.response?.data?.error || 'Failed to save'); }
+    } catch (e) { toast.error(e?.response?.data?.error || t('recovery.failedToSave','Failed to save')); }
     setSaving(false);
   };
   return (
