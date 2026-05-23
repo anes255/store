@@ -111,6 +111,7 @@ const TrackingOrders=lazy(()=>import('./pages/store/TrackingOrders'));
 const SmartReviews=lazy(()=>import('./pages/store/SmartReviews'));
 const StoreOffers=lazy(()=>import('./pages/store/StoreOffers'));
 const TrackingPixels=lazy(()=>import('./pages/store/TrackingPixels'));
+const LandingPageBuilder=lazy(()=>import('./pages/store/LandingPageBuilder'));
 // Buyer
 const Storefront=lazy(()=>import('./pages/buyer/Storefront'));
 const ProductDetail=lazy(()=>import('./pages/buyer/ProductDetail'));
@@ -120,6 +121,7 @@ const CustomerProfile=lazy(()=>import('./pages/buyer/CustomerProfile'));
 const Favorites=lazy(()=>import('./pages/buyer/Favorites'));
 const TrackOrder=lazy(()=>import('./pages/buyer/TrackOrder'));
 const StoreFAQ=lazy(()=>import('./pages/buyer/StoreFAQ'));
+const BuyerLandingPage=lazy(()=>import('./pages/buyer/BuyerLandingPage'));
 
 const Loading=()=>(<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>);
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();const isAdminArea=(allowedRoles&&allowedRoles.includes('platform_admin'))||(typeof window!=='undefined'&&window.location.pathname.startsWith('/admin'));const loginPath=isAdminArea?'/admin/login':'/login';if(!token)return<Navigate to={loginPath} replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to={loginPath} replace/>;return children;};
@@ -168,7 +170,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/dashboard/form-settings" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/logo" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/themes" element={<P><StoreSettings/></P>}/>
-<Route path="/dashboard/landing-pages" element={<P><StoreProducts/></P>}/>
+<Route path="/dashboard/landing-pages" element={<P><LandingPageBuilder/></P>}/>
 <Route path="/dashboard/ai-intelligence" element={<P><StoreApps/></P>}/>
 {/* Buyer - classic /s/ paths */}
 <Route path="/s/:storeSlug" element={<Storefront/>}/>
@@ -178,6 +180,7 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><To
 <Route path="/s/:storeSlug/profile" element={<CustomerProfile/>}/>
 <Route path="/s/:storeSlug/favorites" element={<Favorites/>}/>
 <Route path="/s/:storeSlug/track" element={<TrackOrder/>}/>
+<Route path="/s/:storeSlug/lp/:landingSlug" element={<BuyerLandingPage/>}/>
 <Route path="/s/:storeSlug/faq" element={<StoreFAQ/>}/>
 {/* Buyer - clean slug homepage only. Subpages use /s/:storeSlug/... to
     avoid conflicting with reserved top-level paths like /admin/profile. */}

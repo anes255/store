@@ -297,7 +297,7 @@ const DEFAULT_ITEMS = [
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'},{to:'/dashboard/orders-archive',label:'sidebar.ordersArchive'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
-    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/offers',label:'Offers'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
+    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/offers',label:'Offers'},{to:'/dashboard/landing-pages',label:'sidebar.landingPages'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
   {id:'store',type:'group',icon:'Globe',label:'Store Settings',children:[
     {to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
