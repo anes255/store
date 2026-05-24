@@ -1407,6 +1407,20 @@ const D = {
   'Push notifications not supported on this browser': { fr: 'Les notifications push ne sont pas supportées sur ce navigateur', ar: 'إشعارات الدفع غير مدعومة في هذا المتصفح' },
   'Push notifications enabled! You will receive alerts for new orders.': { fr: 'Notifications push activées ! Vous recevrez des alertes pour les nouvelles commandes.', ar: 'تم تفعيل الإشعارات! ستتلقى تنبيهات للطلبات الجديدة.' },
   'No notifications yet': { fr: 'Aucune notification pour le moment', ar: 'لا توجد إشعارات بعد' },
+
+  // ── Order status labels (uppercase, used in status badges/dropdowns) ──
+  'NEW': { fr: 'NOUVEAU', ar: 'جديد' },
+  'CONFIRMED': { fr: 'CONFIRMÉ', ar: 'مؤكد' },
+  'PREPARING': { fr: 'EN PRÉPARATION', ar: 'قيد التحضير' },
+  'SHIPPED': { fr: 'EXPÉDIÉ', ar: 'تم الشحن' },
+  'DELIVERED': { fr: 'LIVRÉ', ar: 'تم التوصيل' },
+  'CANCELLED': { fr: 'ANNULÉ', ar: 'ملغي' },
+  'RETURNED': { fr: 'RETOURNÉ', ar: 'مرتجع' },
+  'AWAITING': { fr: 'EN ATTENTE', ar: 'بالانتظار' },
+  'ARCHIVED': { fr: 'ARCHIVÉ', ar: 'مؤرشف' },
+  'CALL FAILED 1': { fr: 'APPEL ÉCHOUÉ 1', ar: 'فشل الاتصال 1' },
+  'CALL FAILED 2': { fr: 'APPEL ÉCHOUÉ 2', ar: 'فشل الاتصال 2' },
+  'CALL FAILED 3': { fr: 'APPEL ÉCHOUÉ 3', ar: 'فشل الاتصال 3' },
   'Two-step verification is enabled. Request a code first to change these settings.': { fr: 'La vérification en deux étapes est activée. Demandez un code pour modifier ces paramètres.', ar: 'التحقق بخطوتين مفعل. اطلب رمزاً لتغيير هذه الإعدادات.' },
 };
 
