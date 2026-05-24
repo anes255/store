@@ -532,10 +532,438 @@ export default function BuyerLandingPage(){
     );
   };
 
+  /* ─── Product Card: Magazine ─── */
+  const renderMagazine=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const isHero=idx===0;
+    if(isHero){
+      return(
+        <section key={item.product_id} style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+          <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
+            <Reveal animation={anim}>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-3 relative group">
+                  {item.compare_price&&<div className="absolute top-4 left-4 z-10 px-4 py-1.5 rounded-full text-sm font-black text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
+                  {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-full rounded-3xl shadow-2xl object-cover aspect-[4/3]"/>:<div className="w-full aspect-[4/3] rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={72} className="opacity-20"/></div>}
+                </div>
+                <div className="lg:col-span-2 flex flex-col justify-center space-y-5">
+                  {item.headline&&<p className="text-[11px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full inline-block w-fit" style={{backgroundColor:pc+'15',color:pc}}>{item.headline}</p>}
+                  <h2 className="text-3xl sm:text-4xl font-black leading-[1.1] tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
+                  {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:page.text_color||'#1F2937'}}>{item.description}</p>}
+                  {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><Check size={14} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></li>)}</ul>}
+                  <div className="flex items-end gap-3 pt-2">
+                    <span className="text-4xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()}<span className="text-lg ml-1 opacity-60">{store?.currency||'DZD'}</span></span>
+                    {item.compare_price&&<span className="text-xl text-gray-400 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
+                      <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Minus size={15}/></button>
+                      <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center tabular-nums">{qty}</span>
+                      <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Plus size={15}/></button>
+                    </div>
+                    {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-6 py-3 rounded-2xl text-white font-bold text-sm shadow-lg hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-2" style={{backgroundColor:pc}}><ShoppingBag size={15}/>{t('lp.addToOrder','Add to Order')}</button>}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+    return(
+      <section key={item.product_id} style={{backgroundColor:idx%2===0?page.bg_color||'#FAFAFA':'oklch(0.97 0.005 280)'}}>
+        <div className="max-w-6xl mx-auto px-5 py-8">
+          <Reveal animation={anim} delay={idx*60}>
+            <div className="flex flex-col sm:flex-row gap-5 items-center p-5 rounded-2xl hover:shadow-lg transition-shadow" style={{backgroundColor:'white',border:'1px solid oklch(0.93 0.005 280)'}}>
+              {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-32 h-32 rounded-xl object-cover shrink-0"/>:<div className="w-32 h-32 rounded-xl flex items-center justify-center shrink-0" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={28} className="opacity-20"/></div>}
+              <div className="flex-1 space-y-2">
+                <h3 className="text-lg font-bold" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
+                {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
+                {item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).slice(0,3).map((f,i)=><span key={i} className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{backgroundColor:pc+'12',color:pc}}>{f}</span>)}</div>}
+              </div>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <span className="text-xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-60">{store?.currency||'DZD'}</span></span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-2.5 py-1.5 hover:bg-gray-100 text-sm"><Minus size={12}/></button>
+                    <span className="px-3 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-2.5 py-1.5 hover:bg-gray-100 text-sm"><Plus size={12}/></button>
+                  </div>
+                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={12}/></button>}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Bento Grid ─── */
+  const renderBentoAll=()=>{
+    const items=page.items||[];
+    if(!items.length)return null;
+    const getBentoClass=(idx,total)=>{
+      if(total===1)return'col-span-2 row-span-2';
+      if(total===2)return'col-span-1 row-span-2';
+      if(idx===0)return'col-span-2 row-span-2';
+      if(idx===1&&total>3)return'col-span-1 row-span-2';
+      return'col-span-1 row-span-1';
+    };
+    return(
+      <section style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
+          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[220px] sm:auto-rows-[280px] gap-4">
+            {items.map((item,idx)=>{
+              const qty=cart[item.product_id]||0;
+              const isLarge=idx===0;
+              return(
+                <Reveal key={item.product_id} animation={anim} delay={idx*80} className={getBentoClass(idx,items.length)}>
+                  <div className="relative w-full h-full rounded-3xl overflow-hidden group cursor-pointer" style={{backgroundColor:'oklch(0.15 0.01 280)'}}>
+                    {(item.custom_image||item.image)&&<img src={item.custom_image||item.image} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
+                    {item.compare_price&&<div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
+                    <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
+                      {item.headline&&isLarge&&<p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">{item.headline}</p>}
+                      <h3 className={`font-black text-white leading-tight ${isLarge?'text-2xl sm:text-3xl':'text-base sm:text-lg'}`}>{item.name}</h3>
+                      {isLarge&&item.description&&<p className="text-xs text-white/60 line-clamp-2 max-w-md">{item.description}</p>}
+                      <div className="flex items-center justify-between gap-3 pt-1">
+                        <span className={`font-black text-white ${isLarge?'text-2xl':'text-lg'}`}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-50">{store?.currency||'DZD'}</span></span>
+                        <div className="flex items-center gap-2">
+                          {qty>0&&<div className="flex items-center rounded-lg overflow-hidden bg-white/20 backdrop-blur-sm">
+                            <button onClick={()=>setQty(item.product_id,-1)} className="px-2 py-1.5 text-white hover:bg-white/10"><Minus size={12}/></button>
+                            <span className="px-2 py-1.5 text-white font-bold text-sm tabular-nums">{qty}</span>
+                            <button onClick={()=>setQty(item.product_id,1)} className="px-2 py-1.5 text-white hover:bg-white/10"><Plus size={12}/></button>
+                          </div>}
+                          {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><Plus size={14}/></button>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Timeline ─── */
+  const renderTimeline=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const isEven=idx%2===0;
+    const total=page.items.length;
+    return(
+      <section key={item.product_id} style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <div className="max-w-5xl mx-auto px-5 relative">
+          <div className="absolute left-1/2 top-0 bottom-0 w-px hidden md:block" style={{backgroundColor:pc+'30'}}/>
+          <Reveal animation={anim} delay={idx*100}>
+            <div className={`flex flex-col md:flex-row items-center gap-8 py-12 ${isEven?'':'md:flex-row-reverse'}`}>
+              <div className={`flex-1 ${isEven?'md:text-right md:pr-12':'md:text-left md:pl-12'}`}>
+                <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full text-xs font-bold" style={{backgroundColor:pc+'15',color:pc}}>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black" style={{backgroundColor:pc}}>{idx+1}</span>
+                  {item.headline||`Step ${idx+1}`}
+                </div>
+                <h3 className="text-2xl font-extrabold tracking-tight mb-2" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
+                {item.description&&<p className="text-sm opacity-60 mb-4 max-w-md" style={{color:page.text_color}}>{item.description}</p>}
+                {item.features?.length>0&&<ul className="space-y-1.5 mb-4">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className={`text-xs flex items-center gap-2 ${isEven?'md:justify-end':''}`}><Check size={12} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></li>)}</ul>}
+                <div className={`flex items-center gap-3 ${isEven?'md:justify-end':''}`}>
+                  <span className="text-2xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-sm opacity-50">{store?.currency||'DZD'}</span></span>
+                  <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-2.5 py-1.5 hover:bg-gray-100"><Minus size={12}/></button>
+                    <span className="px-3 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-2.5 py-1.5 hover:bg-gray-100"><Plus size={12}/></button>
+                  </div>
+                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={12}/></button>}
+                </div>
+              </div>
+              <div className="hidden md:flex w-4 h-4 rounded-full border-4 shrink-0 z-10" style={{borderColor:pc,backgroundColor:page.bg_color||'#FAFAFA'}}/>
+              <div className="flex-1">
+                {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-full max-w-sm mx-auto rounded-2xl shadow-xl object-cover aspect-square"/>:<div className="w-full max-w-sm mx-auto aspect-square rounded-2xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Cards Gallery ─── */
+  const renderCardsAll=()=>{
+    const items=page.items||[];
+    return(
+      <section style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map((item,idx)=>{
+              const qty=cart[item.product_id]||0;
+              return(
+                <Reveal key={item.product_id} animation={anim} delay={idx*80}>
+                  <div className="rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group" style={{backgroundColor:'white'}}>
+                    <div className="relative overflow-hidden aspect-[4/5]">
+                      {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
+                      {item.compare_price&&<div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
+                      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent"/>
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <span className="text-2xl font-black text-white">{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-60">{store?.currency||'DZD'}</span></span>
+                      </div>
+                    </div>
+                    <div className="p-5 space-y-3">
+                      {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
+                      <h3 className="text-lg font-extrabold tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
+                      {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
+                      {item.features?.length>0&&<div className="space-y-1">{item.features.filter(f=>f.trim()).slice(0,3).map((f,i)=><div key={i} className="flex items-center gap-1.5 text-xs"><Check size={10} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></div>)}</div>}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.9 0.005 280)'}}>
+                          <button onClick={()=>setQty(item.product_id,-1)} className="px-3 py-2 hover:bg-gray-100"><Minus size={13}/></button>
+                          <span className="px-3 py-2 font-bold tabular-nums">{qty}</span>
+                          <button onClick={()=>setQty(item.product_id,1)} className="px-3 py-2 hover:bg-gray-100"><Plus size={13}/></button>
+                        </div>
+                        {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={14}/></button>}
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Cinematic ─── */
+  const renderCinematic=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const hasImage=item.custom_image||item.image;
+    return(
+      <section key={item.product_id} className="relative min-h-[80vh] flex items-center overflow-hidden" style={{backgroundColor:'oklch(0.08 0.01 280)'}}>
+        {hasImage&&<div className="absolute inset-0"><img src={hasImage} alt="" className="w-full h-full object-cover opacity-30 scale-110" style={{filter:'blur(2px) saturate(0.6)'}}/><div className="absolute inset-0" style={{background:`linear-gradient(135deg, oklch(0.06 0.02 280) 0%, transparent 50%), linear-gradient(to top, oklch(0.06 0.01 280) 0%, transparent 60%)`}}/></div>}
+        <div className="relative max-w-6xl mx-auto px-5 py-20 w-full">
+          <Reveal animation={anim} delay={150}>
+            <div className="flex flex-col md:flex-row items-center gap-12">
+              <div className="flex-1 space-y-6">
+                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.25em] text-white/30">{item.headline}</p>}
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight">{item.name}</h2>
+                {item.description&&<p className="text-base text-white/50 leading-relaxed max-w-lg">{item.description}</p>}
+                {item.features?.length>0&&<div className="flex flex-wrap gap-3 pt-2">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="px-4 py-2 rounded-full text-xs font-medium text-white/80 border border-white/10 backdrop-blur-sm">{f}</span>)}</div>}
+                <div className="flex items-end gap-4 pt-4">
+                  <div>
+                    <span className="text-5xl font-black text-white tracking-tight">{parseFloat(item.price).toLocaleString()}</span>
+                    <span className="text-lg text-white/40 ml-2 font-medium">{store?.currency||'DZD'}</span>
+                  </div>
+                  {item.compare_price&&<span className="text-2xl text-white/20 line-through font-medium">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                </div>
+                <div className="flex items-center gap-4 pt-2">
+                  <div className="flex items-center rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/10">
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-4 py-3 text-white hover:bg-white/10 transition-colors"><Minus size={16}/></button>
+                    <span className="px-5 py-3 text-white font-bold text-lg tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-4 py-3 text-white hover:bg-white/10 transition-colors"><Plus size={16}/></button>
+                  </div>
+                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-8 py-3.5 rounded-2xl text-white font-bold shadow-2xl hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-2" style={{backgroundColor:pc}}><ShoppingBag size={16}/>{t('lp.addToOrder','Add to Order')}</button>}
+                </div>
+              </div>
+              {hasImage&&<div className="flex-1 max-w-lg"><div className="relative"><div className="absolute -inset-6 rounded-[2rem] blur-3xl opacity-30" style={{backgroundColor:pc}}/><img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-white/10"/></div></div>}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Minimal Zen ─── */
+  const renderMinimalZen=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    return(
+      <section key={item.product_id} style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <div className="max-w-2xl mx-auto px-5 py-20 sm:py-32 text-center">
+          <Reveal animation="fade" delay={100}>
+            <div className="space-y-8">
+              {(item.custom_image||item.image)&&<img src={item.custom_image||item.image} alt={item.name} className="w-48 h-48 sm:w-64 sm:h-64 rounded-full mx-auto object-cover shadow-xl ring-4" style={{ringColor:pc+'20'}}/>}
+              <div className="space-y-4">
+                {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-40" style={{color:page.text_color}}>{item.headline}</p>}
+                <h2 className="text-3xl sm:text-4xl font-extralight tracking-wide" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
+                <div className="w-12 h-px mx-auto" style={{backgroundColor:pc}}/>
+                {item.description&&<p className="text-sm leading-loose opacity-50 max-w-md mx-auto" style={{color:page.text_color}}>{item.description}</p>}
+              </div>
+              {item.features?.length>0&&<div className="flex flex-wrap justify-center gap-4">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-xs font-light tracking-wider opacity-60" style={{color:page.text_color}}>— {f}</span>)}</div>}
+              <div className="space-y-4 pt-4">
+                <span className="text-3xl font-extralight tracking-wider" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} {store?.currency||'DZD'}</span>
+                {item.compare_price&&<span className="text-lg text-gray-300 line-through ml-3">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <div className="flex items-center rounded-full overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-4 py-2.5 hover:bg-gray-50 transition-colors"><Minus size={14}/></button>
+                    <span className="px-4 py-2.5 font-medium tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2.5 hover:bg-gray-50 transition-colors"><Plus size={14}/></button>
+                  </div>
+                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-8 py-3 rounded-full font-medium text-sm tracking-wider text-white hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}>{t('lp.addToOrder','Add to Order')}</button>}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+        {idx<(page.items||[]).length-1&&<div className="max-w-xs mx-auto h-px" style={{backgroundColor:pc+'15'}}/>}
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Split Screen ─── */
+  const renderSplitScreen=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const isEven=idx%2===0;
+    const hasImage=item.custom_image||item.image;
+    return(
+      <section key={item.product_id} className="relative min-h-[70vh] flex">
+        <div className={`flex flex-col md:flex-row w-full ${isEven?'':'md:flex-row-reverse'}`}>
+          <div className="flex-1 relative overflow-hidden" style={{backgroundColor:'oklch(0.12 0.015 280)'}}>
+            {hasImage?<img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>:<div className="absolute inset-0 flex items-center justify-center" style={{backgroundColor:'oklch(0.15 0.01 280)'}}><Package size={64} className="text-white/10"/></div>}
+            {item.compare_price&&<div className="absolute top-6 left-6 z-10 px-4 py-2 rounded-xl text-sm font-black text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
+          </div>
+          <div className="flex-1 flex items-center" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+            <Reveal animation={anim} delay={100}>
+              <div className="p-10 sm:p-16 space-y-6 max-w-xl">
+                {item.headline&&<p className="text-xs font-black uppercase tracking-[0.2em]" style={{color:pc}}>{item.headline}</p>}
+                <h2 className="text-3xl sm:text-4xl font-black leading-[1.1] tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
+                {item.description&&<p className="text-sm leading-relaxed opacity-50" style={{color:page.text_color}}>{item.description}</p>}
+                {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/><span style={{color:page.text_color}}>{f}</span></li>)}</ul>}
+                <div className="flex items-end gap-3 pt-2">
+                  <span className="text-4xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()}</span>
+                  <span className="text-base opacity-40 mb-1">{store?.currency||'DZD'}</span>
+                  {item.compare_price&&<span className="text-xl text-gray-400 line-through mb-1">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100"><Minus size={15}/></button>
+                    <span className="px-4 py-2.5 font-bold text-lg tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100"><Plus size={15}/></button>
+                  </div>
+                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-6 py-3 rounded-2xl text-white font-bold text-sm shadow-lg hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-2" style={{backgroundColor:pc}}><ShoppingBag size={15}/>{t('lp.addToOrder','Add to Order')}</button>}
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Mosaic ─── */
+  const renderMosaicAll=()=>{
+    const items=page.items||[];
+    return(
+      <section style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
+          <div className="space-y-4">
+            {items.map((item,idx)=>{
+              const qty=cart[item.product_id]||0;
+              const isWide=idx%3===0;
+              const hasImage=item.custom_image||item.image;
+              return(
+                <Reveal key={item.product_id} animation={anim} delay={idx*60}>
+                  <div className={`rounded-3xl overflow-hidden ${isWide?'':'float-left w-full sm:w-[calc(50%-8px)] mr-4 mb-4'}`} style={{backgroundColor:'white',border:'1px solid oklch(0.93 0.005 280)'}}>
+                    <div className={`flex ${isWide?'flex-col sm:flex-row':'flex-col'}`}>
+                      <div className={`relative overflow-hidden ${isWide?'sm:w-2/5':'w-full'}`}>
+                        {hasImage?<img src={hasImage} alt={item.name} className={`w-full object-cover ${isWide?'h-64 sm:h-full':'aspect-[3/2]'} transition-transform duration-500 hover:scale-105`}/>:<div className={`w-full flex items-center justify-center ${isWide?'h-64 sm:h-full':'aspect-[3/2]'}`} style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={36} className="opacity-20"/></div>}
+                        {item.compare_price&&<div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
+                      </div>
+                      <div className="flex-1 p-6 space-y-3">
+                        {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
+                        <h3 className={`font-extrabold tracking-tight ${isWide?'text-2xl':'text-lg'}`} style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
+                        {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
+                        {isWide&&item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-[10px] px-2 py-0.5 rounded-full" style={{backgroundColor:pc+'12',color:pc}}>{f}</span>)}</div>}
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-50">{store?.currency||'DZD'}</span></span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
+                              <button onClick={()=>setQty(item.product_id,-1)} className="px-2 py-1.5 hover:bg-gray-100"><Minus size={12}/></button>
+                              <span className="px-2 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
+                              <button onClick={()=>setQty(item.product_id,1)} className="px-2 py-1.5 hover:bg-gray-100"><Plus size={12}/></button>
+                            </div>
+                            {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="p-2 rounded-xl text-white shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={14}/></button>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+            <div className="clear-both"/>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  /* ─── Product Card: Storytelling ─── */
+  const renderStorytelling=(item,idx)=>{
+    const qty=cart[item.product_id]||0;
+    const hasImage=item.custom_image||item.image;
+    const chapterNum=String(idx+1).padStart(2,'0');
+    return(
+      <section key={item.product_id}>
+        {hasImage&&(
+          <div className="relative h-[50vh] overflow-hidden">
+            <img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>
+            <div className="absolute inset-0" style={{background:`linear-gradient(to bottom, transparent 40%, ${page.bg_color||'#FAFAFA'} 100%)`}}/>
+            <div className="absolute top-8 left-8">
+              <span className="text-6xl font-black text-white/10">{chapterNum}</span>
+            </div>
+          </div>
+        )}
+        <div className="max-w-2xl mx-auto px-5 -mt-20 relative z-10 pb-16" style={{backgroundColor:'transparent'}}>
+          <Reveal animation={anim} delay={100}>
+            <div className="rounded-3xl p-8 sm:p-10 shadow-xl space-y-5" style={{backgroundColor:'white'}}>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-30" style={{color:page.text_color}}>Chapter {chapterNum}</span>
+                <div className="flex-1 h-px" style={{backgroundColor:pc+'20'}}/>
+              </div>
+              {item.headline&&<p className="text-sm font-bold" style={{color:pc}}>{item.headline}</p>}
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
+              {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:page.text_color}}>{item.description}</p>}
+              {item.features?.length>0&&<div className="space-y-2 py-2 border-l-2 pl-4" style={{borderColor:pc+'30'}}>
+                {item.features.filter(f=>f.trim()).map((f,i)=><p key={i} className="text-sm" style={{color:page.text_color}}>{f}</p>)}
+              </div>}
+              <div className="flex items-center justify-between pt-4 border-t" style={{borderColor:'oklch(0.93 0.005 280)'}}>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()}</span>
+                  <span className="text-sm opacity-40 mb-1">{store?.currency||'DZD'}</span>
+                  {item.compare_price&&<span className="text-lg text-gray-400 line-through mb-0.5">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.9 0.005 280)'}}>
+                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3 py-2 hover:bg-gray-100"><Minus size={13}/></button>
+                    <span className="px-3 py-2 font-bold tabular-nums">{qty}</span>
+                    <button onClick={()=>setQty(item.product_id,1)} className="px-3 py-2 hover:bg-gray-100"><Plus size={13}/></button>
+                  </div>
+                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={14}/></button>}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    );
+  };
+
   const renderProduct=(item,idx)=>{
     if(layoutStyle==='stacked')return renderStacked(item,idx);
     if(layoutStyle==='showcase')return renderShowcase(item,idx);
+    if(layoutStyle==='magazine')return renderMagazine(item,idx);
+    if(layoutStyle==='timeline')return renderTimeline(item,idx);
+    if(layoutStyle==='cinematic')return renderCinematic(item,idx);
+    if(layoutStyle==='minimal-zen')return renderMinimalZen(item,idx);
+    if(layoutStyle==='split-screen')return renderSplitScreen(item,idx);
+    if(layoutStyle==='storytelling')return renderStorytelling(item,idx);
     return renderAlternating(item,idx);
+  };
+
+  const renderAllProducts=()=>{
+    if(layoutStyle==='bento')return renderBentoAll();
+    if(layoutStyle==='cards')return renderCardsAll();
+    if(layoutStyle==='mosaic')return renderMosaicAll();
+    return (page.items||[]).map((item,idx)=>renderProduct(item,idx));
   };
 
   /* ─── Floating cart indicator ─── */
@@ -591,7 +1019,7 @@ export default function BuyerLandingPage(){
       )}
 
       {/* Products */}
-      {page.items.map((item,idx)=>renderProduct(item,idx))}
+      {renderAllProducts()}
 
       {/* CTA divider before checkout */}
       <Reveal animation={anim}>

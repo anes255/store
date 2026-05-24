@@ -245,6 +245,7 @@ export const aiApi = {
   whatsappDebug: () => api.get('/ai/whatsapp-debug'),
   // Reviews
   moderateReview: (data) => api.post('/ai/moderate-review', data),
+  generateLanding: (data) => api.post('/ai/generate-landing', data),
   // Multi-language description
   generateDescriptionMulti: (data) => api.post('/ai/generate-description-multi', data),
   // WhatsApp QR (Baileys)

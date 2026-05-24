@@ -4,7 +4,8 @@ import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import{productApi,ownerApi}from'../../utils/api';
 import toast from'react-hot-toast';
-import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers,RefreshCw,Pipette,Shield}from'lucide-react';
+import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers,RefreshCw,Pipette,Shield,Brain}from'lucide-react';
+import{aiApi}from'../../utils/api';
 
 /* ═══════════════════════════════════════════════════════════════════════
    COLOR EXTRACTION + SMART THEME ENGINE
@@ -260,6 +261,15 @@ const LAYOUT_STYLES=[
   {value:'alternating',label:'Alternating',desc:'Products alternate left/right'},
   {value:'stacked',label:'Stacked',desc:'Full-width product sections'},
   {value:'showcase',label:'Showcase',desc:'Large hero image with overlay text'},
+  {value:'magazine',label:'Magazine',desc:'Hero product + editorial grid'},
+  {value:'bento',label:'Bento Grid',desc:'Apple-style asymmetric tiles'},
+  {value:'timeline',label:'Timeline',desc:'Step-by-step product journey'},
+  {value:'cards',label:'Card Gallery',desc:'Pinterest-style card grid'},
+  {value:'cinematic',label:'Cinematic',desc:'Full-screen immersive sections'},
+  {value:'minimal-zen',label:'Minimal Zen',desc:'Ultra-clean centered layout'},
+  {value:'split-screen',label:'Split Screen',desc:'Bold 50/50 image+text'},
+  {value:'mosaic',label:'Mosaic',desc:'Asymmetric collage layout'},
+  {value:'storytelling',label:'Storytelling',desc:'Narrative chapters with bleed images'},
 ];
 
 const HERO_STYLES=[
@@ -449,32 +459,107 @@ export default function LandingPageBuilder(){
     if(!page.items.length){toast.error(t('lp.addProductsFirst','Add products first'));return;}
     setGenerating(true);
     try{
-      const updatedItems=page.items.map(item=>{
-        const name=item.name;
+      const lang=(typeof window!=='undefined'&&window.navigator?.language||'en').slice(0,2);
+      const aiLang=['ar','fr'].includes(lang)?lang:'en';
+
+      // Build product data for AI
+      const productData=page.items.map(item=>{
+        const prod=products.find(p=>p.id===item.product_id)||{};
         return{
-          ...item,
-          headline:item.headline||`${name} — ${t('lp.aiExclusive','Exclusive Offer')}`,
-          features:item.features.length?item.features:[
-            t('lp.aiFeature1','Premium quality materials'),
-            t('lp.aiFeature2','Fast shipping to all 58 wilayas'),
-            t('lp.aiFeature3','100% satisfaction guaranteed'),
-          ],
-          description:item.description||`${t('lp.aiDesc1','Discover')} ${name} — ${t('lp.aiDesc2','designed to exceed your expectations. Order now and experience the difference.')}`,
+          name_en:item.name||prod.name_en||prod.name||'',
+          name_fr:item.name_fr||prod.name_fr||'',
+          name_ar:item.name_ar||prod.name_ar||'',
+          price:item.price,
+          compare_at_price:item.compare_price,
+          category_name:prod.category_name||'',
+          description_en:item.description||prod.description_en||prod.description||'',
+          images:prod.images||[item.image].filter(Boolean),
+          thumbnail:item.image||prod.thumbnail||'',
         };
       });
-      const patch={items:updatedItems,ai_generated:true};
-      if(!page.hero_title){
-        const storeName=currentStore?.store_name||currentStore?.name||'Store';
-        patch.hero_title=`${storeName} — ${t('lp.aiHeroTitle','Special Collection')}`;
-        patch.hero_subtitle=t('lp.aiHeroSub','Handpicked products at unbeatable prices. Scroll down to discover our exclusive offers.');
+
+      const storeInfo={
+        name:currentStore?.store_name||currentStore?.name||'Store',
+        currency:currentStore?.currency||'DZD',
+      };
+
+      const{data}=await aiApi.generateLanding({products:productData,store:storeInfo,language:aiLang});
+      const ai=data.landing;
+
+      if(ai){
+        // Apply AI-generated layout, colors, and copy
+        const patch={
+          ai_generated:true,
+          layout_style:ai.layout_style||'alternating',
+          hero_style:ai.hero_style||'centered',
+          animation_style:ai.animation_style||'slide-up',
+          hero_title:ai.hero_title||page.hero_title,
+          hero_subtitle:ai.hero_subtitle||page.hero_subtitle,
+          cta_text:ai.cta_text||page.cta_text,
+          show_trust_badges:ai.show_trust_badges!==false,
+          show_social_proof:ai.show_social_proof!==false,
+          show_countdown:ai.show_countdown||false,
+          show_reviews:ai.show_reviews!==false,
+        };
+
+        // Apply AI colors
+        if(ai.colors){
+          patch.hero_bg=ai.colors.hero_bg||page.hero_bg;
+          patch.hero_text=ai.colors.hero_text||page.hero_text;
+          patch.cta_bg=ai.colors.cta_bg||page.cta_bg;
+          patch.cta_text_color=ai.colors.cta_text_color||page.cta_text_color;
+          patch.bg_color=ai.colors.bg_color||page.bg_color;
+          patch.accent_color=ai.colors.accent_color||page.accent_color;
+          patch.theme_preset='ai-custom';
+        }
+
+        // Apply AI product copy
+        if(ai.products&&Array.isArray(ai.products)){
+          const updatedItems=page.items.map((item,i)=>{
+            const aiProduct=ai.products[i];
+            if(!aiProduct)return item;
+            return{
+              ...item,
+              headline:aiProduct.headline||item.headline,
+              description:aiProduct.description||item.description,
+              features:aiProduct.features?.length?aiProduct.features:(item.features?.length?item.features:[]),
+            };
+          });
+          patch.items=updatedItems;
+        }
+
+        updatePage(pageIdx,patch);
+        const layoutName=LAYOUT_STYLES.find(l=>l.value===ai.layout_style)?.label||ai.layout_style;
+        toast.success(`✨ AI generated: ${layoutName} layout${ai.page_mood?' • '+ai.page_mood+' mood':''}`);
+      }else{
+        // Fallback to basic generation
+        const updatedItems=page.items.map(item=>({
+          ...item,
+          headline:item.headline||`${item.name} — ${t('lp.aiExclusive','Exclusive Offer')}`,
+          features:item.features?.length?item.features:[t('lp.aiFeature1','Premium quality materials'),t('lp.aiFeature2','Fast shipping to all 58 wilayas'),t('lp.aiFeature3','100% satisfaction guaranteed')],
+          description:item.description||`${t('lp.aiDesc1','Discover')} ${item.name} — ${t('lp.aiDesc2','designed to exceed your expectations.')}`,
+        }));
+        updatePage(pageIdx,{items:updatedItems,ai_generated:true});
+        if(!page.theme_preset&&page.items.some(it=>it.image||it.custom_image)){
+          setTimeout(()=>applyAutoTheme(pageIdx),200);
+        }
+        toast.success(t('lp.aiGenerated','AI content generated! Review and customize.'));
       }
-      updatePage(pageIdx,patch);
-      // Also auto-theme if no theme was applied yet
+    }catch(err){
+      console.error('AI generate error:',err);
+      // Fallback to basic generation on error
+      const updatedItems=page.items.map(item=>({
+        ...item,
+        headline:item.headline||`${item.name} — ${t('lp.aiExclusive','Exclusive Offer')}`,
+        features:item.features?.length?item.features:[t('lp.aiFeature1','Premium quality materials'),t('lp.aiFeature2','Fast shipping to all 58 wilayas'),t('lp.aiFeature3','100% satisfaction guaranteed')],
+        description:item.description||`${t('lp.aiDesc1','Discover')} ${item.name} — ${t('lp.aiDesc2','designed to exceed your expectations.')}`,
+      }));
+      updatePage(pageIdx,{items:updatedItems,ai_generated:true});
       if(!page.theme_preset&&page.items.some(it=>it.image||it.custom_image)){
         setTimeout(()=>applyAutoTheme(pageIdx),200);
       }
-      toast.success(t('lp.aiGenerated','AI content generated! Review and customize.'));
-    }catch{toast.error(t('lp.aiFailed','AI generation failed'));}
+      toast.success(t('lp.aiGenerated','AI content generated (basic mode).'));
+    }
     setGenerating(false);
   };
 
@@ -510,6 +595,7 @@ export default function LandingPageBuilder(){
                 <span className="text-[10px] text-gray-400">{pg.items?.length||0} {t('lp.products','products')}</span>
                 {pg.enabled?<span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"/>{t('lp.live','LIVE')}</span>:<span className="text-[10px] text-gray-400">{t('lp.draft','DRAFT')}</span>}
                 {pg.layout_style&&<span className="text-[10px] text-gray-400 capitalize">{pg.layout_style}</span>}
+                {pg.ai_generated&&<span className="text-[10px] font-bold text-violet-500 flex items-center gap-0.5"><Brain size={8}/>AI</span>}
               </div>
             </div>
           </div>
@@ -570,7 +656,10 @@ export default function LandingPageBuilder(){
               </div>
             </div>}
           </div>
-          <button onClick={()=>generateAI(editing)} disabled={generating} className="btn-ghost text-xs flex items-center gap-1.5 text-violet-600 hover:bg-violet-50"><Wand2 size={13}/>{generating?t('lp.generating','Generating...'):t('lp.aiGenerate','AI Generate')}</button>
+          <button onClick={()=>generateAI(editing)} disabled={generating} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-white shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.97]" style={{background:'linear-gradient(135deg, #7C3AED, #2563EB)'}}>
+            {generating?<RefreshCw size={13} className="animate-spin"/>:<Brain size={13}/>}
+            {generating?t('lp.generating','AI Generating...'):page?.ai_generated?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate')}
+          </button>
           {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="btn-ghost text-xs flex items-center gap-1"><Eye size={12}/>{t('lp.preview','Preview')}</a>}
           <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-xs flex items-center gap-1.5"><Save size={12}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
         </div>
@@ -724,12 +813,14 @@ export default function LandingPageBuilder(){
         <div className="glass-card-solid p-5 space-y-4">
           <h3 className="font-bold text-sm flex items-center gap-2"><Layout size={14} className="text-blue-500"/>{t('lp.layoutAnimation','Layout & Animation')}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            {/* Layout grid takes full width, animation below */}
+            <div className="sm:col-span-2">
               <label className="text-[10px] text-gray-400 font-bold uppercase mb-2 block">{t('lp.productLayout','Product Layout')}</label>
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {LAYOUT_STYLES.map(s=>(
-                  <button key={s.value} onClick={()=>updatePage(editing,{layout_style:s.value})} className={`w-full p-2.5 rounded-lg border text-left text-xs transition-all flex items-center gap-2 ${form.layout_style===s.value?'border-violet-400 bg-violet-50 font-bold':'border-gray-200 hover:border-gray-300'}`}>
-                    <Layers size={12} className={form.layout_style===s.value?'text-violet-500':'text-gray-400'}/>{s.label} <span className="text-gray-400 font-normal ml-auto">{s.desc}</span>
+                  <button key={s.value} onClick={()=>updatePage(editing,{layout_style:s.value,_layoutCustomized:true})} className={`p-2.5 rounded-xl border-2 text-left text-xs transition-all hover:shadow-md ${form.layout_style===s.value?'border-violet-500 bg-violet-50 ring-2 ring-violet-200':'border-gray-100 hover:border-gray-300'}`}>
+                    <p className="font-bold text-gray-700 text-[11px]">{s.label}</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight">{s.desc}</p>
                   </button>
                 ))}
               </div>
