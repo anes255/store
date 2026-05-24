@@ -1463,6 +1463,21 @@ const D = {
   'Bank': { fr: 'Banque', ar: 'البنك' },
   'Account': { fr: 'Compte', ar: 'الحساب' },
   'RIB': { fr: 'RIB', ar: 'RIB' },
+
+  // ── Domain settings & Domain Manager ──
+  'Domain Management': { fr: 'Gestion des domaines', ar: 'إدارة النطاقات' },
+  'Connect custom domains and manage your store URL.': { fr: 'Connectez des domaines personnalisés et gérez l\'URL de votre boutique.', ar: 'ربط نطاقات مخصصة وإدارة رابط متجرك.' },
+  'Platform URL': { fr: 'URL de la plateforme', ar: 'رابط المنصة' },
+  'Connect a Custom Domain': { fr: 'Connecter un domaine personnalisé', ar: 'ربط نطاق مخصص' },
+  'Use your own domain (e.g. mystore.com) for your store. Add the domain, configure DNS records, and verify the connection — all in one place.': { fr: 'Utilisez votre propre domaine (ex. maboutique.com). Ajoutez le domaine, configurez les DNS et vérifiez la connexion.', ar: 'استخدم نطاقك الخاص (مثل متجري.com). أضف النطاق واضبط DNS وتحقق من الاتصال.' },
+  'Open Domain Manager': { fr: 'Ouvrir le gestionnaire de domaines', ar: 'فتح مدير النطاقات' },
+  'Security': { fr: 'Sécurité', ar: 'الأمان' },
+  'Force HTTPS': { fr: 'Forcer HTTPS', ar: 'فرض HTTPS' },
+  'Secure connections.': { fr: 'Connexions sécurisées.', ar: 'اتصالات آمنة.' },
+  'Redirect www': { fr: 'Rediriger www', ar: 'إعادة توجيه www' },
+  'www to root.': { fr: 'www vers racine.', ar: 'www إلى الجذر.' },
+  'Clean URLs': { fr: 'URLs propres', ar: 'روابط نظيفة' },
+  'Remove .html extensions.': { fr: 'Supprimer les extensions .html.', ar: 'إزالة امتدادات .html.' },
   'Two-step verification is enabled. Request a code first to change these settings.': { fr: 'La vérification en deux étapes est activée. Demandez un code pour modifier ces paramètres.', ar: 'التحقق بخطوتين مفعل. اطلب رمزاً لتغيير هذه الإعدادات.' },
 };
 
