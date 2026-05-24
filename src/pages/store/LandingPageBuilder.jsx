@@ -658,7 +658,7 @@ export default function LandingPageBuilder(){
           </div>
           <button onClick={()=>generateAI(editing)} disabled={generating} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-white shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.97]" style={{background:'linear-gradient(135deg, #7C3AED, #2563EB)'}}>
             {generating?<RefreshCw size={13} className="animate-spin"/>:<Brain size={13}/>}
-            {generating?t('lp.generating','AI Generating...'):page?.ai_generated?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate')}
+            {generating?t('lp.generating','AI Generating...'):form?.ai_generated?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate')}
           </button>
           {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="btn-ghost text-xs flex items-center gap-1"><Eye size={12}/>{t('lp.preview','Preview')}</a>}
           <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-xs flex items-center gap-1.5"><Save size={12}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
