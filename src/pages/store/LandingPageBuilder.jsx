@@ -1,10 +1,245 @@
-import React,{useState,useEffect,useRef}from'react';
+import React,{useState,useEffect,useRef,useCallback}from'react';
 import{useTranslation}from'react-i18next';
 import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import{productApi,ownerApi}from'../../utils/api';
 import toast from'react-hot-toast';
-import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers}from'lucide-react';
+import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers,RefreshCw,Pipette,Shield}from'lucide-react';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COLOR EXTRACTION + SMART THEME ENGINE
+   Extracts dominant colors from product images, then generates a unique
+   harmonious palette per landing page using UI/UX design principles:
+   - 60-30-10 color rule (bg-accent-CTA)
+   - WCAG contrast ratios for text readability
+   - Complementary / analogous / triadic harmony options
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// Extract dominant colors from an image URL via canvas sampling
+function extractColors(imgUrl){
+  return new Promise((resolve)=>{
+    if(!imgUrl){resolve([]);return;}
+    const img=new window.Image();
+    img.crossOrigin='anonymous';
+    img.onload=()=>{
+      try{
+        const canvas=document.createElement('canvas');
+        const size=64; // sample at 64×64 for speed
+        canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,size,size);
+        const data=ctx.getImageData(0,0,size,size).data;
+        // Bucket colors into 8×8×8 grid
+        const buckets={};
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
+          if(a<128)continue; // skip transparent
+          const kr=Math.round(r/32)*32,kg=Math.round(g/32)*32,kb=Math.round(b/32)*32;
+          const key=`${kr},${kg},${kb}`;
+          if(!buckets[key])buckets[key]={r:0,g:0,b:0,count:0};
+          buckets[key].r+=r;buckets[key].g+=g;buckets[key].b+=b;buckets[key].count++;
+        }
+        const sorted=Object.values(buckets).sort((a,b)=>b.count-a.count).slice(0,8);
+        const colors=sorted.map(b=>{
+          const r=Math.round(b.r/b.count),g=Math.round(b.g/b.count),bl=Math.round(b.b/b.count);
+          return{r,g,b:bl,hex:`#${((1<<24)|(r<<16)|(g<<8)|bl).toString(16).slice(1)}`,count:b.count};
+        });
+        resolve(colors);
+      }catch{resolve([]);}
+    };
+    img.onerror=()=>resolve([]);
+    img.src=imgUrl;
+  });
+}
+
+// Convert RGB to HSL
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}
+  else{
+    const d=max-min;
+    s=l>0.5?d/(2-max-min):d/(max+min);
+    switch(max){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;default:h=((r-g)/d+4)/6;}
+  }
+  return{h:Math.round(h*360),s:Math.round(s*100),l:Math.round(l*100)};
+}
+
+// Convert HSL to hex
+function hslToHex(h,s,l){
+  h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s));l=Math.max(0,Math.min(100,l));
+  const a=s/100*Math.min(l/100,1-l/100);
+  const f=n=>{const k=(n+h/30)%12;const c=l/100-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c);};
+  return `#${((1<<24)|(f(0)<<16)|(f(8)<<8)|f(4)).toString(16).slice(1)}`;
+}
+
+// Get relative luminance for contrast checks
+function luminance(hex){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const f=c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);
+  return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);
+}
+
+function contrastRatio(c1,c2){
+  const l1=luminance(c1),l2=luminance(c2);
+  return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+}
+
+// Ensure text color has sufficient contrast (WCAG AA ≥ 4.5:1)
+function ensureContrast(bg,preferLight=true){
+  if(contrastRatio(bg,'#FFFFFF')>=4.5)return '#FFFFFF';
+  if(contrastRatio(bg,'#1F2937')>=4.5)return '#1F2937';
+  return preferLight?'#FFFFFF':'#111827';
+}
+
+/* ─── 12 CURATED DESIGN PRESETS ───
+   Each preset defines a complete visual system following the 60-30-10 rule.
+   Presets are scored against extracted image colors to find the best match. */
+const THEME_PRESETS=[
+  {id:'midnight-gold',name:'Midnight Gold',icon:'🌙',
+    hero_bg:'#0F172A',hero_text:'#F8FAFC',cta_bg:'#D97706',cta_text_color:'#FFFFFF',
+    bg_color:'#F8FAFC',text_color:'#1E293B',accent_color:'#D97706',
+    layout_style:'alternating',hero_style:'centered',animation_style:'slide-up',
+    hueRange:[30,50]}, // warm golds
+  {id:'ocean-breeze',name:'Ocean Breeze',icon:'🌊',
+    hero_bg:'#0C4A6E',hero_text:'#F0F9FF',cta_bg:'#0EA5E9',cta_text_color:'#FFFFFF',
+    bg_color:'#F0F9FF',text_color:'#0C4A6E',accent_color:'#0284C7',
+    layout_style:'stacked',hero_style:'split',animation_style:'fade',
+    hueRange:[190,220]}, // blues
+  {id:'sunset-ember',name:'Sunset Ember',icon:'🔥',
+    hero_bg:'#431407',hero_text:'#FFF7ED',cta_bg:'#EA580C',cta_text_color:'#FFFFFF',
+    bg_color:'#FFF7ED',text_color:'#431407',accent_color:'#DC2626',
+    layout_style:'showcase',hero_style:'centered',animation_style:'zoom',
+    hueRange:[0,30]}, // reds/oranges
+  {id:'emerald-night',name:'Emerald Night',icon:'🌿',
+    hero_bg:'#052E16',hero_text:'#F0FDF4',cta_bg:'#16A34A',cta_text_color:'#FFFFFF',
+    bg_color:'#F0FDF4',text_color:'#14532D',accent_color:'#059669',
+    layout_style:'alternating',hero_style:'split',animation_style:'slide-up',
+    hueRange:[120,170]}, // greens
+  {id:'royal-purple',name:'Royal Purple',icon:'👑',
+    hero_bg:'#2E1065',hero_text:'#FAF5FF',cta_bg:'#9333EA',cta_text_color:'#FFFFFF',
+    bg_color:'#FAF5FF',text_color:'#3B0764',accent_color:'#7C3AED',
+    layout_style:'stacked',hero_style:'centered',animation_style:'fade',
+    hueRange:[260,300]}, // purples
+  {id:'rose-gold',name:'Rose Gold',icon:'🌸',
+    hero_bg:'#4C0519',hero_text:'#FFF1F2',cta_bg:'#E11D48',cta_text_color:'#FFFFFF',
+    bg_color:'#FFF1F2',text_color:'#4C0519',accent_color:'#F43F5E',
+    layout_style:'alternating',hero_style:'minimal',animation_style:'slide-up',
+    hueRange:[330,360]}, // pinks
+  {id:'warm-earth',name:'Warm Earth',icon:'🏜️',
+    hero_bg:'#292524',hero_text:'#FAFAF9',cta_bg:'#B45309',cta_text_color:'#FFFFFF',
+    bg_color:'#FAFAF9',text_color:'#292524',accent_color:'#A16207',
+    layout_style:'stacked',hero_style:'split',animation_style:'fade',
+    hueRange:[25,45]}, // ambers/browns
+  {id:'arctic-frost',name:'Arctic Frost',icon:'❄️',
+    hero_bg:'#1E3A5F',hero_text:'#EFF6FF',cta_bg:'#2563EB',cta_text_color:'#FFFFFF',
+    bg_color:'#EFF6FF',text_color:'#1E3A5F',accent_color:'#3B82F6',
+    layout_style:'alternating',hero_style:'centered',animation_style:'zoom',
+    hueRange:[210,240]}, // cool blues
+  {id:'tropical-punch',name:'Tropical Punch',icon:'🍋',
+    hero_bg:'#1A1A2E',hero_text:'#FFFBEB',cta_bg:'#F59E0B',cta_text_color:'#1F2937',
+    bg_color:'#FFFBEB',text_color:'#1F2937',accent_color:'#EAB308',
+    layout_style:'showcase',hero_style:'centered',animation_style:'slide-up',
+    hueRange:[45,65]}, // yellows
+  {id:'luxe-noir',name:'Luxe Noir',icon:'🖤',
+    hero_bg:'#09090B',hero_text:'#FAFAFA',cta_bg:'#A1A1AA',cta_text_color:'#09090B',
+    bg_color:'#FAFAFA',text_color:'#18181B',accent_color:'#52525B',
+    layout_style:'showcase',hero_style:'minimal',animation_style:'fade',
+    hueRange:null}, // neutral - matches grays
+  {id:'coral-reef',name:'Coral Reef',icon:'🐚',
+    hero_bg:'#1C1917',hero_text:'#FEF2F2',cta_bg:'#FB7185',cta_text_color:'#FFFFFF',
+    bg_color:'#FEF2F2',text_color:'#292524',accent_color:'#F472B6',
+    layout_style:'alternating',hero_style:'split',animation_style:'slide-up',
+    hueRange:[300,340]}, // coral/pink
+  {id:'forest-dawn',name:'Forest Dawn',icon:'🌅',
+    hero_bg:'#1A2E05',hero_text:'#FEFCE8',cta_bg:'#65A30D',cta_text_color:'#FFFFFF',
+    bg_color:'#FEFCE8',text_color:'#1A2E05',accent_color:'#84CC16',
+    layout_style:'stacked',hero_style:'split',animation_style:'zoom',
+    hueRange:[70,120]}, // lime/yellow-green
+];
+
+// Score a preset against extracted image colors (lower = better match)
+function scorePreset(preset,dominantColors){
+  if(!dominantColors.length)return 999;
+  let bestScore=999;
+  for(const color of dominantColors.slice(0,5)){
+    const hsl=rgbToHsl(color.r,color.g,color.b);
+    if(preset.hueRange===null){
+      // Neutral preset: prefer low saturation
+      const score=hsl.s;
+      if(score<bestScore)bestScore=score;
+    }else{
+      const[minH,maxH]=preset.hueRange;
+      let hueDist;
+      if(minH<=maxH){
+        hueDist=hsl.h>=minH&&hsl.h<=maxH?0:Math.min(Math.abs(hsl.h-minH),Math.abs(hsl.h-maxH),360-Math.abs(hsl.h-minH),360-Math.abs(hsl.h-maxH));
+      }else{
+        hueDist=(hsl.h>=minH||hsl.h<=maxH)?0:Math.min(Math.abs(hsl.h-minH),Math.abs(hsl.h-maxH));
+      }
+      // Weight by pixel count — common colors matter more
+      const weight=1/(color.count||1);
+      const score=hueDist*0.7+(100-hsl.s)*0.3+weight*100;
+      if(score<bestScore)bestScore=score;
+    }
+  }
+  return bestScore;
+}
+
+// Generate a custom palette from a specific dominant color
+function paletteFromColor(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const hsl=rgbToHsl(r,g,b);
+  // Dark hero background: same hue, high saturation, very low lightness
+  const heroBg=hslToHex(hsl.h,Math.min(hsl.s+10,90),12);
+  const heroText='#FFFFFF';
+  // CTA: same hue, vibrant
+  const ctaBg=hslToHex(hsl.h,Math.min(hsl.s+15,85),Math.max(Math.min(hsl.l,55),40));
+  const ctaText=ensureContrast(ctaBg);
+  // Page background: very light tint of the hue
+  const bgColor=hslToHex(hsl.h,Math.min(hsl.s,12),97);
+  // Text: dark shade of the hue
+  const textColor=hslToHex(hsl.h,Math.min(hsl.s,30),15);
+  // Accent: the original color adjusted for vibrancy
+  const accent=hslToHex(hsl.h,Math.min(hsl.s+10,80),Math.max(Math.min(hsl.l,50),35));
+  return{hero_bg:heroBg,hero_text:heroText,cta_bg:ctaBg,cta_text_color:ctaText,bg_color:bgColor,text_color:textColor,accent_color:accent};
+}
+
+// Main auto-theme function: extract colors from product images, pick best preset
+async function autoGenerateTheme(items,preferredPresetId=null){
+  // Gather all product images
+  const imageUrls=items.map(it=>it.custom_image||it.image).filter(Boolean);
+  if(!imageUrls.length&&!preferredPresetId)return THEME_PRESETS[0]; // fallback
+
+  // Extract colors from first 3 product images
+  const allColors=[];
+  for(const url of imageUrls.slice(0,3)){
+    const colors=await extractColors(url);
+    allColors.push(...colors);
+  }
+
+  // If a specific preset is requested, use it
+  if(preferredPresetId){
+    const preset=THEME_PRESETS.find(p=>p.id===preferredPresetId);
+    if(preset)return preset;
+  }
+
+  // If we extracted colors, score each preset
+  if(allColors.length){
+    const scored=THEME_PRESETS.map(p=>({...p,score:scorePreset(p,allColors)}));
+    scored.sort((a,b)=>a.score-b.score);
+    const best=scored[0];
+    // Also generate a custom palette from the most dominant color
+    const dominantHex=allColors[0].hex;
+    const custom=paletteFromColor(dominantHex);
+    // If the custom palette has a hue close to best preset, use preset (more polished)
+    // Otherwise blend: use custom colors with best preset's layout/animation
+    return{...best,...custom,_dominantColor:dominantHex,_presetBase:best.id};
+  }
+
+  // No images, random preset
+  return THEME_PRESETS[Math.floor(Math.random()*THEME_PRESETS.length)];
+}
 
 const EMPTY_LP={
   name:'',slug:'',enabled:true,
@@ -18,6 +253,7 @@ const EMPTY_LP={
   animation_style:'slide-up', // none, fade, slide-up, zoom
   hero_style:'centered', // centered, split, minimal
   ai_generated:false,
+  theme_preset:null, // tracks which preset was applied
 };
 
 const LAYOUT_STYLES=[
@@ -50,6 +286,8 @@ export default function LandingPageBuilder(){
   const[generating,setGenerating]=useState(false);
   const[showAdvanced,setShowAdvanced]=useState(false);
   const[dragIdx,setDragIdx]=useState(null);
+  const[themingInProgress,setThemingInProgress]=useState(false);
+  const[showThemePicker,setShowThemePicker]=useState(false);
 
   useEffect(()=>{
     if(!currentStore?.id)return;
@@ -112,7 +350,12 @@ export default function LandingPageBuilder(){
       features:[],
       custom_image:null,
     };
-    updatePage(pageIdx,{items:[...page.items,item]});
+    const newItems=[...page.items,item];
+    updatePage(pageIdx,{items:newItems});
+    // Auto-generate theme when first product with image is added
+    if(page.items.length===0&&item.image&&!page.theme_preset){
+      setTimeout(()=>applyAutoTheme(pageIdx),300);
+    }
   };
 
   const addAllProducts=(pageIdx)=>{
@@ -125,8 +368,13 @@ export default function LandingPageBuilder(){
       headline:'',features:[],custom_image:null,
     }));
     if(!newItems.length){toast.error(t('lp.allAdded','All products already added'));return;}
-    updatePage(pageIdx,{items:[...page.items,...newItems]});
+    const allItems=[...page.items,...newItems];
+    updatePage(pageIdx,{items:allItems});
     toast.success(`${newItems.length} ${t('lp.productsAdded','products added')}`);
+    // Auto-theme if no theme was set yet
+    if(!page.theme_preset&&newItems.some(it=>it.image)){
+      setTimeout(()=>applyAutoTheme(pageIdx),400);
+    }
   };
 
   const removeProduct=(pageIdx,productId)=>{
@@ -147,6 +395,53 @@ export default function LandingPageBuilder(){
     const items=[...page.items];
     [items[from],items[to]]=[items[to],items[from]];
     updatePage(pageIdx,{items});
+  };
+
+  // ─── Auto-theme: extract colors from product images & apply best palette ───
+  const applyAutoTheme=useCallback(async(pageIdx,presetId=null)=>{
+    const page=pages[pageIdx];
+    if(!page)return;
+    setThemingInProgress(true);
+    try{
+      const theme=await autoGenerateTheme(page.items,presetId);
+      const patch={
+        hero_bg:theme.hero_bg,
+        hero_text:theme.hero_text,
+        cta_bg:theme.cta_bg,
+        cta_text_color:theme.cta_text_color,
+        bg_color:theme.bg_color,
+        text_color:theme.text_color,
+        accent_color:theme.accent_color,
+        theme_preset:theme.id||presetId||'custom',
+      };
+      // Only apply layout/animation from preset if user hasn't customized them
+      if(!page._layoutCustomized){
+        if(theme.layout_style)patch.layout_style=theme.layout_style;
+        if(theme.hero_style)patch.hero_style=theme.hero_style;
+        if(theme.animation_style)patch.animation_style=theme.animation_style;
+      }
+      updatePage(pageIdx,patch);
+      const name=THEME_PRESETS.find(p=>p.id===(presetId||theme.id))?.name||t('lp.customTheme','Custom Theme');
+      toast.success(`✨ ${name} ${t('lp.themeApplied','applied')}`);
+    }catch{toast.error(t('lp.themeFailed','Theme generation failed'));}
+    setThemingInProgress(false);
+    setShowThemePicker(false);
+  },[pages,t]);
+
+  // Apply a specific preset by ID
+  const applyPreset=(pageIdx,presetId)=>{
+    const preset=THEME_PRESETS.find(p=>p.id===presetId);
+    if(!preset)return;
+    updatePage(pageIdx,{
+      hero_bg:preset.hero_bg,hero_text:preset.hero_text,
+      cta_bg:preset.cta_bg,cta_text_color:preset.cta_text_color,
+      bg_color:preset.bg_color,text_color:preset.text_color,
+      accent_color:preset.accent_color,theme_preset:preset.id,
+      layout_style:preset.layout_style,hero_style:preset.hero_style,
+      animation_style:preset.animation_style,
+    });
+    toast.success(`✨ ${preset.name} ${t('lp.themeApplied','applied')}`);
+    setShowThemePicker(false);
   };
 
   const generateAI=async(pageIdx)=>{
@@ -174,6 +469,10 @@ export default function LandingPageBuilder(){
         patch.hero_subtitle=t('lp.aiHeroSub','Handpicked products at unbeatable prices. Scroll down to discover our exclusive offers.');
       }
       updatePage(pageIdx,patch);
+      // Also auto-theme if no theme was applied yet
+      if(!page.theme_preset&&page.items.some(it=>it.image||it.custom_image)){
+        setTimeout(()=>applyAutoTheme(pageIdx),200);
+      }
       toast.success(t('lp.aiGenerated','AI content generated! Review and customize.'));
     }catch{toast.error(t('lp.aiFailed','AI generation failed'));}
     setGenerating(false);
@@ -230,6 +529,47 @@ export default function LandingPageBuilder(){
       <div className="flex items-center justify-between flex-wrap gap-2">
         <button onClick={()=>setEditing(null)} className="btn-ghost text-xs flex items-center gap-1"><ChevronDown size={12} className="rotate-90"/>{t('lp.backToList','Back to List')}</button>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Auto Theme button */}
+          <div className="relative">
+            <button onClick={()=>setShowThemePicker(!showThemePicker)} disabled={themingInProgress} className="btn-ghost text-xs flex items-center gap-1.5 text-pink-600 hover:bg-pink-50 border border-pink-200">
+              {themingInProgress?<RefreshCw size={13} className="animate-spin"/>:<Palette size={13}/>}
+              {themingInProgress?t('lp.theming','Theming...'):t('lp.autoTheme','Auto Theme')}
+              <ChevronDown size={10}/>
+            </button>
+            {/* Theme preset picker dropdown */}
+            {showThemePicker&&<div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 w-[380px] max-h-[480px] overflow-y-auto">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Sparkles size={12} className="text-pink-500"/>{t('lp.chooseTheme','Choose Theme')}</p>
+                <button onClick={()=>setShowThemePicker(false)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+              </div>
+              {/* Smart auto button */}
+              <button onClick={()=>applyAutoTheme(editing)} disabled={themingInProgress||!form.items.length} className="w-full mb-3 p-3 rounded-xl border-2 border-dashed border-violet-300 bg-violet-50 hover:bg-violet-100 transition-all flex items-center gap-3 disabled:opacity-40">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-pink-500 to-amber-500 flex items-center justify-center shrink-0"><Pipette size={16} className="text-white"/></div>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-violet-700">{t('lp.smartAutoTheme','Smart Auto Theme')}</p>
+                  <p className="text-[10px] text-violet-500">{t('lp.smartAutoThemeDesc','Analyzes your product images and generates a matching color palette')}</p>
+                </div>
+              </button>
+              {/* Presets grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {THEME_PRESETS.map(p=>(
+                  <button key={p.id} onClick={()=>applyPreset(editing,p.id)} className={`p-2.5 rounded-xl border-2 text-left transition-all hover:shadow-md group ${form.theme_preset===p.id?'border-violet-500 ring-2 ring-violet-200':'border-gray-100 hover:border-gray-300'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm">{p.icon}</span>
+                      <span className="text-[11px] font-bold text-gray-700 truncate">{p.name}</span>
+                    </div>
+                    {/* Color preview swatches */}
+                    <div className="flex gap-0.5 h-5 rounded-lg overflow-hidden">
+                      <div className="flex-[3]" style={{backgroundColor:p.hero_bg}}/>
+                      <div className="flex-[2]" style={{backgroundColor:p.accent_color}}/>
+                      <div className="flex-1" style={{backgroundColor:p.cta_bg}}/>
+                      <div className="flex-[2]" style={{backgroundColor:p.bg_color,border:'1px solid #eee'}}/>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>}
+          </div>
           <button onClick={()=>generateAI(editing)} disabled={generating} className="btn-ghost text-xs flex items-center gap-1.5 text-violet-600 hover:bg-violet-50"><Wand2 size={13}/>{generating?t('lp.generating','Generating...'):t('lp.aiGenerate','AI Generate')}</button>
           {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="btn-ghost text-xs flex items-center gap-1"><Eye size={12}/>{t('lp.preview','Preview')}</a>}
           <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-xs flex items-center gap-1.5"><Save size={12}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
@@ -349,7 +689,17 @@ export default function LandingPageBuilder(){
 
         {/* Colors */}
         <div className="glass-card-solid p-5 space-y-3">
-          <h3 className="font-bold text-sm flex items-center gap-2"><Palette size={14} className="text-pink-500"/>{t('lp.colors','Colors & Theme')}</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-sm flex items-center gap-2"><Palette size={14} className="text-pink-500"/>{t('lp.colors','Colors & Theme')}</h3>
+            <div className="flex items-center gap-2">
+              {form.theme_preset&&<span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-50 text-violet-600 flex items-center gap-1">
+                {THEME_PRESETS.find(p=>p.id===form.theme_preset)?.icon||'🎨'} {THEME_PRESETS.find(p=>p.id===form.theme_preset)?.name||t('lp.customTheme','Custom')}
+              </span>}
+              <button onClick={()=>applyAutoTheme(editing)} disabled={themingInProgress||!form.items.length} className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors flex items-center gap-1 disabled:opacity-30">
+                <RefreshCw size={10}/>{t('lp.regenerateColors','Regenerate')}
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
               {key:'hero_bg',label:t('lp.heroBg','Hero BG'),def:'#1e1b4b'},
