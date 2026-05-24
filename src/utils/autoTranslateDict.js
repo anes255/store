@@ -1399,6 +1399,14 @@ const D = {
   'Limited time urgency hook': { fr: 'Offre limitée dans le temps', ar: 'عرض محدود الوقت' },
   'Final Chance': { fr: 'Dernière chance', ar: 'الفرصة الأخيرة' },
   'Discount code incentive': { fr: 'Incitatif avec code de réduction', ar: 'حافز برمز خصم' },
+
+  // ── Store header / notifications ──
+  'New store': { fr: 'Nouvelle boutique', ar: 'متجر جديد' },
+  'Enable': { fr: 'Activer', ar: 'تفعيل' },
+  '🔔 Enable': { fr: '🔔 Activer', ar: '🔔 تفعيل' },
+  'Push notifications not supported on this browser': { fr: 'Les notifications push ne sont pas supportées sur ce navigateur', ar: 'إشعارات الدفع غير مدعومة في هذا المتصفح' },
+  'Push notifications enabled! You will receive alerts for new orders.': { fr: 'Notifications push activées ! Vous recevrez des alertes pour les nouvelles commandes.', ar: 'تم تفعيل الإشعارات! ستتلقى تنبيهات للطلبات الجديدة.' },
+  'No notifications yet': { fr: 'Aucune notification pour le moment', ar: 'لا توجد إشعارات بعد' },
   'Two-step verification is enabled. Request a code first to change these settings.': { fr: 'La vérification en deux étapes est activée. Demandez un code pour modifier ces paramètres.', ar: 'التحقق بخطوتين مفعل. اطلب رمزاً لتغيير هذه الإعدادات.' },
 };
 
