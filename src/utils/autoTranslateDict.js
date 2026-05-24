@@ -1389,6 +1389,16 @@ const D = {
   'ids required': { fr: 'Identifiants requis', ar: 'المعرفات مطلوبة' },
   'Verification is currently unavailable. The administrator has not connected the platform WhatsApp yet.': { fr: "La vérification n'est pas disponible. L'administrateur n'a pas encore connecté WhatsApp.", ar: 'التحقق غير متاح حالياً. لم يقم المسؤول بربط واتساب بعد.' },
   'Missing tracking': { fr: 'Suivi manquant', ar: 'التتبع مفقود' },
+
+  // ── Cart Recovery / Abandoned cart page ──
+  'Automated Sequences': { fr: 'Séquences automatisées', ar: 'التسلسلات التلقائية' },
+  'Configure Timings': { fr: 'Configurer les délais', ar: 'ضبط التوقيتات' },
+  'First Reminder': { fr: 'Premier rappel', ar: 'التذكير الأول' },
+  'Gentle nudge via preferred channel': { fr: 'Rappel doux via le canal préféré', ar: 'تنبيه لطيف عبر القناة المفضلة' },
+  'Follow Up': { fr: 'Suivi', ar: 'متابعة' },
+  'Limited time urgency hook': { fr: 'Offre limitée dans le temps', ar: 'عرض محدود الوقت' },
+  'Final Chance': { fr: 'Dernière chance', ar: 'الفرصة الأخيرة' },
+  'Discount code incentive': { fr: 'Incitatif avec code de réduction', ar: 'حافز برمز خصم' },
   'Two-step verification is enabled. Request a code first to change these settings.': { fr: 'La vérification en deux étapes est activée. Demandez un code pour modifier ces paramètres.', ar: 'التحقق بخطوتين مفعل. اطلب رمزاً لتغيير هذه الإعدادات.' },
 };
 
