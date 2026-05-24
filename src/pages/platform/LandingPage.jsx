@@ -217,7 +217,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 overflow-hidden"><div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-3xl" /><div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-brand-700/10 rounded-full blur-3xl" /></div>
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 border border-brand-500/30 rounded-full text-brand-400 text-sm font-bold mb-8"><Sparkles size={16} />Now with AI-Powered Features</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 border border-brand-500/30 rounded-full text-brand-400 text-sm font-bold mb-8"><Sparkles size={16} />{t('landing.aiBadge','Now with AI-Powered Features')}</div>
             <h1 className="text-5xl md:text-7xl font-extrabold leading-tight"><span className="text-gray-100">{t('hero.title').split(' ').slice(0, 2).join(' ')}</span><br /><span className="text-brand-400">{t('hero.title').split(' ').slice(2).join(' ')}</span></h1>
             <p className="mt-6 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">{t('hero.subtitle')}</p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -268,20 +268,18 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
+      {apiPlans && apiPlans.length > 0 && (
       <section id="pricing" className="py-24 px-6 bg-[#0D0D0D]">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-extrabold text-gray-100">{t('pricing.title')}</h2>
-          <div className={`mt-12 grid gap-8 mx-auto ${(apiPlans && apiPlans.length >= 3) ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'}`}>
-            {(apiPlans && apiPlans.length
-              ? apiPlans.map(p => ({
+          <div className={`mt-12 grid gap-8 mx-auto ${apiPlans.length >= 3 ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'}`}>
+            {apiPlans.map(p => ({
                   name: pick(p.name, 'Plan'),
                   price: p.price_monthly > 0 ? `${Number(p.price_monthly).toLocaleString()} ${p.currency || 'DZD'}` : t('landing.free','Free'),
                   period: p.price_monthly > 0 ? t('landing.perMonth','/month') : t('landing.daysN','{{count}} days',{count:info.trial_days||14}),
                   popular: !!p.is_popular,
                   features: (p.features && (p.features[lang] && p.features[lang].length ? p.features[lang] : p.features.en)) || [],
-                }))
-              : [{ name: t('landing.starter','Starter'), price: t('landing.free','Free'), period: t('landing.daysN','{{count}} days',{count:info.trial_days||14}), features: [t('landing.p1a','1 Store'), t('landing.p1b','50 Products'), t('landing.p1c','Basic Analytics'), t('landing.p1d','COD Payment')] }, { name: t('landing.pro','Pro'), price: '2,900 DZD', period: t('landing.perMonth','/month'), popular: true, features: [t('landing.p2a','3 Stores'), t('landing.p2b','Unlimited Products'), t('landing.p2c','AI Chatbot'), t('landing.p2d','All Payments'), t('landing.p2e','Cart Recovery'), t('landing.p2f','Custom Domain')] }]
-            ).map((plan, i) => (
+                })).map((plan, i) => (
               <div key={i} className={`relative rounded-3xl p-8 ${plan.popular ? 'bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-2xl shadow-brand-500/30 scale-105' : 'bg-[#1A1A1A] border border-[#2A2A2A]'}`}>
                 {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-brand-400 text-gray-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
                 <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-gray-100'}`}>{plan.name}</h3>
@@ -293,6 +291,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      )}
       <section className="py-24 px-6">
         <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 rounded-3xl p-12 md:p-16 relative overflow-hidden">
           <h2 className="text-3xl md:text-5xl font-extrabold text-white relative z-10">{t('landing.readyTitle','Ready to Start Selling?')}</h2>
@@ -326,7 +325,7 @@ export default function LandingPage() {
       <footer className="border-t border-[#2A2A2A] py-12 px-6 bg-[#0D0D0D]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center"><ShoppingBag size={16} className="text-white" /></div>{info.site_name && <span className="font-bold text-gray-100">{info.site_name}</span>}</div>
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()}{info.site_name?` ${info.site_name}.`:'.'} All rights reserved.</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()}{info.site_name?` ${info.site_name}.`:'.'} {t('landing.allRights','All rights reserved.')}</p>
           <Link to="/admin/login" className="text-xs text-gray-200 hover:text-gray-400 select-none" aria-hidden="true">·</Link>
         </div>
       </footer>
