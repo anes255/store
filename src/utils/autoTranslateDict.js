@@ -1446,6 +1446,23 @@ const D = {
   '✗ Failed': { fr: '✗ Échoué', ar: '✗ فشل' },
   'pixel reachable': { fr: 'pixel accessible', ar: 'البكسل قابل للوصول' },
   'vendor rejected this ID': { fr: 'le fournisseur a rejeté cet ID', ar: 'رفض المزود هذا المعرّف' },
+
+  // ── Payment Methods settings ──
+  'Payment Methods': { fr: 'Méthodes de paiement', ar: 'طرق الدفع' },
+  'Cash on Delivery (COD)': { fr: 'Paiement à la livraison (COD)', ar: 'الدفع عند الاستلام' },
+  'Pay in cash upon delivery.': { fr: 'Payez en espèces à la livraison.', ar: 'ادفع نقداً عند التوصيل.' },
+  'CCP Direct Transfer': { fr: 'Virement CCP direct', ar: 'تحويل CCP مباشر' },
+  'CCP Account': { fr: 'Compte CCP', ar: 'حساب CCP' },
+  'CCP Name': { fr: 'Nom CCP', ar: 'اسم CCP' },
+  'BaridiPay QR': { fr: 'BaridiPay QR', ar: 'BaridiPay QR' },
+  'RIP': { fr: 'RIP', ar: 'RIP' },
+  'BaridiPay QR Code (shown to buyers at checkout)': { fr: 'QR Code BaridiPay (affiché aux acheteurs au paiement)', ar: 'رمز QR BaridiPay (يظهر للمشترين عند الدفع)' },
+  'Replace QR': { fr: 'Remplacer le QR', ar: 'استبدال QR' },
+  'Upload QR image': { fr: 'Téléverser une image QR', ar: 'رفع صورة QR' },
+  'Bank Transfer': { fr: 'Virement bancaire', ar: 'تحويل بنكي' },
+  'Bank': { fr: 'Banque', ar: 'البنك' },
+  'Account': { fr: 'Compte', ar: 'الحساب' },
+  'RIB': { fr: 'RIB', ar: 'RIB' },
   'Two-step verification is enabled. Request a code first to change these settings.': { fr: 'La vérification en deux étapes est activée. Demandez un code pour modifier ces paramètres.', ar: 'التحقق بخطوتين مفعل. اطلب رمزاً لتغيير هذه الإعدادات.' },
 };
 
