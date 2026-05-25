@@ -351,8 +351,7 @@ export default function LandingPageBuilder(){
   };
 
   const updatePage=(idx,patch)=>{
-    const n=pages.map((p,i)=>i===idx?{...p,...patch}:p);
-    setPages(n);
+    setPages(prev=>prev.map((p,i)=>i===idx?{...p,...patch}:p));
   };
 
   const addProduct=(pageIdx,product)=>{
