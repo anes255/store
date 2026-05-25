@@ -382,6 +382,17 @@ export default function BuyerLandingPage(){
   },[form.shipping_wilaya,form.shipping_type,wilayas]);
 
   const scrollToCheckout=useCallback(()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});},[]);
+
+  // Render AI images by placement
+  const renderAIImages=(placement)=>{
+    const imgs=(page?.ai_images||[]).filter(img=>img.src&&img.placement===placement);
+    if(!imgs.length)return null;
+    return imgs.map(img=>(
+      <div key={img.id} className="w-full overflow-hidden">
+        <img src={img.src} alt={img.description||''} className="w-full h-48 sm:h-64 object-cover" loading="lazy"/>
+      </div>
+    ));
+  };
   const setQty=useCallback((pid,delta)=>setCart(c=>{const n=Math.max(0,(c[pid]||0)+delta);return{...c,[pid]:n};}),[]);
   const totalQty=Object.values(cart).reduce((s,q)=>s+q,0);
   const cartItems=(page?.items||[]).filter(it=>cart[it.product_id]>0);
@@ -413,6 +424,7 @@ export default function BuyerLandingPage(){
     if(!form.shipping_wilaya)return toast.error(t('checkout.errWilaya','Please choose your wilaya'));
     if(!form.shipping_city)return toast.error(t('checkout.errCity','Please choose your commune'));
     if(!form.payment_method)return toast.error(t('checkout.errPay','Please choose a payment method'));
+    if(companies.length>0&&!form.delivery_company_id)return toast.error(t('checkout.errDeliveryCompany','Please choose a delivery company'));
     if(!cartItems.length)return toast.error(t('lp.noItemsInCart','Add at least one product'));
     try{localStorage.setItem('checkout.savedInfo',JSON.stringify({customer_name:form.customer_name,customer_phone:form.customer_phone,customer_email:form.customer_email,shipping_wilaya:form.shipping_wilaya,shipping_city:form.shipping_city,shipping_address:form.shipping_address}));}catch{}
     setSubmitting(true);
@@ -1216,6 +1228,28 @@ export default function BuyerLandingPage(){
                   <FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street, building, floor...')} accent={pc}/>
                 </div>
 
+                {/* Delivery company */}
+                {companies.length>0&&(
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold flex items-center gap-1.5" style={{color:'oklch(0.55 0.01 280)'}}><Truck size={12}/>{t('checkout.deliveryCompany','Preferred Delivery Company')} <span style={{color:pc}}>*</span></label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {companies.map(dc=>{
+                        const sel=form.delivery_company_id===dc.id;
+                        return(
+                          <button key={dc.id} onClick={()=>setForm(f=>({...f,delivery_company_id:dc.id}))} className="p-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2" style={{
+                            border:`2px solid ${sel?pc:'oklch(0.9 0.005 280)'}`,
+                            backgroundColor:sel?pc+'08':'transparent',
+                          }}>
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-black shrink-0">{(dc.name||'?')[0].toUpperCase()}</div>
+                            <span style={{color:sel?pc:'oklch(0.45 0.01 280)'}}>{dc.name}</span>
+                            {sel&&<Check size={12} className="ml-auto" style={{color:pc}}/>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Delivery type */}
                 {wilayas.length>0&&form.shipping_wilaya&&(
                   <div className="grid grid-cols-2 gap-2">
@@ -1286,6 +1320,7 @@ export default function BuyerLandingPage(){
       ):(
         <>
           {renderHero()}
+          {renderAIImages('after_hero')}
 
           {showSocial&&(
             <div className="py-10 relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
@@ -1295,6 +1330,7 @@ export default function BuyerLandingPage(){
           )}
 
           {renderAllProducts()}
+          {renderAIImages('between_products')}
 
           {/* CTA divider */}
           <Reveal animation={anim}>
@@ -1309,6 +1345,7 @@ export default function BuyerLandingPage(){
             </div>
           </Reveal>
 
+          {renderAIImages('before_checkout')}
           {/* ═══ CHECKOUT ═══ */}
           <section ref={checkoutRef} className="relative overflow-hidden" style={{background:`linear-gradient(160deg, ${page.hero_bg||'oklch(0.15 0.04 280)'}, oklch(0.08 0.01 280))`}}>
             <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${page.hero_bg||'oklch(0.15 0.04 280)'}e0 0%, oklch(0.08 0.01 280) 100%)`}/>
@@ -1361,6 +1398,28 @@ export default function BuyerLandingPage(){
                     <div className="sm:col-span-2"><FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')} accent={pc}/></div>
                   </div>
 
+                  {/* Delivery company */}
+                  {companies.length>0&&(
+                    <div>
+                      <label className="text-xs font-semibold mb-2.5 block flex items-center gap-1.5" style={{color:'oklch(0.55 0.01 280)'}}><Truck size={13}/>{t('checkout.deliveryCompany','Preferred Delivery Company')} <span style={{color:pc}}>*</span></label>
+                      <div className="space-y-2">
+                        {companies.map(dc=>{
+                          const sel=form.delivery_company_id===dc.id;
+                          return(
+                            <button key={dc.id} onClick={()=>setForm(f=>({...f,delivery_company_id:dc.id}))} className="w-full p-3.5 rounded-xl text-sm font-semibold text-left flex items-center gap-3 transition-all" style={{
+                              border:`2px solid ${sel?pc:'oklch(0.9 0.005 280)'}`,
+                              backgroundColor:sel?pc+'08':'transparent',
+                            }}>
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-black shrink-0">{(dc.name||'?')[0].toUpperCase()}</div>
+                              <span style={{color:sel?pc:'oklch(0.4 0.01 280)'}}>{dc.name}</span>
+                              {sel&&<Check size={14} className="ml-auto" style={{color:pc}}/>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Delivery type */}
                   {wilayas.length>0&&form.shipping_wilaya&&(
                     <div>
@@ -1412,6 +1471,7 @@ export default function BuyerLandingPage(){
         </>
       )}
 
+      {renderAIImages('footer')}
       {/* Footer */}
       <footer className="py-8 text-center space-y-2 relative overflow-hidden" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
         <p className="text-xs relative" style={{color:'oklch(0.6 0.01 280)'}}>© {new Date().getFullYear()} {store?.name}. {t('lp.allRights','All rights reserved.')}</p>

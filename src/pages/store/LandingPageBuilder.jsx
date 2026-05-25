@@ -258,6 +258,7 @@ const EMPTY_LP={
   language:'ar', // ar, fr, en — controls the landing page display language
   ai_hero_image:null, // puter.js AI-generated hero image (data URL)
   ai_section_images:[], // puter.js AI-generated section images
+  ai_images:[], // {id,src,description,placement} — multi AI images with placement config
 };
 
 const LANGUAGES=[
@@ -462,33 +463,49 @@ export default function LandingPageBuilder(){
 
   /* ─── puter.js AI Image Generation ─── */
   const[generatingImage,setGeneratingImage]=useState(false);
+  const[generatingImageId,setGeneratingImageId]=useState(null); // track which image slot is generating
 
-  const generateAIImage=async(pageIdx,type='hero')=>{
+  const AI_PLACEMENTS=[
+    {value:'hero',label:'Hero Background',icon:'🖼️'},
+    {value:'between_products',label:'Between Products',icon:'📦'},
+    {value:'before_checkout',label:'Before Checkout',icon:'🛒'},
+    {value:'after_hero',label:'After Hero',icon:'⬇️'},
+    {value:'footer',label:'Footer Area',icon:'📄'},
+    {value:'testimonial_bg',label:'Testimonial Background',icon:'💬'},
+  ];
+
+  const generateAIImage=async(pageIdx,type='hero',customPrompt='',imageId=null)=>{
     const page=pages[pageIdx];
     if(!page?.items?.length){toast.error('Add products first');return;}
     if(typeof window.puter==='undefined'){toast.error('puter.js not loaded');return;}
-    setGeneratingImage(true);
+    if(imageId)setGeneratingImageId(imageId); else setGeneratingImage(true);
     try{
-      // Build a rich prompt from product data
       const productNames=page.items.map(it=>it.name).filter(Boolean).join(', ');
       const categories=[...new Set(page.items.map(it=>it.category).filter(Boolean))].join(', ');
       const mood=page.hero_title||'premium';
       const bgHex=page.hero_bg||'#1e1b4b';
       const accentHex=page.accent_color||'#7C3AED';
 
-      const prompts={
-        hero:`Professional e-commerce hero banner for products: ${productNames}. ${categories?'Category: '+categories+'.':''} Mood: ${mood}. Rich, luxurious composition with dynamic lighting, elegant product arrangement. Color scheme: dark background ${bgHex} with accent ${accentHex}. Studio quality, cinematic, no text, no watermarks, commercial photography style, 16:9 aspect ratio.`,
-        section:`Elegant lifestyle background for ${productNames}. Soft bokeh, ambient lighting, ${categories||'premium'} aesthetic. Minimalist, no text, complementary colors to ${accentHex}. Professional product photography backdrop.`,
-        texture:`Abstract luxury texture background. Gradient mesh with colors ${bgHex} and ${accentHex}. Subtle glass morphism, silk fabric, flowing curves, premium feel. No text, no objects, pure abstract aesthetic.`,
-      };
-
-      const prompt=prompts[type]||prompts.hero;
+      let prompt;
+      if(customPrompt){
+        prompt=`${customPrompt}. E-commerce context: ${productNames}. ${categories?'Category: '+categories+'.':''} Color palette: ${bgHex}, ${accentHex}. Professional, no text, no watermarks, high quality.`;
+      }else{
+        const prompts={
+          hero:`Professional e-commerce hero banner for products: ${productNames}. ${categories?'Category: '+categories+'.':''} Mood: ${mood}. Rich, luxurious composition with dynamic lighting, elegant product arrangement. Color scheme: dark background ${bgHex} with accent ${accentHex}. Studio quality, cinematic, no text, no watermarks, commercial photography style, 16:9 aspect ratio.`,
+          section:`Elegant lifestyle background for ${productNames}. Soft bokeh, ambient lighting, ${categories||'premium'} aesthetic. Minimalist, no text, complementary colors to ${accentHex}. Professional product photography backdrop.`,
+          texture:`Abstract luxury texture background. Gradient mesh with colors ${bgHex} and ${accentHex}. Subtle glass morphism, silk fabric, flowing curves, premium feel. No text, no objects, pure abstract aesthetic.`,
+        };
+        prompt=prompts[type]||prompts.hero;
+      }
       const image=await window.puter.ai.txt2img(prompt,{model:'flux-schnell',quality:'medium'});
-
-      // Extract data URL from the returned HTMLImageElement
       const dataUrl=image.src;
 
-      if(type==='hero'){
+      if(imageId){
+        // Update existing image in ai_images array
+        const imgs=(page.ai_images||[]).map(img=>img.id===imageId?{...img,src:dataUrl}:img);
+        updatePage(pageIdx,{ai_images:imgs});
+        toast.success('🎨 Image regenerated!');
+      }else if(type==='hero'){
         updatePage(pageIdx,{ai_hero_image:dataUrl});
         toast.success('🎨 AI hero image generated!');
       }else{
@@ -501,6 +518,25 @@ export default function LandingPageBuilder(){
       toast.error('Image generation failed — try again');
     }
     setGeneratingImage(false);
+    setGeneratingImageId(null);
+  };
+
+  const addAIImageSlot=(pageIdx)=>{
+    const page=pages[pageIdx];
+    const existing=page.ai_images||[];
+    const newImg={id:Date.now().toString(),src:null,description:'',placement:'between_products'};
+    updatePage(pageIdx,{ai_images:[...existing,newImg]});
+  };
+
+  const updateAIImage=(pageIdx,imageId,patch)=>{
+    const page=pages[pageIdx];
+    const imgs=(page.ai_images||[]).map(img=>img.id===imageId?{...img,...patch}:img);
+    updatePage(pageIdx,{ai_images:imgs});
+  };
+
+  const removeAIImage=(pageIdx,imageId)=>{
+    const page=pages[pageIdx];
+    updatePage(pageIdx,{ai_images:(page.ai_images||[]).filter(img=>img.id!==imageId)});
   };
 
   const generateAI=async(pageIdx)=>{
@@ -844,6 +880,73 @@ export default function LandingPageBuilder(){
               <p className="text-sm mt-2 opacity-80" style={{color:form.hero_text}}>{form.hero_subtitle||t('lp.heroSubPh','Scroll down to discover')}</p>
               <button className="mt-4 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg" style={{backgroundColor:form.cta_bg,color:form.cta_text_color}}>{form.cta_text||'Order Now'}</button>
             </div>
+          </div>
+
+          {/* ═══ AI IMAGES MANAGER — Multiple images with placement ═══ */}
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-pink-500 to-amber-500 flex items-center justify-center shadow-sm"><Sparkles size={14} className="text-white"/></div>
+                <div>
+                  <h4 className="text-xs font-black text-gray-700">{t('lp.aiImages','AI Images')}</h4>
+                  <p className="text-[10px] text-gray-400">{t('lp.aiImagesDesc','Generate images and choose where they appear')}</p>
+                </div>
+              </div>
+              <button onClick={()=>addAIImageSlot(editing)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-amber-500 text-white text-[11px] font-bold shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"><Plus size={12}/>{t('lp.addImage','Add Image')}</button>
+            </div>
+
+            {(form.ai_images||[]).length===0?(
+              <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 py-6 flex flex-col items-center gap-2">
+                <Image size={24} className="text-gray-300"/>
+                <p className="text-xs text-gray-400">{t('lp.noAiImages','No AI images yet — click Add Image to create one')}</p>
+              </div>
+            ):(
+              <div className="space-y-3">
+                {(form.ai_images||[]).map((img,idx)=>(
+                  <div key={img.id} className="group rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all overflow-hidden">
+                    <div className="p-3.5">
+                      <div className="flex items-start gap-3">
+                        {/* Image preview or placeholder */}
+                        <div className="w-24 h-20 rounded-lg bg-gray-100 overflow-hidden shrink-0 relative">
+                          {img.src?(
+                            <img src={img.src} alt="" className="w-full h-full object-cover"/>
+                          ):(
+                            <div className="w-full h-full flex items-center justify-center"><Image size={20} className="text-gray-300"/></div>
+                          )}
+                          {generatingImageId===img.id&&(
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><RefreshCw size={16} className="text-white animate-spin"/></div>
+                          )}
+                        </div>
+
+                        {/* Config */}
+                        <div className="flex-1 min-w-0 space-y-2">
+                          {/* Description / prompt */}
+                          <input value={img.description||''} onChange={e=>updateAIImage(editing,img.id,{description:e.target.value})} className="w-full bg-gray-50 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:border-pink-400 focus:ring-1 focus:ring-pink-200 outline-none transition-all" placeholder={t('lp.imagePrompt','Describe the image you want (e.g. elegant product display with flowers)')}/>
+
+                          {/* Placement selector */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase shrink-0">{t('lp.placement','Show in')}:</span>
+                            {AI_PLACEMENTS.map(p=>(
+                              <button key={p.value} onClick={()=>updateAIImage(editing,img.id,{placement:p.value})} className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${img.placement===p.value?'bg-pink-100 text-pink-700 ring-1 ring-pink-300':'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                                {p.icon} {p.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Generate / Regenerate button */}
+                          <div className="flex items-center gap-2">
+                            <button onClick={()=>generateAIImage(editing,'hero',img.description||'',img.id)} disabled={generatingImageId===img.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all text-white shadow-sm hover:shadow-md disabled:opacity-50" style={{background:'linear-gradient(135deg, #EC4899, #F59E0B)'}}>
+                              {generatingImageId===img.id?<><RefreshCw size={11} className="animate-spin"/>{t('lp.generatingImage','Generating...')}</>:<><Sparkles size={11}/>{img.src?t('lp.regenerate','Regenerate'):t('lp.generate','Generate')}</>}
+                            </button>
+                            <button onClick={()=>removeAIImage(editing,img.id)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={13}/></button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
