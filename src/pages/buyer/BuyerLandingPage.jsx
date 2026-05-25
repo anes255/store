@@ -7,6 +7,9 @@ import toast from'react-hot-toast';
 import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift,Globe}from'lucide-react';
 import WILAYA_CITIES from'../../data/wilayaCities';
 
+const WILAYA_CODES={'Adrar':'01','Chlef':'02','Laghouat':'03','Oum El Bouaghi':'04','Batna':'05','Béjaïa':'06','Biskra':'07','Béchar':'08','Blida':'09','Bouira':'10','Tamanrasset':'11','Tébessa':'12','Tlemcen':'13','Tiaret':'14','Tizi Ouzou':'15','Alger':'16','Djelfa':'17','Jijel':'18','Sétif':'19','Saïda':'20','Skikda':'21','Sidi Bel Abbès':'22','Annaba':'23','Guelma':'24','Constantine':'25','Médéa':'26','Mostaganem':'27',"M'Sila":'28','Mascara':'29','Ouargla':'30','Oran':'31','El Bayadh':'32','Illizi':'33','Bordj Bou Arréridj':'34','Boumerdès':'35','El Tarf':'36','Tindouf':'37','Tissemsilt':'38','El Oued':'39','Khenchela':'40','Souk Ahras':'41','Tipaza':'42','Mila':'43','Aïn Defla':'44','Naâma':'45','Aïn Témouchent':'46','Ghardaïa':'47','Relizane':'48'};
+const ALL_WILAYAS=Object.entries(WILAYA_CODES).map(([name,code])=>({name,code})).sort((a,b)=>parseInt(a.code)-parseInt(b.code));
+
 /* ═══════════════════════════════════════════════════════════════
    VISUAL UTILITY COMPONENTS
    ═══════════════════════════════════════════════════════════════ */
@@ -373,16 +376,15 @@ export default function BuyerLandingPage(){
   },[page?.language]);
 
   useEffect(()=>{
-    if(!form.shipping_wilaya||!wilayas.length)return;
-    const w=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya)||x.name===form.shipping_wilaya);
+    if(!form.shipping_wilaya)return;
+    // shipping_wilaya is now the wilaya name (e.g. "Alger")
+    const wName=form.shipping_wilaya;
+    const w=wilayas.find(x=>x.wilaya_name===wName);
     if(w){
       setShippingPrice(form.shipping_type==='desk'?(w.desk_price||w.home_price||400):(w.home_price||400));
-      let c=[];
-      if(w.communes){c=typeof w.communes==='string'?w.communes.split(',').map(s=>s.trim()):Array.isArray(w.communes)?w.communes:[];}
-      // Fallback to WILAYA_CITIES when DB communes are empty
-      if(!c.length&&w.name){c=WILAYA_CITIES[w.name]||[];}
-      setCommunes(c);
     }
+    // Always use WILAYA_CITIES for communes (canonical list)
+    setCommunes(WILAYA_CITIES[wName]||[]);
   },[form.shipping_wilaya,form.shipping_type,wilayas]);
 
   const scrollToCheckout=useCallback(()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});},[]);
@@ -1217,17 +1219,18 @@ export default function BuyerLandingPage(){
                   <FormInput icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456" accent={pc}/>
                   <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={e=>setForm(f=>({...f,shipping_wilaya:e.target.value,shipping_city:'',shipping_zip:''}))} accent={pc}>
                     <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
-                    {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
+                    {ALL_WILAYAS.map(w=><option key={w.code} value={w.name}>{w.code} - {w.name}</option>)}
                   </FormSelect>
                   <div>
                     <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
-                    {communes.length>0?
-                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wObj=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya));const wName=wObj?.name||'';const wCode=wObj?.wilaya_code||'';const cities=WILAYA_CITIES[wName]||communes.map(c=>typeof c==='string'?c:c.name);const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?String(wCode).padStart(2,'0')+cCode:''}))}}>
-                        <option value="">{t('checkout.selectCity','Select commune...')}</option>
-                        {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
-                      </select>
-                      :<input className="lp-input w-full px-4 py-3 rounded-xl text-sm" value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}/>
-                    }
+                    <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wCode=WILAYA_CODES[form.shipping_wilaya]||'';const cities=WILAYA_CITIES[form.shipping_wilaya]||[];const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?wCode.padStart(2,'0')+cCode:''}))}} disabled={!form.shipping_wilaya}>
+                      <option value="">{form.shipping_wilaya?t('checkout.selectCity','Select commune...'):t('checkout.selectWilayaFirst','Select wilaya first')}</option>
+                      {communes.map((c,i)=><option key={i} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>ZIP</label>
+                    <input className="lp-input w-full px-4 py-3 rounded-xl text-sm bg-gray-50" value={form.shipping_zip} readOnly placeholder={t('lp.autoFilled','Auto-filled')}/>
                   </div>
                   <FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street, building, floor...')} accent={pc}/>
                 </div>
@@ -1387,17 +1390,18 @@ export default function BuyerLandingPage(){
                     {store?.checkout_email&&<FormInput icon={Mail} label={t('lp.email','Email')} value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" accent={pc}/>}
                     <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={e=>setForm(f=>({...f,shipping_wilaya:e.target.value,shipping_city:'',shipping_zip:''}))} accent={pc}>
                       <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
-                      {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
+                      {ALL_WILAYAS.map(w=><option key={w.code} value={w.name}>{w.code} - {w.name}</option>)}
                     </FormSelect>
                     <div>
                       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
-                      {communes.length>0?
-                        <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wObj=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya));const wName=wObj?.name||'';const wCode=wObj?.wilaya_code||'';const cities=WILAYA_CITIES[wName]||communes.map(c=>typeof c==='string'?c:c.name);const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?String(wCode).padStart(2,'0')+cCode:''}))}}>
-                          <option value="">{t('checkout.selectCity','Select commune...')}</option>
-                          {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
-                        </select>
-                        :<input className="lp-input w-full px-4 py-3 rounded-xl text-sm" value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}/>
-                      }
+                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wCode=WILAYA_CODES[form.shipping_wilaya]||'';const cities=WILAYA_CITIES[form.shipping_wilaya]||[];const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?wCode.padStart(2,'0')+cCode:''}))}} disabled={!form.shipping_wilaya}>
+                        <option value="">{form.shipping_wilaya?t('checkout.selectCity','Select commune...'):t('checkout.selectWilayaFirst','Select wilaya first')}</option>
+                        {communes.map((c,i)=><option key={i} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>ZIP</label>
+                      <input className="lp-input w-full px-4 py-3 rounded-xl text-sm bg-gray-50" value={form.shipping_zip} readOnly placeholder={t('lp.autoFilled','Auto-filled')}/>
                     </div>
                     <div className="sm:col-span-2"><FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')} accent={pc}/></div>
                   </div>
