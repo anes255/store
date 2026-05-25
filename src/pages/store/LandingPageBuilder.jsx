@@ -250,12 +250,19 @@ const EMPTY_LP={
   bg_color:'#FAFAFA',text_color:'#1F2937',accent_color:'#7C3AED',
   show_reviews:true,show_countdown:false,countdown_hours:0,countdown_minutes:0,
   show_trust_badges:true,show_social_proof:true,
-  layout_style:'alternating', // alternating, stacked, showcase
-  animation_style:'slide-up', // none, fade, slide-up, zoom
-  hero_style:'centered', // centered, split, minimal
+  layout_style:'alternating',
+  animation_style:'slide-up',
+  hero_style:'centered',
   ai_generated:false,
-  theme_preset:null, // tracks which preset was applied
+  theme_preset:null,
+  language:'ar', // ar, fr, en — controls the landing page display language
 };
+
+const LANGUAGES=[
+  {value:'ar',label:'العربية',flag:'🇩🇿',desc:'Arabic (Algerian)'},
+  {value:'fr',label:'Français',flag:'🇫🇷',desc:'French'},
+  {value:'en',label:'English',flag:'🇬🇧',desc:'English'},
+];
 
 const LAYOUT_STYLES=[
   {value:'alternating',label:'Alternating',desc:'Products alternate left/right'},
@@ -460,8 +467,7 @@ export default function LandingPageBuilder(){
     if(!page.items.length){toast.error(t('lp.addProductsFirst','Add products first'));return;}
     setGenerating(true);
     try{
-      const lang=(typeof window!=='undefined'&&window.navigator?.language||'en').slice(0,2);
-      const aiLang=['ar','fr'].includes(lang)?lang:'en';
+      const aiLang=page.language||'ar';
 
       // Build product data for AI
       const productData=page.items.map(item=>{
@@ -666,11 +672,22 @@ export default function LandingPageBuilder(){
         </div>
       </div>
 
-      {/* ─── PAGE NAME + STATUS ─── */}
+      {/* ─── PAGE NAME + STATUS + LANGUAGE ─── */}
       <div className="glass-card-solid p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
           <div><label className="text-[10px] text-gray-400 font-bold uppercase">{t('lp.pageName','Page Name')}</label><input className="input-field !py-2 text-sm" value={form.name} onChange={e=>updatePage(editing,{name:e.target.value})}/></div>
           <div><label className="text-[10px] text-gray-400 font-bold uppercase">{t('lp.urlSlug','URL Slug')}</label><input className="input-field !py-2 text-sm font-mono" value={form.slug} onChange={e=>updatePage(editing,{slug:e.target.value.replace(/[^a-z0-9-]/g,'')})}/></div>
+          <div>
+            <label className="text-[10px] text-gray-400 font-bold uppercase">{t('lp.language','Language')}</label>
+            <div className="flex gap-1.5 mt-1">
+              {LANGUAGES.map(l=>(
+                <button key={l.value} onClick={()=>updatePage(editing,{language:l.value})} className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${(form.language||'ar')===l.value?'bg-violet-50 text-violet-700 border-2 border-violet-400 shadow-sm':'bg-gray-50 text-gray-500 border-2 border-gray-100 hover:border-gray-300'}`}>
+                  <span>{l.flag}</span>
+                  <span className="hidden sm:inline">{l.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <button onClick={()=>updatePage(editing,{enabled:!form.enabled})} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${form.enabled?'bg-emerald-50 text-emerald-700 border border-emerald-200':'bg-gray-50 text-gray-500 border border-gray-200'}`}>
               {form.enabled?<ToggleRight size={16}/>:<ToggleLeft size={16}/>}

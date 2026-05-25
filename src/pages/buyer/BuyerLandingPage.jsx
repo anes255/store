@@ -129,16 +129,29 @@ function ProductStrip({items,accent}){
   );
 }
 
-/* ── Inline CSS keyframes ── */
-function AnimationStyles(){
+/* ── Inline CSS keyframes + visual polish ── */
+function AnimationStyles({accent}){
   return(
     <style>{`
       @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
       @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
       @keyframes glow-pulse{0%,100%{box-shadow:0 0 20px var(--glow-color,rgba(124,58,237,0.3))}50%{box-shadow:0 0 40px var(--glow-color,rgba(124,58,237,0.5))}}
+      @keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+      @keyframes subtle-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
       .float-slow{animation:float 6s ease-in-out infinite}
       .float-med{animation:float 4s ease-in-out infinite}
       .shimmer-bg{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,0.08) 50%,transparent 75%);background-size:200% 100%;animation:shimmer 3s linear infinite}
+      .gradient-animate{background-size:200% 200%;animation:gradient-shift 8s ease infinite}
+      .subtle-bounce{animation:subtle-bounce 2s ease-in-out infinite}
+      /* Polished scrollbar */
+      .lp-root::-webkit-scrollbar{width:6px}
+      .lp-root::-webkit-scrollbar-track{background:transparent}
+      .lp-root::-webkit-scrollbar-thumb{background:${accent||'#7C3AED'}30;border-radius:3px}
+      .lp-root::-webkit-scrollbar-thumb:hover{background:${accent||'#7C3AED'}60}
+      /* Selection color */
+      .lp-root ::selection{background:${accent||'#7C3AED'}30;color:inherit}
+      /* Smooth focus transitions */
+      .lp-root input:focus,.lp-root select:focus{transition:border-color 0.2s,box-shadow 0.2s}
     `}</style>
   );
 }
@@ -165,8 +178,8 @@ function TrustBadges({accent,textColor,variant='light'}){
   );
 }
 
-/* ── Social proof (enhanced) ── */
-function SocialProof({accent,textColor}){
+/* ── Social proof (no hardcoded data) ── */
+function SocialProof({accent,textColor,showReviews}){
   const{t}=useTranslation();
   const[ref,visible]=useReveal(0.3);
   return(
@@ -180,17 +193,15 @@ function SocialProof({accent,textColor}){
           ))}
         </div>
         <div>
-          <span className="text-sm font-bold block" style={{color:textColor}}><AnimatedNumber value={127}/></span>
-          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.recentOrders','recent orders')}</span>
+          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.trustedBuyers','Trusted by buyers')}</span>
         </div>
       </div>
-      <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl" style={{backgroundColor:accent+'08',border:`1px solid ${accent}15`}}>
-        <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={14} fill="#FBBF24" color="#FBBF24"/>)}</div>
-        <div>
-          <span className="text-sm font-bold block" style={{color:textColor}}>4.9/5</span>
-          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.reviews','reviews')}</span>
+      {showReviews&&(
+        <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl" style={{backgroundColor:accent+'08',border:`1px solid ${accent}15`}}>
+          <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={14} fill="#FBBF24" color="#FBBF24"/>)}</div>
+          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.topRated','Top Rated')}</span>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -238,7 +249,7 @@ function DiscountBadge({price,comparePrice,accent}){
 
 export default function BuyerLandingPage(){
   const{storeSlug,landingSlug}=useParams();
-  const{t}=useTranslation();
+  const{t,i18n}=useTranslation();
   const[store,setStore]=useState(null);
   const[page,setPage]=useState(null);
   const[loading,setLoading]=useState(true);
@@ -276,6 +287,16 @@ export default function BuyerLandingPage(){
       setLoading(false);
     })();
   },[storeSlug,landingSlug]);
+
+  // Switch language based on page setting
+  useEffect(()=>{
+    if(!page?.language)return;
+    const lang=page.language;
+    if(i18n.language!==lang)i18n.changeLanguage(lang);
+    document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+    document.documentElement.lang=lang;
+    return()=>{document.documentElement.dir='ltr';};
+  },[page?.language]);
 
   useEffect(()=>{
     if(!form.shipping_wilaya||!wilayas.length)return;
@@ -969,12 +990,20 @@ export default function BuyerLandingPage(){
           </div>
         </div>
 
-        {/* ── RATING BAR ── */}
-        <div className="w-full py-3 flex items-center justify-center gap-3" style={{backgroundColor:bgColor}}>
-          <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={14} fill="#FBBF24" color="#FBBF24"/>)}</div>
-          <span className="text-sm font-black" style={{color:textColor}}>4.9/5</span>
-          <span className="text-xs opacity-40" style={{color:textColor}}>— {t('lp.excellentRating','Excellent Rating')}</span>
-        </div>
+        {/* ── SOCIAL PROOF BAR ── */}
+        {page.show_social_proof!==false&&(
+          <div className="w-full py-3 flex items-center justify-center gap-4" style={{backgroundColor:bgColor}}>
+            <div className="flex -space-x-1.5">
+              {[...Array(3)].map((_,i)=><div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white shadow-sm" style={{backgroundColor:pc,filter:`hue-rotate(${i*40}deg)`}}>{['A','M','S'][i]}</div>)}
+            </div>
+            {page.show_reviews!==false&&(
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={12} fill="#FBBF24" color="#FBBF24"/>)}</div>
+                <span className="text-xs font-semibold opacity-50" style={{color:textColor}}>{t('lp.topRated','Top Rated')}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── HERO SECTION — product image mosaic background ── */}
         <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
@@ -1193,15 +1222,17 @@ export default function BuyerLandingPage(){
     </div>
   );
 
-  /* ── Floating cart ── */
+  /* ── Floating cart — polished with glow + count badge ── */
   const FloatingCart=()=>{
     if(totalQty===0)return null;
     return(
-      <button onClick={scrollToCheckout} className="fixed bottom-5 right-5 z-50 flex items-center gap-2 pl-5 pr-4 py-3.5 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 backdrop-blur-sm" style={{backgroundColor:pc,boxShadow:`0 8px 30px ${pc}50`}}>
-        <ShoppingBag size={18}/>
-        <span>{totalQty} {t('lp.items','items')}</span>
-        <span className="opacity-60">|</span>
-        <span>{subtotal.toLocaleString()} {currency}</span>
+      <button onClick={scrollToCheckout} className="fixed bottom-5 z-50 flex items-center gap-2.5 pl-5 pr-5 py-3.5 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:scale-105 active:scale-95 backdrop-blur-md" style={{backgroundColor:pc+'ee',boxShadow:`0 8px 32px ${pc}50, 0 0 0 1px ${pc}30`,right:'20px'}}>
+        <div className="relative">
+          <ShoppingBag size={18}/>
+          <span className="absolute -top-2 -right-2 w-4.5 h-4.5 rounded-full bg-white text-[10px] font-black flex items-center justify-center" style={{color:pc,minWidth:'18px',height:'18px'}}>{totalQty}</span>
+        </div>
+        <span className="opacity-80">|</span>
+        <span className="tabular-nums">{subtotal.toLocaleString()} {currency}</span>
       </button>
     );
   };
@@ -1210,8 +1241,8 @@ export default function BuyerLandingPage(){
      MAIN RENDER
      ═══════════════════════════════════════════════════════════ */
   return(
-    <div className="min-h-screen" style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937'}}>
-      <AnimationStyles/>
+    <div className="min-h-screen lp-root" dir={page.language==='ar'?'rtl':'ltr'} style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937',fontFeatureSettings:'"ss01","cv11"'}}>
+      <AnimationStyles accent={pc}/>
       <FloatingCart/>
 
       {layoutStyle==='product-hero'?(
@@ -1223,7 +1254,7 @@ export default function BuyerLandingPage(){
           {showSocial&&(
             <div className="py-10 relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
               <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.03}/>
-              <div className="relative"><SocialProof accent={pc} textColor={page.text_color||'#1F2937'}/></div>
+              <div className="relative"><SocialProof accent={pc} textColor={page.text_color||'#1F2937'} showReviews={page.show_reviews!==false}/></div>
             </div>
           )}
 
