@@ -202,6 +202,14 @@ export default function BuyerLandingPage(){
   const layoutStyle=page?.layout_style||'alternating';
   const showTrust=page?.show_trust_badges!==false;
   const showSocial=page?.show_social_proof!==false;
+
+  // Auto-add first product to cart for product-hero layout
+  useEffect(()=>{
+    if(layoutStyle==='product-hero'){
+      const heroItem=(page?.items||[])[0];
+      if(heroItem&&!cart[heroItem.product_id])setCart(c=>({...c,[heroItem.product_id]:1}));
+    }
+  },[layoutStyle,page?.items]);
   const showCountdown=page?.show_countdown&&(page?.countdown_hours||page?.countdown_minutes);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
@@ -970,11 +978,6 @@ export default function BuyerLandingPage(){
     const ctaTextColor=page.cta_text_color||'#FFF';
     const bgColor=page.bg_color||'#f8f9fa';
     const textColor=page.text_color||'#1F2937';
-
-    // Auto-add first product to cart if nothing selected
-    useEffect(()=>{
-      if(heroItem&&!cart[heroItem.product_id])setCart(c=>({...c,[heroItem.product_id]:1}));
-    },[]);
 
     return(
       <>
