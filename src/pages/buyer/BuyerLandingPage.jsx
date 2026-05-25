@@ -4,9 +4,12 @@ import{useTranslation}from'react-i18next';
 import{storeApi}from'../../utils/api';
 import{useAuthStore}from'../../hooks/useStore';
 import toast from'react-hot-toast';
-import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown}from'lucide-react';
+import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift}from'lucide-react';
 
-/* ───── scroll-reveal hook ───── */
+/* ═══════════════════════════════════════════════════════════════
+   VISUAL UTILITY COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
+
 function useReveal(threshold=0.15){
   const ref=useRef(null);
   const[visible,setVisible]=useState(false);
@@ -19,7 +22,6 @@ function useReveal(threshold=0.15){
   return[ref,visible];
 }
 
-/* ───── animated counter ───── */
 function AnimatedNumber({value,duration=1200}){
   const[display,setDisplay]=useState(0);
   const ref=useRef(null);
@@ -44,7 +46,6 @@ function AnimatedNumber({value,duration=1200}){
   return <span ref={ref}>{display.toLocaleString()}</span>;
 }
 
-/* ───── countdown timer ───── */
 function CountdownTimer({hours=0,minutes=0,accent}){
   const endTime=useRef(Date.now()+(hours*3600+minutes*60)*1000);
   const[left,setLeft]=useState(()=>{const d=endTime.current-Date.now();return d>0?d:0;});
@@ -58,19 +59,18 @@ function CountdownTimer({hours=0,minutes=0,accent}){
   const pad=n=>String(n).padStart(2,'0');
   if(left<=0)return null;
   return(
-    <div className="inline-flex items-center gap-1.5 text-sm font-bold" style={{color:accent}}>
-      <Clock size={14}/>
-      <span className="tabular-nums">{pad(h)}:{pad(m)}:{pad(s)}</span>
+    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md" style={{backgroundColor:accent+'20',border:`1px solid ${accent}40`}}>
+      <Flame size={14} style={{color:accent}}/>
+      <span className="text-sm font-black tabular-nums" style={{color:accent}}>{pad(h)}:{pad(m)}:{pad(s)}</span>
     </div>
   );
 }
 
-/* ───── reveal wrapper with animation ───── */
 function Reveal({children,animation='slide-up',delay=0,className=''}){
   const[ref,visible]=useReveal(0.12);
-  const baseStyle={transition:`opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`};
-  const hidden={opacity:0,transform:animation==='slide-up'?'translateY(40px)':animation==='zoom'?'scale(0.92)':'translateY(0)'};
-  const shown={opacity:1,transform:'translateY(0) scale(1)'};
+  const baseStyle={transition:`opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`};
+  const hidden={opacity:0,transform:animation==='slide-up'?'translateY(50px)':animation==='zoom'?'scale(0.88)':animation==='slide-left'?'translateX(-40px)':animation==='slide-right'?'translateX(40px)':'translateY(0)'};
+  const shown={opacity:1,transform:'translateY(0) scale(1) translateX(0)'};
   if(animation==='none')return <div ref={ref} className={className}>{children}</div>;
   return(
     <div ref={ref} className={className} style={{...baseStyle,...(visible?shown:hidden)}}>
@@ -79,9 +79,74 @@ function Reveal({children,animation='slide-up',delay=0,className=''}){
   );
 }
 
-/* ───── trust badges ───── */
-function TrustBadges({accent,textColor}){
+/* ── Decorative mesh gradient background ── */
+function MeshGradient({color1,color2,color3,opacity=0.15,className=''}){
+  return(
+    <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
+      <div className="absolute -top-1/4 -left-1/4 w-3/4 h-3/4 rounded-full blur-[120px] animate-pulse" style={{backgroundColor:color1,opacity}}/>
+      <div className="absolute -bottom-1/4 -right-1/4 w-2/3 h-2/3 rounded-full blur-[100px]" style={{backgroundColor:color2,opacity:opacity*0.8,animation:'pulse 4s ease-in-out infinite alternate'}}/>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/2 h-1/2 rounded-full blur-[80px]" style={{backgroundColor:color3||color1,opacity:opacity*0.5,animation:'pulse 6s ease-in-out infinite alternate-reverse'}}/>
+    </div>
+  );
+}
+
+/* ── Product image collage as background ── */
+function ProductImageMosaic({items,overlay='rgba(0,0,0,0.7)'}){
+  const images=items.filter(it=>it.custom_image||it.image).slice(0,6);
+  if(!images.length)return null;
+  const cols=images.length>=4?3:images.length>=2?2:1;
+  return(
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 grid gap-1" style={{gridTemplateColumns:`repeat(${cols}, 1fr)`,opacity:0.35}}>
+        {images.map((it,i)=>(
+          <div key={i} className="relative overflow-hidden">
+            <img src={it.custom_image||it.image} alt="" className="w-full h-full object-cover scale-110" style={{filter:'saturate(0.6)'}}/>
+          </div>
+        ))}
+      </div>
+      <div className="absolute inset-0" style={{background:overlay}}/>
+    </div>
+  );
+}
+
+/* ── Floating product thumbnails strip ── */
+function ProductStrip({items,accent}){
+  const images=items.filter(it=>it.custom_image||it.image).slice(0,5);
+  if(images.length<2)return null;
+  return(
+    <div className="flex items-center justify-center gap-3 mt-8">
+      {images.map((it,i)=>(
+        <div key={i} className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden ring-2 ring-white/20 shadow-xl transition-transform hover:scale-110 hover:ring-white/50" style={{transform:`rotate(${(i-Math.floor(images.length/2))*5}deg)`}}>
+          <img src={it.custom_image||it.image} alt="" className="w-full h-full object-cover"/>
+        </div>
+      ))}
+      {items.length>5&&(
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-xs font-bold text-white/70 backdrop-blur-md" style={{backgroundColor:accent+'30',border:'2px solid rgba(255,255,255,0.15)'}}>
+          +{items.length-5}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Inline CSS keyframes ── */
+function AnimationStyles(){
+  return(
+    <style>{`
+      @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+      @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+      @keyframes glow-pulse{0%,100%{box-shadow:0 0 20px var(--glow-color,rgba(124,58,237,0.3))}50%{box-shadow:0 0 40px var(--glow-color,rgba(124,58,237,0.5))}}
+      .float-slow{animation:float 6s ease-in-out infinite}
+      .float-med{animation:float 4s ease-in-out infinite}
+      .shimmer-bg{background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,0.08) 50%,transparent 75%);background-size:200% 100%;animation:shimmer 3s linear infinite}
+    `}</style>
+  );
+}
+
+/* ── Trust badges (enhanced) ── */
+function TrustBadges({accent,textColor,variant='light'}){
   const{t}=useTranslation();
+  const isDark=variant==='dark';
   const badges=[
     {icon:<Truck size={20}/>,label:t('lp.fastDelivery','Fast Delivery'),sub:t('lp.fastDeliverySub','48h across Algeria')},
     {icon:<Shield size={20}/>,label:t('lp.securePayment','Secure Payment'),sub:t('lp.securePaymentSub','100% protected')},
@@ -90,41 +155,86 @@ function TrustBadges({accent,textColor}){
   return(
     <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
       {badges.map((b,i)=>(
-        <div key={i} className="text-center space-y-1.5">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto" style={{backgroundColor:accent+'18',color:accent}}>{b.icon}</div>
+        <div key={i} className="text-center space-y-2 p-4 rounded-2xl transition-transform hover:scale-105" style={{backgroundColor:isDark?'rgba(255,255,255,0.06)':accent+'08'}}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto shadow-lg" style={{backgroundColor:isDark?'rgba(255,255,255,0.1)':accent+'18',color:accent}}>{b.icon}</div>
           <p className="text-xs font-bold" style={{color:textColor}}>{b.label}</p>
-          <p className="text-[10px] opacity-60" style={{color:textColor}}>{b.sub}</p>
+          <p className="text-[10px] opacity-50" style={{color:textColor}}>{b.sub}</p>
         </div>
       ))}
     </div>
   );
 }
 
-/* ───── social proof ───── */
-function SocialProof({accent}){
+/* ── Social proof (enhanced) ── */
+function SocialProof({accent,textColor}){
   const{t}=useTranslation();
   const[ref,visible]=useReveal(0.3);
   return(
-    <div ref={ref} className="flex items-center justify-center gap-6 flex-wrap text-sm" style={{opacity:visible?1:0,transition:'opacity 0.6s ease'}}>
-      <div className="flex items-center gap-2">
-        <div className="flex -space-x-2">
+    <div ref={ref} className="flex items-center justify-center gap-6 flex-wrap" style={{opacity:visible?1:0,transition:'opacity 0.6s ease'}}>
+      <div className="flex items-center gap-3 px-5 py-2.5 rounded-2xl" style={{backgroundColor:accent+'08',border:`1px solid ${accent}15`}}>
+        <div className="flex -space-x-2.5">
           {[...Array(4)].map((_,i)=>(
-            <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white" style={{backgroundColor:accent,filter:`brightness(${1-i*0.1})`}}>
+            <div key={i} className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-md" style={{backgroundColor:accent,filter:`hue-rotate(${i*30}deg)`}}>
               {['A','S','M','K'][i]}
             </div>
           ))}
         </div>
-        <span className="text-gray-500 text-xs">
-          <AnimatedNumber value={127}/> {t('lp.recentOrders','recent orders')}
-        </span>
+        <div>
+          <span className="text-sm font-bold block" style={{color:textColor}}><AnimatedNumber value={127}/></span>
+          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.recentOrders','recent orders')}</span>
+        </div>
       </div>
-      <div className="flex items-center gap-1">
-        {[...Array(5)].map((_,i)=><Star key={i} size={14} fill={accent} color={accent}/>)}
-        <span className="text-xs text-gray-500 ml-1">4.9/5</span>
+      <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl" style={{backgroundColor:accent+'08',border:`1px solid ${accent}15`}}>
+        <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={14} fill="#FBBF24" color="#FBBF24"/>)}</div>
+        <div>
+          <span className="text-sm font-bold block" style={{color:textColor}}>4.9/5</span>
+          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.reviews','reviews')}</span>
+        </div>
       </div>
     </div>
   );
 }
+
+/* ── Quantity control ── */
+function QtyControl({qty,onMinus,onPlus,onAdd,accent,variant='light',t}){
+  const isDark=variant==='dark';
+  if(qty>0)return(
+    <div className="flex items-center rounded-xl overflow-hidden backdrop-blur-sm" style={{border:`1.5px solid ${isDark?'rgba(255,255,255,0.15)':'oklch(0.88 0.005 280)'}`,backgroundColor:isDark?'rgba(255,255,255,0.06)':'transparent'}}>
+      <button onClick={onMinus} className="px-3.5 py-2.5 transition-colors hover:bg-white/10" style={{color:isDark?'#FFF':undefined}}><Minus size={14}/></button>
+      <span className="px-4 py-2.5 font-bold text-base min-w-[2.5rem] text-center tabular-nums" style={{color:isDark?'#FFF':undefined}}>{qty}</span>
+      <button onClick={onPlus} className="px-3.5 py-2.5 transition-colors hover:bg-white/10" style={{color:isDark?'#FFF':undefined}}><Plus size={14}/></button>
+    </div>
+  );
+  return(
+    <button onClick={onAdd} className="px-6 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.96] flex items-center gap-2" style={{backgroundColor:accent,color:'#FFF','--glow-color':accent+'60'}}>
+      <ShoppingBag size={15}/>{t('lp.addToOrder','Add to Order')}
+    </button>
+  );
+}
+
+/* ── Price display ── */
+function PriceTag({price,comparePrice,currency,accent,size='lg',variant='light'}){
+  const isDark=variant==='dark';
+  const sizes={sm:'text-lg',md:'text-2xl',lg:'text-3xl',xl:'text-4xl'};
+  return(
+    <div className="flex items-end gap-2.5">
+      <span className={`${sizes[size]} font-black tracking-tight`} style={{color:isDark?'#FFF':accent}}>{parseFloat(price).toLocaleString()} <span className="text-sm font-bold opacity-60">{currency}</span></span>
+      {comparePrice&&parseFloat(comparePrice)>0&&<span className="text-base opacity-40 line-through font-medium mb-0.5" style={{color:isDark?'#FFF':undefined}}>{parseFloat(comparePrice).toLocaleString()}</span>}
+    </div>
+  );
+}
+
+/* ── Discount badge ── */
+function DiscountBadge({price,comparePrice,accent}){
+  if(!comparePrice||!parseFloat(comparePrice))return null;
+  const pct=Math.round((1-parseFloat(price)/parseFloat(comparePrice))*100);
+  if(pct<=0)return null;
+  return <div className="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-xl text-xs font-black text-white shadow-lg" style={{backgroundColor:'#EF4444',boxShadow:'0 4px 15px rgba(239,68,68,0.4)'}}>-{pct}%</div>;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
 
 export default function BuyerLandingPage(){
   const{storeSlug,landingSlug}=useParams();
@@ -144,9 +254,7 @@ export default function BuyerLandingPage(){
   const checkoutRef=useRef(null);
   const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
 
-  useEffect(()=>{
-    try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s)setForm(f=>({...f,...s}));}catch{}
-  },[]);
+  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s)setForm(f=>({...f,...s}));}catch{}},[]);
 
   useEffect(()=>{
     if(!storeSlug)return;
@@ -162,18 +270,9 @@ export default function BuyerLandingPage(){
         const initCart={};
         lp.items.forEach((it,i)=>{initCart[it.product_id]=i===0?1:0;});
         setCart(initCart);
-        try{
-          const{data:wData}=await storeApi.getShippingWilayas(storeSlug);
-          const w=Array.isArray(wData)?wData:(wData?.wilayas||[]);
-          setWilayas(w.filter(x=>x.is_active!==false));
-        }catch{}
-        try{
-          const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};
-          if(Array.isArray(cData))setCompanies(cData);
-        }catch{}
-      }catch(e){
-        setNotFound(true);
-      }
+        try{const{data:wData}=await storeApi.getShippingWilayas(storeSlug);const w=Array.isArray(wData)?wData:(wData?.wilayas||[]);setWilayas(w.filter(x=>x.is_active!==false));}catch{}
+        try{const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};if(Array.isArray(cData))setCompanies(cData);}catch{}
+      }catch(e){setNotFound(true);}
       setLoading(false);
     })();
   },[storeSlug,landingSlug]);
@@ -183,10 +282,8 @@ export default function BuyerLandingPage(){
     const w=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya)||x.name===form.shipping_wilaya);
     if(w){
       setShippingPrice(form.shipping_type==='desk'?(w.desk_price||w.home_price||400):(w.home_price||400));
-      if(w.communes){
-        const c=typeof w.communes==='string'?w.communes.split(',').map(s=>s.trim()):Array.isArray(w.communes)?w.communes:[];
-        setCommunes(c);
-      }else{setCommunes([]);}
+      if(w.communes){const c=typeof w.communes==='string'?w.communes.split(',').map(s=>s.trim()):Array.isArray(w.communes)?w.communes:[];setCommunes(c);}
+      else setCommunes([]);
     }
   },[form.shipping_wilaya,form.shipping_type,wilayas]);
 
@@ -202,15 +299,17 @@ export default function BuyerLandingPage(){
   const layoutStyle=page?.layout_style||'alternating';
   const showTrust=page?.show_trust_badges!==false;
   const showSocial=page?.show_social_proof!==false;
+  const showCountdown=page?.show_countdown&&(page?.countdown_hours||page?.countdown_minutes);
+  const allItems=page?.items||[];
+  const currency=store?.currency||'DZD';
 
-  // Auto-add first product to cart for product-hero layout
+  // Auto-add first product for product-hero
   useEffect(()=>{
     if(layoutStyle==='product-hero'){
-      const heroItem=(page?.items||[])[0];
+      const heroItem=allItems[0];
       if(heroItem&&!cart[heroItem.product_id])setCart(c=>({...c,[heroItem.product_id]:1}));
     }
   },[layoutStyle,page?.items]);
-  const showCountdown=page?.show_countdown&&(page?.countdown_hours||page?.countdown_minutes);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
 
@@ -240,22 +339,22 @@ export default function BuyerLandingPage(){
 
   /* ─── Loading ─── */
   if(loading)return(
-    <div className="min-h-screen flex items-center justify-center" style={{background:'oklch(0.17 0.01 280)'}}>
+    <div className="min-h-screen flex items-center justify-center" style={{background:'linear-gradient(135deg, #0f0c29, #302b63, #24243e)'}}>
       <div className="relative">
-        <div className="w-12 h-12 rounded-full border-[3px] border-white/10 border-t-white/80 animate-spin"/>
-        <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-transparent border-b-white/30 animate-spin" style={{animationDirection:'reverse',animationDuration:'1.5s'}}/>
+        <div className="w-14 h-14 rounded-full border-[3px] border-white/10 border-t-white/80 animate-spin"/>
+        <div className="absolute inset-0 w-14 h-14 rounded-full border-[3px] border-transparent border-b-white/30 animate-spin" style={{animationDirection:'reverse',animationDuration:'1.5s'}}/>
       </div>
     </div>
   );
 
   /* ─── Not Found ─── */
   if(notFound)return(
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{background:'oklch(0.17 0.01 280)'}}>
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{background:'linear-gradient(135deg, #0f0c29, #302b63, #24243e)'}}>
       <div className="text-center space-y-4">
-        <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto">
+        <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mx-auto backdrop-blur-sm">
           <Package size={36} className="text-white/30"/>
         </div>
-        <p className="text-white/60 font-semibold text-lg">{t('lp.pageNotFound','Page not found')}</p>
+        <p className="text-white/60 font-bold text-lg">{t('lp.pageNotFound','Page not found')}</p>
         <Link to={`/s/${storeSlug}`} className="text-sm text-white/40 hover:text-white/70 transition-colors underline underline-offset-4">{t('lp.goToStore','Go to store')}</Link>
       </div>
     </div>
@@ -263,56 +362,69 @@ export default function BuyerLandingPage(){
 
   /* ─── Order Success ─── */
   if(orderSuccess)return(
-    <div className="min-h-screen flex items-center justify-center p-4" style={{background:`linear-gradient(135deg, ${page.hero_bg||'oklch(0.35 0.15 280)'}, oklch(0.15 0.01 280))`}}>
-      <Reveal animation="zoom">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-10 max-w-md w-full text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{backgroundColor:pc+'18'}}>
-            <Check size={28} style={{color:pc}}/>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{background:`linear-gradient(135deg, ${page.hero_bg||'oklch(0.35 0.15 280)'}, oklch(0.15 0.01 280))`}}>
+      <MeshGradient color1={pc} color2={page.hero_bg||'#7C3AED'} color3="#10B981" opacity={0.2}/>
+      <Reveal animation="zoom" className="relative z-10">
+        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 sm:p-10 max-w-md w-full text-center" style={{border:'1px solid rgba(255,255,255,0.2)'}}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg" style={{backgroundColor:'#10B981',boxShadow:'0 8px 30px rgba(16,185,129,0.3)'}}>
+            <Check size={28} className="text-white"/>
           </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 mb-2">{t('lp.orderSuccess','Order Placed Successfully!')}</h2>
+          <h2 className="text-2xl font-black tracking-tight text-gray-900 mb-2">{t('lp.orderSuccess','Order Placed Successfully!')}</h2>
           <p className="text-sm text-gray-500 leading-relaxed mb-6">{t('lp.orderSuccessDesc','Thank you for your order. We will contact you shortly to confirm.')}</p>
           <div className="rounded-2xl p-5 space-y-3" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
             <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderNumber','Order')}</span><span className="font-mono font-bold text-gray-900">#{orderSuccess.order_number||orderSuccess.id}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderTotal','Total')}</span><span className="font-bold" style={{color:pc}}>{total.toLocaleString()} {store?.currency||'DZD'}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderTotal','Total')}</span><span className="font-bold" style={{color:pc}}>{total.toLocaleString()} {currency}</span></div>
           </div>
-          <Link to={`/s/${storeSlug}`} className="inline-block mt-7 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:brightness-110 active:scale-[0.97]" style={{backgroundColor:pc}}>{t('lp.continueShopping','Continue Shopping')}</Link>
+          <Link to={`/s/${storeSlug}`} className="inline-block mt-7 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:brightness-110 active:scale-[0.97] shadow-xl" style={{backgroundColor:pc}}>{t('lp.continueShopping','Continue Shopping')}</Link>
         </div>
       </Reveal>
     </div>
   );
 
-  /* ─── Hero sections by style ─── */
+  /* ═══════════════════════════════════════════════════════════
+     HERO SECTIONS — with product imagery backgrounds
+     ═══════════════════════════════════════════════════════════ */
+
   const renderHero=()=>{
-    const heroBg=page.hero_bg||'oklch(0.22 0.04 280)';
+    const heroBg=page.hero_bg||'oklch(0.15 0.04 280)';
     const heroText=page.hero_text||'#FFFFFF';
+    const ctaBg=page.cta_bg||'#10B981';
+    const ctaText=page.cta_text_color||'#FFF';
 
     if(heroStyle==='split'){
       return(
-        <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
-          <div className="absolute inset-0 opacity-[0.04]" style={{backgroundImage:`radial-gradient(circle at 70% 30%, ${heroText} 0%, transparent 60%)`}}/>
-          <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24">
+        <section className="relative overflow-hidden min-h-[70vh] flex items-center" style={{backgroundColor:heroBg}}>
+          <ProductImageMosaic items={allItems} overlay={`linear-gradient(135deg, ${heroBg}ee 0%, ${heroBg}99 50%, transparent 100%)`}/>
+          <MeshGradient color1={pc} color2={heroBg} opacity={0.12}/>
+          <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24 w-full">
             <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
               <Reveal animation={anim} className="flex-1 space-y-6">
                 <div>
-                  {showCountdown&&<div className="mb-4"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={page.cta_bg||'#10B981'}/></div>}
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.1] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
+                  {showCountdown&&<div className="mb-4"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={ctaBg}/></div>}
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.08] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
                   {page.hero_subtitle&&<p className="mt-4 text-base sm:text-lg opacity-75 leading-relaxed max-w-lg" style={{color:heroText}}>{page.hero_subtitle}</p>}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <button onClick={scrollToCheckout} className="px-7 py-3.5 rounded-2xl font-bold text-sm inline-flex items-center gap-2 transition-all hover:brightness-110 active:scale-[0.97] shadow-lg" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
+                  <button onClick={scrollToCheckout} className="px-8 py-4 rounded-2xl font-black text-sm inline-flex items-center gap-2 transition-all hover:brightness-110 active:scale-[0.96] shadow-xl" style={{backgroundColor:ctaBg,color:ctaText,boxShadow:`0 8px 30px ${ctaBg}50`}}>
                     <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
                   </button>
-                  <button onClick={scrollToCheckout} className="px-5 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:bg-white/10 flex items-center gap-1.5" style={{color:heroText,border:`1px solid ${heroText}30`}}>
+                  <button onClick={scrollToCheckout} className="px-5 py-4 rounded-2xl font-semibold text-sm transition-all hover:bg-white/10 flex items-center gap-1.5 backdrop-blur-sm" style={{color:heroText,border:`1px solid ${heroText}30`}}>
                     <ArrowDown size={14}/>{t('lp.seeProducts','See Products')}
                   </button>
                 </div>
-                {showTrust&&<div className="pt-4"><TrustBadges accent={page.cta_bg||'#10B981'} textColor={heroText}/></div>}
+                <ProductStrip items={allItems} accent={pc}/>
               </Reveal>
-              {page.hero_image&&(
+              {allItems.length>0&&(
                 <Reveal animation={anim} delay={200} className="flex-1 w-full md:w-auto">
                   <div className="relative">
-                    <div className="absolute -inset-4 rounded-3xl opacity-20 blur-2xl" style={{backgroundColor:pc}}/>
-                    <img src={page.hero_image} alt="" className="relative w-full max-w-md mx-auto rounded-2xl shadow-2xl object-cover aspect-[4/3]"/>
+                    <div className="absolute -inset-6 rounded-[2rem] blur-3xl" style={{backgroundColor:pc,opacity:0.25}}/>
+                    <div className="relative grid grid-cols-2 gap-3">
+                      {allItems.slice(0,4).map((it,i)=>(
+                        <div key={i} className={`rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 ${i===0?'col-span-2 aspect-[16/10]':'aspect-square'}`}>
+                          {(it.custom_image||it.image)?<img src={it.custom_image||it.image} alt="" className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center bg-white/5"><Package size={32} className="text-white/20"/></div>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </Reveal>
               )}
@@ -324,252 +436,270 @@ export default function BuyerLandingPage(){
 
     if(heroStyle==='minimal'){
       return(
-        <section className="relative" style={{backgroundColor:heroBg}}>
-          <div className="max-w-3xl mx-auto px-5 py-20 sm:py-32 text-center">
+        <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
+          <MeshGradient color1={pc} color2={heroBg} color3={ctaBg} opacity={0.1}/>
+          <div className="relative max-w-3xl mx-auto px-5 py-24 sm:py-36 text-center">
             <Reveal animation={anim}>
-              {showCountdown&&<div className="mb-5 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={page.cta_bg||'#10B981'}/></div>}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
+              {showCountdown&&<div className="mb-6 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={ctaBg}/></div>}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-[1.06] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
               {page.hero_subtitle&&<p className="mt-5 text-base sm:text-lg opacity-60 max-w-xl mx-auto leading-relaxed" style={{color:heroText}}>{page.hero_subtitle}</p>}
-              <button onClick={scrollToCheckout} className="mt-8 px-8 py-4 rounded-2xl font-bold text-base inline-flex items-center gap-2 transition-all hover:brightness-110 active:scale-[0.97] shadow-lg" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
+              <button onClick={scrollToCheckout} className="mt-8 px-9 py-4 rounded-2xl font-black text-base inline-flex items-center gap-2 transition-all hover:brightness-110 active:scale-[0.96] shadow-xl" style={{backgroundColor:ctaBg,color:ctaText,boxShadow:`0 8px 30px ${ctaBg}50`}}>
                 <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
               </button>
+              <ProductStrip items={allItems} accent={pc}/>
             </Reveal>
           </div>
         </section>
       );
     }
 
-    /* centered (default) */
+    /* centered (default) — immersive with product image mosaic */
     return(
-      <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
-        <div className="absolute inset-0 opacity-[0.06]" style={{backgroundImage:`radial-gradient(circle at 25% 80%, ${heroText} 0%, transparent 50%), radial-gradient(circle at 75% 20%, ${heroText} 0%, transparent 50%)`}}/>
-        <div className="relative max-w-4xl mx-auto px-5 py-16 sm:py-28 text-center">
+      <section className="relative overflow-hidden min-h-[75vh] flex items-center" style={{backgroundColor:heroBg}}>
+        <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${heroBg}dd 0%, ${heroBg}f0 40%, ${heroBg} 100%)`}/>
+        <MeshGradient color1={pc} color2={heroBg} color3={ctaBg} opacity={0.15}/>
+        <div className="relative max-w-4xl mx-auto px-5 py-16 sm:py-28 text-center w-full">
           <Reveal animation={anim}>
-            {store?.logo&&<img src={store.logo} alt="" className="w-14 h-14 rounded-2xl mx-auto mb-5 shadow-lg ring-2 ring-white/10"/>}
-            {showCountdown&&<div className="mb-5 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={page.cta_bg||'#10B981'}/></div>}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
-            {page.hero_subtitle&&<p className="mt-5 text-base sm:text-lg opacity-75 max-w-2xl mx-auto leading-relaxed" style={{color:heroText}}>{page.hero_subtitle}</p>}
-            <button onClick={scrollToCheckout} className="mt-9 px-9 py-4 rounded-2xl font-bold text-base shadow-xl hover:shadow-2xl transition-all hover:brightness-110 active:scale-[0.97] inline-flex items-center gap-2" style={{backgroundColor:page.cta_bg||'#10B981',color:page.cta_text_color||'#FFF'}}>
+            {store?.logo&&<img src={store.logo} alt="" className="w-16 h-16 rounded-2xl mx-auto mb-6 shadow-xl ring-2 ring-white/10"/>}
+            {showCountdown&&<div className="mb-6 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={ctaBg}/></div>}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-[1.06] tracking-tight" style={{color:heroText}}>{page.hero_title||store?.name}</h1>
+            {page.hero_subtitle&&<p className="mt-5 text-base sm:text-lg opacity-70 max-w-2xl mx-auto leading-relaxed" style={{color:heroText}}>{page.hero_subtitle}</p>}
+            <button onClick={scrollToCheckout} className="mt-9 px-10 py-4 rounded-2xl font-black text-base shadow-2xl transition-all hover:brightness-110 active:scale-[0.96] inline-flex items-center gap-2" style={{backgroundColor:ctaBg,color:ctaText,boxShadow:`0 10px 40px ${ctaBg}60`}}>
               <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
             </button>
-            {showTrust&&<div className="mt-10"><TrustBadges accent={page.cta_bg||'#10B981'} textColor={heroText}/></div>}
+            <ProductStrip items={allItems} accent={pc}/>
+            {showTrust&&<div className="mt-12"><TrustBadges accent={ctaBg} textColor={heroText} variant="dark"/></div>}
           </Reveal>
         </div>
       </section>
     );
   };
 
-  /* ─── Product Card: Alternating ─── */
-  const renderAlternating=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const isEven=idx%2===0;
-    const sectionBg=isEven?page.bg_color||'#FAFAFA':'oklch(0.97 0.005 280)';
-    return(
-      <section key={item.product_id} style={{backgroundColor:sectionBg}}>
-        <div className="max-w-5xl mx-auto px-5 py-14 sm:py-24">
-          <Reveal animation={anim} delay={100}>
-            <div className={`flex flex-col ${isEven?'md:flex-row':'md:flex-row-reverse'} gap-8 md:gap-14 items-center`}>
-              {/* Image */}
-              <div className="flex-1 w-full">
-                <div className="relative group">
-                  {item.compare_price&&(
-                    <div className="absolute top-3 left-3 z-10 px-3 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>
-                      -{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%
-                    </div>
-                  )}
-                  {(item.custom_image||item.image)?
-                    <img src={item.custom_image||item.image} alt={item.name} className="w-full max-w-lg mx-auto rounded-2xl shadow-xl object-cover aspect-square transition-transform duration-500 group-hover:scale-[1.02]"/>
-                    :<div className="w-full max-w-lg mx-auto aspect-square rounded-2xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>
-                  }
-                </div>
-              </div>
-              {/* Info */}
-              <div className="flex-1 space-y-5">
-                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
-                {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:page.text_color||'#1F2937'}}>{item.description}</p>}
-                {item.features?.length>0&&(
-                  <ul className="space-y-2.5">
-                    {item.features.filter(f=>f.trim()).map((f,i)=>(
-                      <li key={i} className="flex items-start gap-2.5 text-sm">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center mt-0.5 shrink-0" style={{backgroundColor:pc+'18'}}>
-                          <Check size={12} style={{color:pc}}/>
-                        </div>
-                        <span style={{color:page.text_color||'#1F2937'}}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {/* Price */}
-                <div className="flex items-end gap-3 pt-1">
-                  <span className="text-3xl font-extrabold tracking-tight" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-base font-bold opacity-70">{store?.currency||'DZD'}</span></span>
-                  {item.compare_price&&<span className="text-lg text-gray-400 line-through font-medium">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                </div>
-                {/* Quantity */}
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors active:bg-gray-200"><Minus size={15}/></button>
-                    <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors active:bg-gray-200"><Plus size={15}/></button>
-                  </div>
-                  {qty===0&&(
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg transition-all hover:brightness-110 active:scale-[0.97] flex items-center gap-1.5" style={{backgroundColor:pc}}>
-                      <ShoppingBag size={14}/>{t('lp.addToOrder','Add to Order')}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
-  };
-
-  /* ─── Product Card: Stacked ─── */
-  const renderStacked=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const sectionBg=idx%2===0?page.bg_color||'#FAFAFA':'oklch(0.97 0.005 280)';
-    return(
-      <section key={item.product_id} style={{backgroundColor:sectionBg}}>
-        <div className="max-w-3xl mx-auto px-5 py-14 sm:py-20">
-          <Reveal animation={anim} delay={80}>
-            <div className="space-y-6">
-              {/* Image */}
-              <div className="relative group">
-                {item.compare_price&&(
-                  <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>
-                    -{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%
-                  </div>
-                )}
-                {(item.custom_image||item.image)?
-                  <img src={item.custom_image||item.image} alt={item.name} className="w-full rounded-2xl shadow-xl object-cover aspect-[16/9] transition-transform duration-500 group-hover:scale-[1.01]"/>
-                  :<div className="w-full aspect-[16/9] rounded-2xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>
-                }
-              </div>
-              {/* Content */}
-              <div className="space-y-4">
-                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
-                {item.description&&<p className="text-sm leading-relaxed opacity-60 max-w-2xl" style={{color:page.text_color||'#1F2937'}}>{item.description}</p>}
-                {item.features?.length>0&&(
-                  <div className="flex flex-wrap gap-2">
-                    {item.features.filter(f=>f.trim()).map((f,i)=>(
-                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style={{backgroundColor:pc+'12',color:pc}}>
-                        <Check size={11}/>{f}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center gap-4 pt-2">
-                  <div className="flex items-end gap-3">
-                    <span className="text-3xl font-extrabold tracking-tight" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-base font-bold opacity-70">{store?.currency||'DZD'}</span></span>
-                    {item.compare_price&&<span className="text-lg text-gray-400 line-through font-medium">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
-                      <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Minus size={15}/></button>
-                      <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center tabular-nums">{qty}</span>
-                      <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Plus size={15}/></button>
-                    </div>
-                    {qty===0&&(
-                      <button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg transition-all hover:brightness-110 active:scale-[0.97] flex items-center gap-1.5" style={{backgroundColor:pc}}>
-                        <ShoppingBag size={14}/>{t('lp.addToOrder','Add to Order')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
-  };
-
-  /* ─── Product Card: Showcase ─── */
-  const renderShowcase=(item,idx)=>{
+  /* ═══════════════════════════════════════════════════════════
+     PRODUCT CARD — shared per-product renderer
+     ═══════════════════════════════════════════════════════════ */
+  const ProductCard=({item,idx,layout})=>{
     const qty=cart[item.product_id]||0;
     const hasImage=item.custom_image||item.image;
-    return(
-      <section key={item.product_id} className="relative overflow-hidden" style={{backgroundColor:idx%2===0?'oklch(0.14 0.01 280)':'oklch(0.18 0.015 280)'}}>
-        {hasImage&&<div className="absolute inset-0"><img src={item.custom_image||item.image} alt="" className="w-full h-full object-cover opacity-20 blur-sm scale-105"/><div className="absolute inset-0" style={{background:'linear-gradient(to top, oklch(0.14 0.01 280) 20%, transparent 80%)'}}/></div>}
-        <div className="relative max-w-4xl mx-auto px-5 py-20 sm:py-32 text-center">
-          <Reveal animation={anim} delay={100}>
-            <div className="space-y-6">
-              {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">{item.headline}</p>}
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">{item.name}</h2>
-              {item.description&&<p className="text-sm sm:text-base text-white/60 leading-relaxed max-w-xl mx-auto">{item.description}</p>}
-              {hasImage&&(
-                <div className="relative max-w-sm mx-auto mt-4">
-                  <div className="absolute -inset-3 rounded-3xl blur-xl" style={{backgroundColor:pc,opacity:0.15}}/>
-                  <img src={item.custom_image||item.image} alt={item.name} className="relative w-full rounded-2xl shadow-2xl object-cover aspect-square"/>
-                </div>
-              )}
-              {item.features?.length>0&&(
-                <div className="flex flex-wrap justify-center gap-2 pt-2">
-                  {item.features.filter(f=>f.trim()).map((f,i)=>(
-                    <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white/80">
-                      <Check size={11}/>{f}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                <div className="flex items-end gap-2">
-                  <span className="text-3xl font-extrabold text-white">{parseFloat(item.price).toLocaleString()} <span className="text-base font-bold text-white/60">{store?.currency||'DZD'}</span></span>
-                  {item.compare_price&&<span className="text-lg text-white/40 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                </div>
-              </div>
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <div className="flex items-center rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm">
-                  <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 text-white hover:bg-white/10 transition-colors"><Minus size={15}/></button>
-                  <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center text-white tabular-nums">{qty}</span>
-                  <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 text-white hover:bg-white/10 transition-colors"><Plus size={15}/></button>
-                </div>
-                {qty===0&&(
-                  <button onClick={()=>setQty(item.product_id,1)} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.97] flex items-center gap-1.5" style={{backgroundColor:pc}}>
-                    <ShoppingBag size={14}/>{t('lp.addToOrder','Add to Order')}
-                  </button>
-                )}
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
-  };
+    const bgColor=page.bg_color||'#FAFAFA';
+    const textColor=page.text_color||'#1F2937';
 
-  /* ─── Product Card: Magazine ─── */
-  const renderMagazine=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const isHero=idx===0;
-    if(isHero){
+    /* ── Alternating ── */
+    if(layout==='alternating'){
+      const isEven=idx%2===0;
       return(
-        <section key={item.product_id} style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-          <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
+        <section key={item.product_id} className="relative overflow-hidden" style={{backgroundColor:isEven?bgColor:'oklch(0.97 0.005 280)'}}>
+          {hasImage&&<div className="absolute inset-0 opacity-[0.03]"><img src={hasImage} alt="" className="w-full h-full object-cover" style={{filter:'blur(60px) saturate(2)'}}/></div>}
+          <div className="relative max-w-5xl mx-auto px-5 py-16 sm:py-24">
+            <Reveal animation={anim} delay={100}>
+              <div className={`flex flex-col ${isEven?'md:flex-row':'md:flex-row-reverse'} gap-8 md:gap-14 items-center`}>
+                <div className="flex-1 w-full">
+                  <div className="relative group">
+                    <div className="absolute -inset-4 rounded-3xl blur-2xl opacity-20 transition-opacity group-hover:opacity-30" style={{backgroundColor:pc}}/>
+                    <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+                    {hasImage?<img src={hasImage} alt={item.name} className="relative w-full max-w-lg mx-auto rounded-3xl shadow-2xl object-cover aspect-square transition-transform duration-700 group-hover:scale-[1.03] ring-1 ring-black/5"/>
+                    :<div className="w-full max-w-lg mx-auto aspect-square rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
+                  </div>
+                </div>
+                <div className="flex-1 space-y-5">
+                  {item.headline&&<p className="text-xs font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full inline-block" style={{backgroundColor:pc+'12',color:pc}}>{item.headline}</p>}
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight" style={{color:textColor}}>{item.name}</h2>
+                  {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:textColor}}>{item.description}</p>}
+                  {item.features?.length>0&&(
+                    <ul className="space-y-2.5">
+                      {item.features.filter(f=>f.trim()).map((f,i)=>(
+                        <li key={i} className="flex items-start gap-2.5 text-sm">
+                          <div className="w-5 h-5 rounded-lg flex items-center justify-center mt-0.5 shrink-0 shadow-sm" style={{backgroundColor:pc+'18'}}><Check size={12} style={{color:pc}}/></div>
+                          <span style={{color:textColor}}>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    /* ── Stacked ── */
+    if(layout==='stacked'){
+      return(
+        <section key={item.product_id} className="relative overflow-hidden" style={{backgroundColor:idx%2===0?bgColor:'oklch(0.97 0.005 280)'}}>
+          {hasImage&&<div className="absolute inset-0 opacity-[0.04]"><img src={hasImage} alt="" className="w-full h-full object-cover" style={{filter:'blur(50px) saturate(1.5)'}}/></div>}
+          <div className="relative max-w-3xl mx-auto px-5 py-16 sm:py-24">
+            <Reveal animation={anim} delay={80}>
+              <div className="space-y-6">
+                <div className="relative group rounded-3xl overflow-hidden shadow-2xl">
+                  <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+                  {hasImage?<img src={hasImage} alt={item.name} className="w-full object-cover aspect-[16/9] transition-transform duration-700 group-hover:scale-[1.03]"/>
+                  :<div className="w-full aspect-[16/9] flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"/>
+                </div>
+                <div className="space-y-4">
+                  {item.headline&&<p className="text-xs font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full inline-block" style={{backgroundColor:pc+'12',color:pc}}>{item.headline}</p>}
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight" style={{color:textColor}}>{item.name}</h2>
+                  {item.description&&<p className="text-sm leading-relaxed opacity-60 max-w-2xl" style={{color:textColor}}>{item.description}</p>}
+                  {item.features?.length>0&&(
+                    <div className="flex flex-wrap gap-2">{item.features.filter(f=>f.trim()).map((f,i)=>(
+                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm" style={{backgroundColor:pc+'10',color:pc,border:`1px solid ${pc}20`}}><Check size={11}/>{f}</span>
+                    ))}</div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-4 pt-2">
+                    <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc}/>
+                    <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    /* ── Showcase ── */
+    if(layout==='showcase'){
+      return(
+        <section key={item.product_id} className="relative overflow-hidden min-h-[80vh] flex items-center" style={{backgroundColor:'oklch(0.08 0.015 280)'}}>
+          {hasImage&&<div className="absolute inset-0"><img src={hasImage} alt="" className="w-full h-full object-cover opacity-25 scale-105" style={{filter:'blur(3px) saturate(0.5)'}}/><div className="absolute inset-0" style={{background:'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.7) 100%)'}}/></div>}
+          <MeshGradient color1={pc} color2="#000" opacity={0.08}/>
+          <div className="relative max-w-4xl mx-auto px-5 py-20 sm:py-32 text-center w-full">
+            <Reveal animation={anim} delay={100}>
+              <div className="space-y-6">
+                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.25em] text-white/40">{item.headline}</p>}
+                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">{item.name}</h2>
+                {item.description&&<p className="text-base text-white/50 leading-relaxed max-w-xl mx-auto">{item.description}</p>}
+                {hasImage&&(
+                  <div className="relative max-w-sm mx-auto mt-6">
+                    <div className="absolute -inset-6 rounded-[2rem] blur-3xl opacity-30" style={{backgroundColor:pc}}/>
+                    <img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-white/10"/>
+                  </div>
+                )}
+                {item.features?.length>0&&(
+                  <div className="flex flex-wrap justify-center gap-2 pt-2">{item.features.filter(f=>f.trim()).map((f,i)=>(
+                    <span key={i} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/80 backdrop-blur-md" style={{backgroundColor:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.1)'}}><Check size={11}/>{f}</span>
+                  ))}</div>
+                )}
+                <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="xl" variant="dark"/>
+                <div className="flex items-center justify-center">
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    /* ── Cinematic ── */
+    if(layout==='cinematic'){
+      return(
+        <section key={item.product_id} className="relative min-h-[85vh] flex items-center overflow-hidden" style={{backgroundColor:'oklch(0.06 0.015 280)'}}>
+          {hasImage&&<div className="absolute inset-0"><img src={hasImage} alt="" className="w-full h-full object-cover opacity-30 scale-110" style={{filter:'blur(2px) saturate(0.5)'}}/><div className="absolute inset-0" style={{background:`linear-gradient(135deg, oklch(0.04 0.02 280) 0%, transparent 50%), linear-gradient(to top, oklch(0.04 0.01 280) 0%, transparent 60%)`}}/></div>}
+          <MeshGradient color1={pc} color2="#1a0030" opacity={0.1}/>
+          <div className="relative max-w-6xl mx-auto px-5 py-20 w-full">
+            <Reveal animation={anim} delay={150}>
+              <div className="flex flex-col md:flex-row items-center gap-12">
+                <div className="flex-1 space-y-6">
+                  {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.3em] text-white/25">{item.headline}</p>}
+                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight">{item.name}</h2>
+                  {item.description&&<p className="text-base text-white/45 leading-relaxed max-w-lg">{item.description}</p>}
+                  {item.features?.length>0&&<div className="flex flex-wrap gap-3 pt-2">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="px-4 py-2 rounded-xl text-xs font-medium text-white/70 backdrop-blur-sm" style={{border:'1px solid rgba(255,255,255,0.08)',backgroundColor:'rgba(255,255,255,0.04)'}}>{f}</span>)}</div>}
+                  <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="xl" variant="dark"/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
+                </div>
+                {hasImage&&<div className="flex-1 max-w-lg"><div className="relative"><div className="absolute -inset-8 rounded-[2rem] blur-[60px] opacity-25" style={{backgroundColor:pc}}/><img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-white/10"/></div></div>}
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    /* ── Magazine ── */
+    if(layout==='magazine'){
+      const isHero=idx===0;
+      if(isHero)return(
+        <section key={item.product_id} className="relative overflow-hidden" style={{backgroundColor:bgColor}}>
+          {hasImage&&<div className="absolute inset-0 opacity-[0.03]"><img src={hasImage} alt="" className="w-full h-full object-cover" style={{filter:'blur(50px) saturate(2)'}}/></div>}
+          <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24">
             <Reveal animation={anim}>
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <div className="lg:col-span-3 relative group">
-                  {item.compare_price&&<div className="absolute top-4 left-4 z-10 px-4 py-1.5 rounded-full text-sm font-black text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
-                  {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-full rounded-3xl shadow-2xl object-cover aspect-[4/3]"/>:<div className="w-full aspect-[4/3] rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={72} className="opacity-20"/></div>}
+                  <div className="absolute -inset-3 rounded-[2rem] blur-2xl opacity-15" style={{backgroundColor:pc}}/>
+                  <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+                  {hasImage?<img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-[4/3] ring-1 ring-black/5"/>:<div className="w-full aspect-[4/3] rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={72} className="opacity-20"/></div>}
                 </div>
                 <div className="lg:col-span-2 flex flex-col justify-center space-y-5">
                   {item.headline&&<p className="text-[11px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full inline-block w-fit" style={{backgroundColor:pc+'15',color:pc}}>{item.headline}</p>}
-                  <h2 className="text-3xl sm:text-4xl font-black leading-[1.1] tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
-                  {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:page.text_color||'#1F2937'}}>{item.description}</p>}
-                  {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><Check size={14} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></li>)}</ul>}
-                  <div className="flex items-end gap-3 pt-2">
-                    <span className="text-4xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()}<span className="text-lg ml-1 opacity-60">{store?.currency||'DZD'}</span></span>
-                    {item.compare_price&&<span className="text-xl text-gray-400 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                  <h2 className="text-3xl sm:text-4xl font-black leading-[1.08] tracking-tight" style={{color:textColor}}>{item.name}</h2>
+                  {item.description&&<p className="text-sm leading-relaxed opacity-55" style={{color:textColor}}>{item.description}</p>}
+                  {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><Check size={14} style={{color:pc}}/><span style={{color:textColor}}>{f}</span></li>)}</ul>}
+                  <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+      return(
+        <section key={item.product_id} style={{backgroundColor:idx%2===0?bgColor:'oklch(0.97 0.005 280)'}}>
+          <div className="max-w-6xl mx-auto px-5 py-8">
+            <Reveal animation={anim} delay={idx*60}>
+              <div className="flex flex-col sm:flex-row gap-5 items-center p-5 rounded-3xl hover:shadow-xl transition-all duration-300 group" style={{backgroundColor:'white',border:'1px solid oklch(0.93 0.005 280)'}}>
+                <div className="w-32 h-32 rounded-2xl overflow-hidden shrink-0 shadow-lg ring-1 ring-black/5">
+                  {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={28} className="opacity-20"/></div>}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <h3 className="text-lg font-bold" style={{color:textColor}}>{item.name}</h3>
+                  {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:textColor}}>{item.description}</p>}
+                  {item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).slice(0,3).map((f,i)=><span key={i} className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{backgroundColor:pc+'12',color:pc}}>{f}</span>)}</div>}
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    /* ── Timeline ── */
+    if(layout==='timeline'){
+      const isEven=idx%2===0;
+      return(
+        <section key={item.product_id} className="relative" style={{backgroundColor:bgColor}}>
+          {hasImage&&<div className="absolute inset-0 opacity-[0.02]"><img src={hasImage} alt="" className="w-full h-full object-cover" style={{filter:'blur(40px)'}}/></div>}
+          <div className="relative max-w-5xl mx-auto px-5">
+            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 hidden md:block" style={{background:`linear-gradient(to bottom, transparent, ${pc}40, transparent)`}}/>
+            <Reveal animation={anim} delay={idx*100}>
+              <div className={`flex flex-col md:flex-row items-center gap-8 py-14 ${isEven?'':'md:flex-row-reverse'}`}>
+                <div className={`flex-1 ${isEven?'md:text-right md:pr-12':'md:text-left md:pl-12'}`}>
+                  <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm" style={{backgroundColor:pc+'12',color:pc,border:`1px solid ${pc}20`}}>
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-black shadow-md" style={{backgroundColor:pc}}>{idx+1}</span>
+                    {item.headline||`Step ${idx+1}`}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
-                      <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Minus size={15}/></button>
-                      <span className="px-4 py-2.5 font-bold text-lg min-w-[3rem] text-center tabular-nums">{qty}</span>
-                      <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100 transition-colors"><Plus size={15}/></button>
-                    </div>
-                    {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-6 py-3 rounded-2xl text-white font-bold text-sm shadow-lg hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-2" style={{backgroundColor:pc}}><ShoppingBag size={15}/>{t('lp.addToOrder','Add to Order')}</button>}
+                  <h3 className="text-2xl font-black tracking-tight mb-2" style={{color:textColor}}>{item.name}</h3>
+                  {item.description&&<p className="text-sm opacity-55 mb-4 max-w-md" style={{color:textColor}}>{item.description}</p>}
+                  {item.features?.length>0&&<ul className="space-y-1.5 mb-4">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className={`text-xs flex items-center gap-2 ${isEven?'md:justify-end':''}`}><Check size={12} style={{color:pc}}/><span style={{color:textColor}}>{f}</span></li>)}</ul>}
+                  <div className={`flex items-center gap-3 ${isEven?'md:justify-end':''}`}>
+                    <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
+                  </div>
+                  <div className={`flex items-center gap-3 mt-3 ${isEven?'md:justify-end':''}`}>
+                    <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  </div>
+                </div>
+                <div className="hidden md:flex w-5 h-5 rounded-full shrink-0 z-10 shadow-lg" style={{backgroundColor:pc,border:`3px solid ${bgColor}`}}/>
+                <div className="flex-1">
+                  <div className="relative group">
+                    <div className="absolute -inset-3 rounded-3xl blur-xl opacity-15 transition-opacity group-hover:opacity-25" style={{backgroundColor:pc}}/>
+                    {hasImage?<img src={hasImage} alt={item.name} className="relative w-full max-w-sm mx-auto rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-black/5"/>:<div className="w-full max-w-sm mx-auto aspect-square rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
                   </div>
                 </div>
               </div>
@@ -578,39 +708,106 @@ export default function BuyerLandingPage(){
         </section>
       );
     }
-    return(
-      <section key={item.product_id} style={{backgroundColor:idx%2===0?page.bg_color||'#FAFAFA':'oklch(0.97 0.005 280)'}}>
-        <div className="max-w-6xl mx-auto px-5 py-8">
-          <Reveal animation={anim} delay={idx*60}>
-            <div className="flex flex-col sm:flex-row gap-5 items-center p-5 rounded-2xl hover:shadow-lg transition-shadow" style={{backgroundColor:'white',border:'1px solid oklch(0.93 0.005 280)'}}>
-              {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-32 h-32 rounded-xl object-cover shrink-0"/>:<div className="w-32 h-32 rounded-xl flex items-center justify-center shrink-0" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={28} className="opacity-20"/></div>}
-              <div className="flex-1 space-y-2">
-                <h3 className="text-lg font-bold" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
-                {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
-                {item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).slice(0,3).map((f,i)=><span key={i} className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{backgroundColor:pc+'12',color:pc}}>{f}</span>)}</div>}
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <span className="text-xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-60">{store?.currency||'DZD'}</span></span>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-2.5 py-1.5 hover:bg-gray-100 text-sm"><Minus size={12}/></button>
-                    <span className="px-3 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-2.5 py-1.5 hover:bg-gray-100 text-sm"><Plus size={12}/></button>
+
+    /* ── Minimal Zen ── */
+    if(layout==='minimal-zen'){
+      return(
+        <section key={item.product_id} style={{backgroundColor:bgColor}}>
+          <div className="max-w-2xl mx-auto px-5 py-24 sm:py-36 text-center">
+            <Reveal animation="fade" delay={100}>
+              <div className="space-y-8">
+                {hasImage&&(
+                  <div className="relative inline-block">
+                    <div className="absolute -inset-4 rounded-full blur-2xl opacity-15" style={{backgroundColor:pc}}/>
+                    <img src={hasImage} alt={item.name} className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-full mx-auto object-cover shadow-2xl ring-4" style={{ringColor:pc+'25'}}/>
                   </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={12}/></button>}
+                )}
+                <div className="space-y-4">
+                  {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.35em] opacity-35" style={{color:textColor}}>{item.headline}</p>}
+                  <h2 className="text-3xl sm:text-4xl font-extralight tracking-wide" style={{color:textColor}}>{item.name}</h2>
+                  <div className="w-12 h-0.5 mx-auto rounded-full" style={{backgroundColor:pc}}/>
+                  {item.description&&<p className="text-sm leading-loose opacity-45 max-w-md mx-auto" style={{color:textColor}}>{item.description}</p>}
+                </div>
+                {item.features?.length>0&&<div className="flex flex-wrap justify-center gap-4">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-xs font-light tracking-wider opacity-50" style={{color:textColor}}>— {f}</span>)}</div>}
+                <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
+                <div className="flex justify-center"><QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/></div>
+              </div>
+            </Reveal>
+          </div>
+          {idx<allItems.length-1&&<div className="max-w-xs mx-auto h-px" style={{backgroundColor:pc+'15'}}/>}
+        </section>
+      );
+    }
+
+    /* ── Split Screen ── */
+    if(layout==='split-screen'){
+      const isEven=idx%2===0;
+      return(
+        <section key={item.product_id} className="relative min-h-[70vh] flex">
+          <div className={`flex flex-col md:flex-row w-full ${isEven?'':'md:flex-row-reverse'}`}>
+            <div className="flex-1 relative overflow-hidden" style={{backgroundColor:'oklch(0.1 0.02 280)'}}>
+              {hasImage?<img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"/>:<div className="absolute inset-0 flex items-center justify-center" style={{backgroundColor:'oklch(0.15 0.01 280)'}}><Package size={64} className="text-white/10"/></div>}
+              <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent md:hidden"/>
+            </div>
+            <div className="flex-1 flex items-center relative" style={{backgroundColor:bgColor}}>
+              {hasImage&&<div className="absolute inset-0 opacity-[0.03]"><img src={hasImage} alt="" className="w-full h-full object-cover" style={{filter:'blur(40px) saturate(2)'}}/></div>}
+              <Reveal animation={anim} delay={100}>
+                <div className="relative p-10 sm:p-16 space-y-6 max-w-xl">
+                  {item.headline&&<p className="text-xs font-black uppercase tracking-[0.2em]" style={{color:pc}}>{item.headline}</p>}
+                  <h2 className="text-3xl sm:text-4xl font-black leading-[1.08] tracking-tight" style={{color:textColor}}>{item.name}</h2>
+                  {item.description&&<p className="text-sm leading-relaxed opacity-50" style={{color:textColor}}>{item.description}</p>}
+                  {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><div className="w-2 h-2 rounded-full shadow-sm" style={{backgroundColor:pc}}/><span style={{color:textColor}}>{f}</span></li>)}</ul>}
+                  <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ── Storytelling ── */
+    if(layout==='storytelling'){
+      const chapterNum=String(idx+1).padStart(2,'0');
+      return(
+        <section key={item.product_id}>
+          {hasImage&&(
+            <div className="relative h-[55vh] overflow-hidden">
+              <img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>
+              <div className="absolute inset-0" style={{background:`linear-gradient(to bottom, transparent 30%, ${bgColor} 100%)`}}/>
+              <div className="absolute top-8 left-8"><span className="text-7xl font-black text-white/8">{chapterNum}</span></div>
+            </div>
+          )}
+          <div className="max-w-2xl mx-auto px-5 -mt-24 relative z-10 pb-16">
+            <Reveal animation={anim} delay={100}>
+              <div className="rounded-3xl p-8 sm:p-10 shadow-2xl space-y-5 backdrop-blur-sm" style={{backgroundColor:'rgba(255,255,255,0.95)',border:'1px solid rgba(0,0,0,0.05)'}}>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-25" style={{color:textColor}}>Chapter {chapterNum}</span>
+                  <div className="flex-1 h-px" style={{background:`linear-gradient(to right, ${pc}30, transparent)`}}/>
+                </div>
+                {item.headline&&<p className="text-sm font-bold" style={{color:pc}}>{item.headline}</p>}
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight" style={{color:textColor}}>{item.name}</h2>
+                {item.description&&<p className="text-sm leading-relaxed opacity-55" style={{color:textColor}}>{item.description}</p>}
+                {item.features?.length>0&&<div className="space-y-2 py-2 border-l-2 pl-4" style={{borderColor:pc+'30'}}>{item.features.filter(f=>f.trim()).map((f,i)=><p key={i} className="text-sm" style={{color:textColor}}>{f}</p>)}</div>}
+                <div className="flex items-center justify-between pt-4 border-t" style={{borderColor:'oklch(0.93 0.005 280)'}}>
+                  <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
                 </div>
               </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
+            </Reveal>
+          </div>
+        </section>
+      );
+    }
+
+    return null;
   };
 
-  /* ─── Product Card: Bento Grid ─── */
+  /* ── Bento Grid ── all products at once */
   const renderBentoAll=()=>{
-    const items=page.items||[];
-    if(!items.length)return null;
+    if(!allItems.length)return null;
     const getBentoClass=(idx,total)=>{
       if(total===1)return'col-span-2 row-span-2';
       if(total===2)return'col-span-1 row-span-2';
@@ -619,32 +816,27 @@ export default function BuyerLandingPage(){
       return'col-span-1 row-span-1';
     };
     return(
-      <section style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-        <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
-          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[220px] sm:auto-rows-[280px] gap-4">
-            {items.map((item,idx)=>{
+      <section className="relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.06}/>
+        <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24">
+          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[220px] sm:auto-rows-[300px] gap-4">
+            {allItems.map((item,idx)=>{
               const qty=cart[item.product_id]||0;
               const isLarge=idx===0;
+              const hasImage=item.custom_image||item.image;
               return(
-                <Reveal key={item.product_id} animation={anim} delay={idx*80} className={getBentoClass(idx,items.length)}>
-                  <div className="relative w-full h-full rounded-3xl overflow-hidden group cursor-pointer" style={{backgroundColor:'oklch(0.15 0.01 280)'}}>
-                    {(item.custom_image||item.image)&&<img src={item.custom_image||item.image} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
-                    {item.compare_price&&<div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
-                    <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
-                      {item.headline&&isLarge&&<p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">{item.headline}</p>}
+                <Reveal key={item.product_id} animation={anim} delay={idx*80} className={getBentoClass(idx,allItems.length)}>
+                  <div className="relative w-full h-full rounded-3xl overflow-hidden group cursor-pointer shadow-xl" style={{backgroundColor:'oklch(0.12 0.015 280)'}}>
+                    {hasImage&&<img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/5"/>
+                    <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 space-y-2">
+                      {item.headline&&isLarge&&<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">{item.headline}</p>}
                       <h3 className={`font-black text-white leading-tight ${isLarge?'text-2xl sm:text-3xl':'text-base sm:text-lg'}`}>{item.name}</h3>
-                      {isLarge&&item.description&&<p className="text-xs text-white/60 line-clamp-2 max-w-md">{item.description}</p>}
+                      {isLarge&&item.description&&<p className="text-xs text-white/50 line-clamp-2 max-w-md">{item.description}</p>}
                       <div className="flex items-center justify-between gap-3 pt-1">
-                        <span className={`font-black text-white ${isLarge?'text-2xl':'text-lg'}`}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-50">{store?.currency||'DZD'}</span></span>
-                        <div className="flex items-center gap-2">
-                          {qty>0&&<div className="flex items-center rounded-lg overflow-hidden bg-white/20 backdrop-blur-sm">
-                            <button onClick={()=>setQty(item.product_id,-1)} className="px-2 py-1.5 text-white hover:bg-white/10"><Minus size={12}/></button>
-                            <span className="px-2 py-1.5 text-white font-bold text-sm tabular-nums">{qty}</span>
-                            <button onClick={()=>setQty(item.product_id,1)} className="px-2 py-1.5 text-white hover:bg-white/10"><Plus size={12}/></button>
-                          </div>}
-                          {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><Plus size={14}/></button>}
-                        </div>
+                        <span className={`font-black text-white ${isLarge?'text-2xl':'text-lg'}`}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-40">{currency}</span></span>
+                        <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
                       </div>
                     </div>
                   </div>
@@ -657,79 +849,34 @@ export default function BuyerLandingPage(){
     );
   };
 
-  /* ─── Product Card: Timeline ─── */
-  const renderTimeline=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const isEven=idx%2===0;
-    const total=page.items.length;
-    return(
-      <section key={item.product_id} style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-        <div className="max-w-5xl mx-auto px-5 relative">
-          <div className="absolute left-1/2 top-0 bottom-0 w-px hidden md:block" style={{backgroundColor:pc+'30'}}/>
-          <Reveal animation={anim} delay={idx*100}>
-            <div className={`flex flex-col md:flex-row items-center gap-8 py-12 ${isEven?'':'md:flex-row-reverse'}`}>
-              <div className={`flex-1 ${isEven?'md:text-right md:pr-12':'md:text-left md:pl-12'}`}>
-                <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full text-xs font-bold" style={{backgroundColor:pc+'15',color:pc}}>
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black" style={{backgroundColor:pc}}>{idx+1}</span>
-                  {item.headline||`Step ${idx+1}`}
-                </div>
-                <h3 className="text-2xl font-extrabold tracking-tight mb-2" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
-                {item.description&&<p className="text-sm opacity-60 mb-4 max-w-md" style={{color:page.text_color}}>{item.description}</p>}
-                {item.features?.length>0&&<ul className="space-y-1.5 mb-4">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className={`text-xs flex items-center gap-2 ${isEven?'md:justify-end':''}`}><Check size={12} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></li>)}</ul>}
-                <div className={`flex items-center gap-3 ${isEven?'md:justify-end':''}`}>
-                  <span className="text-2xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-sm opacity-50">{store?.currency||'DZD'}</span></span>
-                  <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-2.5 py-1.5 hover:bg-gray-100"><Minus size={12}/></button>
-                    <span className="px-3 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-2.5 py-1.5 hover:bg-gray-100"><Plus size={12}/></button>
-                  </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2 rounded-xl text-white font-bold text-xs shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={12}/></button>}
-                </div>
-              </div>
-              <div className="hidden md:flex w-4 h-4 rounded-full border-4 shrink-0 z-10" style={{borderColor:pc,backgroundColor:page.bg_color||'#FAFAFA'}}/>
-              <div className="flex-1">
-                {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-full max-w-sm mx-auto rounded-2xl shadow-xl object-cover aspect-square"/>:<div className="w-full max-w-sm mx-auto aspect-square rounded-2xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
-  };
-
-  /* ─── Product Card: Cards Gallery ─── */
+  /* ── Cards Gallery ── all products at once */
   const renderCardsAll=()=>{
-    const items=page.items||[];
     return(
-      <section style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-        <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
+      <section className="relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.05}/>
+        <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((item,idx)=>{
+            {allItems.map((item,idx)=>{
               const qty=cart[item.product_id]||0;
+              const hasImage=item.custom_image||item.image;
               return(
                 <Reveal key={item.product_id} animation={anim} delay={idx*80}>
-                  <div className="rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group" style={{backgroundColor:'white'}}>
+                  <div className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 group" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
                     <div className="relative overflow-hidden aspect-[4/5]">
-                      {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
-                      {item.compare_price&&<div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
-                      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent"/>
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <span className="text-2xl font-black text-white">{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-60">{store?.currency||'DZD'}</span></span>
+                      {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
+                      <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+                      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent"/>
+                      <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
+                        <span className="text-2xl font-black text-white">{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-50">{currency}</span></span>
+                        {item.compare_price&&<span className="text-sm text-white/40 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
                       </div>
                     </div>
-                    <div className="p-5 space-y-3">
-                      {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
-                      <h3 className="text-lg font-extrabold tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
-                      {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
+                    <div className="p-5 sm:p-6 space-y-3">
+                      {item.headline&&<p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{color:pc}}>{item.headline}</p>}
+                      <h3 className="text-lg font-black tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
+                      {item.description&&<p className="text-xs opacity-45 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
                       {item.features?.length>0&&<div className="space-y-1">{item.features.filter(f=>f.trim()).slice(0,3).map((f,i)=><div key={i} className="flex items-center gap-1.5 text-xs"><Check size={10} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></div>)}</div>}
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.9 0.005 280)'}}>
-                          <button onClick={()=>setQty(item.product_id,-1)} className="px-3 py-2 hover:bg-gray-100"><Minus size={13}/></button>
-                          <span className="px-3 py-2 font-bold tabular-nums">{qty}</span>
-                          <button onClick={()=>setQty(item.product_id,1)} className="px-3 py-2 hover:bg-gray-100"><Plus size={13}/></button>
-                        </div>
-                        {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={14}/></button>}
-                      </div>
+                      <div className="pt-2"><QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/></div>
                     </div>
                   </div>
                 </Reveal>
@@ -741,155 +888,33 @@ export default function BuyerLandingPage(){
     );
   };
 
-  /* ─── Product Card: Cinematic ─── */
-  const renderCinematic=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const hasImage=item.custom_image||item.image;
-    return(
-      <section key={item.product_id} className="relative min-h-[80vh] flex items-center overflow-hidden" style={{backgroundColor:'oklch(0.08 0.01 280)'}}>
-        {hasImage&&<div className="absolute inset-0"><img src={hasImage} alt="" className="w-full h-full object-cover opacity-30 scale-110" style={{filter:'blur(2px) saturate(0.6)'}}/><div className="absolute inset-0" style={{background:`linear-gradient(135deg, oklch(0.06 0.02 280) 0%, transparent 50%), linear-gradient(to top, oklch(0.06 0.01 280) 0%, transparent 60%)`}}/></div>}
-        <div className="relative max-w-6xl mx-auto px-5 py-20 w-full">
-          <Reveal animation={anim} delay={150}>
-            <div className="flex flex-col md:flex-row items-center gap-12">
-              <div className="flex-1 space-y-6">
-                {item.headline&&<p className="text-xs font-bold uppercase tracking-[0.25em] text-white/30">{item.headline}</p>}
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.05] tracking-tight">{item.name}</h2>
-                {item.description&&<p className="text-base text-white/50 leading-relaxed max-w-lg">{item.description}</p>}
-                {item.features?.length>0&&<div className="flex flex-wrap gap-3 pt-2">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="px-4 py-2 rounded-full text-xs font-medium text-white/80 border border-white/10 backdrop-blur-sm">{f}</span>)}</div>}
-                <div className="flex items-end gap-4 pt-4">
-                  <div>
-                    <span className="text-5xl font-black text-white tracking-tight">{parseFloat(item.price).toLocaleString()}</span>
-                    <span className="text-lg text-white/40 ml-2 font-medium">{store?.currency||'DZD'}</span>
-                  </div>
-                  {item.compare_price&&<span className="text-2xl text-white/20 line-through font-medium">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                </div>
-                <div className="flex items-center gap-4 pt-2">
-                  <div className="flex items-center rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/10">
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-4 py-3 text-white hover:bg-white/10 transition-colors"><Minus size={16}/></button>
-                    <span className="px-5 py-3 text-white font-bold text-lg tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-4 py-3 text-white hover:bg-white/10 transition-colors"><Plus size={16}/></button>
-                  </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-8 py-3.5 rounded-2xl text-white font-bold shadow-2xl hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-2" style={{backgroundColor:pc}}><ShoppingBag size={16}/>{t('lp.addToOrder','Add to Order')}</button>}
-                </div>
-              </div>
-              {hasImage&&<div className="flex-1 max-w-lg"><div className="relative"><div className="absolute -inset-6 rounded-[2rem] blur-3xl opacity-30" style={{backgroundColor:pc}}/><img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-white/10"/></div></div>}
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
-  };
-
-  /* ─── Product Card: Minimal Zen ─── */
-  const renderMinimalZen=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    return(
-      <section key={item.product_id} style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-        <div className="max-w-2xl mx-auto px-5 py-20 sm:py-32 text-center">
-          <Reveal animation="fade" delay={100}>
-            <div className="space-y-8">
-              {(item.custom_image||item.image)&&<img src={item.custom_image||item.image} alt={item.name} className="w-48 h-48 sm:w-64 sm:h-64 rounded-full mx-auto object-cover shadow-xl ring-4" style={{ringColor:pc+'20'}}/>}
-              <div className="space-y-4">
-                {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-40" style={{color:page.text_color}}>{item.headline}</p>}
-                <h2 className="text-3xl sm:text-4xl font-extralight tracking-wide" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
-                <div className="w-12 h-px mx-auto" style={{backgroundColor:pc}}/>
-                {item.description&&<p className="text-sm leading-loose opacity-50 max-w-md mx-auto" style={{color:page.text_color}}>{item.description}</p>}
-              </div>
-              {item.features?.length>0&&<div className="flex flex-wrap justify-center gap-4">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-xs font-light tracking-wider opacity-60" style={{color:page.text_color}}>— {f}</span>)}</div>}
-              <div className="space-y-4 pt-4">
-                <span className="text-3xl font-extralight tracking-wider" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} {store?.currency||'DZD'}</span>
-                {item.compare_price&&<span className="text-lg text-gray-300 line-through ml-3">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <div className="flex items-center rounded-full overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-4 py-2.5 hover:bg-gray-50 transition-colors"><Minus size={14}/></button>
-                    <span className="px-4 py-2.5 font-medium tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-4 py-2.5 hover:bg-gray-50 transition-colors"><Plus size={14}/></button>
-                  </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-8 py-3 rounded-full font-medium text-sm tracking-wider text-white hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}>{t('lp.addToOrder','Add to Order')}</button>}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-        {idx<(page.items||[]).length-1&&<div className="max-w-xs mx-auto h-px" style={{backgroundColor:pc+'15'}}/>}
-      </section>
-    );
-  };
-
-  /* ─── Product Card: Split Screen ─── */
-  const renderSplitScreen=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const isEven=idx%2===0;
-    const hasImage=item.custom_image||item.image;
-    return(
-      <section key={item.product_id} className="relative min-h-[70vh] flex">
-        <div className={`flex flex-col md:flex-row w-full ${isEven?'':'md:flex-row-reverse'}`}>
-          <div className="flex-1 relative overflow-hidden" style={{backgroundColor:'oklch(0.12 0.015 280)'}}>
-            {hasImage?<img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>:<div className="absolute inset-0 flex items-center justify-center" style={{backgroundColor:'oklch(0.15 0.01 280)'}}><Package size={64} className="text-white/10"/></div>}
-            {item.compare_price&&<div className="absolute top-6 left-6 z-10 px-4 py-2 rounded-xl text-sm font-black text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
-          </div>
-          <div className="flex-1 flex items-center" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-            <Reveal animation={anim} delay={100}>
-              <div className="p-10 sm:p-16 space-y-6 max-w-xl">
-                {item.headline&&<p className="text-xs font-black uppercase tracking-[0.2em]" style={{color:pc}}>{item.headline}</p>}
-                <h2 className="text-3xl sm:text-4xl font-black leading-[1.1] tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
-                {item.description&&<p className="text-sm leading-relaxed opacity-50" style={{color:page.text_color}}>{item.description}</p>}
-                {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor:pc}}/><span style={{color:page.text_color}}>{f}</span></li>)}</ul>}
-                <div className="flex items-end gap-3 pt-2">
-                  <span className="text-4xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()}</span>
-                  <span className="text-base opacity-40 mb-1">{store?.currency||'DZD'}</span>
-                  {item.compare_price&&<span className="text-xl text-gray-400 line-through mb-1">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.88 0.005 280)'}}>
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3.5 py-2.5 hover:bg-gray-100"><Minus size={15}/></button>
-                    <span className="px-4 py-2.5 font-bold text-lg tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-3.5 py-2.5 hover:bg-gray-100"><Plus size={15}/></button>
-                  </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-6 py-3 rounded-2xl text-white font-bold text-sm shadow-lg hover:brightness-110 active:scale-[0.97] transition-all flex items-center gap-2" style={{backgroundColor:pc}}><ShoppingBag size={15}/>{t('lp.addToOrder','Add to Order')}</button>}
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-    );
-  };
-
-  /* ─── Product Card: Mosaic ─── */
+  /* ── Mosaic ── all products at once */
   const renderMosaicAll=()=>{
-    const items=page.items||[];
     return(
-      <section style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-        <div className="max-w-6xl mx-auto px-5 py-14 sm:py-20">
-          <div className="space-y-4">
-            {items.map((item,idx)=>{
+      <section className="relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+        <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.04}/>
+        <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {allItems.map((item,idx)=>{
               const qty=cart[item.product_id]||0;
               const isWide=idx%3===0;
               const hasImage=item.custom_image||item.image;
               return(
-                <Reveal key={item.product_id} animation={anim} delay={idx*60}>
-                  <div className={`rounded-3xl overflow-hidden ${isWide?'':'float-left w-full sm:w-[calc(50%-8px)] mr-4 mb-4'}`} style={{backgroundColor:'white',border:'1px solid oklch(0.93 0.005 280)'}}>
+                <Reveal key={item.product_id} animation={anim} delay={idx*60} className={isWide?'sm:col-span-2':''}>
+                  <div className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 group" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
                     <div className={`flex ${isWide?'flex-col sm:flex-row':'flex-col'}`}>
-                      <div className={`relative overflow-hidden ${isWide?'sm:w-2/5':'w-full'}`}>
-                        {hasImage?<img src={hasImage} alt={item.name} className={`w-full object-cover ${isWide?'h-64 sm:h-full':'aspect-[3/2]'} transition-transform duration-500 hover:scale-105`}/>:<div className={`w-full flex items-center justify-center ${isWide?'h-64 sm:h-full':'aspect-[3/2]'}`} style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={36} className="opacity-20"/></div>}
-                        {item.compare_price&&<div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:pc}}>-{Math.round((1-parseFloat(item.price)/parseFloat(item.compare_price))*100)}%</div>}
+                      <div className={`relative overflow-hidden ${isWide?'sm:w-2/5':''}`}>
+                        {hasImage?<img src={hasImage} alt={item.name} className={`w-full object-cover ${isWide?'h-64 sm:h-full':'aspect-[3/2]'} transition-transform duration-700 group-hover:scale-105`}/>:<div className={`w-full flex items-center justify-center ${isWide?'h-64 sm:h-full':'aspect-[3/2]'}`} style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={36} className="opacity-20"/></div>}
+                        <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
                       </div>
                       <div className="flex-1 p-6 space-y-3">
-                        {item.headline&&<p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{color:pc}}>{item.headline}</p>}
-                        <h3 className={`font-extrabold tracking-tight ${isWide?'text-2xl':'text-lg'}`} style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
-                        {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
-                        {isWide&&item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-[10px] px-2 py-0.5 rounded-full" style={{backgroundColor:pc+'12',color:pc}}>{f}</span>)}</div>}
+                        {item.headline&&<p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{color:pc}}>{item.headline}</p>}
+                        <h3 className={`font-black tracking-tight ${isWide?'text-2xl':'text-lg'}`} style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
+                        {item.description&&<p className="text-xs opacity-45 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
+                        {isWide&&item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{backgroundColor:pc+'10',color:pc,border:`1px solid ${pc}15`}}>{f}</span>)}</div>}
                         <div className="flex items-center justify-between pt-2">
-                          <span className="text-xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-50">{store?.currency||'DZD'}</span></span>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
-                              <button onClick={()=>setQty(item.product_id,-1)} className="px-2 py-1.5 hover:bg-gray-100"><Minus size={12}/></button>
-                              <span className="px-2 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
-                              <button onClick={()=>setQty(item.product_id,1)} className="px-2 py-1.5 hover:bg-gray-100"><Plus size={12}/></button>
-                            </div>
-                            {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="p-2 rounded-xl text-white shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={14}/></button>}
-                          </div>
+                          <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
+                          <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
                         </div>
                       </div>
                     </div>
@@ -897,83 +922,30 @@ export default function BuyerLandingPage(){
                 </Reveal>
               );
             })}
-            <div className="clear-both"/>
           </div>
         </div>
       </section>
     );
   };
 
-  /* ─── Product Card: Storytelling ─── */
-  const renderStorytelling=(item,idx)=>{
-    const qty=cart[item.product_id]||0;
-    const hasImage=item.custom_image||item.image;
-    const chapterNum=String(idx+1).padStart(2,'0');
-    return(
-      <section key={item.product_id}>
-        {hasImage&&(
-          <div className="relative h-[50vh] overflow-hidden">
-            <img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>
-            <div className="absolute inset-0" style={{background:`linear-gradient(to bottom, transparent 40%, ${page.bg_color||'#FAFAFA'} 100%)`}}/>
-            <div className="absolute top-8 left-8">
-              <span className="text-6xl font-black text-white/10">{chapterNum}</span>
-            </div>
-          </div>
-        )}
-        <div className="max-w-2xl mx-auto px-5 -mt-20 relative z-10 pb-16" style={{backgroundColor:'transparent'}}>
-          <Reveal animation={anim} delay={100}>
-            <div className="rounded-3xl p-8 sm:p-10 shadow-xl space-y-5" style={{backgroundColor:'white'}}>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-30" style={{color:page.text_color}}>Chapter {chapterNum}</span>
-                <div className="flex-1 h-px" style={{backgroundColor:pc+'20'}}/>
-              </div>
-              {item.headline&&<p className="text-sm font-bold" style={{color:pc}}>{item.headline}</p>}
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h2>
-              {item.description&&<p className="text-sm leading-relaxed opacity-60" style={{color:page.text_color}}>{item.description}</p>}
-              {item.features?.length>0&&<div className="space-y-2 py-2 border-l-2 pl-4" style={{borderColor:pc+'30'}}>
-                {item.features.filter(f=>f.trim()).map((f,i)=><p key={i} className="text-sm" style={{color:page.text_color}}>{f}</p>)}
-              </div>}
-              <div className="flex items-center justify-between pt-4 border-t" style={{borderColor:'oklch(0.93 0.005 280)'}}>
-                <div className="flex items-end gap-2">
-                  <span className="text-3xl font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()}</span>
-                  <span className="text-sm opacity-40 mb-1">{store?.currency||'DZD'}</span>
-                  {item.compare_price&&<span className="text-lg text-gray-400 line-through mb-0.5">{parseFloat(item.compare_price).toLocaleString()}</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.9 0.005 280)'}}>
-                    <button onClick={()=>setQty(item.product_id,-1)} className="px-3 py-2 hover:bg-gray-100"><Minus size={13}/></button>
-                    <span className="px-3 py-2 font-bold tabular-nums">{qty}</span>
-                    <button onClick={()=>setQty(item.product_id,1)} className="px-3 py-2 hover:bg-gray-100"><Plus size={13}/></button>
-                  </div>
-                  {qty===0&&<button onClick={()=>setQty(item.product_id,1)} className="px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:pc}}><ShoppingBag size={14}/></button>}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-    );
+  /* ── Per-product dispatcher ── */
+  const renderProduct=(item,idx)=><ProductCard key={item.product_id} item={item} idx={idx} layout={layoutStyle}/>;
+
+  const renderAllProducts=()=>{
+    if(layoutStyle==='bento')return renderBentoAll();
+    if(layoutStyle==='cards')return renderCardsAll();
+    if(layoutStyle==='mosaic')return renderMosaicAll();
+    if(layoutStyle==='product-hero')return null;
+    return allItems.map((item,idx)=>renderProduct(item,idx));
   };
 
-  const renderProduct=(item,idx)=>{
-    if(layoutStyle==='stacked')return renderStacked(item,idx);
-    if(layoutStyle==='showcase')return renderShowcase(item,idx);
-    if(layoutStyle==='magazine')return renderMagazine(item,idx);
-    if(layoutStyle==='timeline')return renderTimeline(item,idx);
-    if(layoutStyle==='cinematic')return renderCinematic(item,idx);
-    if(layoutStyle==='minimal-zen')return renderMinimalZen(item,idx);
-    if(layoutStyle==='split-screen')return renderSplitScreen(item,idx);
-    if(layoutStyle==='storytelling')return renderStorytelling(item,idx);
-    return renderAlternating(item,idx);
-  };
-
-  /* ─── Product-Hero: Landixo-style conversion-focused single-product layout ─── */
+  /* ═══════════════════════════════════════════════════════════
+     PRODUCT-HERO — Multi-product conversion layout
+     All products showcased equally with inline order form
+     ═══════════════════════════════════════════════════════════ */
   const renderProductHeroAll=()=>{
-    const items=page.items||[];
-    const heroItem=items[0];
-    if(!heroItem)return null;
-    const currency=store?.currency||'DZD';
-    const heroBg=page.hero_bg||'#1e3a5f';
+    if(!allItems.length)return null;
+    const heroBg=page.hero_bg||'#0f172a';
     const ctaBg=page.cta_bg||'#10B981';
     const ctaTextColor=page.cta_text_color||'#FFF';
     const bgColor=page.bg_color||'#f8f9fa';
@@ -982,15 +954,15 @@ export default function BuyerLandingPage(){
     return(
       <>
         {/* ── TRUST BAR ── */}
-        <div className="w-full py-3 px-4" style={{backgroundColor:bgColor,borderBottom:'1px solid oklch(0.92 0.005 280)'}}>
-          <div className="max-w-lg mx-auto flex items-center justify-center gap-5 flex-wrap">
+        <div className="w-full py-3.5 px-4" style={{backgroundColor:bgColor,borderBottom:'1px solid oklch(0.92 0.005 280)'}}>
+          <div className="max-w-2xl mx-auto flex items-center justify-center gap-6 flex-wrap">
             {[
-              {icon:<Truck size={14}/>,label:t('lp.fastDelivery','توصيل سريع')},
-              {icon:<CreditCard size={14}/>,label:t('lp.codShort','دفع عند الاستلام')},
-              {icon:<Shield size={14}/>,label:t('lp.qualityGuarantee','ضمان الجودة')},
+              {icon:<Truck size={14}/>,label:t('lp.fastDelivery','Fast Delivery')},
+              {icon:<CreditCard size={14}/>,label:t('lp.codShort','Cash on Delivery')},
+              {icon:<Shield size={14}/>,label:t('lp.qualityGuarantee','Quality Guarantee')},
             ].map((b,i)=>(
-              <div key={i} className="flex items-center gap-1.5 text-xs font-semibold" style={{color:textColor}}>
-                <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{backgroundColor:pc+'15',color:pc}}>{b.icon}</div>
+              <div key={i} className="flex items-center gap-2 text-xs font-bold" style={{color:textColor}}>
+                <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-sm" style={{backgroundColor:pc+'12',color:pc}}>{b.icon}</div>
                 {b.label}
               </div>
             ))}
@@ -998,159 +970,154 @@ export default function BuyerLandingPage(){
         </div>
 
         {/* ── RATING BAR ── */}
-        <div className="w-full py-2.5 flex items-center justify-center gap-2" style={{backgroundColor:bgColor}}>
+        <div className="w-full py-3 flex items-center justify-center gap-3" style={{backgroundColor:bgColor}}>
           <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={14} fill="#FBBF24" color="#FBBF24"/>)}</div>
-          <span className="text-sm font-bold" style={{color:textColor}}>4.9/5</span>
-          <span className="text-xs opacity-50" style={{color:textColor}}>{t('lp.excellentRating','تقييم ممتاز')}</span>
+          <span className="text-sm font-black" style={{color:textColor}}>4.9/5</span>
+          <span className="text-xs opacity-40" style={{color:textColor}}>— {t('lp.excellentRating','Excellent Rating')}</span>
         </div>
 
-        {/* ── HERO PRODUCT SECTION ── */}
+        {/* ── HERO SECTION — product image mosaic background ── */}
         <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
-          <div className="absolute inset-0 opacity-[0.06]" style={{backgroundImage:`radial-gradient(circle at 50% 30%, white 0%, transparent 60%)`}}/>
-          <div className="relative max-w-lg mx-auto px-5 py-10 text-center">
+          <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${heroBg}e0 0%, ${heroBg}f5 50%, ${heroBg} 100%)`}/>
+          <MeshGradient color1={pc} color2={heroBg} color3={ctaBg} opacity={0.12}/>
+          <div className="relative max-w-2xl mx-auto px-5 py-14 text-center">
             <Reveal animation={anim}>
-              {/* Product image */}
-              <div className="relative mb-6">
-                {heroItem.compare_price&&parseFloat(heroItem.compare_price)>0&&(
-                  <div className="absolute top-2 right-2 z-10 px-3 py-1 rounded-full text-xs font-black text-white" style={{backgroundColor:'#EF4444'}}>
-                    -{Math.round((1-parseFloat(heroItem.price)/parseFloat(heroItem.compare_price))*100)}%
-                  </div>
-                )}
-                {(heroItem.custom_image||heroItem.image)?
-                  <img src={heroItem.custom_image||heroItem.image} alt={heroItem.name} className="w-full max-w-xs mx-auto rounded-2xl shadow-2xl object-cover aspect-square"/>
-                  :<div className="w-full max-w-xs mx-auto aspect-square rounded-2xl flex items-center justify-center" style={{backgroundColor:'rgba(255,255,255,0.08)'}}><Package size={64} className="text-white/20"/></div>
-                }
-              </div>
-
-              {/* Headline */}
-              <h1 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight mb-3" style={{color:page.hero_text||'#FFF'}}>
-                {page.hero_title||heroItem.headline||heroItem.name}
-              </h1>
-              <p className="text-sm opacity-70 mb-5 max-w-sm mx-auto" style={{color:page.hero_text||'#FFF'}}>
-                {page.hero_subtitle||heroItem.description||''}
-              </p>
-
-              {/* Feature pills */}
-              {heroItem.features?.length>0&&(
-                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-                  {heroItem.features.filter(f=>f.trim()).map((f,i)=>(
-                    <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm" style={{backgroundColor:'rgba(255,255,255,0.12)',color:page.hero_text||'#FFF',border:'1px solid rgba(255,255,255,0.15)'}}>
-                      <Check size={11}/>{f}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Price */}
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="text-3xl font-black" style={{color:page.hero_text||'#FFF'}}>{parseFloat(heroItem.price).toLocaleString()} {currency}</span>
-                {heroItem.compare_price&&<span className="text-lg line-through opacity-40" style={{color:page.hero_text||'#FFF'}}>{parseFloat(heroItem.compare_price).toLocaleString()}</span>}
-              </div>
-
-              {/* CTA Button */}
-              <button onClick={scrollToCheckout} className="w-full max-w-sm mx-auto py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-xl hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:ctaBg,color:ctaTextColor}}>
-                <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','اطلب الآن')}
+              {showCountdown&&<div className="mb-5 flex justify-center"><CountdownTimer hours={page.countdown_hours||0} minutes={page.countdown_minutes||0} accent={ctaBg}/></div>}
+              <h1 className="text-3xl sm:text-4xl font-black leading-[1.08] tracking-tight mb-3" style={{color:page.hero_text||'#FFF'}}>{page.hero_title||store?.name}</h1>
+              {page.hero_subtitle&&<p className="text-sm opacity-60 mb-6 max-w-md mx-auto" style={{color:page.hero_text||'#FFF'}}>{page.hero_subtitle}</p>}
+              <button onClick={scrollToCheckout} className="px-10 py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-2xl hover:brightness-110 active:scale-[0.96] transition-all mx-auto" style={{backgroundColor:ctaBg,color:ctaTextColor,boxShadow:`0 10px 40px ${ctaBg}60`}}>
+                <ShoppingBag size={18}/>{page.cta_text||t('lp.orderNow','Order Now')}
               </button>
             </Reveal>
           </div>
         </section>
 
-        {/* ── ADDITIONAL PRODUCTS (if more than 1) ── */}
-        {items.length>1&&(
-          <section style={{backgroundColor:bgColor}}>
-            <div className="max-w-lg mx-auto px-5 py-8">
-              <p className="text-xs font-bold uppercase tracking-wider text-center mb-5 opacity-40" style={{color:textColor}}>{t('lp.moreProducts','منتجات أخرى')}</p>
-              <div className="space-y-3">
-                {items.slice(1).map((item,idx)=>{
-                  const qty=cart[item.product_id]||0;
-                  return(
-                    <Reveal key={item.product_id} animation={anim} delay={idx*60}>
-                      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm" style={{border:'1px solid oklch(0.93 0.005 280)'}}>
-                        {(item.custom_image||item.image)?<img src={item.custom_image||item.image} alt={item.name} className="w-20 h-20 rounded-xl object-cover shrink-0"/>:<div className="w-20 h-20 rounded-xl flex items-center justify-center shrink-0" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={20} className="opacity-20"/></div>}
-                        <div className="flex-1 min-w-0">
+        {/* ── ALL PRODUCTS GRID ── */}
+        <section className="relative overflow-hidden" style={{backgroundColor:bgColor}}>
+          <MeshGradient color1={pc} color2={bgColor} opacity={0.04}/>
+          <div className="relative max-w-2xl mx-auto px-5 py-10">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-center mb-6 opacity-35" style={{color:textColor}}>{t('lp.ourProducts','Our Products')}</p>
+            <div className="space-y-4">
+              {allItems.map((item,idx)=>{
+                const qty=cart[item.product_id]||0;
+                const hasImage=item.custom_image||item.image;
+                const isFirst=idx===0;
+                return(
+                  <Reveal key={item.product_id} animation={anim} delay={idx*80}>
+                    {isFirst?(
+                      /* First product — large featured card */
+                      <div className="rounded-3xl overflow-hidden shadow-2xl" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
+                        <div className="relative aspect-[16/10] overflow-hidden group">
+                          {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"/>
+                          <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
+                          <div className="absolute bottom-4 left-5 right-5">
+                            <h3 className="text-xl sm:text-2xl font-black text-white leading-tight">{item.name}</h3>
+                          </div>
+                        </div>
+                        <div className="p-5 space-y-3">
+                          {item.description&&<p className="text-xs opacity-50 line-clamp-2" style={{color:textColor}}>{item.description}</p>}
+                          {item.features?.length>0&&(
+                            <div className="flex flex-wrap gap-2">{item.features.filter(f=>f.trim()).slice(0,4).map((f,i)=>(
+                              <span key={i} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold" style={{backgroundColor:pc+'10',color:pc,border:`1px solid ${pc}15`}}><Check size={10}/>{f}</span>
+                            ))}</div>
+                          )}
+                          <div className="flex items-center justify-between pt-1">
+                            <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
+                            <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                          </div>
+                        </div>
+                      </div>
+                    ):(
+                      /* Other products — compact cards */
+                      <div className="flex items-center gap-4 p-4 rounded-2xl shadow-lg transition-all hover:shadow-xl group" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 shadow-md ring-1 ring-black/5">
+                          {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={20} className="opacity-20"/></div>}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
                           <h3 className="text-sm font-bold truncate" style={{color:textColor}}>{item.name}</h3>
-                          {item.description&&<p className="text-[11px] opacity-50 line-clamp-1 mt-0.5" style={{color:textColor}}>{item.description}</p>}
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-base font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} {currency}</span>
-                            {item.compare_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
+                          {item.description&&<p className="text-[11px] opacity-40 line-clamp-1" style={{color:textColor}}>{item.description}</p>}
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className="text-lg font-black" style={{color:pc}}>{parseFloat(item.price).toLocaleString()} <span className="text-[10px] opacity-50">{currency}</span></span>
+                            {item.compare_price&&parseFloat(item.compare_price)>0&&<span className="text-xs text-gray-400 line-through">{parseFloat(item.compare_price).toLocaleString()}</span>}
                           </div>
                         </div>
                         <div className="shrink-0">
                           {qty>0?(
-                            <div className="flex items-center rounded-lg overflow-hidden" style={{border:'1px solid oklch(0.9 0.005 280)'}}>
-                              <button onClick={()=>setQty(item.product_id,-1)} className="px-2 py-1.5 hover:bg-gray-100"><Minus size={12}/></button>
-                              <span className="px-2 py-1.5 font-bold text-sm tabular-nums">{qty}</span>
-                              <button onClick={()=>setQty(item.product_id,1)} className="px-2 py-1.5 hover:bg-gray-100"><Plus size={12}/></button>
+                            <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.9 0.005 280)'}}>
+                              <button onClick={()=>setQty(item.product_id,-1)} className="px-2.5 py-2 hover:bg-gray-100"><Minus size={12}/></button>
+                              <span className="px-2.5 py-2 font-bold text-sm tabular-nums">{qty}</span>
+                              <button onClick={()=>setQty(item.product_id,1)} className="px-2.5 py-2 hover:bg-gray-100"><Plus size={12}/></button>
                             </div>
                           ):(
-                            <button onClick={()=>setQty(item.product_id,1)} className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow hover:brightness-110 active:scale-[0.95] transition-all" style={{backgroundColor:pc}}><Plus size={16}/></button>
+                            <button onClick={()=>setQty(item.product_id,1)} className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg hover:brightness-110 active:scale-[0.95] transition-all" style={{backgroundColor:pc}}><Plus size={16}/></button>
                           )}
                         </div>
                       </div>
-                    </Reveal>
-                  );
-                })}
-              </div>
+                    )}
+                  </Reveal>
+                );
+              })}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* ── INLINE ORDER FORM ── */}
         <section ref={checkoutRef} style={{backgroundColor:bgColor}}>
-          <div className="max-w-lg mx-auto px-5 py-8">
+          <div className="max-w-2xl mx-auto px-5 py-10">
             <Reveal animation={anim}>
-              <div className="rounded-3xl shadow-xl p-6 space-y-5 bg-white" style={{border:'1px solid oklch(0.93 0.005 280)'}}>
-                <h2 className="text-lg font-black text-center" style={{color:textColor}}>{t('lp.completeOrder','أكمل طلبك')}</h2>
+              <div className="rounded-3xl shadow-2xl p-6 sm:p-8 space-y-5 bg-white" style={{border:'1px solid rgba(0,0,0,0.05)'}}>
+                <h2 className="text-lg font-black text-center" style={{color:textColor}}>{t('lp.completeOrder','Complete Your Order')}</h2>
 
-                {/* Order summary — compact */}
-                <div className="rounded-xl p-4 space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+                {/* Order summary */}
+                <div className="rounded-2xl p-4 space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
                   {cartItems.map(it=>(
                     <div key={it.product_id} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        {it.image&&<img src={it.image} className="w-8 h-8 rounded-lg object-cover"/>}
-                        <span className="font-medium">{it.name} <span className="opacity-40">x{cart[it.product_id]}</span></span>
+                        {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-8 h-8 rounded-lg object-cover shadow-sm"/>}
+                        <span className="font-medium">{it.name} <span className="opacity-35">x{cart[it.product_id]}</span></span>
                       </div>
                       <span className="font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
                     </div>
                   ))}
-                  {cartItems.length===0&&<p className="text-xs text-center opacity-40">{t('lp.emptyCart','No products added')}</p>}
+                  {cartItems.length===0&&<p className="text-xs text-center opacity-35">{t('lp.emptyCart','No products added')}</p>}
                   <div className="border-t pt-2 mt-2 flex justify-between text-sm font-bold" style={{borderColor:'oklch(0.9 0.005 280)'}}>
                     <span>{t('lp.total','Total')}</span>
                     <span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {currency}</span>
                   </div>
                 </div>
 
-                {/* Form fields */}
+                {/* Form */}
                 <div className="space-y-3">
-                  <Input icon={User} label={t('lp.fullName','الاسم الكامل')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','أدخل اسمك الكامل')}/>
-                  <Input icon={Phone} label={t('lp.phone','رقم الهاتف')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456"/>
-                  <Select icon={MapPin} label={t('lp.wilaya','الولاية')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')}>
-                    <option value="">{t('checkout.selectWilaya','اختر الولاية...')}</option>
+                  <FormInput icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')} accent={pc}/>
+                  <FormInput icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456" accent={pc}/>
+                  <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')} accent={pc}>
+                    <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
                     {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
-                  </Select>
+                  </FormSelect>
                   <div>
-                    <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','البلدية')} <span style={{color:pc}}>*</span></label>
+                    <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
                     {communes.length>0?
                       <select className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 appearance-none bg-no-repeat" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:`oklch(0.99 0.002 280) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/16px no-repeat`}} value={form.shipping_city} onChange={set('shipping_city')}
                         onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
                         onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
                       >
-                        <option value="">{t('checkout.selectCity','اختر البلدية...')}</option>
+                        <option value="">{t('checkout.selectCity','Select commune...')}</option>
                         {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
                       </select>
-                      :<input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','أدخل البلدية'):t('checkout.selectWilayaFirst','اختر الولاية أولاً')} disabled={!form.shipping_wilaya}
+                      :<input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}
                         onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
                         onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
                       />
                     }
                   </div>
-                  <Input icon={MapPin} label={t('lp.address','العنوان')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','الشارع، العمارة، الطابق...')}/>
+                  <FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street, building, floor...')} accent={pc}/>
                 </div>
 
                 {/* Delivery type */}
                 {wilayas.length>0&&form.shipping_wilaya&&(
                   <div className="grid grid-cols-2 gap-2">
-                    {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','توصيل للمنزل')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','مكتب / نقطة استلام')}].map(d=>(
+                    {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','Home Delivery')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','Desk / Relay')}].map(d=>(
                       <button key={d.type} onClick={()=>setForm(f=>({...f,shipping_type:d.type}))} className="p-3 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center gap-1.5" style={{
                         border:`2px solid ${form.shipping_type===d.type?pc:'oklch(0.9 0.005 280)'}`,
                         backgroundColor:form.shipping_type===d.type?pc+'08':'transparent',
@@ -1164,7 +1131,7 @@ export default function BuyerLandingPage(){
                 {/* Payment */}
                 <div className="flex flex-wrap gap-2">
                   {[
-                    store?.enable_cod!==false&&{method:'cod',label:t('lp.cod','الدفع عند الاستلام')},
+                    store?.enable_cod!==false&&{method:'cod',label:t('lp.cod','Cash on Delivery')},
                     store?.enable_ccp&&{method:'ccp',label:'CCP'},
                     store?.enable_baridimob&&{method:'baridimob',label:'BaridiPay'},
                   ].filter(Boolean).map(p=>(
@@ -1178,23 +1145,23 @@ export default function BuyerLandingPage(){
                 </div>
 
                 {/* Submit */}
-                <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2.5 shadow-xl hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-40" style={{backgroundColor:ctaBg,color:ctaTextColor}}>
-                  {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={18}/>{page.cta_text||t('lp.placeOrder','تأكيد الطلب')} — {total.toLocaleString()} {currency}</>}
+                <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2.5 shadow-2xl hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-40" style={{backgroundColor:ctaBg,color:ctaTextColor,boxShadow:`0 8px 30px ${ctaBg}50`}}>
+                  {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={18}/>{page.cta_text||t('lp.placeOrder','Place Order')} — {total.toLocaleString()} {currency}</>}
                 </button>
 
-                <div className="flex items-center justify-center gap-4 text-[10px] opacity-50" style={{color:textColor}}>
-                  <span className="flex items-center gap-1"><Lock size={10}/>{t('lp.secureCheckout','دفع آمن')}</span>
-                  <span className="flex items-center gap-1"><Shield size={10}/>{t('lp.moneyBack','ضمان استرجاع')}</span>
-                  <span className="flex items-center gap-1"><Truck size={10}/>{t('lp.allWilayas','كل الولايات')}</span>
+                <div className="flex items-center justify-center gap-4 text-[10px] opacity-40" style={{color:textColor}}>
+                  <span className="flex items-center gap-1"><Lock size={10}/>{t('lp.secureCheckout','Secure checkout')}</span>
+                  <span className="flex items-center gap-1"><Shield size={10}/>{t('lp.moneyBack','Money-back guarantee')}</span>
+                  <span className="flex items-center gap-1"><Truck size={10}/>{t('lp.allWilayas','All wilayas')}</span>
                 </div>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* ── TRUST SECTION (bottom) ── */}
+        {/* ── TRUST SECTION ── */}
         {showTrust&&(
-          <section className="py-10" style={{backgroundColor:bgColor}}>
+          <section className="py-12" style={{backgroundColor:bgColor}}>
             <TrustBadges accent={pc} textColor={textColor}/>
           </section>
         )}
@@ -1202,41 +1169,19 @@ export default function BuyerLandingPage(){
     );
   };
 
-  const renderAllProducts=()=>{
-    if(layoutStyle==='bento')return renderBentoAll();
-    if(layoutStyle==='cards')return renderCardsAll();
-    if(layoutStyle==='mosaic')return renderMosaicAll();
-    if(layoutStyle==='product-hero')return null; // handled in main render
-    return (page.items||[]).map((item,idx)=>renderProduct(item,idx));
-  };
-
-  /* ─── Floating cart indicator ─── */
-  const FloatingCart=()=>{
-    if(totalQty===0)return null;
-    return(
-      <button onClick={scrollToCheckout} className="fixed bottom-5 right-5 z-50 flex items-center gap-2 pl-5 pr-4 py-3 rounded-2xl text-white font-bold text-sm shadow-xl transition-all hover:shadow-2xl hover:scale-105 active:scale-95" style={{backgroundColor:pc}}>
-        <ShoppingBag size={18}/>
-        <span>{totalQty} {t('lp.items','items')}</span>
-        <span className="opacity-70">|</span>
-        <span>{subtotal.toLocaleString()} {store?.currency||'DZD'}</span>
-      </button>
-    );
-  };
-
-  /* ─── Input component ─── */
-  const Input=({icon:Icon,label,required,...props})=>(
+  /* ── Form components ── */
+  const FormInput=({icon:Icon,label,required,accent,...props})=>(
     <div>
       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
         {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:pc}}>*</span>}
       </label>
-      <input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)',focusRingColor:pc}} {...props}
+      <input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} {...props}
         onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
         onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
       />
     </div>
   );
-
-  const Select=({icon:Icon,label,required,children,...props})=>(
+  const FormSelect=({icon:Icon,label,required,children,...props})=>(
     <div>
       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
         {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:pc}}>*</span>}
@@ -1248,9 +1193,25 @@ export default function BuyerLandingPage(){
     </div>
   );
 
-  /* ─── MAIN RENDER ─── */
+  /* ── Floating cart ── */
+  const FloatingCart=()=>{
+    if(totalQty===0)return null;
+    return(
+      <button onClick={scrollToCheckout} className="fixed bottom-5 right-5 z-50 flex items-center gap-2 pl-5 pr-4 py-3.5 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 backdrop-blur-sm" style={{backgroundColor:pc,boxShadow:`0 8px 30px ${pc}50`}}>
+        <ShoppingBag size={18}/>
+        <span>{totalQty} {t('lp.items','items')}</span>
+        <span className="opacity-60">|</span>
+        <span>{subtotal.toLocaleString()} {currency}</span>
+      </button>
+    );
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     MAIN RENDER
+     ═══════════════════════════════════════════════════════════ */
   return(
     <div className="min-h-screen" style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937'}}>
+      <AnimationStyles/>
       <FloatingCart/>
 
       {layoutStyle==='product-hero'?(
@@ -1259,67 +1220,67 @@ export default function BuyerLandingPage(){
         <>
           {renderHero()}
 
-          {/* Social proof between hero and products */}
           {showSocial&&(
-            <div className="py-8" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-              <SocialProof accent={pc}/>
+            <div className="py-10 relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+              <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.03}/>
+              <div className="relative"><SocialProof accent={pc} textColor={page.text_color||'#1F2937'}/></div>
             </div>
           )}
 
-          {/* Products */}
           {renderAllProducts()}
 
-          {/* CTA divider before checkout */}
+          {/* CTA divider */}
           <Reveal animation={anim}>
-            <div className="py-12 text-center" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-              <p className="text-sm font-semibold opacity-50 mb-3" style={{color:page.text_color||'#1F2937'}}>{t('lp.readyToOrder','Ready to order?')}</p>
-              <button onClick={scrollToCheckout} className="px-8 py-3.5 rounded-2xl text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.97] inline-flex items-center gap-2" style={{backgroundColor:pc}}>
-                <ShoppingBag size={16}/>{page.cta_text||t('lp.orderNow','Order Now')}
-              </button>
+            <div className="relative py-16 text-center overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+              <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.04}/>
+              <div className="relative">
+                <p className="text-sm font-semibold opacity-45 mb-4" style={{color:page.text_color||'#1F2937'}}>{t('lp.readyToOrder','Ready to order?')}</p>
+                <button onClick={scrollToCheckout} className="px-10 py-4 rounded-2xl text-white font-black text-sm shadow-2xl transition-all hover:brightness-110 active:scale-[0.96] inline-flex items-center gap-2" style={{backgroundColor:pc,boxShadow:`0 8px 30px ${pc}40`}}>
+                  <ShoppingBag size={16}/>{page.cta_text||t('lp.orderNow','Order Now')}
+                </button>
+              </div>
             </div>
           </Reveal>
 
           {/* ═══ CHECKOUT ═══ */}
-          <section ref={checkoutRef} className="relative overflow-hidden" style={{background:`linear-gradient(160deg, ${page.hero_bg||'oklch(0.22 0.04 280)'}, oklch(0.12 0.01 280))`}}>
-            <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:`radial-gradient(circle at 30% 70%, white 0%, transparent 50%)`}}/>
-            <div className="relative max-w-3xl mx-auto px-5 py-14 sm:py-20">
+          <section ref={checkoutRef} className="relative overflow-hidden" style={{background:`linear-gradient(160deg, ${page.hero_bg||'oklch(0.15 0.04 280)'}, oklch(0.08 0.01 280))`}}>
+            <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${page.hero_bg||'oklch(0.15 0.04 280)'}e0 0%, oklch(0.08 0.01 280) 100%)`}/>
+            <MeshGradient color1={pc} color2={page.hero_bg||'#1a0030'} opacity={0.08}/>
+            <div className="relative max-w-3xl mx-auto px-5 py-16 sm:py-24">
               <Reveal animation={anim}>
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-center mb-8" style={{color:page.hero_text||'#FFF'}}>{t('lp.completeOrder','Complete Your Order')}</h2>
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-center mb-8" style={{color:page.hero_text||'#FFF'}}>{t('lp.completeOrder','Complete Your Order')}</h2>
               </Reveal>
               <Reveal animation={anim} delay={150}>
-                <div className="rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6" style={{backgroundColor:'#FFFFFF',color:'#1F2937'}}>
+                <div className="rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 backdrop-blur-sm" style={{backgroundColor:'rgba(255,255,255,0.97)',color:'#1F2937',border:'1px solid rgba(255,255,255,0.2)'}}>
                   {/* Order summary */}
                   <div className="rounded-2xl p-5 space-y-3" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
-                    <p className="text-xs font-bold uppercase tracking-wider" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.yourOrder','Your Order')}</p>
-                    {cartItems.length===0&&<p className="text-sm opacity-40 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
+                    <p className="text-xs font-black uppercase tracking-wider" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.yourOrder','Your Order')}</p>
+                    {cartItems.length===0&&<p className="text-sm opacity-35 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
                     {cartItems.map(it=>(
                       <div key={it.product_id} className="flex items-center justify-between py-2">
                         <div className="flex items-center gap-3">
-                          {it.image&&<img src={it.image} className="w-10 h-10 rounded-lg object-cover shadow-sm"/>}
-                          <div>
-                            <span className="text-sm font-semibold">{it.name}</span>
-                            <span className="text-xs opacity-40 ml-2">x{cart[it.product_id]}</span>
-                          </div>
+                          {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-10 h-10 rounded-xl object-cover shadow-sm ring-1 ring-black/5"/>}
+                          <div><span className="text-sm font-semibold">{it.name}</span><span className="text-xs opacity-35 ml-2">x{cart[it.product_id]}</span></div>
                         </div>
-                        <span className="text-sm font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {store?.currency||'DZD'}</span>
+                        <span className="text-sm font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
                       </div>
                     ))}
                     <div className="border-t pt-3 mt-3 space-y-2" style={{borderColor:'oklch(0.9 0.005 280)'}}>
-                      <div className="flex justify-between text-sm"><span className="opacity-50">{t('lp.subtotal','Subtotal')}</span><span className="font-semibold tabular-nums">{subtotal.toLocaleString()} {store?.currency||'DZD'}</span></div>
-                      <div className="flex justify-between text-sm"><span className="opacity-50">{t('lp.shipping','Shipping')}</span><span className="font-semibold tabular-nums">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${store?.currency||'DZD'}`:'—'}</span></div>
-                      <div className="flex justify-between text-lg font-extrabold pt-2 border-t" style={{borderColor:'oklch(0.9 0.005 280)'}}><span>{t('lp.total','Total')}</span><span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {store?.currency||'DZD'}</span></div>
+                      <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.subtotal','Subtotal')}</span><span className="font-semibold tabular-nums">{subtotal.toLocaleString()} {currency}</span></div>
+                      <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.shipping','Shipping')}</span><span className="font-semibold tabular-nums">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${currency}`:'—'}</span></div>
+                      <div className="flex justify-between text-lg font-black pt-2 border-t" style={{borderColor:'oklch(0.9 0.005 280)'}}><span>{t('lp.total','Total')}</span><span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {currency}</span></div>
                     </div>
                   </div>
 
                   {/* Form */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')}/>
-                    <Input icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456"/>
-                    {store?.checkout_email&&<Input icon={Mail} label={t('lp.email','Email')} value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com"/>}
-                    <Select icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')}>
+                    <FormInput icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')} accent={pc}/>
+                    <FormInput icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456" accent={pc}/>
+                    {store?.checkout_email&&<FormInput icon={Mail} label={t('lp.email','Email')} value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" accent={pc}/>}
+                    <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')} accent={pc}>
                       <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
                       {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
-                    </Select>
+                    </FormSelect>
                     <div>
                       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
                       {communes.length>0?
@@ -1336,9 +1297,7 @@ export default function BuyerLandingPage(){
                         />
                       }
                     </div>
-                    <div className="sm:col-span-2">
-                      <Input icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')}/>
-                    </div>
+                    <div className="sm:col-span-2"><FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')} accent={pc}/></div>
                   </div>
 
                   {/* Delivery type */}
@@ -1378,8 +1337,8 @@ export default function BuyerLandingPage(){
                   </div>
 
                   {/* Submit */}
-                  <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none" style={{backgroundColor:page.cta_bg||pc}}>
-                    {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={18}/>{page.cta_text||t('lp.placeOrder','Place Order')} — {total.toLocaleString()} {store?.currency||'DZD'}</>}
+                  <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none" style={{backgroundColor:page.cta_bg||pc,boxShadow:`0 8px 30px ${page.cta_bg||pc}40`}}>
+                    {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={18}/>{page.cta_text||t('lp.placeOrder','Place Order')} — {total.toLocaleString()} {currency}</>}
                   </button>
                   <div className="flex items-center justify-center gap-5 text-[11px]" style={{color:'oklch(0.65 0.01 280)'}}>
                     <span className="flex items-center gap-1.5"><Lock size={11}/>{t('lp.secureCheckout','Secure checkout')}</span>
@@ -1393,9 +1352,9 @@ export default function BuyerLandingPage(){
       )}
 
       {/* Footer */}
-      <footer className="py-8 text-center space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
-        <p className="text-xs" style={{color:'oklch(0.6 0.01 280)'}}>© {new Date().getFullYear()} {store?.name}. {t('lp.allRights','All rights reserved.')}</p>
-        <Link to={`/s/${storeSlug}`} className="text-xs font-semibold hover:underline underline-offset-4 transition-colors" style={{color:pc}}>{t('lp.visitStore','Visit our full store')}</Link>
+      <footer className="py-8 text-center space-y-2 relative overflow-hidden" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+        <p className="text-xs relative" style={{color:'oklch(0.6 0.01 280)'}}>© {new Date().getFullYear()} {store?.name}. {t('lp.allRights','All rights reserved.')}</p>
+        <Link to={`/s/${storeSlug}`} className="text-xs font-semibold hover:underline underline-offset-4 transition-colors relative" style={{color:pc}}>{t('lp.visitStore','Visit our full store')}</Link>
       </footer>
     </div>
   );
