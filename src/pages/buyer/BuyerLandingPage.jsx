@@ -485,7 +485,7 @@ export default function BuyerLandingPage(){
             <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderNumber','Order')}</span><span className="font-mono font-bold text-gray-900">#{orderSuccess.order_number||orderSuccess.id}</span></div>
             <div className="flex justify-between text-sm"><span className="text-gray-400">{t('lp.orderTotal','Total')}</span><span className="font-bold" style={{color:pc}}>{total.toLocaleString()} {currency}</span></div>
           </div>
-          <Link to={`/s/${storeSlug}`} className="inline-block mt-7 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:brightness-110 active:scale-[0.97] shadow-xl" style={{backgroundColor:pc}}>{t('lp.continueShopping','Continue Shopping')}</Link>
+          <button onClick={()=>{setOrderSuccess(null);setCart({});window.scrollTo({top:0,behavior:'smooth'});}} className="inline-block mt-7 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:brightness-110 active:scale-[0.97] shadow-xl cursor-pointer" style={{backgroundColor:pc}}>{t('lp.continueShopping','Continue Shopping')}</button>
         </div>
       </Reveal>
     </div>
