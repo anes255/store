@@ -5,6 +5,7 @@ import{storeApi}from'../../utils/api';
 import{useAuthStore}from'../../hooks/useStore';
 import toast from'react-hot-toast';
 import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift,Globe}from'lucide-react';
+import WILAYA_CITIES from'../../data/wilayaCities';
 
 /* ═══════════════════════════════════════════════════════════════
    VISUAL UTILITY COMPONENTS
@@ -328,7 +329,7 @@ export default function BuyerLandingPage(){
   const[loading,setLoading]=useState(true);
   const[notFound,setNotFound]=useState(false);
   const[cart,setCart]=useState({});
-  const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp'});
+  const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp'});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
   const[shippingPrice,setShippingPrice]=useState(0);
@@ -376,8 +377,11 @@ export default function BuyerLandingPage(){
     const w=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya)||x.name===form.shipping_wilaya);
     if(w){
       setShippingPrice(form.shipping_type==='desk'?(w.desk_price||w.home_price||400):(w.home_price||400));
-      if(w.communes){const c=typeof w.communes==='string'?w.communes.split(',').map(s=>s.trim()):Array.isArray(w.communes)?w.communes:[];setCommunes(c);}
-      else setCommunes([]);
+      let c=[];
+      if(w.communes){c=typeof w.communes==='string'?w.communes.split(',').map(s=>s.trim()):Array.isArray(w.communes)?w.communes:[];}
+      // Fallback to WILAYA_CITIES when DB communes are empty
+      if(!c.length&&w.name){c=WILAYA_CITIES[w.name]||[];}
+      setCommunes(c);
     }
   },[form.shipping_wilaya,form.shipping_type,wilayas]);
 
@@ -1211,14 +1215,14 @@ export default function BuyerLandingPage(){
                 <div className="space-y-3">
                   <FormInput icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')} accent={pc}/>
                   <FormInput icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456" accent={pc}/>
-                  <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')} accent={pc}>
+                  <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={e=>setForm(f=>({...f,shipping_wilaya:e.target.value,shipping_city:'',shipping_zip:''}))} accent={pc}>
                     <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
                     {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
                   </FormSelect>
                   <div>
                     <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
                     {communes.length>0?
-                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={set('shipping_city')}>
+                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wObj=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya));const wName=wObj?.name||'';const wCode=wObj?.wilaya_code||'';const cities=WILAYA_CITIES[wName]||communes.map(c=>typeof c==='string'?c:c.name);const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?String(wCode).padStart(2,'0')+cCode:''}))}}>
                         <option value="">{t('checkout.selectCity','Select commune...')}</option>
                         {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
                       </select>
@@ -1381,14 +1385,14 @@ export default function BuyerLandingPage(){
                     <FormInput icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')} accent={pc}/>
                     <FormInput icon={Phone} label={t('lp.phone','Phone')} required value={form.customer_phone} onChange={set('customer_phone')} placeholder="0555123456" accent={pc}/>
                     {store?.checkout_email&&<FormInput icon={Mail} label={t('lp.email','Email')} value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" accent={pc}/>}
-                    <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={set('shipping_wilaya')} accent={pc}>
+                    <FormSelect icon={MapPin} label={t('lp.wilaya','Wilaya')} required value={form.shipping_wilaya} onChange={e=>setForm(f=>({...f,shipping_wilaya:e.target.value,shipping_city:'',shipping_zip:''}))} accent={pc}>
                       <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
                       {wilayas.map(w=><option key={w.wilaya_code} value={w.wilaya_code}>{w.wilaya_code} - {w.name}</option>)}
                     </FormSelect>
                     <div>
                       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
                       {communes.length>0?
-                        <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={set('shipping_city')}>
+                        <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wObj=wilayas.find(x=>String(x.wilaya_code)===String(form.shipping_wilaya));const wName=wObj?.name||'';const wCode=wObj?.wilaya_code||'';const cities=WILAYA_CITIES[wName]||communes.map(c=>typeof c==='string'?c:c.name);const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?String(wCode).padStart(2,'0')+cCode:''}))}}>
                           <option value="">{t('checkout.selectCity','Select commune...')}</option>
                           {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
                         </select>
