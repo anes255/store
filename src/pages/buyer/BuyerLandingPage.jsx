@@ -4,7 +4,7 @@ import{useTranslation}from'react-i18next';
 import{storeApi}from'../../utils/api';
 import{useAuthStore}from'../../hooks/useStore';
 import toast from'react-hot-toast';
-import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift}from'lucide-react';
+import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift,Globe}from'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════
    VISUAL UTILITY COMPONENTS
@@ -150,8 +150,9 @@ function AnimationStyles({accent}){
       .lp-root::-webkit-scrollbar-thumb:hover{background:${accent||'#7C3AED'}60}
       /* Selection color */
       .lp-root ::selection{background:${accent||'#7C3AED'}30;color:inherit}
-      /* Smooth focus transitions */
-      .lp-root input:focus,.lp-root select:focus{transition:border-color 0.2s,box-shadow 0.2s}
+      /* Form input focus — pure CSS, no JS DOM mutation */
+      .lp-root .lp-input{border:1.5px solid oklch(0.9 0.005 280);background:oklch(0.99 0.002 280);transition:border-color 0.2s,box-shadow 0.2s}
+      .lp-root .lp-input:focus{border-color:${accent||'#7C3AED'} !important;box-shadow:0 0 0 3px ${accent||'#7C3AED'}20 !important;outline:none}
     `}</style>
   );
 }
@@ -247,6 +248,78 @@ function DiscountBadge({price,comparePrice,accent}){
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Form components (outside component to prevent remount on re-render) ── */
+function FormInput({icon:Icon,label,required,accent,...props}){
+  return(
+    <div>
+      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
+        {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:accent}}>*</span>}
+      </label>
+      <input className="lp-input w-full px-4 py-3 rounded-xl text-sm" {...props}/>
+    </div>
+  );
+}
+function FormSelect({icon:Icon,label,required,accent,children,...props}){
+  return(
+    <div>
+      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
+        {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:accent}}>*</span>}
+      </label>
+      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} {...props}>{children}</select>
+    </div>
+  );
+}
+function FloatingCartButton({totalQty,subtotal,currency,accent,onClick}){
+  if(totalQty===0)return null;
+  return(
+    <button onClick={onClick} className="fixed bottom-5 z-50 flex items-center gap-2.5 pl-5 pr-5 py-3.5 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:scale-105 active:scale-95 backdrop-blur-md" style={{backgroundColor:accent+'ee',boxShadow:`0 8px 32px ${accent}50, 0 0 0 1px ${accent}30`,right:'20px'}}>
+      <div className="relative">
+        <ShoppingBag size={18}/>
+        <span className="absolute -top-2 -right-2 w-4.5 h-4.5 rounded-full bg-white text-[10px] font-black flex items-center justify-center" style={{color:accent,minWidth:'18px',height:'18px'}}>{totalQty}</span>
+      </div>
+      <span className="opacity-80">|</span>
+      <span className="tabular-nums">{subtotal.toLocaleString()} {currency}</span>
+    </button>
+  );
+}
+
+const BUYER_LANGS=[
+  {code:'en',label:'EN',flag:'🇬🇧',name:'English'},
+  {code:'fr',label:'FR',flag:'🇫🇷',name:'Français'},
+  {code:'ar',label:'AR',flag:'🇩🇿',name:'العربية'},
+];
+
+function BuyerLangSwitcher({accent}){
+  const{i18n}=useTranslation();
+  const[open,setOpen]=useState(false);
+  const cur=BUYER_LANGS.find(l=>l.code===i18n.language)||BUYER_LANGS[0];
+  const change=(code)=>{
+    i18n.changeLanguage(code);
+    document.documentElement.dir=code==='ar'?'rtl':'ltr';
+    document.documentElement.lang=code;
+    setOpen(false);
+  };
+  return(
+    <div className="fixed top-4 z-50" style={{right:document.documentElement.dir==='rtl'?'auto':'16px',left:document.documentElement.dir==='rtl'?'16px':'auto'}}>
+      {open&&<div className="fixed inset-0 z-40" onClick={()=>setOpen(false)}/>}
+      <button onClick={()=>setOpen(!open)} className="relative z-50 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold backdrop-blur-xl shadow-lg transition-all hover:scale-105 active:scale-95" style={{backgroundColor:'rgba(255,255,255,0.85)',color:'#333',border:'1px solid rgba(0,0,0,0.08)'}}>
+        <Globe size={14} style={{color:accent||'#7C3AED'}}/><span>{cur.flag} {cur.label}</span><ChevronDown size={12} className={`transition-transform ${open?'rotate-180':''}`}/>
+      </button>
+      {open&&(
+        <div className="absolute top-full mt-1.5 rounded-xl shadow-2xl border border-gray-100 bg-white overflow-hidden z-50" style={{right:0,minWidth:'140px'}}>
+          {BUYER_LANGS.map(l=>(
+            <button key={l.code} onClick={()=>change(l.code)} className={`w-full px-4 py-2.5 flex items-center gap-2.5 text-left text-sm transition-all ${i18n.language===l.code?'bg-gray-50 font-bold':'hover:bg-gray-50'}`}>
+              <span className="text-base">{l.flag}</span>
+              <span className={i18n.language===l.code?'text-gray-900':'text-gray-600'}>{l.name}</span>
+              {i18n.language===l.code&&<Check size={13} className="text-emerald-500 ml-auto"/>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BuyerLandingPage(){
   const{storeSlug,landingSlug}=useParams();
   const{t,i18n}=useTranslation();
@@ -263,7 +336,7 @@ export default function BuyerLandingPage(){
   const[orderSuccess,setOrderSuccess]=useState(null);
   const[companies,setCompanies]=useState([]);
   const checkoutRef=useRef(null);
-  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  const set=useCallback(k=>e=>setForm(f=>({...f,[k]:e.target.value})),[]);
 
   useEffect(()=>{try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s)setForm(f=>({...f,...s}));}catch{}},[]);
 
@@ -308,8 +381,8 @@ export default function BuyerLandingPage(){
     }
   },[form.shipping_wilaya,form.shipping_type,wilayas]);
 
-  const scrollToCheckout=()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});};
-  const setQty=(pid,delta)=>setCart(c=>{const n=Math.max(0,(c[pid]||0)+delta);return{...c,[pid]:n};});
+  const scrollToCheckout=useCallback(()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});},[]);
+  const setQty=useCallback((pid,delta)=>setCart(c=>{const n=Math.max(0,(c[pid]||0)+delta);return{...c,[pid]:n};}),[]);
   const totalQty=Object.values(cart).reduce((s,q)=>s+q,0);
   const cartItems=(page?.items||[]).filter(it=>cart[it.product_id]>0);
   const subtotal=cartItems.reduce((s,it)=>s+(parseFloat(it.price)||0)*(cart[it.product_id]||0),0);
@@ -412,10 +485,13 @@ export default function BuyerLandingPage(){
     const ctaBg=page.cta_bg||'#10B981';
     const ctaText=page.cta_text_color||'#FFF';
 
+    const aiImg=page.ai_hero_image;
+
     if(heroStyle==='split'){
       return(
         <section className="relative overflow-hidden min-h-[70vh] flex items-center" style={{backgroundColor:heroBg}}>
-          <ProductImageMosaic items={allItems} overlay={`linear-gradient(135deg, ${heroBg}ee 0%, ${heroBg}99 50%, transparent 100%)`}/>
+          {aiImg?<img src={aiImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30"/>
+            :<ProductImageMosaic items={allItems} overlay={`linear-gradient(135deg, ${heroBg}ee 0%, ${heroBg}99 50%, transparent 100%)`}/>}
           <MeshGradient color1={pc} color2={heroBg} opacity={0.12}/>
           <div className="relative max-w-6xl mx-auto px-5 py-16 sm:py-24 w-full">
             <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
@@ -458,6 +534,7 @@ export default function BuyerLandingPage(){
     if(heroStyle==='minimal'){
       return(
         <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
+          {aiImg&&<img src={aiImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20"/>}
           <MeshGradient color1={pc} color2={heroBg} color3={ctaBg} opacity={0.1}/>
           <div className="relative max-w-3xl mx-auto px-5 py-24 sm:py-36 text-center">
             <Reveal animation={anim}>
@@ -477,7 +554,8 @@ export default function BuyerLandingPage(){
     /* centered (default) — immersive with product image mosaic */
     return(
       <section className="relative overflow-hidden min-h-[75vh] flex items-center" style={{backgroundColor:heroBg}}>
-        <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${heroBg}dd 0%, ${heroBg}f0 40%, ${heroBg} 100%)`}/>
+        {aiImg?<><img src={aiImg} alt="" className="absolute inset-0 w-full h-full object-cover"/><div className="absolute inset-0" style={{background:`linear-gradient(180deg, ${heroBg}bb 0%, ${heroBg}e0 50%, ${heroBg} 100%)`}}/></>
+          :<ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${heroBg}dd 0%, ${heroBg}f0 40%, ${heroBg} 100%)`}/>}
         <MeshGradient color1={pc} color2={heroBg} color3={ctaBg} opacity={0.15}/>
         <div className="relative max-w-4xl mx-auto px-5 py-16 sm:py-28 text-center w-full">
           <Reveal animation={anim}>
@@ -949,8 +1027,8 @@ export default function BuyerLandingPage(){
     );
   };
 
-  /* ── Per-product dispatcher ── */
-  const renderProduct=(item,idx)=><ProductCard key={item.product_id} item={item} idx={idx} layout={layoutStyle}/>;
+  /* ── Per-product dispatcher (called as function, NOT as <Component/>, to avoid remount on re-render) ── */
+  const renderProduct=(item,idx)=>ProductCard({item,idx,layout:layoutStyle});
 
   const renderAllProducts=()=>{
     if(layoutStyle==='bento')return renderBentoAll();
@@ -1007,7 +1085,8 @@ export default function BuyerLandingPage(){
 
         {/* ── HERO SECTION — product image mosaic background ── */}
         <section className="relative overflow-hidden" style={{backgroundColor:heroBg}}>
-          <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${heroBg}e0 0%, ${heroBg}f5 50%, ${heroBg} 100%)`}/>
+          {page.ai_hero_image?<><img src={page.ai_hero_image} alt="" className="absolute inset-0 w-full h-full object-cover"/><div className="absolute inset-0" style={{background:`linear-gradient(180deg, ${heroBg}cc 0%, ${heroBg}f0 50%, ${heroBg} 100%)`}}/></>
+            :<ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${heroBg}e0 0%, ${heroBg}f5 50%, ${heroBg} 100%)`}/>}
           <MeshGradient color1={pc} color2={heroBg} color3={ctaBg} opacity={0.12}/>
           <div className="relative max-w-2xl mx-auto px-5 py-14 text-center">
             <Reveal animation={anim}>
@@ -1127,17 +1206,11 @@ export default function BuyerLandingPage(){
                   <div>
                     <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
                     {communes.length>0?
-                      <select className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 appearance-none bg-no-repeat" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:`oklch(0.99 0.002 280) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/16px no-repeat`}} value={form.shipping_city} onChange={set('shipping_city')}
-                        onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
-                        onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
-                      >
+                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={set('shipping_city')}>
                         <option value="">{t('checkout.selectCity','Select commune...')}</option>
                         {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
                       </select>
-                      :<input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}
-                        onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
-                        onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
-                      />
+                      :<input className="lp-input w-full px-4 py-3 rounded-xl text-sm" value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}/>
                     }
                   </div>
                   <FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street, building, floor...')} accent={pc}/>
@@ -1198,52 +1271,15 @@ export default function BuyerLandingPage(){
     );
   };
 
-  /* ── Form components ── */
-  const FormInput=({icon:Icon,label,required,accent,...props})=>(
-    <div>
-      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
-        {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:pc}}>*</span>}
-      </label>
-      <input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} {...props}
-        onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
-        onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
-      />
-    </div>
-  );
-  const FormSelect=({icon:Icon,label,required,children,...props})=>(
-    <div>
-      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
-        {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:pc}}>*</span>}
-      </label>
-      <select className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 appearance-none bg-no-repeat" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:`oklch(0.99 0.002 280) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/16px no-repeat`}} {...props}
-        onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
-        onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
-      >{children}</select>
-    </div>
-  );
-
-  /* ── Floating cart — polished with glow + count badge ── */
-  const FloatingCart=()=>{
-    if(totalQty===0)return null;
-    return(
-      <button onClick={scrollToCheckout} className="fixed bottom-5 z-50 flex items-center gap-2.5 pl-5 pr-5 py-3.5 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:scale-105 active:scale-95 backdrop-blur-md" style={{backgroundColor:pc+'ee',boxShadow:`0 8px 32px ${pc}50, 0 0 0 1px ${pc}30`,right:'20px'}}>
-        <div className="relative">
-          <ShoppingBag size={18}/>
-          <span className="absolute -top-2 -right-2 w-4.5 h-4.5 rounded-full bg-white text-[10px] font-black flex items-center justify-center" style={{color:pc,minWidth:'18px',height:'18px'}}>{totalQty}</span>
-        </div>
-        <span className="opacity-80">|</span>
-        <span className="tabular-nums">{subtotal.toLocaleString()} {currency}</span>
-      </button>
-    );
-  };
 
   /* ═══════════════════════════════════════════════════════════
      MAIN RENDER
      ═══════════════════════════════════════════════════════════ */
   return(
-    <div className="min-h-screen lp-root" dir={page.language==='ar'?'rtl':'ltr'} style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937',fontFeatureSettings:'"ss01","cv11"'}}>
+    <div className="min-h-screen lp-root" dir={i18n.language==='ar'?'rtl':'ltr'} style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937',fontFeatureSettings:'"ss01","cv11"'}}>
       <AnimationStyles accent={pc}/>
-      <FloatingCart/>
+      <BuyerLangSwitcher accent={pc}/>
+      <FloatingCartButton totalQty={totalQty} subtotal={subtotal} currency={currency} accent={pc} onClick={scrollToCheckout}/>
 
       {layoutStyle==='product-hero'?(
         renderProductHeroAll()
@@ -1315,17 +1351,11 @@ export default function BuyerLandingPage(){
                     <div>
                       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
                       {communes.length>0?
-                        <select className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 appearance-none bg-no-repeat" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:`oklch(0.99 0.002 280) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center/16px no-repeat`}} value={form.shipping_city} onChange={set('shipping_city')}
-                          onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
-                          onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
-                        >
+                        <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={set('shipping_city')}>
                           <option value="">{t('checkout.selectCity','Select commune...')}</option>
                           {communes.map((c,i)=><option key={i} value={typeof c==='string'?c:c.name}>{typeof c==='string'?c:c.name}</option>)}
                         </select>
-                        :<input className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2" style={{border:'1.5px solid oklch(0.9 0.005 280)',background:'oklch(0.99 0.002 280)'}} value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}
-                          onFocus={e=>{e.target.style.borderColor=pc;e.target.style.boxShadow=`0 0 0 3px ${pc}20`;}}
-                          onBlur={e=>{e.target.style.borderColor='oklch(0.9 0.005 280)';e.target.style.boxShadow='none';}}
-                        />
+                        :<input className="lp-input w-full px-4 py-3 rounded-xl text-sm" value={form.shipping_city} onChange={set('shipping_city')} placeholder={form.shipping_wilaya?t('lp.enterCommune','Enter commune'):t('checkout.selectWilayaFirst','Select wilaya first')} disabled={!form.shipping_wilaya}/>
                       }
                     </div>
                     <div className="sm:col-span-2"><FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')} accent={pc}/></div>

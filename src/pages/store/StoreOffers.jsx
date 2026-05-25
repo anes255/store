@@ -4,7 +4,7 @@ import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import{productApi,ownerApi}from'../../utils/api';
 import toast from'react-hot-toast';
-import{Tag,Search,Package,Plus,Trash2,Check,X,ChevronDown,ChevronUp,Edit2,Percent,Ticket,Hash,Palette,Eye}from'lucide-react';
+import{Tag,Search,Package,Plus,Trash2,Check,X,ChevronDown,ChevronUp,Edit2,Percent,Ticket,Hash,Palette,Eye,Layers,GripVertical,Sparkles,TrendingUp,Zap,Gift,Crown,Star}from'lucide-react';
 
 const EMPTY_OFFER={name:'',is_on_sale:true,sale_badge_text:'SALE',offer_title:'',offer_discount:'',discount_type:'percent',discount_value:'',offer_hours:'',offer_minutes:'',quantity_offers:[],mode:'all',selectedIds:new Set(),expanded:true,
   // Appearance
@@ -85,7 +85,14 @@ export default function StoreOffers(){
           offer_discount:computeDiscountText(form),
           offer_hours:form.offer_hours,
           offer_minutes:form.offer_minutes,
-          quantity_offers:form.quantity_offers,
+          quantity_offers:(form.quantity_offers||[]).map(qo=>({
+            quantity:qo.quantity,
+            label:qo.label||(()=>{const p=[];if(qo.discount_value)p.push(qo.discount_type==='fixed'?`-${qo.discount_value} ${currentStore?.currency||'DZD'}`:`${qo.discount_value}% OFF`);if(qo.free_shipping)p.push('Free shipping');return p.join(' + ')})(),
+            discount_type:qo.discount_type||'percent',
+            discount_value:qo.discount_value||'',
+            free_shipping:!!qo.free_shipping,
+            highlight:!!qo.highlight,
+          })),
           discount_type:form.discount_type||'percent',
           discount_value:parseFloat(form.discount_value)||0,
           // Appearance
@@ -348,21 +355,127 @@ export default function StoreOffers(){
               </div>
             </div>
 
-            {/* Quantity offers */}
-            <div className="border-t border-gray-100 pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{t('offers.quantityOffers','Quantity Offers')}</label>
-                <button type="button" onClick={()=>{const qo=[...(form.quantity_offers||[]),{quantity:'',label:''}];updateOffer(oi,{quantity_offers:qo});}} className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"><Plus size={12}/>{t('offers.add','Add')}</button>
-              </div>
-              <div className="space-y-2">
-                {(form.quantity_offers||[]).map((qo,qi)=>(
-                  <div key={qi} className="grid grid-cols-[80px,1fr,32px] gap-2 items-center">
-                    <input type="number" min="1" placeholder={t('offers.qty','Qty')} value={qo.quantity||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],quantity:e.target.value};updateOffer(oi,{quantity_offers:n});}} className="input-field !py-1.5 text-xs text-center"/>
-                    <input placeholder={t('offers.qtyLabelPlaceholder','e.g. 20% OFF, Free shipping')} value={qo.label||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],label:e.target.value};updateOffer(oi,{quantity_offers:n});}} className="input-field !py-1.5 text-xs"/>
-                    <button type="button" onClick={()=>updateOffer(oi,{quantity_offers:form.quantity_offers.filter((_,i)=>i!==qi)})} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
+            {/* ═══ QUANTITY OFFERS — TIER PRICING ═══ */}
+            <div className="border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm"><Layers size={14} className="text-white"/></div>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-700 uppercase tracking-wider">{t('offers.quantityOffers','Quantity Offers')}</h4>
+                    <p className="text-[10px] text-gray-400">{t('offers.qtyOffersDesc','Buy more, save more — set tiered pricing')}</p>
                   </div>
-                ))}
+                </div>
+                <button type="button" onClick={()=>{const qo=[...(form.quantity_offers||[]),{quantity:'',label:'',discount_type:'percent',discount_value:'',free_shipping:false,highlight:false}];updateOffer(oi,{quantity_offers:qo});}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-bold shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"><Plus size={12}/>{t('offers.addTier','Add Tier')}</button>
               </div>
+
+              {(form.quantity_offers||[]).length===0?(
+                <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 py-8 flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center"><TrendingUp size={20} className="text-amber-400"/></div>
+                  <p className="text-xs font-bold text-gray-400">{t('offers.noTiersYet','No quantity tiers yet')}</p>
+                  <p className="text-[10px] text-gray-300 max-w-xs text-center">{t('offers.noTiersDesc','Add tiers to encourage larger orders with progressive discounts')}</p>
+                </div>
+              ):(
+                <div className="space-y-2.5">
+                  {(form.quantity_offers||[]).map((qo,qi)=>{
+                    const TIER_ICONS=[Zap,Gift,Crown,Star,Sparkles];
+                    const TIER_COLORS=['from-blue-500 to-indigo-500','from-emerald-500 to-teal-500','from-amber-500 to-orange-500','from-pink-500 to-rose-500','from-violet-500 to-purple-500'];
+                    const tierColor=TIER_COLORS[qi%TIER_COLORS.length];
+                    const TierIcon=TIER_ICONS[qi%TIER_ICONS.length];
+                    const autoLabel=(()=>{
+                      if(qo.label)return qo.label;
+                      const parts=[];
+                      if(qo.discount_value){parts.push(qo.discount_type==='fixed'?`-${qo.discount_value} ${currentStore?.currency||'DZD'}`:`-${qo.discount_value}%`);}
+                      if(qo.free_shipping)parts.push(t('offers.freeShipShort','Free shipping'));
+                      return parts.join(' + ')||'';
+                    })();
+                    return(
+                      <div key={qi} className={`group relative rounded-xl border transition-all ${qo.highlight?'border-amber-300 bg-gradient-to-r from-amber-50/80 to-orange-50/60 shadow-sm':'border-gray-200 bg-white hover:border-gray-300'}`}>
+                        {qo.highlight&&<div className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-[9px] font-black text-white uppercase tracking-wider shadow-sm">{t('offers.bestValue','Best Value')}</div>}
+
+                        <div className="p-3.5">
+                          <div className="flex items-start gap-3">
+                            {/* Tier badge */}
+                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tierColor} flex items-center justify-center shadow-sm shrink-0 mt-0.5`}>
+                              <TierIcon size={16} className="text-white"/>
+                            </div>
+
+                            {/* Main config */}
+                            <div className="flex-1 min-w-0 space-y-2.5">
+                              {/* Row 1: Quantity + Discount type/value */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg px-2 py-1">
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase">{t('offers.buyQty','Buy')}</span>
+                                  <input type="number" min="1" value={qo.quantity||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],quantity:e.target.value};updateOffer(oi,{quantity_offers:n});}} className="w-14 bg-white rounded-md border border-gray-200 px-2 py-1 text-xs font-black text-center focus:border-amber-400 focus:ring-1 focus:ring-amber-200 outline-none transition-all" placeholder="3"/>
+                                </div>
+
+                                <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden">
+                                  <button type="button" onClick={()=>{const n=[...form.quantity_offers];n[qi]={...n[qi],discount_type:'percent'};updateOffer(oi,{quantity_offers:n});}} className={`px-2.5 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1 ${(qo.discount_type||'percent')!=='fixed'?'bg-amber-100 text-amber-700':'text-gray-400 hover:text-gray-600'}`}><Percent size={10}/></button>
+                                  <button type="button" onClick={()=>{const n=[...form.quantity_offers];n[qi]={...n[qi],discount_type:'fixed'};updateOffer(oi,{quantity_offers:n});}} className={`px-2.5 py-1.5 text-[10px] font-bold transition-colors flex items-center gap-1 ${qo.discount_type==='fixed'?'bg-amber-100 text-amber-700':'text-gray-400 hover:text-gray-600'}`}><Hash size={10}/></button>
+                                </div>
+
+                                <input type="number" min="0" step={qo.discount_type==='fixed'?'1':'0.5'} value={qo.discount_value||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],discount_value:e.target.value};updateOffer(oi,{quantity_offers:n});}} className="w-20 bg-white rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-bold text-center focus:border-amber-400 focus:ring-1 focus:ring-amber-200 outline-none transition-all" placeholder={qo.discount_type==='fixed'?'500':'20'}/>
+                                <span className="text-[10px] font-bold text-gray-400">{qo.discount_type==='fixed'?(currentStore?.currency||'DZD'):'%'}</span>
+                              </div>
+
+                              {/* Row 2: Label override + toggles */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <input value={qo.label||''} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],label:e.target.value};updateOffer(oi,{quantity_offers:n});}} className="flex-1 min-w-[140px] bg-gray-50 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs focus:border-amber-400 focus:ring-1 focus:ring-amber-200 outline-none transition-all" placeholder={t('offers.qtyLabelOverride','Custom label (auto-generated if empty)')}/>
+
+                                <label className="flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-emerald-300 transition-colors bg-white">
+                                  <input type="checkbox" checked={!!qo.free_shipping} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],free_shipping:e.target.checked};updateOffer(oi,{quantity_offers:n});}} className="w-3 h-3 rounded border-gray-300 text-emerald-500"/>
+                                  <span className="text-[10px] font-bold text-gray-500">🚚 {t('offers.freeShipShort','Free shipping')}</span>
+                                </label>
+
+                                <label className="flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-amber-300 transition-colors bg-white">
+                                  <input type="checkbox" checked={!!qo.highlight} onChange={e=>{const n=[...form.quantity_offers];n[qi]={...n[qi],highlight:e.target.checked};updateOffer(oi,{quantity_offers:n});}} className="w-3 h-3 rounded border-gray-300 text-amber-500"/>
+                                  <span className="text-[10px] font-bold text-gray-500">⭐ {t('offers.highlightTier','Highlight')}</span>
+                                </label>
+                              </div>
+
+                              {/* Preview chip */}
+                              {(qo.quantity||autoLabel)&&(
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-bold text-gray-300 uppercase">{t('offers.preview','Preview')}:</span>
+                                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-xs ${qo.highlight?'border-amber-400 bg-amber-50':'border-gray-200 bg-gray-50'}`}>
+                                    <span className="font-black text-gray-700">×{qo.quantity||'?'}</span>
+                                    <span className={`font-bold ${qo.highlight?'text-amber-700':'text-gray-500'}`}>{autoLabel||'...'}</span>
+                                    {qo.free_shipping&&<span className="text-[10px]">🚚</span>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Delete button */}
+                            <button type="button" onClick={()=>updateOffer(oi,{quantity_offers:form.quantity_offers.filter((_,i)=>i!==qi)})} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Trash2 size={14}/></button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Visual pricing ladder */}
+                  {(form.quantity_offers||[]).filter(q=>q.quantity).length>=2&&(
+                    <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-amber-50/30 border border-gray-100">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><TrendingUp size={10}/>{t('offers.pricingLadder','Pricing Ladder')}</p>
+                      <div className="flex items-end gap-1.5">
+                        {(form.quantity_offers||[]).filter(q=>q.quantity).sort((a,b)=>(parseInt(a.quantity)||0)-(parseInt(b.quantity)||0)).map((qo,qi,arr)=>{
+                          const maxDisc=Math.max(...arr.map(q=>parseFloat(q.discount_value)||0),1);
+                          const disc=parseFloat(qo.discount_value)||0;
+                          const h=Math.max(16,Math.round((disc/maxDisc)*48));
+                          const isHighlighted=qo.highlight;
+                          return(
+                            <div key={qi} className="flex flex-col items-center gap-1 flex-1">
+                              <span className="text-[9px] font-black text-gray-500">{qo.discount_type==='fixed'?qo.discount_value:qo.discount_value+'%'}</span>
+                              <div className={`w-full rounded-t-lg transition-all ${isHighlighted?'bg-gradient-to-t from-amber-500 to-amber-400':'bg-gradient-to-t from-gray-400 to-gray-300'}`} style={{height:h+'px'}}/>
+                              <span className="text-[9px] font-bold text-gray-400">×{qo.quantity}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Product selection table */}

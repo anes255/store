@@ -256,6 +256,8 @@ const EMPTY_LP={
   ai_generated:false,
   theme_preset:null,
   language:'ar', // ar, fr, en — controls the landing page display language
+  ai_hero_image:null, // puter.js AI-generated hero image (data URL)
+  ai_section_images:[], // puter.js AI-generated section images
 };
 
 const LANGUAGES=[
@@ -370,10 +372,6 @@ export default function LandingPageBuilder(){
     };
     const newItems=[...page.items,item];
     updatePage(pageIdx,{items:newItems});
-    // Auto-generate theme when first product with image is added
-    if(page.items.length===0&&item.image&&!page.theme_preset){
-      setTimeout(()=>applyAutoTheme(pageIdx),300);
-    }
   };
 
   const addAllProducts=(pageIdx)=>{
@@ -389,8 +387,8 @@ export default function LandingPageBuilder(){
     const allItems=[...page.items,...newItems];
     updatePage(pageIdx,{items:allItems});
     toast.success(`${newItems.length} ${t('lp.productsAdded','products added')}`);
-    // Auto-theme if no theme was set yet
-    if(!page.theme_preset&&newItems.some(it=>it.image)){
+    // Auto-theme based on ALL products after bulk add
+    if(allItems.some(it=>it.image)){
       setTimeout(()=>applyAutoTheme(pageIdx),400);
     }
   };
@@ -460,6 +458,49 @@ export default function LandingPageBuilder(){
     });
     toast.success(`✨ ${preset.name} ${t('lp.themeApplied','applied')}`);
     setShowThemePicker(false);
+  };
+
+  /* ─── puter.js AI Image Generation ─── */
+  const[generatingImage,setGeneratingImage]=useState(false);
+
+  const generateAIImage=async(pageIdx,type='hero')=>{
+    const page=pages[pageIdx];
+    if(!page?.items?.length){toast.error('Add products first');return;}
+    if(typeof window.puter==='undefined'){toast.error('puter.js not loaded');return;}
+    setGeneratingImage(true);
+    try{
+      // Build a rich prompt from product data
+      const productNames=page.items.map(it=>it.name).filter(Boolean).join(', ');
+      const categories=[...new Set(page.items.map(it=>it.category).filter(Boolean))].join(', ');
+      const mood=page.hero_title||'premium';
+      const bgHex=page.hero_bg||'#1e1b4b';
+      const accentHex=page.accent_color||'#7C3AED';
+
+      const prompts={
+        hero:`Professional e-commerce hero banner for products: ${productNames}. ${categories?'Category: '+categories+'.':''} Mood: ${mood}. Rich, luxurious composition with dynamic lighting, elegant product arrangement. Color scheme: dark background ${bgHex} with accent ${accentHex}. Studio quality, cinematic, no text, no watermarks, commercial photography style, 16:9 aspect ratio.`,
+        section:`Elegant lifestyle background for ${productNames}. Soft bokeh, ambient lighting, ${categories||'premium'} aesthetic. Minimalist, no text, complementary colors to ${accentHex}. Professional product photography backdrop.`,
+        texture:`Abstract luxury texture background. Gradient mesh with colors ${bgHex} and ${accentHex}. Subtle glass morphism, silk fabric, flowing curves, premium feel. No text, no objects, pure abstract aesthetic.`,
+      };
+
+      const prompt=prompts[type]||prompts.hero;
+      const image=await window.puter.ai.txt2img(prompt,{model:'flux-schnell',quality:'medium'});
+
+      // Extract data URL from the returned HTMLImageElement
+      const dataUrl=image.src;
+
+      if(type==='hero'){
+        updatePage(pageIdx,{ai_hero_image:dataUrl});
+        toast.success('🎨 AI hero image generated!');
+      }else{
+        const existing=page.ai_section_images||[];
+        updatePage(pageIdx,{ai_section_images:[...existing,dataUrl]});
+        toast.success('🎨 AI section image generated!');
+      }
+    }catch(err){
+      console.error('puter.js image generation error:',err);
+      toast.error('Image generation failed — try again');
+    }
+    setGeneratingImage(false);
   };
 
   const generateAI=async(pageIdx)=>{
@@ -538,6 +579,9 @@ export default function LandingPageBuilder(){
         updatePage(pageIdx,patch);
         const layoutName=LAYOUT_STYLES.find(l=>l.value===ai.layout_style)?.label||ai.layout_style;
         toast.success(`✨ AI generated: ${layoutName} layout${ai.page_mood?' • '+ai.page_mood+' mood':''}`);
+
+        // Auto-generate hero image via puter.js (non-blocking)
+        generateAIImage(pageIdx,'hero').catch(()=>{});
       }else{
         // Fallback to basic generation
         const updatedItems=page.items.map(item=>({
@@ -547,9 +591,6 @@ export default function LandingPageBuilder(){
           description:item.description||`${t('lp.aiDesc1','Discover')} ${item.name} — ${t('lp.aiDesc2','designed to exceed your expectations.')}`,
         }));
         updatePage(pageIdx,{items:updatedItems,ai_generated:true});
-        if(!page.theme_preset&&page.items.some(it=>it.image||it.custom_image)){
-          setTimeout(()=>applyAutoTheme(pageIdx),200);
-        }
         toast.success(t('lp.aiGenerated','AI content generated! Review and customize.'));
       }
     }catch(err){
@@ -562,9 +603,6 @@ export default function LandingPageBuilder(){
         description:item.description||`${t('lp.aiDesc1','Discover')} ${item.name} — ${t('lp.aiDesc2','designed to exceed your expectations.')}`,
       }));
       updatePage(pageIdx,{items:updatedItems,ai_generated:true});
-      if(!page.theme_preset&&page.items.some(it=>it.image||it.custom_image)){
-        setTimeout(()=>applyAutoTheme(pageIdx),200);
-      }
       toast.success(t('lp.aiGenerated','AI content generated (basic mode).'));
     }
     setGenerating(false);
@@ -666,6 +704,10 @@ export default function LandingPageBuilder(){
           <button onClick={()=>generateAI(editing)} disabled={generating} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-white shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.97]" style={{background:'linear-gradient(135deg, #7C3AED, #2563EB)'}}>
             {generating?<RefreshCw size={13} className="animate-spin"/>:<Brain size={13}/>}
             {generating?t('lp.generating','AI Generating...'):form?.ai_generated?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate')}
+          </button>
+          <button onClick={()=>generateAIImage(editing,'hero')} disabled={generatingImage} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-white shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.97]" style={{background:'linear-gradient(135deg, #EC4899, #F59E0B)'}}>
+            {generatingImage?<RefreshCw size={13} className="animate-spin"/>:<Image size={13}/>}
+            {generatingImage?t('lp.generatingImage','Generating...'):form?.ai_hero_image?t('lp.regenImage','Regen Image'):t('lp.aiImage','AI Image')}
           </button>
           {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="btn-ghost text-xs flex items-center gap-1"><Eye size={12}/>{t('lp.preview','Preview')}</a>}
           <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-xs flex items-center gap-1.5"><Save size={12}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
@@ -784,9 +826,20 @@ export default function LandingPageBuilder(){
             </div>
           </div>
           <div><label className="text-[10px] text-gray-400 font-bold uppercase">{t('lp.ctaText','CTA Button Text')}</label><input className="input-field !py-2 text-sm" value={form.cta_text} onChange={e=>updatePage(editing,{cta_text:e.target.value})}/></div>
+          {/* AI Hero Image */}
+          {form.ai_hero_image&&(
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-gray-400 font-bold uppercase flex items-center gap-1"><Image size={10}/>{t('lp.aiHeroImage','AI Hero Image')}</label>
+                <button onClick={()=>updatePage(editing,{ai_hero_image:null})} className="text-[10px] text-red-400 hover:text-red-600 font-bold">{t('common.delete','Remove')}</button>
+              </div>
+              <img src={form.ai_hero_image} alt="AI Hero" className="w-full h-32 object-cover rounded-xl ring-1 ring-black/10"/>
+            </div>
+          )}
           {/* Hero preview */}
-          <div className="rounded-xl overflow-hidden shadow-lg" style={{backgroundColor:form.hero_bg}}>
-            <div className="p-8 text-center">
+          <div className="rounded-xl overflow-hidden shadow-lg relative" style={{backgroundColor:form.hero_bg}}>
+            {form.ai_hero_image&&<img src={form.ai_hero_image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40"/>}
+            <div className="relative p-8 text-center">
               <h2 className="text-xl font-black tracking-tight" style={{color:form.hero_text}}>{form.hero_title||t('lp.heroTitlePh','Your Amazing Products')}</h2>
               <p className="text-sm mt-2 opacity-80" style={{color:form.hero_text}}>{form.hero_subtitle||t('lp.heroSubPh','Scroll down to discover')}</p>
               <button className="mt-4 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg" style={{backgroundColor:form.cta_bg,color:form.cta_text_color}}>{form.cta_text||'Order Now'}</button>
@@ -837,8 +890,8 @@ export default function LandingPageBuilder(){
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {LAYOUT_STYLES.map(s=>(
                   <button key={s.value} onClick={()=>updatePage(editing,{layout_style:s.value,_layoutCustomized:true})} className={`p-2.5 rounded-xl border-2 text-left text-xs transition-all hover:shadow-md ${form.layout_style===s.value?'border-violet-500 bg-violet-50 ring-2 ring-violet-200':'border-gray-100 hover:border-gray-300'}`}>
-                    <p className="font-bold text-gray-700 text-[11px]">{s.label}</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight">{s.desc}</p>
+                    <p className="font-bold text-gray-700 text-[11px]">{t(`lp.layout_${s.value}`,s.label)}</p>
+                    <p className="text-[9px] text-gray-400 mt-0.5 leading-tight">{t(`lp.layoutDesc_${s.value}`,s.desc)}</p>
                   </button>
                 ))}
               </div>
