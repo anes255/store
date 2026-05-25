@@ -270,6 +270,7 @@ const LAYOUT_STYLES=[
   {value:'split-screen',label:'Split Screen',desc:'Bold 50/50 image+text'},
   {value:'mosaic',label:'Mosaic',desc:'Asymmetric collage layout'},
   {value:'storytelling',label:'Storytelling',desc:'Narrative chapters with bleed images'},
+  {value:'product-hero',label:'Product Hero',desc:'Landixo-style conversion page with inline order'},
 ];
 
 const HERO_STYLES=[
