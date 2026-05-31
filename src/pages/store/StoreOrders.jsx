@@ -224,13 +224,16 @@ export default function StoreOrders() {
 
   const toggleSelect = (id) => setSelectedItems(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleAll = () => {
-    setSelectedItems(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
-    // Warn if there are more orders matching the filter than are currently
-    // loaded — bulk actions only operate on the loaded page, so the merchant
-    // should know they haven't actually selected every matching order.
-    if (orders.length < total) {
-      toast(`Selected ${orders.length} of ${total} matching orders. Older orders aren't loaded — refine the filter or scroll to load more before bulk-deleting.`, { duration: 5000, icon: '⚠️' });
-    }
+    // Select only the orders within the current rows-per-page range that are
+    // actually displayed on screen (pageOrders), not every loaded order.
+    const ids = pageOrders.map(o => o.id);
+    const allSelected = ids.length > 0 && ids.every(id => selectedItems.has(id));
+    setSelectedItems(prev => {
+      const n = new Set(prev);
+      if (allSelected) ids.forEach(id => n.delete(id));
+      else ids.forEach(id => n.add(id));
+      return n;
+    });
   };
   const clearSelection = () => setSelectedItems(new Set());
 
@@ -259,6 +262,21 @@ export default function StoreOrders() {
     else { setLoading(true); loadOrders(); }
   }, [currentStore?.id, filter, search, location.pathname]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
+  const [shippingWilayas, setShippingWilayas] = useState([]);
+  useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r => { const d = r.data; setShippingWilayas(Array.isArray(d) ? d : Array.isArray(d?.wilayas) ? d.wilayas : []); }).catch(() => {}); }, [currentStore?.id]);
+  // Compute the delivery price for an order given a shipping method, using the
+  // store's per-wilaya pricing (and per-company override when applicable).
+  const deliveryPriceFor = (o, shippingType) => {
+    const wRow = shippingWilayas.find(w => w.wilaya_name === o.shipping_wilaya || w.wilaya_code === o.shipping_wilaya_code);
+    if (!wRow) return null;
+    const isHome = shippingType === 'home';
+    let price = parseFloat(isHome ? wRow.home_delivery_price : wRow.desk_delivery_price);
+    if (o.delivery_company_id && Array.isArray(wRow.company_prices)) {
+      const perCo = wRow.company_prices.find(cp => String(cp.company_id) === String(o.delivery_company_id));
+      if (perCo) { const cp = parseFloat(isHome ? (perCo.home || perCo.home_price) : (perCo.desk || perCo.desk_price)); if (!isNaN(cp)) price = cp; }
+    }
+    return isNaN(price) ? null : price;
+  };
 
   const highlightId = useMemo(() => { const p = new URLSearchParams(location.search); return p.get('highlight') || null; }, [location.search]);
   useEffect(() => {
@@ -294,6 +312,20 @@ export default function StoreOrders() {
   // Save any field of an order via PATCH.
   const saveOrderField = async (orderId, patch) => {
     try {
+      // When the shipping method changes, recompute the shipping cost from the
+      // store's per-wilaya pricing and adjust the order total accordingly so the
+      // displayed total reflects the new home/desk delivery price.
+      if (patch.shipping_type && patch.shipping_cost == null) {
+        const o = orders.find(x => x.id === orderId);
+        if (o) {
+          const newCost = deliveryPriceFor(o, patch.shipping_type);
+          if (newCost != null) {
+            const prevCost = parseFloat(o.shipping_cost) || 0;
+            const prevTotal = parseFloat(o.total) || 0;
+            patch = { ...patch, shipping_cost: newCost, total: Math.max(0, prevTotal - prevCost + newCost) };
+          }
+        }
+      }
       await api.patch(`/manage/stores/${currentStore.id}/orders/${orderId}`, patch);
       toast.success(t('store.saved','Saved'));
       loadOrders();
@@ -458,6 +490,7 @@ export default function StoreOrders() {
           <div class="totals">
             <div><span>Subtotal</span><b>${fmtMoney(o.subtotal ?? (o.total - (o.shipping_cost || 0)), o.currency)}</b></div>
             <div><span>Shipping</span><b>${fmtMoney(o.shipping_cost, o.currency)}</b></div>
+            ${(() => { const tw = items.reduce((s,i)=>s+(parseFloat(i.weight)||0),0); return tw>0 ? `<div><span>Weight</span><b>${tw} kg</b></div>` : ''; })()}
             ${o.discount > 0 ? `<div><span>Discount</span><b>-${fmtMoney(o.discount, o.currency)}</b></div>` : ''}
             <div class="total"><span>TOTAL</span><b>${fmtMoney(o.total, o.currency)}</b></div>
             <div class="meta">Payment: ${esc((o.payment_method || 'cod').toUpperCase())}</div>
@@ -642,8 +675,11 @@ export default function StoreOrders() {
 
       case 'processed_at': {
         const d = o.processed_at || o.updated_at;
+        const dd = d ? new Date(d) : null;
         return <td className="px-3 py-3 whitespace-nowrap">{cellBtn(o, 'processed_at',
-          <span className="text-xs text-gray-600">{d ? new Date(d).toLocaleString() : 'Not processed'}</span>
+          dd
+            ? <span className="flex flex-col leading-tight"><span className="text-xs text-gray-700">{dd.toLocaleDateString()}</span><span className="text-[10px] text-gray-400">{dd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></span>
+            : <span className="text-xs text-gray-400">{t('orders.qa.notProcessed','Not processed')}</span>
         )}</td>;
       }
 
@@ -851,7 +887,7 @@ export default function StoreOrders() {
             ))}
           </div>
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Column width">
-            <button onClick={() => setColScale(Math.max(0.75, +(colScale-0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">−</button>
+            <button onClick={() => setColScale(Math.max(0.5, +(colScale-0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">−</button>
             <span className="px-1 text-[10px] font-bold text-gray-500 tabular-nums">{Math.round(colScale*100)}%</span>
             <button onClick={() => setColScale(Math.min(1.5, +(colScale+0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">+</button>
           </div>
@@ -924,7 +960,7 @@ export default function StoreOrders() {
               </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
-                  <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{selectedItems.size>0 && selectedItems.size===orders.length ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
+                  <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{pageOrders.length>0 && pageOrders.every(o => selectedItems.has(o.id)) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
                   {activeColumns.map(key => {
                     const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
                     const w = colWidths[key];
@@ -1214,6 +1250,7 @@ export default function StoreOrders() {
                           )}
                           {it.sku && <p className="text-[10px] text-gray-400 font-mono mt-1">SKU: {it.sku}</p>}
                           <p className="text-xs text-gray-400 mt-1">{it.quantity} × {parseFloat(it.unit_price||it.price||0).toLocaleString()} {selectedOrder.currency || 'DZD'}</p>
+                          {parseFloat(it.weight) > 0 && <p className="text-[10px] text-gray-400 mt-0.5">{t('orders.weight','Weight')}: {parseFloat(it.weight)} {t('orders.kg','kg')}</p>}
                         </div>
                         <p className="font-bold text-sm shrink-0">{parseFloat(it.total_price||((it.unit_price||it.price||0)*(it.quantity||1))).toLocaleString()} {selectedOrder.currency || 'DZD'}</p>
                       </div>
@@ -1225,6 +1262,7 @@ export default function StoreOrders() {
               <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('orders.subtotal','Subtotal')}</span><span>{parseFloat(selectedOrder.subtotal).toLocaleString()} DZD</span></div>
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('orders.shipping','Shipping')}</span><span>{parseFloat(selectedOrder.shipping_cost).toLocaleString()} DZD</span></div>
+                {(() => { const tw = (selectedOrder.items||[]).reduce((s,i)=>s+(parseFloat(i.weight)||0),0); return tw>0 ? <div className="flex justify-between text-sm"><span className="text-gray-500">{t('orders.totalWeight','Total Weight')}</span><span>{tw} {t('orders.kg','kg')}</span></div> : null; })()}
                 <div className="flex justify-between font-black text-xl pt-2 border-t"><span>{t('orders.total','Total')}</span><span className="text-brand-600">{parseFloat(selectedOrder.total).toLocaleString()} DZD</span></div>
               </div>
 
@@ -1640,14 +1678,21 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
 
   if (type === 'financial') {
     const opts = ['pending','paid','refunded','failed','partially_refunded'];
+    const fLabel = (s) => s === 'pending' ? t('orders.verification','Verification')
+      : s === 'paid' ? t('orders.paid','Paid')
+      : s === 'refunded' ? t('orders.refunded','Refunded')
+      : s === 'failed' ? t('orders.failed','Failed')
+      : s === 'partially_refunded' ? t('orders.partiallyRefunded','Partially Refunded')
+      : s.replace('_',' ');
     return wrap(
       <div className="flex flex-col gap-2">
+        <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.financialStatus','Financial Status')}</label>
         {opts.map(s => {
           const active = (o.payment_status || 'pending') === s;
           const cls = s === 'paid' ? 'bg-emerald-500' : s === 'refunded' ? 'bg-orange-500' : s === 'failed' ? 'bg-red-500' : s === 'partially_refunded' ? 'bg-purple-500' : 'bg-amber-500';
           return (
             <button key={s} onClick={() => { onSaveField({ payment_status: s }); onClose(); }}
-              className={`py-3 rounded-xl text-xs font-bold uppercase ${active ? `${cls} text-white ring-2 ring-offset-2 ring-gray-300` : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{s.replace('_',' ')}</button>
+              className={`py-3 rounded-xl text-xs font-bold uppercase ${active ? `${cls} text-white ring-2 ring-offset-2 ring-gray-300` : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{fLabel(s)}</button>
           );
         })}
       </div>

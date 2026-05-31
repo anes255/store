@@ -4,7 +4,7 @@ import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
 import{productApi,ownerApi}from'../../utils/api';
 import toast from'react-hot-toast';
-import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers,RefreshCw,Pipette,Shield,Brain}from'lucide-react';
+import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers,RefreshCw,Pipette,Shield,Brain,X}from'lucide-react';
 import{aiApi}from'../../utils/api';
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -365,6 +365,7 @@ export default function LandingPageBuilder(){
       price:product.price,
       compare_price:product.compare_at_price||product.compare_price||null,
       image:product.thumbnail||product.images?.[0]||null,
+      images:Array.isArray(product.images)?product.images.filter(Boolean):[],
       description:product.description_en||product.description||'',
       headline:'',
       features:[],
@@ -380,7 +381,7 @@ export default function LandingPageBuilder(){
     const newItems=products.filter(p=>!existing.has(p.id)).map(p=>({
       product_id:p.id,name:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',
       price:p.price,compare_price:p.compare_at_price||p.compare_price||null,
-      image:p.thumbnail||p.images?.[0]||null,description:p.description_en||p.description||'',
+      image:p.thumbnail||p.images?.[0]||null,images:Array.isArray(p.images)?p.images.filter(Boolean):[],description:p.description_en||p.description||'',
       headline:'',features:[],custom_image:null,
     }));
     if(!newItems.length){toast.error(t('lp.allAdded','All products already added'));return;}
@@ -828,6 +829,24 @@ export default function LandingPageBuilder(){
                 <div><label className="text-[10px] text-gray-400 font-bold">{t('lp.description','Description')}</label><textarea className="input-field !py-1.5 text-xs" rows={1} placeholder={t('lp.descPh','Product selling points...')} value={item.description} onChange={e=>updateItem(editing,idx,{description:e.target.value})}/></div>
               </div>
               <div className="mt-2"><label className="text-[10px] text-gray-400 font-bold">{t('lp.features','Key Features')} <span className="font-normal text-gray-300">({t('lp.featuresHint','one per line')})</span></label><textarea className="input-field !py-1.5 text-xs" rows={2} placeholder={t('lp.featuresPh','Premium quality\nFast delivery\n30-day guarantee')} value={(item.features||[]).join('\n')} onChange={e=>updateItem(editing,idx,{features:e.target.value.split('\n')})}/></div>
+              {/* ─── Product images manager (gallery shown on landing page) ─── */}
+              {(item.images||[]).length>0&&(
+                <div className="mt-2">
+                  <label className="text-[10px] text-gray-400 font-bold">{t('lp.productImages','Product Images')} <span className="font-normal text-gray-300">({t('lp.productImagesHint','star = main, shown as a gallery')})</span></label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {(item.images||[]).map((src,ii)=>{
+                      const isMain=(item.custom_image||item.image)===src;
+                      return(
+                        <div key={ii} className="relative w-14 h-14 rounded-lg overflow-hidden group/img" style={{boxShadow:isMain?'0 0 0 2px #10b981':'0 0 0 1px rgba(0,0,0,0.1)'}}>
+                          <img src={src} className="w-full h-full object-cover"/>
+                          <button type="button" onClick={()=>updateItem(editing,idx,{image:src,custom_image:null})} title={t('lp.setMain','Set as main')} className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full flex items-center justify-center ${isMain?'bg-emerald-500 text-white':'bg-white/80 text-gray-500'}`}><Star size={9} fill={isMain?'currentColor':'none'}/></button>
+                          <button type="button" onClick={()=>{const nx=(item.images||[]).filter(s=>s!==src);updateItem(editing,idx,{images:nx,...(isMain?{image:nx[0]||null}:{})});}} title={t('common.delete','Remove')} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X size={9}/></button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {form.items.length===0&&<div className="text-center py-8 text-gray-400"><Package size={32} className="mx-auto mb-2 opacity-50"/><p className="text-sm">{t('lp.noProductsYet','Add products from the picker above')}</p></div>}

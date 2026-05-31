@@ -143,6 +143,10 @@ const readWishlist = (slug) => {
   if (!slug) return [];
   try { return JSON.parse(localStorage.getItem('wishlist_' + slug) || '[]'); } catch { return []; }
 };
+// Remember the last bound slug so wishlist actions never silently no-op if a
+// component calls toggle/remove before its init effect has run.
+let _lastWishlistSlug = null;
+try { _lastWishlistSlug = localStorage.getItem('wishlist_active_slug') || null; } catch {}
 
 export const useWishlistStore = create((set, get) => ({
   slug: null,
@@ -151,7 +155,10 @@ export const useWishlistStore = create((set, get) => ({
   // Bind the store to a specific store slug. Idempotent — calling repeatedly
   // with the same slug is a no-op so we don't thrash state during re-renders.
   init: (slug) => {
-    if (!slug || get().slug === slug) return;
+    if (!slug) return;
+    _lastWishlistSlug = slug;
+    try { localStorage.setItem('wishlist_active_slug', slug); } catch {}
+    if (get().slug === slug) return;
     set({ slug, items: readWishlist(slug) });
   },
 
@@ -166,7 +173,8 @@ export const useWishlistStore = create((set, get) => ({
   // Toggle a product. Returns true if it was added, false if removed,
   // so callers can show the appropriate toast.
   toggle: (product) => {
-    const slug = get().slug;
+    let slug = get().slug || _lastWishlistSlug;
+    if (slug && get().slug !== slug) set({ slug, items: readWishlist(slug) });
     if (!slug || !product) return false;
     const items = get().items;
     const exists = items.some(p => p.id === product.id);

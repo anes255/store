@@ -151,6 +151,36 @@ function LightboxImage({ images, index, onClose, onChange }) {
   );
 }
 
+// Real-time limited-offer countdown — ticks down every second. The deadline is
+// persisted in localStorage per product so it survives reloads instead of
+// resetting on each render.
+function ProductOfferCountdown({ product }) {
+  const h = parseInt(product.offer_hours) || 0;
+  const m = parseInt(product.offer_minutes) || 0;
+  const key = `poffer_${product.id}_${h}_${m}`;
+  const deadline = React.useMemo(() => {
+    if (!h && !m) return 0;
+    try { const c = parseInt(localStorage.getItem(key)); if (c && c > Date.now()) return c; } catch {}
+    const d = Date.now() + (h * 3600 + m * 60) * 1000;
+    try { localStorage.setItem(key, String(d)); } catch {}
+    return d;
+  }, [key, h, m]);
+  const [now, setNow] = React.useState(Date.now());
+  React.useEffect(() => {
+    if (!deadline) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+  if (!product.is_on_sale || (!h && !m)) return null;
+  const diff = Math.max(0, deadline - now);
+  if (diff <= 0) return null;
+  const hh = Math.floor(diff / 3600000);
+  const mm = Math.floor((diff % 3600000) / 60000);
+  const ss = Math.floor((diff % 60000) / 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return <div className="mt-3 flex items-center gap-3 text-lg font-extrabold text-red-600"><Tag size={20}/><span className="text-base sm:text-lg">{product.offer_title || 'Limited Offer'}</span><span className="font-mono bg-red-50 px-3 py-1.5 rounded-xl border-2 border-red-200 text-base sm:text-lg tracking-wider">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
+}
+
 export default function ProductDetail() {
   const { storeSlug, productSlug } = useParams();
   const { t } = useTranslation();
@@ -238,18 +268,26 @@ export default function ProductDetail() {
   const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   // Sum all price adjustments from selected variants
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
-  // Apply quantity offer discount when a matching tier is selected
-  const qtyOfferPct = (() => {
+  // Apply quantity offer discount when a matching tier is selected. Prefer the
+  // structured discount_type/discount_value fields, falling back to parsing a
+  // percentage out of the label for older offers.
+  const qtyOfferMatch = (() => {
     let qOffers = product.quantity_offers || [];
     if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
-    if (!Array.isArray(qOffers)) return 0;
-    const match = qOffers.find(qo => parseInt(qo.quantity) === quantity);
-    if (!match || !match.label) return 0;
-    const m = String(match.label).match(/(\d+(?:\.\d+)?)\s*%/);
-    return m ? parseFloat(m[1]) : 0;
+    if (!Array.isArray(qOffers)) return null;
+    return qOffers.find(qo => parseInt(qo.quantity) === quantity) || null;
   })();
   const priceBeforeQty = basePrice + priceAdj;
-  const finalPrice = qtyOfferPct > 0 ? Math.round(priceBeforeQty * (1 - qtyOfferPct / 100)) : priceBeforeQty;
+  const finalPrice = (() => {
+    if (!qtyOfferMatch) return priceBeforeQty;
+    const dv = parseFloat(qtyOfferMatch.discount_value) || 0;
+    if (dv > 0) {
+      if (qtyOfferMatch.discount_type === 'fixed') return Math.max(0, priceBeforeQty - dv);
+      return Math.round(priceBeforeQty * (1 - dv / 100));
+    }
+    const m = qtyOfferMatch.label ? String(qtyOfferMatch.label).match(/(\d+(?:\.\d+)?)\s*%/) : null;
+    return m ? Math.round(priceBeforeQty * (1 - parseFloat(m[1]) / 100)) : priceBeforeQty;
+  })();
   const stockCount = sv ? (sv.stock ?? product.stock_quantity) : product.stock_quantity;
 
   // Build a variant label for display
@@ -369,11 +407,11 @@ export default function ProductDetail() {
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{wishlistStore.count()}</span>}
+              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">{wishlistStore.count()}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center aspect-square">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">{getCount()}</span>}
             </button>
           </div>
         </div>
@@ -443,22 +481,7 @@ export default function ProductDetail() {
               {offerPct > 0 && <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-200">{product.sale_badge_text || 'SALE'} - {product.offer_discount}</span>}
             </div>
             {/* Offer timer */}
-            {product.is_on_sale && (parseInt(product.offer_hours)||0 + parseInt(product.offer_minutes)||0) > 0 && (() => {
-              const h = parseInt(product.offer_hours) || 0;
-              const m = parseInt(product.offer_minutes) || 0;
-              if (!h && !m) return null;
-              const key = `poffer_${product.id}_${h}_${m}`;
-              let deadline;
-              try { const c = parseInt(localStorage.getItem(key)); deadline = (c && c > Date.now()) ? c : null; } catch { deadline = null; }
-              if (!deadline) { deadline = Date.now() + (h * 3600 + m * 60) * 1000; try { localStorage.setItem(key, String(deadline)); } catch {} }
-              const diff = Math.max(0, deadline - Date.now());
-              if (diff <= 0) return null;
-              const hh = Math.floor(diff / 3600000);
-              const mm = Math.floor((diff % 3600000) / 60000);
-              const ss = Math.floor((diff % 60000) / 1000);
-              const pad = n => String(n).padStart(2, '0');
-              return <div className="mt-3 flex items-center gap-3 text-lg font-extrabold text-red-600"><Tag size={20}/><span className="text-base sm:text-lg">{product.offer_title || 'Limited Offer'}</span><span className="font-mono bg-red-50 px-3 py-1.5 rounded-xl border-2 border-red-200 text-base sm:text-lg tracking-wider">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
-            })()}
+            <ProductOfferCountdown product={product} />
 
             {/* Selected variant label */}
             {variantLabel && (
@@ -638,6 +661,15 @@ export default function ProductDetail() {
                 );
               })}
             </div>
+
+            {/* Product weight */}
+            {parseFloat(product.weight) > 0 && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+                <Package size={16} className="text-gray-400"/>
+                <span className="font-semibold">{t('store.weight','Weight')}:</span>
+                <span>{parseFloat(product.weight)} {t('store.kg','kg')}</span>
+              </div>
+            )}
           </div>
         </div>
 

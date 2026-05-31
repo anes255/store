@@ -37,7 +37,7 @@ export default function StoreProducts() {
   const toggleAll = () => setSelectedItems(prev => prev.size === products.length ? new Set() : new Set(products.map(p => p.id)));
   const clearSelection = () => setSelectedItems(new Set());
 
-  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false,is_on_sale:false,sale_badge_text:'',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:'',quantity_offers:[]};
+  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',weight:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false,is_on_sale:false,sale_badge_text:'',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:'',quantity_offers:[]};
   const [form, setForm] = useState({...empty});
 
   const loadProducts = async () => {
@@ -127,7 +127,7 @@ export default function StoreProducts() {
     let qOffers = p.quantity_offers || [];
     if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
     if (!Array.isArray(qOffers)) qOffers = [];
-    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active,is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'',offer_title:p.offer_title||'',offer_discount:p.offer_discount||'',offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||'',quantity_offers:qOffers});
+    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,weight:p.weight||'',sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active,is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'',offer_title:p.offer_title||'',offer_discount:p.offer_discount||'',offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||'',quantity_offers:qOffers});
     setShowModal(true);
   };
 
@@ -261,6 +261,7 @@ export default function StoreProducts() {
                 <div><label className="input-label text-xs">{t('products.buyingPrice','Buying Price')}</label><input type="number" className="input-field" placeholder="0" value={form.cost_price} onChange={set('cost_price')}/></div>
                 <div><label className="input-label text-xs">{t('products.comparePrice','Compare Price')}</label><input type="number" className="input-field" value={form.compare_at_price} onChange={set('compare_at_price')}/></div>
                 <div><label className="input-label text-xs">{t('products.stock','Stock')}</label><input type="number" className="input-field" value={form.stock_quantity} onChange={set('stock_quantity')}/></div>
+                <div><label className="input-label text-xs">{t('products.weight','Weight (kg)')}</label><input type="number" step="0.01" className="input-field" placeholder="0" value={form.weight} onChange={set('weight')}/></div>
                 <div><label className="input-label text-xs">{t('products.sku','SKU')}</label><input className="input-field" value={form.sku} onChange={set('sku')}/></div>
               </div>
 

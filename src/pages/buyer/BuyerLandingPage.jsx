@@ -1,10 +1,10 @@
 import React,{useState,useEffect,useRef,useCallback}from'react';
 import{useParams,Link}from'react-router-dom';
 import{useTranslation}from'react-i18next';
-import{storeApi}from'../../utils/api';
+import{storeApi,paymentApi}from'../../utils/api';
 import{useAuthStore}from'../../hooks/useStore';
 import toast from'react-hot-toast';
-import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift,Globe}from'lucide-react';
+import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift,Globe,Upload,Copy,ArrowRight,X,Tag,Smartphone}from'lucide-react';
 import WILAYA_CITIES from'../../data/wilayaCities';
 
 const WILAYA_CODES={'Adrar':'01','Chlef':'02','Laghouat':'03','Oum El Bouaghi':'04','Batna':'05','Béjaïa':'06','Biskra':'07','Béchar':'08','Blida':'09','Bouira':'10','Tamanrasset':'11','Tébessa':'12','Tlemcen':'13','Tiaret':'14','Tizi Ouzou':'15','Alger':'16','Djelfa':'17','Jijel':'18','Sétif':'19','Saïda':'20','Skikda':'21','Sidi Bel Abbès':'22','Annaba':'23','Guelma':'24','Constantine':'25','Médéa':'26','Mostaganem':'27',"M'Sila":'28','Mascara':'29','Ouargla':'30','Oran':'31','El Bayadh':'32','Illizi':'33','Bordj Bou Arréridj':'34','Boumerdès':'35','El Tarf':'36','Tindouf':'37','Tissemsilt':'38','El Oued':'39','Khenchela':'40','Souk Ahras':'41','Tipaza':'42','Mila':'43','Aïn Defla':'44','Naâma':'45','Aïn Témouchent':'46','Ghardaïa':'47','Relizane':'48'};
@@ -109,6 +109,38 @@ function ProductImageMosaic({items,overlay='rgba(0,0,0,0.7)'}){
         ))}
       </div>
       <div className="absolute inset-0" style={{background:overlay}}/>
+    </div>
+  );
+}
+
+/* ── Collect every image for a landing item (gallery support) ── */
+function itemImages(item){
+  if(!item)return[];
+  let imgs=Array.isArray(item.images)?item.images.filter(Boolean):[];
+  if(item.custom_image)imgs=[item.custom_image,...imgs.filter(s=>s!==item.custom_image)];
+  if(!imgs.length&&item.image)imgs=[item.image];
+  return[...new Set(imgs)];
+}
+
+/* ── Product gallery: main image + thumbnail strip when multiple ── */
+function ProductGallery({item,accent,imgClass='',aspect='aspect-square'}){
+  const imgs=itemImages(item);
+  const[active,setActive]=useState(0);
+  useEffect(()=>{setActive(0);},[item?.product_id]);
+  if(!imgs.length)return(<div className={`w-full ${aspect} rounded-3xl flex items-center justify-center`} style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>);
+  const src=imgs[Math.min(active,imgs.length-1)];
+  return(
+    <div className="space-y-3">
+      <img src={src} alt={item.name||''} className={`w-full ${aspect} object-cover ${imgClass}`}/>
+      {imgs.length>1&&(
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {imgs.map((s,i)=>(
+            <button key={i} type="button" onClick={()=>setActive(i)} className="w-14 h-14 rounded-xl overflow-hidden transition-all" style={{boxShadow:i===active?`0 0 0 2px ${accent||'#000'}`:'0 0 0 1px rgba(0,0,0,0.08)',opacity:i===active?1:0.6}}>
+              <img src={s} alt="" className="w-full h-full object-cover"/>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -269,7 +301,7 @@ function FormSelect({icon:Icon,label,required,accent,children,...props}){
       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>
         {Icon&&<Icon size={12}/>}{label}{required&&<span style={{color:accent}}>*</span>}
       </label>
-      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} {...props}>{children}</select>
+      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none" {...props}>{children}</select>
     </div>
   );
 }
@@ -279,7 +311,7 @@ function FloatingCartButton({totalQty,subtotal,currency,accent,onClick}){
     <button onClick={onClick} className="fixed bottom-5 z-50 flex items-center gap-2.5 pl-5 pr-5 py-3.5 rounded-2xl text-white font-bold text-sm shadow-2xl transition-all hover:scale-105 active:scale-95 backdrop-blur-md" style={{backgroundColor:accent+'ee',boxShadow:`0 8px 32px ${accent}50, 0 0 0 1px ${accent}30`,right:'20px'}}>
       <div className="relative">
         <ShoppingBag size={18}/>
-        <span className="absolute -top-2 -right-2 w-4.5 h-4.5 rounded-full bg-white text-[10px] font-black flex items-center justify-center" style={{color:accent,minWidth:'18px',height:'18px'}}>{totalQty}</span>
+        <span className="absolute -top-2 -right-2 rounded-full bg-white text-[10px] font-black flex items-center justify-center leading-none" style={{color:accent,width:'18px',height:'18px'}}>{totalQty}</span>
       </div>
       <span className="opacity-80">|</span>
       <span className="tabular-nums">{subtotal.toLocaleString()} {currency}</span>
@@ -332,13 +364,17 @@ export default function BuyerLandingPage(){
   const[loading,setLoading]=useState(true);
   const[notFound,setNotFound]=useState(false);
   const[cart,setCart]=useState({});
-  const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp'});
+  const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp',coupon_code:''});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
   const[shippingPrice,setShippingPrice]=useState(0);
   const[submitting,setSubmitting]=useState(false);
   const[orderSuccess,setOrderSuccess]=useState(null);
   const[companies,setCompanies]=useState([]);
+  const[couponDiscount,setCouponDiscount]=useState(0);
+  const[paymentStep,setPaymentStep]=useState(null);
+  const[receiptImage,setReceiptImage]=useState(null);
+  const[receiptRef,setReceiptRef]=useState('');
   const checkoutRef=useRef(null);
   const set=useCallback(k=>e=>setForm(f=>({...f,[k]:e.target.value})),[]);
 
@@ -365,6 +401,12 @@ export default function BuyerLandingPage(){
     })();
   },[storeSlug,landingSlug]);
 
+  // Keep the browser tab title in sync so it never stays stuck on "Loading…"
+  useEffect(()=>{
+    const title=page?.title||page?.name||store?.name||store?.store_name;
+    if(title)document.title=title;
+  },[page,store]);
+
   // Switch language based on page setting
   useEffect(()=>{
     if(!page?.language)return;
@@ -376,16 +418,29 @@ export default function BuyerLandingPage(){
   },[page?.language]);
 
   useEffect(()=>{
-    if(!form.shipping_wilaya)return;
-    // shipping_wilaya is now the wilaya name (e.g. "Alger")
+    if(!form.shipping_wilaya){setShippingPrice(0);return;}
+    // shipping_wilaya is the wilaya name (e.g. "Alger")
     const wName=form.shipping_wilaya;
     const w=wilayas.find(x=>x.wilaya_name===wName);
     if(w){
-      setShippingPrice(form.shipping_type==='desk'?(w.desk_price||w.home_price||400):(w.home_price||400));
+      // Mirror store checkout: prefer per-delivery-company override, then
+      // fall back to the wilaya's home/desk price exactly as admin configured.
+      let cp=w.company_prices;
+      if(typeof cp==='string'){try{cp=JSON.parse(cp);}catch{cp=null;}}
+      const perCo=cp&&form.delivery_company_id?cp[form.delivery_company_id]:null;
+      let price;
+      if(perCo){
+        price=parseFloat(form.shipping_type==='home'?(perCo.home||perCo.home_price||w.home_delivery_price):(perCo.desk||perCo.desk_price||w.desk_delivery_price))||0;
+      }else{
+        price=parseFloat(form.shipping_type==='home'?w.home_delivery_price:w.desk_delivery_price)||0;
+      }
+      setShippingPrice(price);
+    }else{
+      setShippingPrice(parseFloat(store?.shipping_default_price||0)||0);
     }
     // Always use WILAYA_CITIES for communes (canonical list)
     setCommunes(WILAYA_CITIES[wName]||[]);
-  },[form.shipping_wilaya,form.shipping_type,wilayas]);
+  },[form.shipping_wilaya,form.shipping_type,form.delivery_company_id,wilayas,store]);
 
   const scrollToCheckout=useCallback(()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});},[]);
 
@@ -403,7 +458,7 @@ export default function BuyerLandingPage(){
   const totalQty=Object.values(cart).reduce((s,q)=>s+q,0);
   const cartItems=(page?.items||[]).filter(it=>cart[it.product_id]>0);
   const subtotal=cartItems.reduce((s,it)=>s+(parseFloat(it.price)||0)*(cart[it.product_id]||0),0);
-  const total=subtotal+shippingPrice;
+  const total=Math.max(0,subtotal+shippingPrice-couponDiscount);
   const pc=page?.accent_color||store?.primary_color||'#7C3AED';
   const anim=page?.animation_style||'slide-up';
   const heroStyle=page?.hero_style||'centered';
@@ -423,6 +478,44 @@ export default function BuyerLandingPage(){
   },[layoutStyle,page?.items]);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
+
+  // Coupon — mirrors store Checkout: per-product code, then store-wide code, then API.
+  const validateCoupon=async()=>{
+    if(!form.coupon_code)return;
+    const code=String(form.coupon_code).trim().toUpperCase();
+    let off=0;
+    for(const it of cartItems){
+      const pCode=(it.coupon_code||'').toString().trim().toUpperCase();
+      const pPct=parseFloat(it.coupon_discount_percent)||0;
+      if(it.coupon_active&&pCode&&pCode===code&&pPct>0){
+        off+=((parseFloat(it.price)||0)*(cart[it.product_id]||1))*(pPct/100);
+      }
+    }
+    if(off>0){setCouponDiscount(Math.round(off));toast.success(`-${Math.round(off).toLocaleString()} ${currency}`);return;}
+    if(store?.store_coupon_active&&(store?.store_coupon_code||'').toString().trim().toUpperCase()===code){
+      const pct=parseFloat(store.store_coupon_discount_percent)||0;
+      if(pct>0){const o=Math.round(subtotal*(pct/100));setCouponDiscount(o);toast.success(`-${o.toLocaleString()} ${currency}`);return;}
+    }
+    try{const{data}=await storeApi.validateCoupon(storeSlug,{code,subtotal});setCouponDiscount(data.discount);toast.success(`-${data.discount.toLocaleString()} ${currency}`);}
+    catch{toast.error(t('checkout.invalidCoupon','Invalid coupon'));setCouponDiscount(0);}
+  };
+
+  const handleReceiptUpload=(e)=>{
+    const f=e.target.files?.[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{setReceiptImage(r.result);toast.success(t('checkout.receiptUploaded','Receipt uploaded!'));};
+    r.readAsDataURL(f);
+  };
+  const submitReceipt=async()=>{
+    if(!receiptImage)return toast.error(t('checkout.uploadBaridiReceipt','Please upload your receipt'));
+    if(!orderSuccess?.id)return;
+    try{
+      await paymentApi.uploadReceipt({store_slug:storeSlug,order_id:orderSuccess.id,receipt_image:receiptImage,payment_method:form.payment_method,reference_number:receiptRef});
+      toast.success(t('checkout.receiptSubmitted','Receipt submitted! Will be verified within 24 hours.'));
+      setPaymentStep(null);
+    }catch{toast.error(t('checkout.uploadFailed','Upload failed'));}
+  };
+  const copyToClipboard=(txt)=>{navigator.clipboard.writeText(txt);toast.success(t('storePage.copied','Copied!'));};
 
   const placeOrder=async()=>{
     if(!form.customer_name)return toast.error(t('checkout.errName','Please enter your name'));
@@ -445,6 +538,8 @@ export default function BuyerLandingPage(){
         landing_page:page.slug,
       });
       setOrderSuccess(data);
+      // Non-COD methods need the receipt-upload step, exactly like the store checkout.
+      if(form.payment_method!=='cod')setPaymentStep(form.payment_method);
     }catch(err){toast.error(err.response?.data?.error||t('lp.orderFailed','Order failed'));}
     setSubmitting(false);
   };
@@ -468,6 +563,57 @@ export default function BuyerLandingPage(){
         </div>
         <p className="text-white/60 font-bold text-lg">{t('lp.pageNotFound','Page not found')}</p>
         <Link to={`/s/${storeSlug}`} className="text-sm text-white/40 hover:text-white/70 transition-colors underline underline-offset-4">{t('lp.goToStore','Go to store')}</Link>
+      </div>
+    </div>
+  );
+
+  /* ─── Payment step (CCP / BaridiPay) — mirrors store checkout ─── */
+  if(orderSuccess&&paymentStep)return(
+    <div className="min-h-screen py-10 px-4" style={{background:`linear-gradient(135deg, ${page.hero_bg||'oklch(0.2 0.06 280)'}, oklch(0.1 0.01 280))`}}>
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <span className="font-bold text-sm text-white/80">{t('checkout.completePayment','Complete Payment')}</span>
+          <button onClick={()=>{setPaymentStep(null);}} className="text-white/50 hover:text-white"><X size={18}/></button>
+        </div>
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{backgroundColor:pc+'30'}}><CreditCard size={28} style={{color:'#fff'}}/></div>
+          <h2 className="text-xl font-black text-white">{t('lp.orderPlaced','Order')} #{orderSuccess.order_number||orderSuccess.id}</h2>
+          <p className="text-3xl font-black mt-2 text-white">{parseFloat(orderSuccess.total||total).toLocaleString()} {currency}</p>
+        </div>
+        {paymentStep==='ccp'&&(
+          <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center"><CreditCard size={20} className="text-amber-600"/></div><div><h3 className="font-bold text-gray-900">{t('checkout.ccpTransfer','CCP Transfer')}</h3><p className="text-xs text-gray-400">{t('checkout.ccpTransferDesc','Transfer to our CCP account')}</p></div></div>
+            <div className="bg-amber-50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.ccpAccount','CCP Account')}</span><div className="flex items-center gap-2"><span className="font-mono font-bold text-lg">{store.ccp_account||'N/A'}</span><button onClick={()=>copyToClipboard(store.ccp_account||'')} className="p-1 hover:bg-amber-100 rounded"><Copy size={14}/></button></div></div>
+              <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.accountName','Account Name')}</span><span className="font-bold">{store.ccp_name||'N/A'}</span></div>
+              <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.amount','Amount to Transfer')}</span><span className="font-black text-lg" style={{color:pc}}>{parseFloat(orderSuccess.subtotal||(orderSuccess.total-(orderSuccess.shipping_cost||0))||subtotal).toLocaleString()} {currency}</span></div>
+            </div>
+            <div className="bg-blue-50 rounded-xl p-3"><p className="text-xs text-blue-700">{t('checkout.ccpUploadHint','After transferring, upload your CCP receipt below to confirm your payment.')}</p></div>
+            <div><label className="text-xs font-semibold text-gray-600 mb-1 block">{t('checkout.refNumberOptional','Reference Number (optional)')}</label><input className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" value={receiptRef} onChange={e=>setReceiptRef(e.target.value)} placeholder={t('checkout.ccpRefPh','CCP transfer reference')}/></div>
+            <div className="border-2 border-dashed border-gray-300 hover:border-amber-400 rounded-xl p-6 text-center cursor-pointer transition-colors" onClick={()=>document.getElementById('lp-receipt-upload').click()}>
+              {receiptImage?<div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ {t('checkout.receiptUploaded','Receipt uploaded')}</p></div>:<div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">{t('checkout.clickUploadReceipt','Click to upload receipt photo')}</p></div>}
+            </div>
+            <input id="lp-receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
+            <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor:pc}}>{t('checkout.submitReceipt','Submit Receipt')} <ArrowRight size={16}/></button>
+          </div>
+        )}
+        {paymentStep==='baridimob'&&(
+          <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center"><Smartphone size={20} className="text-emerald-600"/></div><div><h3 className="font-bold text-gray-900">{t('checkout.baridiPayTitle','BaridiPay Payment')}</h3><p className="text-xs text-gray-400">{t('checkout.baridiPaySubtitle','Pay via BaridiPay app')}</p></div></div>
+            <div className="bg-emerald-50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.ripNumber','RIP Number')}</span><div className="flex items-center gap-2"><span className="font-mono font-bold">{store.baridimob_rip||t('checkout.notAvailable','N/A')}</span><button onClick={()=>copyToClipboard(store.baridimob_rip||'')} className="p-1 hover:bg-emerald-100 rounded"><Copy size={14}/></button></div></div>
+              <div className="flex items-center justify-between"><span className="text-sm text-gray-500">{t('checkout.amount','Amount to Transfer')}</span><span className="font-black text-lg" style={{color:pc}}>{parseFloat(orderSuccess.subtotal||(orderSuccess.total-(orderSuccess.shipping_cost||0))||subtotal).toLocaleString()} {currency}</span></div>
+            </div>
+            {store.baridimob_qr&&<div className="text-center p-4 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-400 uppercase mb-2">{t('checkout.scanToPay','Scan to Pay')}</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
+            <div><label className="text-xs font-semibold text-gray-600 mb-1 block">{t('checkout.txnRef','Transaction Reference')}</label><input className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" value={receiptRef} onChange={e=>setReceiptRef(e.target.value)} placeholder={t('checkout.baridiTxnPh','BaridiPay transaction ID')}/></div>
+            <div className="border-2 border-dashed border-gray-300 hover:border-emerald-400 rounded-xl p-6 text-center cursor-pointer transition-colors" onClick={()=>document.getElementById('lp-receipt-upload').click()}>
+              {receiptImage?<div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ {t('checkout.receiptUploaded','Receipt uploaded')}</p></div>:<div><Upload size={24} className="mx-auto text-gray-400 mb-2"/><p className="text-sm text-gray-500">{t('checkout.uploadBaridiReceipt','Upload your BaridiPay receipt')}</p></div>}
+            </div>
+            <input id="lp-receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
+            <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor:pc}}>{t('checkout.submitReceipt','Submit Receipt')} <ArrowRight size={16}/></button>
+          </div>
+        )}
+        <button onClick={()=>{setPaymentStep(null);}} className="w-full mt-4 py-3 rounded-xl font-bold text-sm bg-white/10 text-white/70 hover:bg-white/20">{t('checkout.payLater','Pay later / Skip')}</button>
       </div>
     </div>
   );
@@ -614,8 +760,7 @@ export default function BuyerLandingPage(){
                   <div className="relative group">
                     <div className="absolute -inset-4 rounded-3xl blur-2xl opacity-20 transition-opacity group-hover:opacity-30" style={{backgroundColor:pc}}/>
                     <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
-                    {hasImage?<img src={hasImage} alt={item.name} className="relative w-full max-w-lg mx-auto rounded-3xl shadow-2xl object-cover aspect-square transition-transform duration-700 group-hover:scale-[1.03] ring-1 ring-black/5"/>
-                    :<div className="w-full max-w-lg mx-auto aspect-square rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
+                    <div className="relative max-w-lg mx-auto"><ProductGallery item={item} accent={pc} imgClass="rounded-3xl shadow-2xl transition-transform duration-700 group-hover:scale-[1.03] ring-1 ring-black/5"/></div>
                   </div>
                 </div>
                 <div className="flex-1 space-y-5">
@@ -650,11 +795,9 @@ export default function BuyerLandingPage(){
           <div className="relative max-w-3xl mx-auto px-5 py-16 sm:py-24">
             <Reveal animation={anim} delay={80}>
               <div className="space-y-6">
-                <div className="relative group rounded-3xl overflow-hidden shadow-2xl">
+                <div className="relative group">
                   <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
-                  {hasImage?<img src={hasImage} alt={item.name} className="w-full object-cover aspect-[16/9] transition-transform duration-700 group-hover:scale-[1.03]"/>
-                  :<div className="w-full aspect-[16/9] flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"/>
+                  <ProductGallery item={item} accent={pc} aspect="aspect-[16/9]" imgClass="rounded-3xl shadow-2xl transition-transform duration-700 group-hover:scale-[1.03]"/>
                 </div>
                 <div className="space-y-4">
                   {item.headline&&<p className="text-xs font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full inline-block" style={{backgroundColor:pc+'12',color:pc}}>{item.headline}</p>}
@@ -692,7 +835,7 @@ export default function BuyerLandingPage(){
                 {hasImage&&(
                   <div className="relative max-w-sm mx-auto mt-6">
                     <div className="absolute -inset-6 rounded-[2rem] blur-3xl opacity-30" style={{backgroundColor:pc}}/>
-                    <img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-white/10"/>
+                    <div className="relative"><ProductGallery item={item} accent={pc} imgClass="rounded-3xl shadow-2xl ring-1 ring-white/10"/></div>
                   </div>
                 )}
                 {item.features?.length>0&&(
@@ -728,7 +871,7 @@ export default function BuyerLandingPage(){
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="xl" variant="dark"/>
                   <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
                 </div>
-                {hasImage&&<div className="flex-1 max-w-lg"><div className="relative"><div className="absolute -inset-8 rounded-[2rem] blur-[60px] opacity-25" style={{backgroundColor:pc}}/><img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-white/10"/></div></div>}
+                {hasImage&&<div className="flex-1 max-w-lg"><div className="relative"><div className="absolute -inset-8 rounded-[2rem] blur-[60px] opacity-25" style={{backgroundColor:pc}}/><div className="relative"><ProductGallery item={item} accent={pc} imgClass="rounded-3xl shadow-2xl ring-1 ring-white/10"/></div></div></div>}
               </div>
             </Reveal>
           </div>
@@ -748,7 +891,7 @@ export default function BuyerLandingPage(){
                 <div className="lg:col-span-3 relative group">
                   <div className="absolute -inset-3 rounded-[2rem] blur-2xl opacity-15" style={{backgroundColor:pc}}/>
                   <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
-                  {hasImage?<img src={hasImage} alt={item.name} className="relative w-full rounded-3xl shadow-2xl object-cover aspect-[4/3] ring-1 ring-black/5"/>:<div className="w-full aspect-[4/3] rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={72} className="opacity-20"/></div>}
+                  <div className="relative"><ProductGallery item={item} accent={pc} aspect="aspect-[4/3]" imgClass="rounded-3xl shadow-2xl ring-1 ring-black/5"/></div>
                 </div>
                 <div className="lg:col-span-2 flex flex-col justify-center space-y-5">
                   {item.headline&&<p className="text-[11px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full inline-block w-fit" style={{backgroundColor:pc+'15',color:pc}}>{item.headline}</p>}
@@ -1195,24 +1338,6 @@ export default function BuyerLandingPage(){
               <div className="rounded-3xl shadow-2xl p-6 sm:p-8 space-y-5 bg-white" style={{border:'1px solid rgba(0,0,0,0.05)'}}>
                 <h2 className="text-lg font-black text-center" style={{color:textColor}}>{t('lp.completeOrder','Complete Your Order')}</h2>
 
-                {/* Order summary */}
-                <div className="rounded-2xl p-4 space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
-                  {cartItems.map(it=>(
-                    <div key={it.product_id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-8 h-8 rounded-lg object-cover shadow-sm"/>}
-                        <span className="font-medium">{it.name} <span className="opacity-35">x{cart[it.product_id]}</span></span>
-                      </div>
-                      <span className="font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
-                    </div>
-                  ))}
-                  {cartItems.length===0&&<p className="text-xs text-center opacity-35">{t('lp.emptyCart','No products added')}</p>}
-                  <div className="border-t pt-2 mt-2 flex justify-between text-sm font-bold" style={{borderColor:'oklch(0.9 0.005 280)'}}>
-                    <span>{t('lp.total','Total')}</span>
-                    <span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {currency}</span>
-                  </div>
-                </div>
-
                 {/* Form */}
                 <div className="space-y-3">
                   <FormInput icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')} accent={pc}/>
@@ -1223,7 +1348,7 @@ export default function BuyerLandingPage(){
                   </FormSelect>
                   <div>
                     <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
-                    <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wCode=WILAYA_CODES[form.shipping_wilaya]||'';const cities=WILAYA_CITIES[form.shipping_wilaya]||[];const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?wCode.padStart(2,'0')+cCode:''}))}} disabled={!form.shipping_wilaya}>
+                    <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none" value={form.shipping_city} onChange={e=>{const city=e.target.value;const wCode=WILAYA_CODES[form.shipping_wilaya]||'';const cities=WILAYA_CITIES[form.shipping_wilaya]||[];const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?wCode.padStart(2,'0')+cCode:''}))}} disabled={!form.shipping_wilaya}>
                       <option value="">{form.shipping_wilaya?t('checkout.selectCity','Select commune...'):t('checkout.selectWilayaFirst','Select wilaya first')}</option>
                       {communes.map((c,i)=><option key={i} value={c}>{c}</option>)}
                     </select>
@@ -1287,6 +1412,32 @@ export default function BuyerLandingPage(){
                   ))}
                 </div>
 
+                {/* Coupon */}
+                <div className="flex gap-2">
+                  <input className="lp-input flex-1 px-4 py-3 rounded-xl text-sm" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code} onChange={set('coupon_code')}/>
+                  <button type="button" onClick={validateCoupon} className="px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-1.5" style={{backgroundColor:pc+'12',color:pc}}><Tag size={14}/>{t('checkout.apply','Apply')}</button>
+                </div>
+
+                {/* Order summary — bottom */}
+                <div className="rounded-2xl p-4 space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+                  {cartItems.map(it=>(
+                    <div key={it.product_id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-8 h-8 rounded-lg object-cover shadow-sm"/>}
+                        <span className="font-medium">{it.name} <span className="opacity-35">x{cart[it.product_id]}</span></span>
+                      </div>
+                      <span className="font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
+                    </div>
+                  ))}
+                  {cartItems.length===0&&<p className="text-xs text-center opacity-35">{t('lp.emptyCart','No products added')}</p>}
+                  <div className="border-t pt-2 mt-2 space-y-1.5" style={{borderColor:'oklch(0.9 0.005 280)'}}>
+                    <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.subtotal','Subtotal')}</span><span className="font-semibold tabular-nums">{subtotal.toLocaleString()} {currency}</span></div>
+                    <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.shipping','Shipping')}</span><span className="font-semibold tabular-nums">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${currency}`:'—'}</span></div>
+                    {couponDiscount>0&&<div className="flex justify-between text-sm"><span className="opacity-45">{t('checkout.discount','Discount')}</span><span className="font-semibold tabular-nums text-emerald-600">-{couponDiscount.toLocaleString()} {currency}</span></div>}
+                    <div className="flex justify-between text-base font-black pt-1.5 border-t" style={{borderColor:'oklch(0.9 0.005 280)'}}><span>{t('lp.total','Total')}</span><span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {currency}</span></div>
+                  </div>
+                </div>
+
                 {/* Submit */}
                 <button onClick={placeOrder} disabled={submitting||cartItems.length===0} className="w-full py-4 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2.5 shadow-2xl hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-40" style={{backgroundColor:ctaBg,color:ctaTextColor,boxShadow:`0 8px 30px ${ctaBg}50`}}>
                   {submitting?<Loader2 size={20} className="animate-spin"/>:<><ShoppingBag size={18}/>{page.cta_text||t('lp.placeOrder','Place Order')} — {total.toLocaleString()} {currency}</>}
@@ -1318,6 +1469,7 @@ export default function BuyerLandingPage(){
      ═══════════════════════════════════════════════════════════ */
   return(
     <div className="min-h-screen lp-root" dir={i18n.language==='ar'?'rtl':'ltr'} style={{backgroundColor:page.bg_color||'#FAFAFA',color:page.text_color||'#1F2937',fontFeatureSettings:'"ss01","cv11"'}}>
+      {i18n.language==='ar'&&<style>{`.lp-root[dir="rtl"] *{letter-spacing:normal!important;text-transform:none!important;word-break:normal!important;font-family:'Noto Sans Arabic','Outfit',sans-serif!important;}`}</style>}
       <AnimationStyles accent={pc}/>
       <BuyerLangSwitcher accent={pc}/>
       <FloatingCartButton totalQty={totalQty} subtotal={subtotal} currency={currency} accent={pc} onClick={scrollToCheckout}/>
@@ -1363,26 +1515,6 @@ export default function BuyerLandingPage(){
               </Reveal>
               <Reveal animation={anim} delay={150}>
                 <div className="rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 backdrop-blur-sm" style={{backgroundColor:'rgba(255,255,255,0.97)',color:'#1F2937',border:'1px solid rgba(255,255,255,0.2)'}}>
-                  {/* Order summary */}
-                  <div className="rounded-2xl p-5 space-y-3" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
-                    <p className="text-xs font-black uppercase tracking-wider" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.yourOrder','Your Order')}</p>
-                    {cartItems.length===0&&<p className="text-sm opacity-35 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
-                    {cartItems.map(it=>(
-                      <div key={it.product_id} className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                          {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-10 h-10 rounded-xl object-cover shadow-sm ring-1 ring-black/5"/>}
-                          <div><span className="text-sm font-semibold">{it.name}</span><span className="text-xs opacity-35 ml-2">x{cart[it.product_id]}</span></div>
-                        </div>
-                        <span className="text-sm font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
-                      </div>
-                    ))}
-                    <div className="border-t pt-3 mt-3 space-y-2" style={{borderColor:'oklch(0.9 0.005 280)'}}>
-                      <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.subtotal','Subtotal')}</span><span className="font-semibold tabular-nums">{subtotal.toLocaleString()} {currency}</span></div>
-                      <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.shipping','Shipping')}</span><span className="font-semibold tabular-nums">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${currency}`:'—'}</span></div>
-                      <div className="flex justify-between text-lg font-black pt-2 border-t" style={{borderColor:'oklch(0.9 0.005 280)'}}><span>{t('lp.total','Total')}</span><span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {currency}</span></div>
-                    </div>
-                  </div>
-
                   {/* Form */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput icon={User} label={t('lp.fullName','Full Name')} required value={form.customer_name} onChange={set('customer_name')} placeholder={t('lp.namePh','Your full name')} accent={pc}/>
@@ -1394,7 +1526,7 @@ export default function BuyerLandingPage(){
                     </FormSelect>
                     <div>
                       <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.commune','Commune')} <span style={{color:pc}}>*</span></label>
-                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none bg-no-repeat" style={{backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,backgroundPosition:'right 12px center',backgroundSize:'16px'}} value={form.shipping_city} onChange={e=>{const city=e.target.value;const wCode=WILAYA_CODES[form.shipping_wilaya]||'';const cities=WILAYA_CITIES[form.shipping_wilaya]||[];const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?wCode.padStart(2,'0')+cCode:''}))}} disabled={!form.shipping_wilaya}>
+                      <select className="lp-input w-full px-4 py-3 rounded-xl text-sm appearance-none" value={form.shipping_city} onChange={e=>{const city=e.target.value;const wCode=WILAYA_CODES[form.shipping_wilaya]||'';const cities=WILAYA_CITIES[form.shipping_wilaya]||[];const idx=Math.max(0,cities.indexOf(city));const cCode=String((idx+1)*50).padStart(3,'0');setForm(f=>({...f,shipping_city:city,shipping_zip:wCode?wCode.padStart(2,'0')+cCode:''}))}} disabled={!form.shipping_wilaya}>
                         <option value="">{form.shipping_wilaya?t('checkout.selectCity','Select commune...'):t('checkout.selectWilayaFirst','Select wilaya first')}</option>
                         {communes.map((c,i)=><option key={i} value={c}>{c}</option>)}
                       </select>
@@ -1461,6 +1593,33 @@ export default function BuyerLandingPage(){
                           <CreditCard size={16} style={{color:form.payment_method===p.method?pc:'oklch(0.55 0.01 280)'}}/>{p.label}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Coupon */}
+                  <div className="flex gap-2">
+                    <input className="lp-input flex-1 px-4 py-3 rounded-xl text-sm" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code} onChange={set('coupon_code')}/>
+                    <button type="button" onClick={validateCoupon} className="px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-1.5" style={{backgroundColor:pc+'12',color:pc}}><Tag size={14}/>{t('checkout.apply','Apply')}</button>
+                  </div>
+
+                  {/* Order summary — bottom */}
+                  <div className="rounded-2xl p-5 space-y-3" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
+                    <p className="text-xs font-black uppercase tracking-wider" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.yourOrder','Your Order')}</p>
+                    {cartItems.length===0&&<p className="text-sm opacity-35 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
+                    {cartItems.map(it=>(
+                      <div key={it.product_id} className="flex items-center justify-between py-2">
+                        <div className="flex items-center gap-3">
+                          {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-10 h-10 rounded-xl object-cover shadow-sm ring-1 ring-black/5"/>}
+                          <div><span className="text-sm font-semibold">{it.name}</span><span className="text-xs opacity-35 ml-2">x{cart[it.product_id]}</span></div>
+                        </div>
+                        <span className="text-sm font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
+                      </div>
+                    ))}
+                    <div className="border-t pt-3 mt-3 space-y-2" style={{borderColor:'oklch(0.9 0.005 280)'}}>
+                      <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.subtotal','Subtotal')}</span><span className="font-semibold tabular-nums">{subtotal.toLocaleString()} {currency}</span></div>
+                      <div className="flex justify-between text-sm"><span className="opacity-45">{t('lp.shipping','Shipping')}</span><span className="font-semibold tabular-nums">{form.shipping_wilaya?`${shippingPrice.toLocaleString()} ${currency}`:'—'}</span></div>
+                      {couponDiscount>0&&<div className="flex justify-between text-sm"><span className="opacity-45">{t('checkout.discount','Discount')}</span><span className="font-semibold tabular-nums text-emerald-600">-{couponDiscount.toLocaleString()} {currency}</span></div>}
+                      <div className="flex justify-between text-lg font-black pt-2 border-t" style={{borderColor:'oklch(0.9 0.005 280)'}}><span>{t('lp.total','Total')}</span><span style={{color:pc}} className="tabular-nums">{total.toLocaleString()} {currency}</span></div>
                     </div>
                   </div>
 
