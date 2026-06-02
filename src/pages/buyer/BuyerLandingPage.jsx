@@ -1418,6 +1418,9 @@ export default function BuyerLandingPage(){
                   <button type="button" onClick={validateCoupon} className="px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-1.5" style={{backgroundColor:pc+'12',color:pc}}><Tag size={14}/>{t('checkout.apply','Apply')}</button>
                 </div>
 
+                {/* Order note */}
+                <textarea className="lp-input w-full px-4 py-3 rounded-xl text-sm resize-none" rows={2} placeholder={t('checkout.notePlaceholder','Add a note to your order (optional)')} value={form.notes} onChange={set('notes')}/>
+
                 {/* Order summary — bottom */}
                 <div className="rounded-2xl p-4 space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
                   {cartItems.map(it=>(
@@ -1600,6 +1603,12 @@ export default function BuyerLandingPage(){
                   <div className="flex gap-2">
                     <input className="lp-input flex-1 px-4 py-3 rounded-xl text-sm" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code} onChange={set('coupon_code')}/>
                     <button type="button" onClick={validateCoupon} className="px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-1.5" style={{backgroundColor:pc+'12',color:pc}}><Tag size={14}/>{t('checkout.apply','Apply')}</button>
+                  </div>
+
+                  {/* Order note */}
+                  <div>
+                    <label className="text-xs font-semibold mb-2.5 block" style={{color:'oklch(0.55 0.01 280)'}}>{t('checkout.orderNote','Order Note')}</label>
+                    <textarea className="lp-input w-full px-4 py-3 rounded-xl text-sm resize-none" rows={3} placeholder={t('checkout.notePlaceholder','Add a note to your order (optional)')} value={form.notes} onChange={set('notes')}/>
                   </div>
 
                   {/* Order summary — bottom */}

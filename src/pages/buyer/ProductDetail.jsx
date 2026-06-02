@@ -275,7 +275,7 @@ export default function ProductDetail() {
     let qOffers = product.quantity_offers || [];
     if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
     if (!Array.isArray(qOffers)) return null;
-    return qOffers.find(qo => parseInt(qo.quantity) === quantity) || null;
+    return qOffers.filter(qo => parseInt(qo.quantity) > 0 && quantity >= parseInt(qo.quantity)).sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))[0] || null;
   })();
   const priceBeforeQty = basePrice + priceAdj;
   const finalPrice = (() => {
@@ -433,9 +433,9 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-[4/5] sm:aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="sync" className="w-full h-full object-contain bg-white transition-transform group-hover:scale-105" style={{imageRendering:'auto',maxHeight:'100%',maxWidth:'100%'}} alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="sync" className="w-full h-full object-contain bg-white transition-transform sm:group-hover:scale-105" style={{imageRendering:'auto',maxHeight:'100%',maxWidth:'100%'}} alt=""/>
                 : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
               {allImages[selectedImage] && (
                 <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -63,7 +63,23 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
   const offerPct = product?.is_on_sale && product?.offer_discount ? (parseFloat(String(product.offer_discount).replace(/[^0-9.]/g, '')) || 0) : 0;
   const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
-  const finalPrice = basePrice + priceAdj;
+  const priceBeforeQty = basePrice + priceAdj;
+  const qtyOfferMatch = (() => {
+    let qOffers = product?.quantity_offers || [];
+    if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
+    if (!Array.isArray(qOffers)) return null;
+    return qOffers.filter(qo => parseInt(qo.quantity) > 0 && quantity >= parseInt(qo.quantity)).sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))[0] || null;
+  })();
+  const finalPrice = (() => {
+    if (!qtyOfferMatch) return priceBeforeQty;
+    const dv = parseFloat(qtyOfferMatch.discount_value) || 0;
+    if (dv > 0) {
+      if (qtyOfferMatch.discount_type === 'fixed') return Math.max(0, priceBeforeQty - dv);
+      return Math.round(priceBeforeQty * (1 - dv / 100));
+    }
+    const m = qtyOfferMatch.label ? String(qtyOfferMatch.label).match(/(\d+(?:\.\d+)?)\s*%/) : null;
+    return m ? Math.round(priceBeforeQty * (1 - parseFloat(m[1]) / 100)) : priceBeforeQty;
+  })();
 
   const variantLabel = selectedIdxes.map(idx => {
     const v = variants[idx];

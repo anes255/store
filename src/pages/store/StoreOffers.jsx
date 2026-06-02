@@ -21,7 +21,37 @@ export default function StoreOffers(){
   const[coupons,setCoupons]=useState([{active:false,code:'',discount:'',discount_type:'percent'}]);
   const[couponSaving,setCouponSaving]=useState(false);
 
-  const load=()=>{if(!currentStore?.id)return;setLoading(true);productApi.getAll(currentStore.id,{}).then(r=>setProducts(r.data.products||[])).catch(()=>{}).finally(()=>setLoading(false));};
+  const reconstructOffers=(prods)=>{
+    const parseQo=(p)=>{let qo=p.quantity_offers;if(typeof qo==='string'){try{qo=JSON.parse(qo);}catch{qo=[];}}return Array.isArray(qo)?qo:[];};
+    const withOffer=prods.filter(p=>p.is_on_sale||parseQo(p).length>0);
+    if(!withOffer.length)return;
+    // Group products that share the same offer configuration into one card.
+    const groups=new Map();
+    withOffer.forEach(p=>{
+      const qo=parseQo(p);
+      const cfg={
+        is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'SALE',offer_title:p.offer_title||'',
+        offer_discount:p.offer_discount||'',discount_type:p.discount_type||'percent',discount_value:p.discount_value||'',
+        offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||'',quantity_offers:qo,
+        badge_bg:p.badge_bg||'#EF4444',badge_text_color:p.badge_text_color||'#FFFFFF',badge_style:p.badge_style||'rounded',
+        banner_bg:p.banner_bg||'#FEF2F2',banner_text_color:p.banner_text_color||'#991B1B',banner_border_color:p.banner_border_color||'#FECACA',
+        show_timer:p.show_timer!==false,timer_bg:p.timer_bg||'#1F2937',timer_text_color:p.timer_text_color||'#FFFFFF',
+      };
+      const sig=JSON.stringify(cfg);
+      if(!groups.has(sig))groups.set(sig,{cfg,ids:[]});
+      groups.get(sig).ids.push(p.id);
+    });
+    const rebuilt=[...groups.values()].map((g,i)=>({
+      ...EMPTY_OFFER,...g.cfg,
+      name:`${t('offers.offer','Offer')} ${i+1}`,
+      discount_value:g.cfg.discount_value===0?'':g.cfg.discount_value,
+      mode:g.ids.length===prods.length?'all':'specific',
+      selectedIds:new Set(g.ids),
+      expanded:false,
+    }));
+    if(rebuilt.length)setOffers(rebuilt);
+  };
+  const load=()=>{if(!currentStore?.id)return;setLoading(true);productApi.getAll(currentStore.id,{}).then(r=>{const prods=r.data.products||[];setProducts(prods);reconstructOffers(prods);}).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[currentStore?.id]);
   useEffect(()=>{
     if(!currentStore?.id)return;
