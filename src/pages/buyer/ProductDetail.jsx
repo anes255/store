@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useWishlistStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, ArrowRight, Star, Truck, Shield, Package, Check, User, Globe, X, Search, Zap, ZoomIn, ZoomOut, Maximize2, Tag } from 'lucide-react';
-import Checkout from './Checkout';
+const Checkout = lazy(() => import('./Checkout'));
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 
@@ -429,13 +429,13 @@ export default function ProductDetail() {
         </form>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+      <div className="max-w-6xl mx-auto px-0 sm:px-4 py-0 sm:py-8">
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-[4/3] sm:aspect-square bg-gray-100 sm:rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="sync" className="w-full h-full object-contain bg-white transition-transform sm:group-hover:scale-105" style={{imageRendering:'auto',maxHeight:'100%',maxWidth:'100%'}} alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain bg-white" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
               {allImages[selectedImage] && (
                 <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -456,10 +456,10 @@ export default function ProductDetail() {
               )}
             </div>
             {allImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 px-3 sm:px-0">
                 {allImages.map((img,i) => (
                   <button key={i} onClick={() => setSelectedImage(i)}
-                    className={`w-20 h-20 rounded-xl bg-white overflow-hidden shrink-0 border-2 transition-all ${selectedImage===i ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-gray-300'}`}>
+                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white overflow-hidden shrink-0 border-2 transition-all ${selectedImage===i ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-gray-300'}`}>
                     <img src={img} loading="lazy" className="w-full h-full object-contain" alt=""/>
                   </button>
                 ))}
@@ -468,7 +468,7 @@ export default function ProductDetail() {
           </div>
 
           {/* ═══ DETAILS ═══ */}
-          <div>
+          <div className="px-4 sm:px-0">
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">{getName(product)}</h1>
 
             {/* Price */}
@@ -676,8 +676,8 @@ export default function ProductDetail() {
         {/* ═══ REVIEWS SECTION ═══ */}
         <ReviewsSection storeSlug={storeSlug} productSlug={productSlug} pc={pc}/>
       </div>
-      {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
-      {buyNowOpen && <Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/>}
+      {cartOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/></Suspense>}
+      {buyNowOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/></Suspense>}
 
       {/* Image lightbox — full-screen view with click/scroll/pinch zoom. */}
       {lightboxIdx !== null && allImages[lightboxIdx] && (

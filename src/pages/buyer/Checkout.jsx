@@ -462,7 +462,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <div className="flex items-center gap-2.5">
               <ShoppingCart size={22} style={{color:pc}}/>
               <span className="text-lg font-extrabold text-gray-900">Your Cart</span>
-              {items.length>0 && <span className="min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold text-white flex items-center justify-center" style={{backgroundColor:pc}}>{items.length}</span>}
+              {items.length>0 && <span className="w-[22px] h-[22px] rounded-full text-[11px] font-bold text-white flex items-center justify-center leading-none" style={{backgroundColor:pc}}>{items.length}</span>}
             </div>
           ) : (
             <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">

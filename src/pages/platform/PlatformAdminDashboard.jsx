@@ -61,7 +61,7 @@ function NotificationsBell({isDark,pc}){
     <div className="relative">
       <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.notifications','Notifications')}>
         <Bell size={18}/>
-        {unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unread>99?'99+':unread}</span>}
+        {unread>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">{unread>99?'99+':unread}</span>}
       </button>
       {open&&anchor&&createPortal(<>
         <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
@@ -124,7 +124,7 @@ function ExpiringSubscriptionsBell({isDark,pc}){
     <div className="relative">
       <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.expiringSubscriptions','Expiring subscriptions')}>
         <Bell size={18}/>
-        {urgentCount>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{urgentCount}</span>}
+        {urgentCount>0&&<span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">{urgentCount}</span>}
       </button>
       {open&&anchor&&createPortal(
         <>

@@ -442,6 +442,18 @@ export default function BuyerLandingPage(){
     setCommunes(WILAYA_CITIES[wName]||[]);
   },[form.shipping_wilaya,form.shipping_type,form.delivery_company_id,wilayas,store]);
 
+  // Compute delivery price for a given shipping type (home/desk)
+  const getDeliveryPrice=useCallback((type)=>{
+    if(!form.shipping_wilaya)return null;
+    const w=wilayas.find(x=>x.wilaya_name===form.shipping_wilaya);
+    if(!w)return null;
+    let cp=w.company_prices;
+    if(typeof cp==='string'){try{cp=JSON.parse(cp);}catch{cp=null;}}
+    const perCo=cp&&form.delivery_company_id?cp[form.delivery_company_id]:null;
+    if(perCo){return parseFloat(type==='home'?(perCo.home||perCo.home_price||w.home_delivery_price):(perCo.desk||perCo.desk_price||w.desk_delivery_price))||0;}
+    return parseFloat(type==='home'?w.home_delivery_price:w.desk_delivery_price)||0;
+  },[form.shipping_wilaya,form.delivery_company_id,wilayas]);
+
   const scrollToCheckout=useCallback(()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});},[]);
 
   // Render AI images by placement
@@ -1385,14 +1397,15 @@ export default function BuyerLandingPage(){
                 {/* Delivery type */}
                 {wilayas.length>0&&form.shipping_wilaya&&(
                   <div className="grid grid-cols-2 gap-2">
-                    {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','Home Delivery')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','Desk / Relay')}].map(d=>(
+                    {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','Home Delivery')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','Desk / Relay')}].map(d=>{const dp=getDeliveryPrice(d.type);return(
                       <button key={d.type} onClick={()=>setForm(f=>({...f,shipping_type:d.type}))} className="p-3 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center gap-1.5" style={{
                         border:`2px solid ${form.shipping_type===d.type?pc:'oklch(0.9 0.005 280)'}`,
                         backgroundColor:form.shipping_type===d.type?pc+'08':'transparent',
                       }}>
                         <d.icon size={16} style={{color:form.shipping_type===d.type?pc:'oklch(0.55 0.01 280)'}}/>{d.label}
+                        {dp!=null&&<span className="text-[10px] font-bold opacity-60">{dp.toLocaleString()} {currency}</span>}
                       </button>
-                    ))}
+                    );})}
                   </div>
                 )}
 
@@ -1568,14 +1581,15 @@ export default function BuyerLandingPage(){
                     <div>
                       <label className="text-xs font-semibold mb-2.5 block" style={{color:'oklch(0.55 0.01 280)'}}>{t('checkout.deliveryType','Delivery Type')}</label>
                       <div className="grid grid-cols-2 gap-3">
-                        {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','Home Delivery')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','Desk / Relay')}].map(d=>(
-                          <button key={d.type} onClick={()=>setForm(f=>({...f,shipping_type:d.type}))} className="p-3.5 rounded-xl text-sm font-semibold text-left transition-all flex items-center gap-2.5" style={{
+                        {[{type:'home',icon:Truck,label:t('checkout.homeDelivery','Home Delivery')},{type:'desk',icon:Package,label:t('checkout.deskDelivery','Desk / Relay')}].map(d=>{const dp=getDeliveryPrice(d.type);return(
+                          <button key={d.type} onClick={()=>setForm(f=>({...f,shipping_type:d.type}))} className="p-3.5 rounded-xl text-sm font-semibold transition-all flex flex-col items-center gap-1.5" style={{
                             border:`2px solid ${form.shipping_type===d.type?pc:'oklch(0.9 0.005 280)'}`,
                             backgroundColor:form.shipping_type===d.type?pc+'08':'transparent',
                           }}>
-                            <d.icon size={16} style={{color:form.shipping_type===d.type?pc:'oklch(0.55 0.01 280)'}}/>{d.label}
+                            <div className="flex items-center gap-2"><d.icon size={16} style={{color:form.shipping_type===d.type?pc:'oklch(0.55 0.01 280)'}}/>{d.label}</div>
+                            {dp!=null&&<span className="text-xs font-bold opacity-60">{dp.toLocaleString()} {currency}</span>}
                           </button>
-                        ))}
+                        );})}
                       </div>
                     </div>
                   )}
