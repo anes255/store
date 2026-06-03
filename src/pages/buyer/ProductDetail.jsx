@@ -436,7 +436,7 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-[3/4] sm:aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative max-h-[65vh] sm:max-h-none" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
                 ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}

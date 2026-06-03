@@ -1493,8 +1493,8 @@ export default function StoreSettings(){
                         setSf(p=>({...p,assigned_store_ids:p.assigned_store_ids.includes(s.id)?p.assigned_store_ids.filter(x=>x!==s.id):[...p.assigned_store_ids,s.id]}));
                       }} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"/>
                       {s.logo
-                        ? <img src={s.logo} alt="" className="w-10 h-10 rounded-xl object-cover"/>
-                        : <div className="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 font-bold">{(s.name||'S')[0]}</div>}
+                        ? <img src={s.logo} alt="" className="w-10 h-10 rounded-full object-cover"/>
+                        : <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 font-bold">{(s.name||'S')[0]}</div>}
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{s.name}</p>
                         <p className="text-[11px] text-gray-400 truncate">/{s.slug}{locked?` · ${t('storePage.currentStoreLocked','current store')}`:''}</p>

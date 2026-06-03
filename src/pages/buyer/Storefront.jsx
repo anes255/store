@@ -792,9 +792,15 @@ export default function Storefront() {
       setFavAddProduct(product);
       return;
     }
-    const added = wishlistStore.toggle(product);
-    if (added) toast.success(t('store.addedToFavorites','Added to favorites'));
-    else toast.success(t('store.removedFromFavorites','Removed from favorites'));
+    if (already) {
+      // Remove all entries for this product (handles items with _wishlistKey)
+      const cleaned = wishlistStore.items.filter(p => p.id !== product.id);
+      wishlistStore.setItems(cleaned);
+      toast.success(t('store.removedFromFavorites','Removed from favorites'));
+    } else {
+      wishlistStore.toggle(product);
+      toast.success(t('store.addedToFavorites','Added to favorites'));
+    }
   };
 
   // Callback from the ProductQuickAdd modal when used in favorite mode.
@@ -803,10 +809,14 @@ export default function Storefront() {
     const label = selectedVariant
       ? (selectedVariant.type === 'color' ? selectedVariant.name : (selectedVariant.label || selectedVariant.name || ''))
       : '';
-    const saved = { ...p, _selectedVariant: selectedVariant || null, _variantLabel: label || null };
-    // Remove first if it exists (to update variant), then toggle adds it
-    const already = wishlistStore.has(p.id);
-    if (already) wishlistStore.remove(p.id);
+    const key = p.id + (label ? '::' + label : '');
+    const saved = { ...p, _selectedVariant: selectedVariant || null, _variantLabel: label || null, _wishlistKey: key };
+    // Remove any existing entry for this product (by base ID) before adding the new variant
+    const currentItems = wishlistStore.items;
+    const cleaned = currentItems.filter(item => item.id !== p.id);
+    if (cleaned.length !== currentItems.length) {
+      wishlistStore.setItems(cleaned);
+    }
     wishlistStore.toggle(saved);
     toast.success(label ? `Saved "${label}" to favorites` : t('store.addedToFavorites','Added to favorites'));
   };
