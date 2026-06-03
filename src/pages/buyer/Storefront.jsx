@@ -798,12 +798,27 @@ export default function Storefront() {
   };
 
   // Callback from the ProductQuickAdd modal when used in favorite mode.
+  // Always ADD (don't toggle) since the modal only opens for products not yet in wishlist.
   const handleFavAdd = ({ product: p, selectedVariant, quantity: qty }) => {
     const label = selectedVariant
       ? (selectedVariant.type === 'color' ? selectedVariant.name : (selectedVariant.label || selectedVariant.name || ''))
       : '';
     const saved = { ...p, _selectedVariant: selectedVariant || null, _variantLabel: label || null };
-    wishlistStore.toggle(saved);
+    // Use direct add instead of toggle to avoid accidentally removing
+    const items = useWishlistStore.getState().items;
+    const slug = useWishlistStore.getState().slug;
+    if (!slug) { wishlistStore.init(storeSlug); }
+    const alreadyExists = items.some(x => x.id === saved.id);
+    if (alreadyExists) {
+      // Replace with variant-updated version
+      const next = items.map(x => x.id === saved.id ? saved : x);
+      localStorage.setItem('wishlist_' + (slug || storeSlug), JSON.stringify(next));
+      useWishlistStore.setState({ items: next });
+    } else {
+      const next = [...items, saved];
+      localStorage.setItem('wishlist_' + (slug || storeSlug), JSON.stringify(next));
+      useWishlistStore.setState({ items: next });
+    }
     toast.success(label ? `Saved "${label}" to favorites` : t('store.addedToFavorites','Added to favorites'));
   };
 

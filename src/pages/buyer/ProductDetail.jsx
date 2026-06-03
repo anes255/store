@@ -433,24 +433,19 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-[4/3] sm:aspect-square bg-gray-100 sm:rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative group" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain bg-white" alt=""/>
-                : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-300"/></div>}
-              {allImages[selectedImage] && (
-                <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  🔍 {t('product.clickToZoom','Click to zoom')}
-                </span>
-              )}
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain" alt=""/>
+                : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
               {allImages.length > 1 && (
                 <>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 transition-opacity">
-                    <ArrowLeft size={18}/>
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 text-white flex items-center justify-center z-10">
+                    <ArrowLeft size={16}/>
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 transition-opacity">
-                    <ArrowRight size={18}/>
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 text-white flex items-center justify-center z-10">
+                    <ArrowRight size={16}/>
                   </button>
                 </>
               )}

@@ -155,7 +155,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
 
       {/* Modal */}
       <div
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+        className="relative bg-white text-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Close button */}

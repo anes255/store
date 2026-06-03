@@ -123,7 +123,7 @@ const TrackOrder=lazy(()=>import('./pages/buyer/TrackOrder'));
 const StoreFAQ=lazy(()=>import('./pages/buyer/StoreFAQ'));
 const BuyerLandingPage=lazy(()=>import('./pages/buyer/BuyerLandingPage'));
 
-const Loading=()=>(<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>);
+const Loading=()=>(<div className="min-h-screen flex items-center justify-center bg-white"><div className="flex flex-col items-center gap-3"><div className="w-10 h-10 rounded-full border-[3px] border-gray-200 border-t-[#7C3AED] animate-spin"/><p className="text-xs text-gray-400 font-medium animate-pulse">Loading...</p></div></div>);
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();const isAdminArea=(allowedRoles&&allowedRoles.includes('platform_admin'))||(typeof window!=='undefined'&&window.location.pathname.startsWith('/admin'));const loginPath=isAdminArea?'/admin/login':'/login';if(!token)return<Navigate to={loginPath} replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to={loginPath} replace/>;return children;};
 const RESERVED_SLUGS=new Set(['admin','dashboard','login','register','s','api','platform','owner','profile','favorites','checkout','auth','product']);
 const SlugGuard=({children})=>{const{storeSlug}=useParams();if(RESERVED_SLUGS.has((storeSlug||'').toLowerCase()))return null;return children;};
