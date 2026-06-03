@@ -65,13 +65,14 @@ export default function Favorites() {
 
   const getName = (p) => p.name_en || p.name_fr || p.name_ar || p.name || 'Untitled';
 
-  const toggleSelect = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const selectAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map(p => p.id));
+  const getKey = (p) => p._wishlistKey || p.id;
+  const toggleSelect = (key) => setSelected(s => s.includes(key) ? s.filter(x => x !== key) : [...s, key]);
+  const selectAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map(p => getKey(p)));
   const clearSelection = () => setSelected([]);
 
-  const handleRemove = (id) => {
-    wishlistStore.remove(id);
-    setSelected(s => s.filter(x => x !== id));
+  const handleRemove = (key) => {
+    wishlistStore.remove(key);
+    setSelected(s => s.filter(x => x !== key));
     toast.success(t('store.removedFromFavorites', 'Removed from favorites'));
   };
 
@@ -93,7 +94,7 @@ export default function Favorites() {
   };
 
   const handleBulkAddToCart = () => {
-    const picks = items.filter(p => selected.includes(p.id));
+    const picks = items.filter(p => selected.includes(getKey(p)));
     if (!picks.length) return;
     picks.forEach(p => addItem(p, 1, p._selectedVariant || null));
     toast.success(t('store.bulkAddedToCart', `${picks.length} item${picks.length > 1 ? 's' : ''} added to cart`));
@@ -102,7 +103,7 @@ export default function Favorites() {
 
   const handleBulkRemove = () => {
     if (!selected.length) return;
-    wishlistStore.setItems(items.filter(p => !selected.includes(p.id)));
+    wishlistStore.setItems(items.filter(p => !selected.includes(getKey(p))));
     toast.success(t('store.removedFromFavorites', 'Removed from favorites'));
     setSelected([]);
   };
@@ -143,8 +144,8 @@ export default function Favorites() {
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-3 text-white min-w-0">
             <button className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors shrink-0"><ArrowLeft size={18}/></button>
             {store.logo
-              ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover ring-2 ring-white/10 shrink-0" alt=""/>
-              : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/10 shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
+              ? <img src={store.logo} className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10 shrink-0" alt=""/>
+              : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/10 shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
             <span className="font-bold text-sm truncate">{store.name}</span>
           </Link>
           <Link to={`/s/${storeSlug}/profile`} className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-xs font-semibold text-white/80 hidden sm:flex items-center gap-2">
@@ -268,10 +269,11 @@ export default function Favorites() {
             <AnimatePresence mode="popLayout">
               {filtered.map(product => {
                 const thumb = getThumb(product);
-                const isSelected = selected.includes(product.id);
+                const pKey = getKey(product);
+                const isSelected = selected.includes(pKey);
                 return (
                   <motion.div
-                    key={product.id}
+                    key={pKey}
                     layout
                     variants={{
                       hidden: {opacity: 0, y: 24, scale: 0.96},
@@ -287,7 +289,7 @@ export default function Favorites() {
                   >
                     {/* Selection checkbox */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleSelect(product.id); }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleSelect(pKey); }}
                       className="absolute top-3 left-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-md transition-all touch-manipulation"
                       style={isSelected
                         ? {backgroundColor: pc, color: '#fff'}
@@ -298,7 +300,7 @@ export default function Favorites() {
 
                     {/* Remove pill — always visible so mobile buyers can see it */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleRemove(product.id); }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleRemove(pKey); }}
                       className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center bg-black/50 backdrop-blur-md text-gray-300 hover:text-red-400 hover:bg-black/70 border border-white/10 transition-all touch-manipulation"
                       aria-label="Remove from favorites"
                     >

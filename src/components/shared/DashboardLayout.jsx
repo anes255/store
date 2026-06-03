@@ -130,7 +130,7 @@ function HeaderStoreSwitcher({ open, setOpen, stores, currentStore, setCurrentSt
               const sel = currentStore?.id === st.id;
               return (
                 <button key={st.id} type="button" onClick={() => pickStore(st)} className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs text-left transition-colors ${sel ? (isDark ? 'bg-gray-800' : 'bg-brand-50') : (isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50')}`}>
-                  {st.logo ? <img src={st.logo} className="w-7 h-7 rounded-lg object-cover shrink-0" /> : <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: pc }}>{(st.name || 'S')[0]}</div>}
+                  {st.logo ? <img src={st.logo} className="w-7 h-7 rounded-full object-cover shrink-0" /> : <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: pc }}>{(st.name || 'S')[0]}</div>}
                   <div className="flex-1 min-w-0"><p className={`font-bold truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{st.name}</p><p className="text-[10px] text-gray-400 truncate">/{st.slug}</p></div>
                   {sel && <Check size={12} style={{ color: pc }} />}
                 </button>
@@ -530,7 +530,7 @@ export default function DashboardLayout({children}){
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-lg object-cover"/>:<div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</Link>
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-full object-cover shrink-0"/>:<div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</Link>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
       {/* Store switcher — only shows when owner has multiple stores */}
@@ -552,7 +552,7 @@ export default function DashboardLayout({children}){
                   // settings, etc.) refetches data for the newly selected store.
                   window.location.href='/dashboard';
                 }} className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors ${sel?(isDark?'bg-gray-800':'bg-brand-50'):(isDark?'hover:bg-gray-800':'hover:bg-gray-50')}`}>
-                  {st.logo?<img src={st.logo} className="w-5 h-5 rounded object-cover shrink-0"/>:<div className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
+                  {st.logo?<img src={st.logo} className="w-5 h-5 rounded-full object-cover shrink-0"/>:<div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{backgroundColor:pc}}>{(st.name||'S')[0]}</div>}
                   <span className={`flex-1 truncate font-medium ${isDark?'text-gray-200':'text-gray-700'}`}>{st.name}</span>
                   {sel&&<Check size={12} style={{color:pc}}/>}
                 </button>
@@ -610,7 +610,7 @@ export default function DashboardLayout({children}){
         })()}
       </nav>
       <div className={`border-t p-3 ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
+        <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"

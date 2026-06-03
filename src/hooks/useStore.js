@@ -177,17 +177,18 @@ export const useWishlistStore = create((set, get) => ({
     if (slug && get().slug !== slug) set({ slug, items: readWishlist(slug) });
     if (!slug || !product) return false;
     const items = get().items;
-    const exists = items.some(p => p.id === product.id);
-    const next = exists ? items.filter(p => p.id !== product.id) : [...items, product];
+    const key = product._wishlistKey || product.id;
+    const exists = items.some(p => (p._wishlistKey || p.id) === key);
+    const next = exists ? items.filter(p => (p._wishlistKey || p.id) !== key) : [...items, product];
     localStorage.setItem('wishlist_' + slug, JSON.stringify(next));
     set({ items: next });
     return !exists;
   },
 
-  remove: (productId) => {
+  remove: (key) => {
     const slug = get().slug;
     if (!slug) return;
-    const next = get().items.filter(p => p.id !== productId);
+    const next = get().items.filter(p => (p._wishlistKey || p.id) !== key);
     localStorage.setItem('wishlist_' + slug, JSON.stringify(next));
     set({ items: next });
   },

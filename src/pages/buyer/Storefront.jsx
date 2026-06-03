@@ -909,7 +909,7 @@ export default function Storefront() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
-              {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{(store.name || storeSlug)?.[0]}</div>}
+              {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{(store.name || storeSlug)?.[0]}</div>}
               <span data-store-name className="store-header-title text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,WebkitTextFillColor:headerText,fontFamily:nameFont}}>{store.name || storeSlug}</span>
             </Link>
           </div>

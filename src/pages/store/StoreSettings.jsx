@@ -578,7 +578,7 @@ function UsersActivityLog({ storeId, isDark, t }) {
                 return (
                   <div key={u.actor_id} className={`rounded-2xl border ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-gray-50'} overflow-hidden`}>
                     <button onClick={() => setExpandedUser(exp ? null : u.actor_id)} className="w-full flex items-center gap-3 p-3 hover:bg-white/30 dark:hover:bg-white/5 text-left">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(u.actor_name || '?')[0]?.toUpperCase()}</div>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(u.actor_name || '?')[0]?.toUpperCase()}</div>
                       <div className="flex-1 min-w-0">
                         <p className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'} truncate`}>{u.actor_name}</p>
                         <p className="text-[10px] text-gray-400 truncate">{u.actor_role || 'Team member'}{u.last_at ? ` · last active ${new Date(u.last_at).toLocaleString()}` : ''}</p>

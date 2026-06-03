@@ -350,12 +350,15 @@ export default function ProductDetail() {
   };
 
   const handleToggleWishlist = () => {
-    // Store variant info with the product in the wishlist
+    if (groupTypes.length > 0 && !requireSelections()) return;
+    const variantObj = buildVariantObj();
+    const key = product.id + (variantLabel ? '::' + variantLabel : '');
     const productWithVariant = {
       ...product,
       price: finalPrice,
-      _selectedVariant: buildVariantObj(),
+      _selectedVariant: variantObj,
       _variantLabel: variantLabel,
+      _wishlistKey: key,
     };
     const added = wishlistStore.toggle(productWithVariant);
     if (added) toast.success(variantLabel ? `"${variantLabel}" added to favorites` : 'Added to favorites');
@@ -387,7 +390,7 @@ export default function ProductDetail() {
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
-            {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
+            {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
             <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
           </Link>
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-8">
@@ -433,7 +436,7 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="max-h-[60vh] sm:max-h-none sm:aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
                 ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}

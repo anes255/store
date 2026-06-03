@@ -208,8 +208,8 @@ export default function TrackOrder() {
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link to={`/s/${storeSlug}`} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors shrink-0"><ArrowLeft size={16} /></Link>
           {store.logo
-            ? <img src={store.logo} alt="" className="w-9 h-9 rounded-xl object-cover border border-white/10 shrink-0" />
-            : <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
+            ? <img src={store.logo} alt="" className="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0" />
+            : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-extrabold truncate">{store.tracking_hero_title || t('track.title', 'Track your order')}</h1>
             <p className="text-[11px] text-gray-400 truncate">{store.name}</p>

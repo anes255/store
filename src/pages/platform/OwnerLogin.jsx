@@ -383,7 +383,7 @@ export default function OwnerLogin() {
               {storePicker.stores.map(st => (
                 <button key={st.id} onClick={() => { setCurrentStore(st); toast.success(`Managing ${st.name}`); navigate('/dashboard'); }}
                   className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-100 hover:border-brand-500 hover:bg-brand-50 transition-all text-left">
-                  {st.logo ? <img src={st.logo} className="w-12 h-12 rounded-xl object-cover" /> : <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold">{(st.name || 'S')[0]}</div>}
+                  {st.logo ? <img src={st.logo} className="w-12 h-12 rounded-full object-cover shrink-0" /> : <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold shrink-0">{(st.name || 'S')[0]}</div>}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 truncate">{st.name}</p>
                     <p className="text-xs text-gray-400 truncate">/{st.slug}{st.is_live !== false ? ' · Live' : ' · Draft'}</p>

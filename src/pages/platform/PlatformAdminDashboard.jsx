@@ -196,7 +196,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
     <aside className={`fixed top-0 left-0 z-50 w-56 border-r h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${open?'translate-x-0':'-translate-x-full'}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{backgroundColor:pc}}><Shield size={16} className="text-white"/></div>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:pc}}><Shield size={16} className="text-white"/></div>
           <div><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-800'}`}>{t('admin.superAdmin','Super Admin')}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('admin.controlPanel','CONTROL PANEL')}</p></div>
         </div>
         <button onClick={onClose} className="lg:hidden text-gray-400 hover:text-gray-600"><X size={18}/></button>
@@ -218,7 +218,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
       </nav>
       <div className={`p-3 border-t ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div>
           <div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('admin.admin','Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.superAdmin','Super Admin')}</p></div>
         </div>
         <button onClick={()=>{logout();nav('/admin/login');}} className={`w-full flex items-center gap-2 px-3 py-2 text-red-500 rounded-xl text-sm font-medium ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}><LogOut size={14}/>{t('admin.logout','Logout')}</button>
@@ -332,7 +332,7 @@ function StoreOwners(){
     <div className={`hidden md:block ${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-x-auto`}><table className="w-full text-sm min-w-[720px]"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
     <tbody>{owners.map(o=>(
       <tr key={o.id} className={`border-t ${isDark?'border-gray-700 hover:bg-gray-700':'border-gray-100 hover:bg-gray-50'}`}>
-        <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs">{o.full_name?.[0]||'U'}</div><div><p className={`font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
+        <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">{o.full_name?.[0]||'U'}</div><div><p className={`font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
         <td className="px-5 py-4"><p className={`${isDark?'text-gray-300':'text-gray-700'}`}>{o.email}</p><p className="text-xs text-gray-400">{o.phone}</p></td>
         <td className="px-5 py-4 font-bold text-center">{o.store_count||0}</td>
         <td className={`px-5 py-4 font-bold ${isDark?'text-gray-100':'text-gray-900'}`}>{parseFloat(o.total_revenue||0).toLocaleString()} DZD</td>
@@ -389,7 +389,7 @@ function AllStores(){
     <div className="grid gap-4">{filteredStores.map(s=>(
       <div key={s.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden`}>
         <div className="p-4 md:p-5 flex flex-wrap items-center gap-3 md:gap-4">
-          {s.logo_url||s.logo?<img src={s.logo_url||s.logo} alt="" className="w-11 h-11 md:w-12 md:h-12 rounded-xl object-cover bg-gray-100 shrink-0 border border-gray-200"/>:<div className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>}
+          {s.logo_url||s.logo?<img src={s.logo_url||s.logo} alt="" className="w-11 h-11 md:w-12 md:h-12 rounded-full object-cover bg-gray-100 shrink-0 border border-gray-200"/>:<div className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>}
           <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setDetail(detail?.id===s.id?null:s)}>
             <div className="flex flex-wrap items-center gap-2"><p className={`font-bold truncate ${isDark?'text-gray-100':'text-gray-900'}`}>{s.name||s.store_name}</p>{s.is_published?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('admin.live','LIVE')}</span>:<span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark?'bg-gray-700 text-gray-400':'bg-gray-100 text-gray-500'}`}>{t('admin.offline','OFFLINE')}</span>}</div>
             <p className="text-xs text-gray-400 truncate">Owner: {s.owner_name||'N/A'} · {s.owner_email||''} {(s.owner_active===false||s.subscription_status==='suspended')&&<span className="text-red-500 font-bold">⚠ OWNER SUSPENDED</span>}</p>

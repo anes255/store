@@ -466,7 +466,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </div>
           ) : (
             <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-              {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
+              {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-full object-cover shrink-0" alt=""/> : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
               <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
             </Link>
           )}

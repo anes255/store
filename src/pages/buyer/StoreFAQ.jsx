@@ -42,7 +42,7 @@ export default function StoreFAQ() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link to={`/s/${storeSlug}`} className="p-2 hover:bg-white/20 rounded-full text-white"><ArrowLeft size={20}/></Link>
           <div className="flex items-center gap-3">
-            {store?.logo && <img src={store.logo} className="w-10 h-10 rounded-xl object-cover bg-white/20" alt=""/>}
+            {store?.logo && <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-white/20 shrink-0" alt=""/>}
             <div>
               <h1 className="text-lg font-bold text-white">{t('buyer.faq', 'FAQ')}</h1>
               <p className="text-xs text-white/70">{store?.name}</p>

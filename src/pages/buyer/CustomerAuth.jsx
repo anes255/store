@@ -56,7 +56,7 @@ export default function CustomerAuth() {
       <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-30 shadow-sm border-b border-white/50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-            {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-lg object-cover" alt=""/> : <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
+            {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-full object-cover shrink-0" alt=""/> : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
             <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
           </Link>
           <div className="flex items-center gap-2">

@@ -275,8 +275,8 @@ export default function CustomerProfile() {
         <div className="flex items-center justify-between px-4 py-3">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-3 text-white">
             {store.logo
-              ? <img src={store.logo} className="w-8 h-8 rounded-lg object-cover" alt="" />
-              : <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
+              ? <img src={store.logo} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+              : <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
             <span className="font-bold text-sm">{store.name}</span>
           </Link>
           <button
@@ -305,8 +305,8 @@ export default function CustomerProfile() {
           <div className="px-5 pt-6 pb-2">
             <Link to={`/s/${storeSlug}`} className="flex items-center gap-3 group">
               {store.logo
-                ? <img src={store.logo} className="w-10 h-10 rounded-xl object-cover ring-2 ring-white/10" alt="" />
-                : <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg ring-2 ring-white/10" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
+                ? <img src={store.logo} className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10 shrink-0" alt="" />
+                : <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ring-2 ring-white/10 shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
               <span className="font-bold text-white text-sm group-hover:opacity-80 transition-opacity">{store.name}</span>
             </Link>
           </div>
