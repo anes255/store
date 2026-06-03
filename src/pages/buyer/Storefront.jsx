@@ -799,24 +799,16 @@ export default function Storefront() {
 
   // Callback from the ProductQuickAdd modal when used in favorite mode.
   const handleFavAdd = ({ product: p, selectedVariant, quantity: qty }) => {
+    if (!p || !p.id) return;
     const label = selectedVariant
       ? (selectedVariant.type === 'color' ? selectedVariant.name : (selectedVariant.label || selectedVariant.name || ''))
       : '';
     const saved = { ...p, _selectedVariant: selectedVariant || null, _variantLabel: label || null };
-    // Ensure wishlist store is initialized, then add
-    if (!useWishlistStore.getState().slug) wishlistStore.init(storeSlug);
-    const slug = useWishlistStore.getState().slug || storeSlug;
-    const key = 'wishlist_' + slug;
-    let items = [];
-    try { items = JSON.parse(localStorage.getItem(key)) || []; } catch { items = []; }
-    if (!Array.isArray(items)) items = [];
-    // Remove if exists (update scenario), then add
-    items = items.filter(x => x.id !== saved.id);
-    items.push(saved);
-    localStorage.setItem(key, JSON.stringify(items));
-    useWishlistStore.setState({ slug, items });
+    // Remove first if it exists (to update variant), then toggle adds it
+    const already = wishlistStore.has(p.id);
+    if (already) wishlistStore.remove(p.id);
+    wishlistStore.toggle(saved);
     toast.success(label ? `Saved "${label}" to favorites` : t('store.addedToFavorites','Added to favorites'));
-    setFavAddProduct(null);
   };
 
   // Wrapper around the cart store that fires a toast — used everywhere on the
@@ -940,11 +932,11 @@ export default function Storefront() {
             {/* Favourites sits right beside the cart in the header */}
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{wishlist.length}</span>}
+              {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{wishlist.length}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{getCount()}</span>}
             </button>
           </div>
         </div>
@@ -1210,13 +1202,13 @@ export default function Storefront() {
         <Link to={`/s/${storeSlug}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl active:bg-gray-100 dark:active:bg-white/10" style={{color:pc}}><Package size={20}/><span className="text-[10px] font-bold">{t('store.shop','Shop')}</span></Link>
         <Link to={`/s/${storeSlug}/favorites`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <Heart size={20}/>
-          {wishlist.length>0&&<span className="absolute top-0 right-1/4 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{wishlist.length}</span>}
+          {wishlist.length>0&&<span className="absolute top-0 right-1/4 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{wishlist.length}</span>}
           <span className="text-[10px] font-bold">{t('store.favorites','Favs')}</span>
         </Link>
         {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><Truck size={20}/><span className="text-[10px] font-bold">{t('store.track','Track')}</span></Link>}
         <button onClick={()=>setCartOpen(true)} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <ShoppingCart size={20}/>
-          {getCount()>0&&<span className="absolute top-0 right-1/4 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{getCount()}</span>}
+          {getCount()>0&&<span className="absolute top-0 right-1/4 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{getCount()}</span>}
           <span className="text-[10px] font-bold">{t('store.cart','Cart')}</span>
         </button>
         <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><User size={20}/><span className="text-[10px] font-bold">{t('store.account','Account')}</span></Link>

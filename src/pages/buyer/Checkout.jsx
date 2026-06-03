@@ -462,7 +462,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <div className="flex items-center gap-2.5">
               <ShoppingCart size={22} style={{color:pc}}/>
               <span className="text-lg font-extrabold text-gray-900">Your Cart</span>
-              {items.length>0 && <span className="w-[22px] h-[22px] rounded-full text-[11px] font-bold text-white flex items-center justify-center leading-none" style={{backgroundColor:pc}}>{items.length}</span>}
+              {items.length>0 && <span className="w-[22px] h-[22px] rounded-full text-[11px] font-bold text-white grid place-items-center" style={{backgroundColor:pc}}>{items.length}</span>}
             </div>
           ) : (
             <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
@@ -487,7 +487,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
               <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
               <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
-              <div className="p-2 text-gray-500 relative"><ShoppingCart size={20} style={{color:pc}}/>{items.length>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{items.length}</span>}</div>
+              <div className="p-2 text-gray-500 relative"><ShoppingCart size={20} style={{color:pc}}/>{items.length>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{items.length}</span>}</div>
             </>)}
           </div>
         </div>

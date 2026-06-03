@@ -407,11 +407,11 @@ export default function ProductDetail() {
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{wishlistStore.count()}</span>}
+              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{wishlistStore.count()}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none aspect-square shrink-0">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{getCount()}</span>}
             </button>
           </div>
         </div>
@@ -433,19 +433,19 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-gray-50 sm:rounded-3xl overflow-hidden cursor-zoom-in relative" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="max-h-[60vh] sm:max-h-none sm:aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-cover sm:object-contain" alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
               {allImages.length > 1 && (
                 <>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg text-gray-800 flex items-center justify-center z-10 active:scale-90">
-                    <ArrowLeft size={18}/>
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white grid place-items-center z-10 active:scale-90">
+                    <ArrowLeft size={16}/>
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 shadow-lg text-gray-800 flex items-center justify-center z-10 active:scale-90">
-                    <ArrowRight size={18}/>
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white grid place-items-center z-10 active:scale-90">
+                    <ArrowRight size={16}/>
                   </button>
                 </>
               )}
