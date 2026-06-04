@@ -238,12 +238,11 @@ function NotifBell(){
   const[selectMode,setSelectMode]=React.useState(false);
   const toggleSelected=(id)=>setSelected(p=>{const n=new Set(p);if(n.has(id))n.delete(id);else n.add(id);return n;});
   const removeOne=async(id)=>{
+    // Optimistic: remove from UI immediately
+    setNotifs(prev=>prev.filter(n=>n.id!==id));
     try{const{ownerApi}=await import('../../utils/api');
-      if(ownerApi.deleteNotification){await ownerApi.deleteNotification(currentStore.id,id);}
-      else{// optimistic local-only fallback if backend route is missing
-        setNotifs(prev=>prev.filter(n=>n.id!==id));return;}
-      load();
-    }catch{setNotifs(prev=>prev.filter(n=>n.id!==id));}
+      await ownerApi.deleteNotification(currentStore.id,id);
+    }catch(e){console.log('[Notif] delete failed:',e.message);load();}
   };
   const removeSelected=async()=>{
     if(!selected.size)return;
