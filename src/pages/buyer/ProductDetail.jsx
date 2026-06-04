@@ -436,19 +436,19 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-[3/4] sm:aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative max-h-[65vh] sm:max-h-none" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative max-h-[50vh] sm:max-h-none mx-auto w-full" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
                 ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
               {allImages.length > 1 && (
                 <>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white grid place-items-center z-10 active:scale-90">
-                    <ArrowLeft size={16}/>
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 text-white grid place-items-center z-10 active:scale-90 shadow-lg border border-white/20">
+                    <ArrowLeft size={18}/>
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white grid place-items-center z-10 active:scale-90">
-                    <ArrowRight size={16}/>
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 text-white grid place-items-center z-10 active:scale-90 shadow-lg border border-white/20">
+                    <ArrowRight size={18}/>
                   </button>
                 </>
               )}
