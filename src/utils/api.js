@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://test-t2d4.onrender.com/
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -19,13 +19,24 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Never auto-redirect on 401. ProtectedRoute handles missing tokens, and
-    // individual pages decide what to do on auth errors. Auto-redirecting on
-    // every 401 caused profile pages to bounce to login even when the user was
-    // fully authenticated.
     return Promise.reject(error);
   }
 );
+
+// ═══ WAKE-UP PING ═══
+// Render free-tier cold-starts take ~30s. Fire an instant health-check on
+// page load so the backend wakes while the user is still reading the page.
+// Subsequent API calls then hit a warm server.
+let _backendWarm = false;
+const wakeBackend = () => {
+  if (_backendWarm) return;
+  fetch(`${API_URL.replace(/\/api$/, '')}/api/health`, { method: 'GET', mode: 'cors' })
+    .then(() => { _backendWarm = true; })
+    .catch(() => {});
+};
+wakeBackend();
+// Re-ping every 10 minutes to keep it alive from the frontend
+setInterval(wakeBackend, 10 * 60 * 1000);
 
 // Platform Admin
 export const platformApi = {
@@ -105,10 +116,10 @@ export const ownerApi = {
   toggleTwoFa: (data) => api.put('/owner/two-fa', data),
   update2FA: (data) => api.put('/owner/two-fa', data),
   deleteAccount: (data) => api.delete('/owner/account', { data }),
-  getStores: () => api.get('/owner/stores'),
+  getStores: () => cachedGet('owner:stores', () => api.get('/owner/stores')),
   createStore: (data) => api.post('/owner/stores', data),
-  getDashboard: (storeId) => api.get(`/owner/stores/${storeId}/dashboard`),
-  updateStore: (storeId, data) => api.put(`/owner/stores/${storeId}`, data),
+  getDashboard: (storeId) => cachedGet(`dash:${storeId}`, () => api.get(`/owner/stores/${storeId}/dashboard`)),
+  updateStore: (storeId, data) => api.put(`/owner/stores/${storeId}`, data).then(r => { invalidateCache('store'); invalidateCache('dash'); invalidateCache('owner:stores'); return r; }),
   getStaff: (storeId) => api.get(`/owner/stores/${storeId}/staff`),
   addStaff: (storeId, data) => api.post(`/owner/stores/${storeId}/staff`, data),
   updateStaff: (storeId, staffId, data) => api.patch(`/owner/stores/${storeId}/staff/${staffId}`, data),
@@ -139,10 +150,10 @@ export const ownerApi = {
 
 // Products & Categories
 export const productApi = {
-  getAll: (storeId, params) => api.get(`/manage/stores/${storeId}/products`, { params }),
-  create: (storeId, data) => api.post(`/manage/stores/${storeId}/products`, data),
-  update: (storeId, productId, data) => api.put(`/manage/stores/${storeId}/products/${productId}`, data),
-  delete: (storeId, productId) => api.delete(`/manage/stores/${storeId}/products/${productId}`),
+  getAll: (storeId, params) => cachedGet(`mprods:${storeId}:${JSON.stringify(params||{})}`, () => api.get(`/manage/stores/${storeId}/products`, { params })),
+  create: (storeId, data) => api.post(`/manage/stores/${storeId}/products`, data).then(r => { invalidateCache('mprods'); invalidateCache('prods'); return r; }),
+  update: (storeId, productId, data) => api.put(`/manage/stores/${storeId}/products/${productId}`, data).then(r => { invalidateCache('mprods'); invalidateCache('prods'); invalidateCache('prod'); return r; }),
+  delete: (storeId, productId) => api.delete(`/manage/stores/${storeId}/products/${productId}`).then(r => { invalidateCache('mprods'); invalidateCache('prods'); return r; }),
   getCategories: (storeId) => api.get(`/manage/stores/${storeId}/categories`),
   createCategory: (storeId, data) => api.post(`/manage/stores/${storeId}/categories`, data),
   getCoupons: (storeId) => api.get(`/manage/stores/${storeId}/coupons`),
@@ -151,17 +162,16 @@ export const productApi = {
 
 // Orders
 export const orderApi = {
-  getAll: (storeId, params) => api.get(`/manage/stores/${storeId}/orders`, { params }),
-  getOne: (storeId, orderId) => api.get(`/manage/stores/${storeId}/orders/${orderId}`),
-  updateStatus: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/status`, data),
-  updatePayment: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/payment`, data),
-  archive: (storeId, orderId, archived=true) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/archive`, { archived }),
-  bulkArchive: (storeId, ids, archived=true) => api.patch(`/manage/stores/${storeId}/orders/bulk-archive`, { ids, archived }),
-  // Soft-delete (still kept in vault archive)
-  delete: (storeId, orderId) => api.delete(`/manage/stores/${storeId}/orders/${orderId}`),
-  bulkDelete: (storeId, ids) => api.post(`/manage/stores/${storeId}/orders/bulk-delete`, { ids }),
-  restore: (storeId, orderId) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/restore`),
-  purge: (storeId, orderId) => api.delete(`/manage/stores/${storeId}/orders/${orderId}/purge`),
+  getAll: (storeId, params) => cachedGet(`mords:${storeId}:${JSON.stringify(params||{})}`, () => api.get(`/manage/stores/${storeId}/orders`, { params })),
+  getOne: (storeId, orderId) => cachedGet(`mord:${storeId}:${orderId}`, () => api.get(`/manage/stores/${storeId}/orders/${orderId}`)),
+  updateStatus: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/status`, data).then(r => { invalidateCache('mord'); invalidateCache('dash'); return r; }),
+  updatePayment: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/payment`, data).then(r => { invalidateCache('mord'); return r; }),
+  archive: (storeId, orderId, archived=true) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/archive`, { archived }).then(r => { invalidateCache('mord'); return r; }),
+  bulkArchive: (storeId, ids, archived=true) => api.patch(`/manage/stores/${storeId}/orders/bulk-archive`, { ids, archived }).then(r => { invalidateCache('mord'); return r; }),
+  delete: (storeId, orderId) => api.delete(`/manage/stores/${storeId}/orders/${orderId}`).then(r => { invalidateCache('mord'); return r; }),
+  bulkDelete: (storeId, ids) => api.post(`/manage/stores/${storeId}/orders/bulk-delete`, { ids }).then(r => { invalidateCache('mord'); return r; }),
+  restore: (storeId, orderId) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/restore`).then(r => { invalidateCache('mord'); return r; }),
+  purge: (storeId, orderId) => api.delete(`/manage/stores/${storeId}/orders/${orderId}/purge`).then(r => { invalidateCache('mord'); return r; }),
   getAbandoned: (storeId) => api.get(`/manage/stores/${storeId}/abandoned-carts`),
   getCustomers: (storeId, params) => api.get(`/manage/stores/${storeId}/customers`, { params }),
   getShippingWilayas: (storeId) => api.get(`/manage/stores/${storeId}/shipping-wilayas`),
@@ -207,16 +217,18 @@ function cachedGet(key, fetcher) {
   const entry = _cache.get(key);
   const now = Date.now();
   if (entry) {
-    // Return cached data immediately
     if (now - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);
-    // Stale: return cached but re-fetch in background
     fetcher().then(r => _cache.set(key, { data: r, ts: Date.now() })).catch(() => {});
     return Promise.resolve(entry.data);
   }
-  // No cache: fetch, cache, return
   const p = fetcher();
   p.then(r => _cache.set(key, { data: r, ts: Date.now() })).catch(() => {});
   return p;
+}
+// Invalidate cache entries matching a prefix (call after mutations)
+export function invalidateCache(prefix) {
+  if (!prefix) { _cache.clear(); return; }
+  for (const k of _cache.keys()) { if (k.startsWith(prefix)) _cache.delete(k); }
 }
 
 export const storeApi = {
@@ -248,8 +260,8 @@ export const storeApi = {
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
   restoreCart: (slug, phone) => api.get(`/store/${slug}/restore-cart?phone=${encodeURIComponent(phone)}`),
   // Shipping wilayas (public, for checkout)
-  getShippingWilayas: (slug) => api.get(`/store/${slug}/shipping-wilayas`),
-  getDeliveryCompanies: (slug) => api.get(`/store/${slug}/delivery-companies`),
+  getShippingWilayas: (slug) => cachedGet(`sw:${slug}`, () => api.get(`/store/${slug}/shipping-wilayas`)),
+  getDeliveryCompanies: (slug) => cachedGet(`dc:${slug}`, () => api.get(`/store/${slug}/delivery-companies`)),
   // Domain lookup
   lookupDomain: (domain) => api.get(`/store/by-domain/${domain}`),
 };
