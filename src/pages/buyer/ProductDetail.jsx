@@ -410,11 +410,11 @@ export default function ProductDetail() {
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{wishlistStore.count()}</span>}
+              {wishlistStore.count()>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 min-w-[20px] min-h-[20px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">{wishlistStore.count()}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full grid place-items-center">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 w-5 h-5 min-w-[20px] min-h-[20px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">{getCount()}</span>}
             </button>
           </div>
         </div>
