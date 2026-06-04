@@ -137,12 +137,41 @@ export const useCartStore = create((set, get) => ({
 
 // ============ WISHLIST STORE ============
 // Per-store wishlist persisted to localStorage under `wishlist_${slug}`.
-// Stores full product objects so the Favorites page can render with no extra
-// API calls. Synchronises across tabs/components via the `storage` event.
+// Only essential fields are stored to avoid exceeding the localStorage quota
+// (full product objects with base64 images can easily blow through 5 MB).
 const readWishlist = (slug) => {
   if (!slug) return [];
   try { return JSON.parse(localStorage.getItem('wishlist_' + slug) || '[]'); } catch { return []; }
 };
+
+// Trim a product down to the fields the Favorites page actually needs.
+const trimProduct = (p) => {
+  if (!p) return p;
+  let imgs = p.images;
+  if (typeof imgs === 'string') { try { imgs = JSON.parse(imgs); } catch { imgs = []; } }
+  if (!Array.isArray(imgs)) imgs = [];
+  return {
+    id: p.id, slug: p.slug,
+    name: p.name, name_en: p.name_en, name_fr: p.name_fr, name_ar: p.name_ar,
+    price: p.price, compare_at_price: p.compare_at_price,
+    thumbnail: p.thumbnail || imgs[0] || null,
+    images: imgs.slice(0, 1),
+    variants: p.variants,
+    is_on_sale: p.is_on_sale, offer_discount: p.offer_discount,
+    sale_badge_text: p.sale_badge_text,
+    stock_quantity: p.stock_quantity, allow_oversell: p.allow_oversell,
+    _selectedVariant: p._selectedVariant,
+    _variantLabel: p._variantLabel,
+    _wishlistKey: p._wishlistKey,
+  };
+};
+
+// Safely persist to localStorage — silently drops if quota is exceeded.
+const saveWishlist = (slug, items) => {
+  try { localStorage.setItem('wishlist_' + slug, JSON.stringify(items)); }
+  catch (e) { console.warn('[Wishlist] localStorage save failed:', e.message); }
+};
+
 // Remember the last bound slug so wishlist actions never silently no-op if a
 // component calls toggle/remove before its init effect has run.
 let _lastWishlistSlug = null;
@@ -154,12 +183,17 @@ export const useWishlistStore = create((set, get) => ({
 
   // Bind the store to a specific store slug. Idempotent — calling repeatedly
   // with the same slug is a no-op so we don't thrash state during re-renders.
+  // On first load, re-trims existing items so bloated legacy entries shrink.
   init: (slug) => {
     if (!slug) return;
     _lastWishlistSlug = slug;
     try { localStorage.setItem('wishlist_active_slug', slug); } catch {}
     if (get().slug === slug) return;
-    set({ slug, items: readWishlist(slug) });
+    const raw = readWishlist(slug);
+    // Re-trim legacy items that may contain huge base64 images / full descriptions
+    const trimmed = raw.map(trimProduct);
+    saveWishlist(slug, trimmed);
+    set({ slug, items: trimmed });
   },
 
   // Replace the in-memory list (used by storage-event syncing)
@@ -179,8 +213,9 @@ export const useWishlistStore = create((set, get) => ({
     const items = get().items;
     const key = product._wishlistKey || product.id;
     const exists = items.some(p => (p._wishlistKey || p.id) === key);
-    const next = exists ? items.filter(p => (p._wishlistKey || p.id) !== key) : [...items, product];
-    localStorage.setItem('wishlist_' + slug, JSON.stringify(next));
+    const trimmed = trimProduct(product);
+    const next = exists ? items.filter(p => (p._wishlistKey || p.id) !== key) : [...items, trimmed];
+    saveWishlist(slug, next);
     set({ items: next });
     return !exists;
   },
@@ -189,7 +224,7 @@ export const useWishlistStore = create((set, get) => ({
     const slug = get().slug;
     if (!slug) return;
     const next = get().items.filter(p => (p._wishlistKey || p.id) !== key);
-    localStorage.setItem('wishlist_' + slug, JSON.stringify(next));
+    saveWishlist(slug, next);
     set({ items: next });
   },
 
@@ -203,7 +238,7 @@ export const useWishlistStore = create((set, get) => ({
   setItems: (items) => {
     const slug = get().slug;
     if (!slug) return;
-    localStorage.setItem('wishlist_' + slug, JSON.stringify(items));
+    saveWishlist(slug, items);
     set({ items });
   },
 
