@@ -685,8 +685,8 @@ export default function Storefront() {
   },[storeSlug]);
   const wishlist = wishlistItems.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState(() => { try { const c = sessionStorage.getItem('prodsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
+  const [categories, setCategories] = useState(() => { try { const c = sessionStorage.getItem('catsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, name_asc, name_desc, price_asc, price_desc
@@ -697,8 +697,10 @@ export default function Storefront() {
   // resolved, so the page never appears half-rendered. Start true if we have
   // every piece in cache so returning visitors see the page instantly.
   const cachedStore = (() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } })();
+  const cachedProds = (() => { try { const c = sessionStorage.getItem('prodsCache_' + storeSlug); return c ? JSON.parse(c) : null; } catch { return null; } })();
+  const hasCachedData = !!(cachedStore && cachedProds?.length);
   const [loading, setLoading] = useState(!cachedStore);
-  const [contentReady, setContentReady] = useState(false);
+  const [contentReady, setContentReady] = useState(hasCachedData);
   const [cartOpen, setCartOpen] = useState(false);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [favAddProduct, setFavAddProduct] = useState(null);
@@ -759,8 +761,12 @@ export default function Storefront() {
         // Wait for products + categories so the layout never pops in.
         const [prodsRes, catsRes] = await Promise.allSettled([prodsP, catsP]);
         if (cancelled) return;
-        setProducts(prodsRes.status==='fulfilled' ? (prodsRes.value.data.products||[]) : []);
-        setCategories(catsRes.status==='fulfilled' ? (catsRes.value.data||[]) : []);
+        const prods = prodsRes.status==='fulfilled' ? (prodsRes.value.data.products||[]) : [];
+        const cats = catsRes.status==='fulfilled' ? (catsRes.value.data||[]) : [];
+        setProducts(prods);
+        setCategories(cats);
+        try { sessionStorage.setItem('prodsCache_' + storeSlug, JSON.stringify(prods)); } catch {}
+        try { sessionStorage.setItem('catsCache_' + storeSlug, JSON.stringify(cats)); } catch {}
       } catch(e) {
         if (!cancelled) setStore(null);
       }

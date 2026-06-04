@@ -197,11 +197,36 @@ export const shippingApi = {
 };
 
 // Public storefront
+// ═══ IN-MEMORY CACHE ═══
+// Buyer-facing GET requests are cached in memory so navigating between
+// Storefront ↔ ProductDetail is instant. Each entry lives for 60 seconds,
+// then a background re-fetch refreshes it (stale-while-revalidate pattern).
+const _cache = new Map();
+const CACHE_TTL = 60_000; // 60s
+function cachedGet(key, fetcher) {
+  const entry = _cache.get(key);
+  const now = Date.now();
+  if (entry) {
+    // Return cached data immediately
+    if (now - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);
+    // Stale: return cached but re-fetch in background
+    fetcher().then(r => _cache.set(key, { data: r, ts: Date.now() })).catch(() => {});
+    return Promise.resolve(entry.data);
+  }
+  // No cache: fetch, cache, return
+  const p = fetcher();
+  p.then(r => _cache.set(key, { data: r, ts: Date.now() })).catch(() => {});
+  return p;
+}
+
 export const storeApi = {
-  getStore: (slug) => api.get(`/store/${slug}`),
-  getProducts: (slug, params) => api.get(`/store/${slug}/products`, { params }),
-  getProduct: (slug, productSlug) => api.get(`/store/${slug}/products/${productSlug}`),
-  getCategories: (slug) => api.get(`/store/${slug}/categories`),
+  getStore: (slug) => cachedGet(`store:${slug}`, () => api.get(`/store/${slug}`)),
+  getProducts: (slug, params) => {
+    const k = `prods:${slug}:${JSON.stringify(params||{})}`;
+    return cachedGet(k, () => api.get(`/store/${slug}/products`, { params }));
+  },
+  getProduct: (slug, productSlug) => cachedGet(`prod:${slug}:${productSlug}`, () => api.get(`/store/${slug}/products/${productSlug}`)),
+  getCategories: (slug) => cachedGet(`cats:${slug}`, () => api.get(`/store/${slug}/categories`)),
   registerCustomer: (slug, data) => api.post(`/store/${slug}/customers/register`, data),
   loginCustomer: (slug, data) => api.post(`/store/${slug}/customers/login`, data),
   getCustomerProfile: (slug) => api.get(`/store/${slug}/customers/profile`),

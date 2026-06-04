@@ -193,10 +193,11 @@ export default function ProductDetail() {
   useEffect(() => { wishlistStore.init(storeSlug); }, [storeSlug]); // eslint-disable-line
   useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const isLoggedInCustomer = !!authToken && authRole === 'customer';
-  const [store, setStore] = useState(null);
+  const cachedStore = (() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } })();
+  const [store, setStore] = useState(cachedStore);
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedStore);
   const [selectedImage, setSelectedImage] = useState(0);
   // Lightbox: when set, an overlay shows that image full-screen.
   const [lightboxIdx, setLightboxIdx] = useState(null);
@@ -214,16 +215,20 @@ export default function ProductDetail() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const [sr, pr] = await Promise.all([storeApi.getStore(storeSlug), storeApi.getProduct(storeSlug, productSlug)]);
+        if (cancelled) return;
         setStore(sr.data); setProduct(pr.data);
+        try { localStorage.setItem('storeCache_' + storeSlug, JSON.stringify(sr.data)); } catch {}
       } catch {}
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [storeSlug, productSlug]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-10 h-10 border-[3px] border-gray-200 border-t-[#7C3AED] rounded-full animate-spin"/></div>;
+  if (loading && !product) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-10 h-10 border-[3px] border-gray-200 border-t-[#7C3AED] rounded-full animate-spin"/></div>;
   if (!product || !store) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Product not found</p></div>;
 
   const getName = (item) => lang==='ar'?(item.name_ar||item.name_en||item.name):lang==='fr'?(item.name_fr||item.name_en||item.name):item.name_en||item.name;
