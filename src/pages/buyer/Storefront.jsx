@@ -943,15 +943,15 @@ export default function Storefront() {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0 overflow-x-auto max-w-full" style={{scrollbarWidth:'none'}}>
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
-            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full shrink-0"><User size={18} className="sm:w-5 sm:h-5"/></Link>
-            {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full shrink-0" title="Track your order"><Truck size={18} className="sm:w-5 sm:h-5"/></Link>}
+            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full shrink-0"><User size={20}/></Link>
+            {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title="Track your order"><Truck size={20}/></Link>}
             {/* Favourites sits right beside the cart in the header */}
-            <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
-              <Heart size={18} className="sm:w-5 sm:h-5"/>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
+              <Heart size={20}/>
               {wishlist.length>0&&<span className="absolute -top-0.5 -right-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none pointer-events-none" style={{width:20,height:20,minWidth:20,minHeight:20}}>{wishlist.length}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0">
-              <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
+            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative shrink-0">
+              <ShoppingCart size={20}/>
               {getCount()>0&&<span className="absolute -top-0.5 -right-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none pointer-events-none" style={{width:20,height:20,minWidth:20,minHeight:20}}>{getCount()}</span>}
             </button>
           </div>
