@@ -197,7 +197,7 @@ export default function ProductDetail() {
   const [store, setStore] = useState(cachedStore);
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [loading, setLoading] = useState(!cachedStore);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   // Lightbox: when set, an overlay shows that image full-screen.
   const [lightboxIdx, setLightboxIdx] = useState(null);
@@ -228,7 +228,7 @@ export default function ProductDetail() {
     return () => { cancelled = true; };
   }, [storeSlug, productSlug]);
 
-  if (loading && !product) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-10 h-10 border-[3px] border-gray-200 border-t-[#7C3AED] rounded-full animate-spin"/></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-10 h-10 border-[3px] border-gray-200 border-t-[#7C3AED] rounded-full animate-spin"/></div>;
   if (!product || !store) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Product not found</p></div>;
 
   const getName = (item) => lang==='ar'?(item.name_ar||item.name_en||item.name):lang==='fr'?(item.name_fr||item.name_en||item.name):item.name_en||item.name;
