@@ -277,6 +277,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
+    // Delivery company is ALWAYS required when companies are available or still loading
+    if (!companiesLoaded) return toast.error(t('checkout.errDeliveryLoading', 'Loading delivery companies, please wait...'));
     if (deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
     // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
@@ -548,7 +550,13 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     so the emoji + label + price never run out of room. */}
                 {/* Delivery company picker comes BEFORE delivery type so the
                     desk/home prices update based on the selected company. */}
-                {deliveryCompanies.length > 0 && (
+                {!companiesLoaded && (
+                  <div>
+                    <label className="input-label mb-2">{t('checkout.deliveryCompany','Preferred Delivery Company')} *</label>
+                    <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl text-sm text-gray-400"><div className="w-4 h-4 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin"/>{t('checkout.loadingCompanies','Loading delivery companies...')}</div>
+                  </div>
+                )}
+                {companiesLoaded && deliveryCompanies.length > 0 && (
                   <div>
                     <label className="input-label mb-2">{t('checkout.deliveryCompany','Preferred Delivery Company')} *</label>
                     <div className="space-y-2">

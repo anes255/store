@@ -371,6 +371,7 @@ export default function BuyerLandingPage(){
   const[submitting,setSubmitting]=useState(false);
   const[orderSuccess,setOrderSuccess]=useState(null);
   const[companies,setCompanies]=useState([]);
+  const[companiesLoaded,setCompaniesLoaded]=useState(false);
   const[couponDiscount,setCouponDiscount]=useState(0);
   const[paymentStep,setPaymentStep]=useState(null);
   const[receiptImage,setReceiptImage]=useState(null);
@@ -395,7 +396,7 @@ export default function BuyerLandingPage(){
         lp.items.forEach((it,i)=>{initCart[it.product_id]=i===0?1:0;});
         setCart(initCart);
         try{const{data:wData}=await storeApi.getShippingWilayas(storeSlug);const w=Array.isArray(wData)?wData:(wData?.wilayas||[]);setWilayas(w.filter(x=>x.is_active!==false));}catch{}
-        try{const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};if(Array.isArray(cData))setCompanies(cData);}catch{}
+        try{const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};if(Array.isArray(cData))setCompanies(cData);}catch{}finally{setCompaniesLoaded(true);}
       }catch(e){setNotFound(true);}
       setLoading(false);
     })();
@@ -535,6 +536,7 @@ export default function BuyerLandingPage(){
     if(!form.shipping_wilaya)return toast.error(t('checkout.errWilaya','Please choose your wilaya'));
     if(!form.shipping_city)return toast.error(t('checkout.errCity','Please choose your commune'));
     if(!form.payment_method)return toast.error(t('checkout.errPay','Please choose a payment method'));
+    if(!companiesLoaded)return toast.error(t('checkout.errDeliveryLoading','Loading delivery companies, please wait...'));
     if(companies.length>0&&!form.delivery_company_id)return toast.error(t('checkout.errDeliveryCompany','Please choose a delivery company'));
     if(!cartItems.length)return toast.error(t('lp.noItemsInCart','Add at least one product'));
     try{localStorage.setItem('checkout.savedInfo',JSON.stringify({customer_name:form.customer_name,customer_phone:form.customer_phone,customer_email:form.customer_email,shipping_wilaya:form.shipping_wilaya,shipping_city:form.shipping_city,shipping_address:form.shipping_address}));}catch{}
@@ -1373,7 +1375,13 @@ export default function BuyerLandingPage(){
                 </div>
 
                 {/* Delivery company */}
-                {companies.length>0&&(
+                {!companiesLoaded&&(
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold flex items-center gap-1.5" style={{color:'oklch(0.55 0.01 280)'}}><Truck size={12}/>{t('checkout.deliveryCompany','Preferred Delivery Company')} <span style={{color:pc}}>*</span></label>
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-xs text-gray-400"><div className="w-3 h-3 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin"/>{t('checkout.loadingCompanies','Loading...')}</div>
+                  </div>
+                )}
+                {companiesLoaded&&companies.length>0&&(
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold flex items-center gap-1.5" style={{color:'oklch(0.55 0.01 280)'}}><Truck size={12}/>{t('checkout.deliveryCompany','Preferred Delivery Company')} <span style={{color:pc}}>*</span></label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1555,7 +1563,13 @@ export default function BuyerLandingPage(){
                   </div>
 
                   {/* Delivery company */}
-                  {companies.length>0&&(
+                  {!companiesLoaded&&(
+                    <div>
+                      <label className="text-xs font-semibold mb-2.5 block flex items-center gap-1.5" style={{color:'oklch(0.55 0.01 280)'}}><Truck size={13}/>{t('checkout.deliveryCompany','Preferred Delivery Company')} <span style={{color:pc}}>*</span></label>
+                      <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-xs text-gray-400"><div className="w-3 h-3 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin"/>{t('checkout.loadingCompanies','Loading...')}</div>
+                    </div>
+                  )}
+                  {companiesLoaded&&companies.length>0&&(
                     <div>
                       <label className="text-xs font-semibold mb-2.5 block flex items-center gap-1.5" style={{color:'oklch(0.55 0.01 280)'}}><Truck size={13}/>{t('checkout.deliveryCompany','Preferred Delivery Company')} <span style={{color:pc}}>*</span></label>
                       <div className="space-y-2">
