@@ -441,9 +441,9 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="aspect-square bg-white sm:rounded-3xl overflow-hidden cursor-zoom-in relative max-h-[50vh] sm:max-h-none mx-auto w-full p-3 sm:p-0" onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="bg-white sm:rounded-3xl cursor-zoom-in relative mx-auto w-full flex items-center justify-center" style={{height:'min(50vh, 100vw)',maxHeight:'500px'}} onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="w-full h-full object-contain rounded-2xl sm:rounded-none" alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="max-w-[90%] max-h-[90%] object-contain rounded-2xl sm:rounded-xl" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
               {allImages.length > 1 && (
                 <>

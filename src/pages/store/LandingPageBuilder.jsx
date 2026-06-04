@@ -615,9 +615,6 @@ export default function LandingPageBuilder(){
         updatePage(pageIdx,patch);
         const layoutName=LAYOUT_STYLES.find(l=>l.value===ai.layout_style)?.label||ai.layout_style;
         toast.success(`✨ AI generated: ${layoutName} layout${ai.page_mood?' • '+ai.page_mood+' mood':''}`);
-
-        // Auto-generate hero image via puter.js (non-blocking)
-        generateAIImage(pageIdx,'hero').catch(()=>{});
       }else{
         // Fallback to basic generation
         const updatedItems=page.items.map(item=>({
