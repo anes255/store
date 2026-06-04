@@ -940,7 +940,7 @@ export default function Storefront() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0 overflow-x-auto max-w-full" style={{scrollbarWidth:'none'}}>
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0 overflow-visible">
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full shrink-0"><User size={20}/></Link>
@@ -948,11 +948,11 @@ export default function Storefront() {
             {/* Favourites sits right beside the cart in the header */}
             <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
               <Heart size={20}/>
-              {wishlist.length>0&&<span className="notif-badge>{wishlist.length}</span>}
+              {wishlist.length>0&&<span className="notif-badge">{wishlist.length}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative shrink-0">
               <ShoppingCart size={20}/>
-              {getCount()>0&&<span className="notif-badge>{getCount()}</span>}
+              {getCount()>0&&<span className="notif-badge">{getCount()}</span>}
             </button>
           </div>
         </div>

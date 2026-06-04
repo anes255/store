@@ -61,7 +61,7 @@ function NotificationsBell({isDark,pc}){
     <div className="relative">
       <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.notifications','Notifications')}>
         <Bell size={18}/>
-        {unread>0&&<span className="notif-badge>{unread>99?'99+':unread}</span>}
+        {unread>0&&<span className="notif-badge">{unread>99?'99+':unread}</span>}
       </button>
       {open&&anchor&&createPortal(<>
         <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
@@ -124,7 +124,7 @@ function ExpiringSubscriptionsBell({isDark,pc}){
     <div className="relative">
       <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.expiringSubscriptions','Expiring subscriptions')}>
         <Bell size={18}/>
-        {urgentCount>0&&<span className="notif-badge>{urgentCount}</span>}
+        {urgentCount>0&&<span className="notif-badge">{urgentCount}</span>}
       </button>
       {open&&anchor&&createPortal(
         <>
@@ -1151,8 +1151,8 @@ export default function PlatformAdminDashboard(){
             <button onClick={()=>setSidebarOpen(true)} className={`lg:hidden p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>
             <span className={`text-sm font-bold truncate max-w-[120px] sm:max-w-none ${isDark?'text-gray-200':'text-gray-700'}`}><span className="hidden sm:inline">{t('admin.platformAdministration','Platform Administration')}</span><span className="sm:hidden">{t('admin.superAdmin','Super Admin')}</span></span>
           </div>
-          <div className="flex-1 min-w-0 overflow-x-auto" style={{scrollbarWidth:'none'}}>
-            <div className="flex items-center justify-end gap-1.5 md:gap-3 w-max ml-auto">
+          <div className="flex-1 min-w-0 overflow-visible">
+            <div className="flex items-center justify-end gap-1.5 md:gap-3 ml-auto">
               <NotificationsBell isDark={isDark} pc={pc}/>
               <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
               <LanguageSwitcher/>

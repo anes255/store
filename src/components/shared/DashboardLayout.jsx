@@ -259,7 +259,7 @@ function NotifBell(){
 
   return(<div ref={wrapRef} className="relative flex items-center gap-1">
     {!pushOk&&<button onClick={enablePush} className="px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔 Enable</button>}
-    <button ref={btnRef} onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="notif-badge>{unread>9?'9+':unread}</span>}</button>
+    <button ref={btnRef} onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="notif-badge">{unread>9?'9+':unread}</span>}</button>
     {open&&anchor&&createPortal(<>
       <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
       <div className="fixed w-[min(92vw,22rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[101] overflow-hidden" style={{top:anchor.top,...(anchor.left!=null?{left:anchor.left}:{right:anchor.right})}}>
@@ -633,8 +633,8 @@ export default function DashboardLayout({children}){
           <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p></div></div>
           <p className={`md:hidden font-bold text-sm truncate max-w-[140px] ${isDark?'text-gray-100':'text-gray-800'}`}>{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p>
         </div>
-        <div className="flex-1 min-w-0 overflow-x-auto" style={{scrollbarWidth:'none',msOverflowStyle:'none'}}>
-        <div className="flex items-center justify-end gap-2 md:gap-3 w-max ml-auto">
+        <div className="flex-1 min-w-0 overflow-visible">
+        <div className="flex items-center justify-end gap-2 md:gap-3 ml-auto">
           <div className="relative hidden md:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input
