@@ -119,11 +119,13 @@ export default function CartRecovery() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-black text-gray-900">{parseFloat(cart.total || 0).toLocaleString()} DZD</p>
-                  {cart.is_recovered && <span className="text-[10px] font-bold text-emerald-600">{t('recovery.recoveredTag','RECOVERED')}</span>}
+                  {cart.is_recovered ? <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t('recovery.recoveredTag','RECOVERED')}</span>
+                    : cart.recovery_sent_at ? <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{t('recovery.sentTag','SENT')} {new Date(cart.recovery_sent_at).toLocaleDateString()}</span>
+                    : <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full">{t('recovery.pendingTag','PENDING')}</span>}
                 </div>
                 <div className="flex gap-2 shrink-0">
                   {!cart.is_recovered && cart.customer_phone && (
-                    <button onClick={() => { setShowCompose(cart); setCustomMsg(''); setMsgMode('ai'); setMsgLang('en'); setScheduleMode('now'); setScheduleAt(''); }} className="px-3 py-2 bg-brand-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-brand-600"><Send size={12}/>{t('recovery.send','Send')}</button>
+                    <button onClick={() => { setShowCompose(cart); setCustomMsg(''); setMsgMode('ai'); setMsgLang('en'); setScheduleMode('now'); setScheduleAt(''); }} className="px-3 py-2 bg-brand-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-brand-600"><Send size={12}/>{cart.recovery_sent_at ? t('recovery.resend','Resend') : t('recovery.send','Send')}</button>
                   )}
                 </div>
               </div>
