@@ -942,11 +942,11 @@ export default function Storefront() {
             {/* Favourites sits right beside the cart in the header */}
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
-              {wishlist.length>0&&<span className="absolute -top-1 -right-1 w-5 h-5 aspect-square bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none box-content p-0">{wishlist.length}</span>}
+              {wishlist.length>0&&<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none pointer-events-none" style={{width:20,height:20,minWidth:20,minHeight:20}}>{wishlist.length}</span>}
             </Link>
             <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative shrink-0">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
-              {getCount()>0&&<span className="absolute -top-1 -right-1 w-5 h-5 aspect-square bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none box-content p-0">{getCount()}</span>}
+              {getCount()>0&&<span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none pointer-events-none" style={{width:20,height:20,minWidth:20,minHeight:20}}>{getCount()}</span>}
             </button>
           </div>
         </div>
@@ -1212,13 +1212,13 @@ export default function Storefront() {
         <Link to={`/s/${storeSlug}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl active:bg-gray-100 dark:active:bg-white/10" style={{color:pc}}><Package size={20}/><span className="text-[10px] font-bold">{t('store.shop','Shop')}</span></Link>
         <Link to={`/s/${storeSlug}/favorites`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <Heart size={20}/>
-          {wishlist.length>0&&<span className="absolute top-0 right-1/4 w-5 h-5 aspect-square bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none box-content p-0">{wishlist.length}</span>}
+          {wishlist.length>0&&<span className="absolute top-0 right-1/4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none pointer-events-none" style={{width:20,height:20,minWidth:20,minHeight:20}}>{wishlist.length}</span>}
           <span className="text-[10px] font-bold">{t('store.favorites','Favs')}</span>
         </Link>
         {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><Truck size={20}/><span className="text-[10px] font-bold">{t('store.track','Track')}</span></Link>}
         <button onClick={()=>setCartOpen(true)} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <ShoppingCart size={20}/>
-          {getCount()>0&&<span className="absolute top-0 right-1/4 w-5 h-5 aspect-square bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none box-content p-0">{getCount()}</span>}
+          {getCount()>0&&<span className="absolute top-0 right-1/4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none pointer-events-none" style={{width:20,height:20,minWidth:20,minHeight:20}}>{getCount()}</span>}
           <span className="text-[10px] font-bold">{t('store.cart','Cart')}</span>
         </button>
         <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><User size={20}/><span className="text-[10px] font-bold">{t('store.account','Account')}</span></Link>
