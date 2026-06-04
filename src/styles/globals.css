@@ -1,5 +1,16 @@
 @tailwind base;@tailwind components;@tailwind utilities;
 :root{--brand:#C5A55A;--admin-500:#C5A55A;--platform-500:#EF4444;}
+/* ═══ NOTIFICATION COUNT BADGE — single source of truth ═══ */
+.notif-badge{
+  position:absolute!important;top:-2px!important;right:-2px!important;
+  width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;
+  border-radius:9999px!important;
+  background:#ef4444!important;color:#fff!important;
+  font-size:10px!important;font-weight:700!important;line-height:1!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  pointer-events:none!important;padding:0!important;margin:0!important;
+  box-sizing:border-box!important;border:2px solid currentBackground!important;border-color:transparent!important;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{max-width:100vw;overflow-x:hidden;}
 html{scroll-behavior:smooth;}
