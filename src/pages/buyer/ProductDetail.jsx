@@ -391,7 +391,7 @@ export default function ProductDetail() {
   const headerFont = store.header_font || tplStyle.fontFamily || 'Arial, sans-serif';
 
   return (
-    <div className={`min-h-screen ${buyerTheme.mode==='dark'?'buyer-theme-dark bg-[#0b1020] text-gray-100':'bg-[#f5f5f5] text-gray-900'}`}>
+    <div className={`min-h-screen w-full max-w-full overflow-x-hidden ${buyerTheme.mode==='dark'?'buyer-theme-dark bg-[#0b1020] text-gray-100':'bg-[#f5f5f5] text-gray-900'}`}>
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
