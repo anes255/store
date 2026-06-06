@@ -441,18 +441,18 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="bg-white sm:rounded-3xl cursor-zoom-in relative mx-auto w-full flex items-center justify-center" style={{height:'min(45vh, 360px)'}} onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
+            <div className="bg-white sm:rounded-3xl cursor-zoom-in relative w-full max-w-full overflow-hidden flex items-center justify-center px-12 py-3" style={{height:'min(55vh, 420px)'}} onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
               {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="max-w-[85%] max-h-[85%] object-contain rounded-2xl sm:rounded-xl" alt=""/>
+                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="max-w-full max-h-full w-auto h-auto object-contain rounded-2xl sm:rounded-xl" alt=""/>
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
               {allImages.length > 1 && (
                 <>
-                  <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-10 active:scale-90 shadow-xl">
+                  <button aria-label="Previous image" onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-20 active:scale-90 shadow-xl">
                     <ArrowLeft size={18}/>
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-10 active:scale-90 shadow-xl">
+                  <button aria-label="Next image" onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-20 active:scale-90 shadow-xl">
                     <ArrowRight size={18}/>
                   </button>
                 </>
