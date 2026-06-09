@@ -165,6 +165,7 @@ export const orderApi = {
   getAll: (storeId, params) => cachedGet(`mords:${storeId}:${JSON.stringify(params||{})}`, () => api.get(`/manage/stores/${storeId}/orders`, { params })),
   getOne: (storeId, orderId) => cachedGet(`mord:${storeId}:${orderId}`, () => api.get(`/manage/stores/${storeId}/orders/${orderId}`)),
   updateStatus: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/status`, data).then(r => { invalidateCache('mord'); invalidateCache('dash'); return r; }),
+  dispatch: (storeId, orderId, data) => api.post(`/manage/stores/${storeId}/orders/${orderId}/dispatch`, data).then(r => { invalidateCache('mord'); invalidateCache('dash'); return r; }),
   updatePayment: (storeId, orderId, data) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/payment`, data).then(r => { invalidateCache('mord'); return r; }),
   archive: (storeId, orderId, archived=true) => api.patch(`/manage/stores/${storeId}/orders/${orderId}/archive`, { archived }).then(r => { invalidateCache('mord'); return r; }),
   bulkArchive: (storeId, ids, archived=true) => api.patch(`/manage/stores/${storeId}/orders/bulk-archive`, { ids, archived }).then(r => { invalidateCache('mord'); return r; }),
