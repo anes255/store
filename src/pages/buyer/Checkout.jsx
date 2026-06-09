@@ -55,6 +55,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const removeItem = (idx) => { if (isBuyNow) setBuyNowItems(prev => prev.filter((_,i)=>i!==idx)); else cartStore.removeItem(idx); };
   const updateQuantity = (idx, qty) => { if (isBuyNow) setBuyNowItems(prev => { const n=[...prev]; n[idx]={...n[idx],quantity:Math.max(1,qty)}; return n; }); else cartStore.updateQuantity(idx, qty); };
   const clearItems = () => { if (isBuyNow) setBuyNowItems([]); else cartStore.clearCart(); };
+  // Parse an item's quantity offers (tiered "buy N, save" pricing) into an array.
+  const itemQtyOffers = (item) => {
+    let q = item?.quantity_offers || [];
+    if (typeof q === 'string') { try { q = JSON.parse(q); } catch { q = []; } }
+    return Array.isArray(q) ? q : [];
+  };
   const getItemPrice = (item) => {
     let up = item.price || 0;
     if (item.variant) {
@@ -62,6 +68,18 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       else if (item.variant.price_diff != null) up += parseFloat(item.variant.price_diff);
       else if (item.variant.additional_price != null) up += parseFloat(item.variant.additional_price);
       if (Array.isArray(item.variant?.selections)) { for (const sel of item.variant.selections) { if (sel.price_diff != null) up += parseFloat(sel.price_diff); } }
+    }
+    // Apply quantity-offer discount based on this item's quantity (mirrors backend).
+    const qOffers = itemQtyOffers(item);
+    if (qOffers.length) {
+      const m = qOffers
+        .filter(qo => parseInt(qo.quantity) > 0 && (item.quantity || 1) >= parseInt(qo.quantity))
+        .sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))[0];
+      if (m) {
+        const dv = parseFloat(m.discount_value) || 0;
+        if (dv > 0) up = m.discount_type === 'fixed' ? Math.max(0, up - dv) : Math.round(up * (1 - dv / 100));
+        else if (m.label) { const lm = String(m.label).match(/(\d+(?:\.\d+)?)\s*%/); if (lm) up = Math.round(up * (1 - parseFloat(lm[1]) / 100)); }
+      }
     }
     return up;
   };
@@ -748,6 +766,25 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         <span className="text-xs font-bold min-w-[20px] text-center text-gray-900">{item.quantity}</span>
                         <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-7 h-7 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Plus size={12}/></button>
                       </div>
+                      {/* Quantity offers — tap a tier to jump to that quantity and unlock the discount */}
+                      {itemQtyOffers(item).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {itemQtyOffers(item)
+                            .filter(qo => parseInt(qo.quantity) > 0)
+                            .sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
+                            .map((qo, qi) => {
+                              const active = (item.quantity || 1) >= parseInt(qo.quantity);
+                              return (
+                                <button key={qi} type="button" onClick={() => updateQuantity(i, parseInt(qo.quantity) || 1)}
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${active ? 'border-transparent text-white shadow-sm' : 'border-gray-300 text-gray-600 bg-white'}`}
+                                  style={active ? { backgroundColor: pc } : {}}>
+                                  <span>×{qo.quantity}</span>
+                                  <span className="opacity-90">{qo.label}</span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right"><p className="font-bold text-sm text-gray-900">{(getItemPrice(item) * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>

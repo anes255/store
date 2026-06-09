@@ -1127,7 +1127,7 @@ export default function Storefront() {
 
       {/* ============ ABOUT US ============ */}
       {(store.about_story || store.about_mission) && (
-        <section className="bg-gradient-to-b from-gray-50 to-white py-12 px-4 mt-8">
+        <section className="bg-gray-50 py-12 px-4 mt-8">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">{t('buyer.aboutUs','About Us')}</h2>
             {store.about_story && (
@@ -1179,7 +1179,9 @@ export default function Storefront() {
 
       {/* ============ WHATSAPP FLOATING BUTTON ============ */}
       {(() => {
-        const rawNum = store.whatsapp_button_enabled && store.whatsapp_button_number ? store.whatsapp_button_number : (store.whatsapp_number || store.support_phone || store.contact_phone);
+        // The floating WhatsApp button is opt-in: hide it entirely when disabled.
+        if (!store.whatsapp_button_enabled) return null;
+        const rawNum = store.whatsapp_button_number || store.whatsapp_number || store.support_phone || store.contact_phone;
         if (!rawNum) return null;
         const cleanNum = String(rawNum).replace(/[^\d+]/g,'').replace(/^\+/,'');
         if (!cleanNum) return null;

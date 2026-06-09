@@ -273,26 +273,9 @@ export default function ProductDetail() {
   const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   // Sum all price adjustments from selected variants
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
-  // Apply quantity offer discount when a matching tier is selected. Prefer the
-  // structured discount_type/discount_value fields, falling back to parsing a
-  // percentage out of the label for older offers.
-  const qtyOfferMatch = (() => {
-    let qOffers = product.quantity_offers || [];
-    if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
-    if (!Array.isArray(qOffers)) return null;
-    return qOffers.filter(qo => parseInt(qo.quantity) > 0 && quantity >= parseInt(qo.quantity)).sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))[0] || null;
-  })();
-  const priceBeforeQty = basePrice + priceAdj;
-  const finalPrice = (() => {
-    if (!qtyOfferMatch) return priceBeforeQty;
-    const dv = parseFloat(qtyOfferMatch.discount_value) || 0;
-    if (dv > 0) {
-      if (qtyOfferMatch.discount_type === 'fixed') return Math.max(0, priceBeforeQty - dv);
-      return Math.round(priceBeforeQty * (1 - dv / 100));
-    }
-    const m = qtyOfferMatch.label ? String(qtyOfferMatch.label).match(/(\d+(?:\.\d+)?)\s*%/) : null;
-    return m ? Math.round(priceBeforeQty * (1 - parseFloat(m[1]) / 100)) : priceBeforeQty;
-  })();
+  // Quantity offers (tiered "buy N, save") are presented at checkout, not here,
+  // so the product price reflects only the sale + variant adjustments.
+  const finalPrice = basePrice + priceAdj;
   const stockCount = sv ? (sv.stock ?? product.stock_quantity) : product.stock_quantity;
 
   // Build a variant label for display
@@ -332,7 +315,7 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (!requireSelections()) return;
-    addItem({ ...product, price: finalPrice }, quantity, buildVariantObj());
+    addItem({ ...product, price: finalPrice, quantity_offers: product.quantity_offers || [] }, quantity, buildVariantObj());
     toast.success(variantLabel ? `Added "${variantLabel}" to cart` : 'Added to cart');
   };
 
@@ -349,6 +332,7 @@ export default function ProductDetail() {
       image: product.thumbnail || imgs[0] || null,
       quantity,
       variant: buildVariantObj(),
+      quantity_offers: product.quantity_offers || [],
     };
     setBuyNowItems([directItem]);
     setBuyNowOpen(true);
@@ -493,29 +477,6 @@ export default function ProductDetail() {
                 <span className="text-sm font-bold text-gray-800 px-2.5 py-1 bg-gray-100 rounded-lg">{variantLabel}</span>
               </div>
             )}
-
-            {/* Quantity offers */}
-            {(() => {
-              let qOffers = product.quantity_offers || [];
-              if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
-              if (!Array.isArray(qOffers) || qOffers.length === 0) return null;
-              return (
-                <div className="mt-3">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">{t('store.quantityOffers','Quantity Offers')}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {qOffers.map((qo, qi) => {
-                      const isActive = quantity === parseInt(qo.quantity);
-                      return (
-                      <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all hover:scale-[1.02] cursor-pointer ${isActive ? 'shadow-md scale-[1.02]' : ''}`} style={{ borderColor: isActive ? pc : pc + '40', backgroundColor: isActive ? pc + '18' : pc + '08', color: pc }}>
-                        <span className="text-xs font-extrabold" style={{ color: pc }}>×{qo.quantity}</span>
-                        <span className={`text-xs font-bold ${isActive ? '' : 'text-gray-700'}`} style={isActive ? { color: pc } : {}}>{qo.label}</span>
-                      </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* Description */}
             {getDesc() && <p className="mt-4 text-gray-600 leading-relaxed">{getDesc()}</p>}
