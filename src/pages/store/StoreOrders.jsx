@@ -567,7 +567,7 @@ export default function StoreOrders() {
   // Helper for clickable cells. `act` opens a quick-action drawer; falls back to opening full order detail.
   const cellBtn = (o, act, children, className = '') => (
     <button type="button" onClick={e => { e.stopPropagation(); setQuickAction({ type: act, order: o }); }}
-      className={`text-left inline-block max-w-full align-top hover:bg-brand-50/60 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors ${className}`}>
+      className={`text-left inline-block max-w-full align-top hover:bg-brand-50/60 rounded-md px-1 py-0.5 transition-colors ${className}`}>
       {children}
     </button>
   );
