@@ -768,21 +768,25 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                       </div>
                       {/* Quantity offers — tap a tier to jump to that quantity and unlock the discount */}
                       {itemQtyOffers(item).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {itemQtyOffers(item)
-                            .filter(qo => parseInt(qo.quantity) > 0)
-                            .sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
-                            .map((qo, qi) => {
-                              const active = (item.quantity || 1) >= parseInt(qo.quantity);
-                              return (
-                                <button key={qi} type="button" onClick={() => updateQuantity(i, parseInt(qo.quantity) || 1)}
-                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${active ? 'border-transparent text-white shadow-sm' : 'border-gray-300 text-gray-600 bg-white'}`}
-                                  style={active ? { backgroundColor: pc } : {}}>
-                                  <span>×{qo.quantity}</span>
-                                  <span className="opacity-90">{qo.label}</span>
-                                </button>
-                              );
-                            })}
+                        <div className="mt-2">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: pc }}>🏷️ {t('store.buyMoreSaveMore', 'Buy more, save more')}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {itemQtyOffers(item)
+                              .filter(qo => parseInt(qo.quantity) > 0)
+                              .sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
+                              .map((qo, qi) => {
+                                const active = (item.quantity || 1) >= parseInt(qo.quantity);
+                                return (
+                                  <button key={qi} type="button" onClick={() => updateQuantity(i, parseInt(qo.quantity) || 1)}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-bold transition-all ${active ? 'border-transparent text-white shadow-md scale-[1.03]' : 'border-gray-200 text-gray-700 bg-white hover:border-gray-400'}`}
+                                    style={active ? { backgroundColor: pc } : {}}>
+                                    {active && <Check size={12} className="shrink-0" />}
+                                    <span>{t('store.buyQty', 'Buy')} {qo.quantity}</span>
+                                    {qo.label && <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${active ? 'bg-white/25' : 'text-white'}`} style={active ? {} : { backgroundColor: pc }}>{qo.label}</span>}
+                                  </button>
+                                );
+                              })}
+                          </div>
                         </div>
                       )}
                     </div>

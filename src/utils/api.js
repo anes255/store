@@ -213,22 +213,39 @@ export const shippingApi = {
 // then a background re-fetch refreshes it (stale-while-revalidate pattern).
 const _cache = new Map();
 const CACHE_TTL = 60_000; // 60s
+const SS_PREFIX = 'apicache:';
+
+// Persist the payload to sessionStorage so a full reload (or returning to the
+// tab) can paint instantly from the last response while it revalidates.
+function ssLoad(key) {
+  try { const raw = sessionStorage.getItem(SS_PREFIX + key); if (raw) { const o = JSON.parse(raw); return { data: { data: o.d }, ts: o.t }; } } catch {}
+  return null;
+}
+function ssSave(key, response, ts) {
+  try { sessionStorage.setItem(SS_PREFIX + key, JSON.stringify({ d: response.data, t: ts })); } catch {}
+}
+
 function cachedGet(key, fetcher) {
-  const entry = _cache.get(key);
   const now = Date.now();
+  const store = (r) => { _cache.set(key, { data: r, ts: Date.now() }); ssSave(key, r, Date.now()); };
+  let entry = _cache.get(key);
+  if (!entry) { entry = ssLoad(key); if (entry) _cache.set(key, entry); } // hydrate memory from sessionStorage
   if (entry) {
-    if (now - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);
-    fetcher().then(r => _cache.set(key, { data: r, ts: Date.now() })).catch(() => {});
+    // Serve cached data immediately; revalidate in the background when stale.
+    if (now - entry.ts >= CACHE_TTL) fetcher().then(store).catch(() => {});
     return Promise.resolve(entry.data);
   }
+  // No cache yet: run the real fetch and propagate any error to the caller.
   const p = fetcher();
-  p.then(r => _cache.set(key, { data: r, ts: Date.now() })).catch(() => {});
+  p.then(store).catch(() => {});
   return p;
 }
 // Invalidate cache entries matching a prefix (call after mutations)
 export function invalidateCache(prefix) {
-  if (!prefix) { _cache.clear(); return; }
+  const clearSS = (pre) => { try { Object.keys(sessionStorage).forEach(k => { if (k.startsWith(SS_PREFIX + (pre || ''))) sessionStorage.removeItem(k); }); } catch {} };
+  if (!prefix) { _cache.clear(); clearSS(''); return; }
   for (const k of _cache.keys()) { if (k.startsWith(prefix)) _cache.delete(k); }
+  clearSS(prefix);
 }
 
 export const storeApi = {
