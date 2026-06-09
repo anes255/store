@@ -801,7 +801,21 @@ export default function StoreSettings(){
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);
   const loadData=()=>{if(!currentStore?.id)return;api.get(`/owner/stores/${currentStore.id}/staff`).then(r=>setStaff(r.data)).catch(()=>{});api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>setWilayas(Array.isArray(r.data)?r.data:(r.data?.wilayas||[]))).catch(()=>setWilayas([]));};
   const loadProfile=async()=>{try{const{data}=await ownerApi.getProfile();setProfile(data);setNewUsername(data.username||'');setNewEmail(data.email||'');}catch(e){}};
-  const save=async()=>{setLoading(true);try{const{data}=await ownerApi.updateStore(currentStore.id,s);setCurrentStore(data);toast.success(t('storePage.savedCheck','Saved ✓'));}catch(e){const msg=e?.response?.data?.error||e?.message||t('storePage.failed','Failed');toast.error(typeof msg==='string'?msg:t('storePage.failed','Failed'));}setLoading(false);};
+  const save=async()=>{
+    // Optimistic save: reflect the change and confirm instantly, persist in the
+    // background, and only surface an error (reverting) if the server rejects it.
+    const snapshot=currentStore;
+    setCurrentStore(prev=>({...prev,...s}));
+    toast.success(t('storePage.savedCheck','Saved ✓'));
+    try{
+      const{data}=await ownerApi.updateStore(currentStore.id,s);
+      setCurrentStore(data);
+    }catch(e){
+      setCurrentStore(snapshot);
+      const msg=e?.response?.data?.error||e?.message||t('storePage.failed','Failed');
+      toast.error(typeof msg==='string'?msg:t('storePage.failed','Failed'));
+    }
+  };
   const set=(k)=>(e)=>setS({...s,[k]:e.target.type==='checkbox'?e.target.checked:e.target.value});
   const setV=(k,v)=>setS({...s,[k]:v});
   const imgUp=(field,sz=400)=>(e)=>{const f=e.target.files?.[0];if(!f)return;
@@ -957,7 +971,7 @@ export default function StoreSettings(){
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('storePage.advancedConfig','Advanced Config')}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><T label={t('storePage.stickyHeader','Sticky Header')} checked={s.sticky_header!==false} onChange={e=>setV('sticky_header',e.target.checked)}/><T label={t('storePage.pageTransitions','Page Transitions')} checked={s.page_transitions!==false} onChange={e=>setV('page_transitions',e.target.checked)}/></div>
 <div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Type size={16}/><h4 className="font-bold text-sm">Store Name Font</h4></div><p className="text-[11px] text-gray-400">Select the font family used for your store name in the header.</p><div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[{l:'Inter',v:'Inter'},{l:'Poppins',v:'Poppins, sans-serif'},{l:'Playfair',v:'"Playfair Display", serif'},{l:'Georgia',v:'Georgia, serif'},{l:'Bebas Neue',v:'"Bebas Neue", sans-serif'},{l:'Montserrat',v:'Montserrat, sans-serif'},{l:'Oswald',v:'Oswald, sans-serif'},{l:'Lobster',v:'Lobster, cursive'},{l:'Roboto Mono',v:'"Roboto Mono", monospace'}].map(f=><button key={f.l} onClick={()=>setV('header_font',f.v)} className={`p-2 rounded-lg border-2 text-sm transition-all ${(s.header_font||'Inter')===f.v?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300 bg-white'}`} style={{fontFamily:f.v}}>{f.l}</button>)}</div></div>
 <div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Type size={16}/><h4 className="font-bold text-sm">{t('storePage.buttonText','Button Text')}</h4></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label className="input-label text-xs">{t('storePage.addToCart','Add to Cart')}</label><input className="input-field" value={s.btn_add_cart||t('storePage.addToCart','Add to Cart')} onChange={set('btn_add_cart')}/></div><div><label className="input-label text-xs">{t('storePage.orderNow','Order Now')}</label><input className="input-field" value={s.btn_order_now||t('storePage.orderNow','Order Now')} onChange={set('btn_order_now')}/></div></div></div>
-<div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><MessageSquare size={16}/><h4 className="font-bold text-sm">{t('storePage.storeMessages','Store Messages')}</h4></div><div><label className="input-label text-xs">{t('storePage.welcomeMessage','Welcome Message')}</label><textarea className="input-field" rows={2} value={s.welcome_message||''} onChange={set('welcome_message')}/></div><div><label className="input-label text-xs">{t('storePage.welcomeSubtitle','Subtitle (under Welcome Message)')}</label><textarea className="input-field" rows={2} placeholder={t('storePage.welcomeSubtitlePlaceholder','Shown below the welcome message on your store home page')} value={s.hero_subtitle||''} onChange={set('hero_subtitle')}/></div><div><label className="input-label text-xs">{t('storePage.successMessage','Success Message')}</label><textarea className="input-field" rows={2} value={s.success_message||''} onChange={set('success_message')}/></div></div>
+<div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><MessageSquare size={16}/><h4 className="font-bold text-sm">{t('storePage.storeMessages','Store Messages')}</h4></div><div><label className="input-label text-xs">{t('storePage.welcomeMessage','Welcome Message')}</label><textarea className="input-field" rows={2} value={s.welcome_message||''} onChange={set('welcome_message')}/></div><div><label className="input-label text-xs">{t('storePage.welcomeSubtitle','Subtitle')}</label><textarea className="input-field" rows={2} placeholder={t('storePage.welcomeSubtitlePlaceholder','Shown below the welcome message on your store home page')} value={s.hero_subtitle||''} onChange={set('hero_subtitle')}/></div><div><label className="input-label text-xs">{t('storePage.successMessage','Success Message')}</label><textarea className="input-field" rows={2} value={s.success_message||''} onChange={set('success_message')}/></div></div>
 <ScrollbarStudio s={s} setS={setS} setV={setV} t={t}/>
 </div></>}
 
