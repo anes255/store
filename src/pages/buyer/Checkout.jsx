@@ -775,9 +775,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                               .filter(qo => parseInt(qo.quantity) > 0)
                               .sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
                               .map((qo, qi) => {
-                                const active = (item.quantity || 1) >= parseInt(qo.quantity);
+                                const tierQty = parseInt(qo.quantity) || 1;
+                                // Single-select toggle: a tier is active only when the
+                                // quantity matches it exactly; clicking it again cancels.
+                                const active = (item.quantity || 1) === tierQty;
                                 return (
-                                  <button key={qi} type="button" onClick={() => updateQuantity(i, parseInt(qo.quantity) || 1)}
+                                  <button key={qi} type="button" onClick={() => updateQuantity(i, active ? 1 : tierQty)}
                                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-bold transition-all ${active ? 'border-transparent text-white shadow-md scale-[1.03]' : 'border-gray-200 text-gray-700 bg-white hover:border-gray-400'}`}
                                     style={active ? { backgroundColor: pc } : {}}>
                                     {active && <Check size={12} className="shrink-0" />}
