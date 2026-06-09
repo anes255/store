@@ -364,6 +364,7 @@ export default function BuyerLandingPage(){
   const[loading,setLoading]=useState(true);
   const[notFound,setNotFound]=useState(false);
   const[cart,setCart]=useState({});
+  const[offersMap,setOffersMap]=useState({}); // product_id -> quantity_offers[]
   const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp',coupon_code:''});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
@@ -395,6 +396,9 @@ export default function BuyerLandingPage(){
         const initCart={};
         lp.items.forEach((it,i)=>{initCart[it.product_id]=i===0?1:0;});
         setCart(initCart);
+        // Fetch live products to get each item's quantity offers (landing item
+        // snapshots don't store them) so the checkout can show offer tiers.
+        try{const{data:pData}=await storeApi.getProducts(storeSlug);const arr=pData?.products||(Array.isArray(pData)?pData:[]);const m={};arr.forEach(p=>{if(p&&p.id!=null)m[p.id]=p.quantity_offers||[];});setOffersMap(m);}catch{}
         try{const{data:wData}=await storeApi.getShippingWilayas(storeSlug);const w=Array.isArray(wData)?wData:(wData?.wilayas||[]);setWilayas(w.filter(x=>x.is_active!==false));}catch{}
         try{const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};if(Array.isArray(cData))setCompanies(cData);}catch{}finally{setCompaniesLoaded(true);}
       }catch(e){setNotFound(true);}
@@ -468,11 +472,40 @@ export default function BuyerLandingPage(){
     ));
   };
   const setQty=useCallback((pid,delta)=>setCart(c=>{const n=Math.max(0,(c[pid]||0)+delta);return{...c,[pid]:n};}),[]);
+  const setQtyTo=useCallback((pid,n)=>setCart(c=>({...c,[pid]:Math.max(0,n)})),[]);
   const totalQty=Object.values(cart).reduce((s,q)=>s+q,0);
   const cartItems=(page?.items||[]).filter(it=>cart[it.product_id]>0);
-  const subtotal=cartItems.reduce((s,it)=>s+(parseFloat(it.price)||0)*(cart[it.product_id]||0),0);
+  // Quantity offers: prefer the item's own data, else the live product map.
+  const parseOffers=(v)=>{let q=v||[];if(typeof q==='string'){try{q=JSON.parse(q);}catch{q=[];}}return Array.isArray(q)?q:[];};
+  const itemQtyOffers=(it)=>{const own=parseOffers(it?.quantity_offers);return own.length?own:parseOffers(offersMap[it?.product_id]);};
+  // Effective unit price after applying the best qualifying tier (mirrors backend).
+  const effPrice=(it,qty)=>{let up=parseFloat(it?.price)||0;const offers=itemQtyOffers(it);if(offers.length){const m=offers.filter(qo=>parseInt(qo.quantity)>0&&(qty||1)>=parseInt(qo.quantity)).sort((a,b)=>parseInt(b.quantity)-parseInt(a.quantity))[0];if(m){const dv=parseFloat(m.discount_value)||0;if(dv>0)up=m.discount_type==='fixed'?Math.max(0,up-dv):Math.round(up*(1-dv/100));else if(m.label){const lm=String(m.label).match(/(\d+(?:\.\d+)?)\s*%/);if(lm)up=Math.round(up*(1-parseFloat(lm[1])/100));}}}return up;};
+  const subtotal=cartItems.reduce((s,it)=>s+effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0),0);
   const total=Math.max(0,subtotal+shippingPrice-couponDiscount);
   const pc=page?.accent_color||store?.primary_color||'#7C3AED';
+  // Quantity-offer tiers shown under each checkout line. Single-select toggle:
+  // a tier is active only on exact quantity match; clicking it again resets to 1.
+  const renderOfferTiers=(it)=>{
+    const offers=itemQtyOffers(it).filter(qo=>parseInt(qo.quantity)>0).sort((a,b)=>parseInt(a.quantity)-parseInt(b.quantity));
+    if(!offers.length)return null;
+    const qty=cart[it.product_id]||0;
+    return(
+      <div className="mt-1.5">
+        <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1" style={{color:pc}}>🏷️ {t('store.buyMoreSaveMore','Buy more, save more')}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {offers.map((qo,qi)=>{const tq=parseInt(qo.quantity)||1;const active=qty===tq;return(
+            <button key={qi} type="button" onClick={()=>setQtyTo(it.product_id,active?1:tq)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${active?'border-transparent text-white shadow-sm':'border-black/15 text-gray-700 bg-white'}`}
+              style={active?{backgroundColor:pc}:{}}>
+              {active&&<Check size={11} className="shrink-0"/>}
+              <span>{t('store.buyQty','Buy')} {qo.quantity}</span>
+              {qo.label&&<span className={`px-1 py-0.5 rounded ${active?'bg-white/25':'text-white'}`} style={active?{}:{backgroundColor:pc}}>{qo.label}</span>}
+            </button>
+          );})}
+        </div>
+      </div>
+    );
+  };
   const anim=page?.animation_style||'slide-up';
   const heroStyle=page?.hero_style||'centered';
   const layoutStyle=page?.layout_style||'alternating';
@@ -1445,12 +1478,15 @@ export default function BuyerLandingPage(){
                 {/* Order summary — bottom */}
                 <div className="rounded-2xl p-4 space-y-2" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>
                   {cartItems.map(it=>(
-                    <div key={it.product_id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-8 h-8 rounded-lg object-cover shadow-sm"/>}
-                        <span className="font-medium">{it.name} <span className="opacity-35">x{cart[it.product_id]}</span></span>
+                    <div key={it.product_id} className="text-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-8 h-8 rounded-lg object-cover shadow-sm"/>}
+                          <span className="font-medium">{it.name} <span className="opacity-35">x{cart[it.product_id]}</span></span>
+                        </div>
+                        <span className="font-bold tabular-nums">{(effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
                       </div>
-                      <span className="font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
+                      {renderOfferTiers(it)}
                     </div>
                   ))}
                   {cartItems.length===0&&<p className="text-xs text-center opacity-35">{t('lp.emptyCart','No products added')}</p>}
@@ -1644,12 +1680,15 @@ export default function BuyerLandingPage(){
                     <p className="text-xs font-black uppercase tracking-wider" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.yourOrder','Your Order')}</p>
                     {cartItems.length===0&&<p className="text-sm opacity-35 py-2">{t('lp.emptyCart','No products added yet. Scroll up to add products.')}</p>}
                     {cartItems.map(it=>(
-                      <div key={it.product_id} className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                          {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-10 h-10 rounded-xl object-cover shadow-sm ring-1 ring-black/5"/>}
-                          <div><span className="text-sm font-semibold">{it.name}</span><span className="text-xs opacity-35 ml-2">x{cart[it.product_id]}</span></div>
+                      <div key={it.product_id} className="py-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-10 h-10 rounded-xl object-cover shadow-sm ring-1 ring-black/5"/>}
+                            <div><span className="text-sm font-semibold">{it.name}</span><span className="text-xs opacity-35 ml-2">x{cart[it.product_id]}</span></div>
+                          </div>
+                          <span className="text-sm font-bold tabular-nums">{(effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
                         </div>
-                        <span className="text-sm font-bold tabular-nums">{((parseFloat(it.price)||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
+                        {renderOfferTiers(it)}
                       </div>
                     ))}
                     <div className="border-t pt-3 mt-3 space-y-2" style={{borderColor:'oklch(0.9 0.005 280)'}}>

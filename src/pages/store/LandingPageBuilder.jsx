@@ -367,6 +367,7 @@ export default function LandingPageBuilder(){
       image:product.thumbnail||product.images?.[0]||null,
       images:Array.isArray(product.images)?product.images.filter(Boolean):[],
       description:product.description_en||product.description||'',
+      quantity_offers:product.quantity_offers||[],
       headline:'',
       features:[],
       custom_image:null,
@@ -382,6 +383,7 @@ export default function LandingPageBuilder(){
       product_id:p.id,name:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',
       price:p.price,compare_price:p.compare_at_price||p.compare_price||null,
       image:p.thumbnail||p.images?.[0]||null,images:Array.isArray(p.images)?p.images.filter(Boolean):[],description:p.description_en||p.description||'',
+      quantity_offers:p.quantity_offers||[],
       headline:'',features:[],custom_image:null,
     }));
     if(!newItems.length){toast.error(t('lp.allAdded','All products already added'));return;}
