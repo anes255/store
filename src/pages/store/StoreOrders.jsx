@@ -70,6 +70,11 @@ const statusConfig = {
 };
 const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','awaiting_pickup','archived'];
 
+// Treat an order as Stop Desk only for real desk values — must match the
+// backend dispatch logic exactly, otherwise an order can LOOK like desk in the
+// table but ship home (empty/unknown shipping_type = home delivery).
+const isDeskType = (st) => /^(desk|stop[\s_-]?desk|office|bureau|relais|pickup)$/.test(String(st || '').toLowerCase().trim());
+
 const TRANSFER_COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', yalid: '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
 function transferBadge(o) {
   if (!o.delivery_company_name) return null;
@@ -348,17 +353,16 @@ export default function StoreOrders() {
     try {
       const { data } = await orderApi.dispatch(currentStore.id, orderId, { delivery_company_id: deliveryCompanyId });
       toast.dismiss(tid);
-      // DIAGNOSTIC: always show the detail card after a single-order transfer so
-      // we can read order_shipping_type + the exact request body sent to the
-      // carrier (debugging desk vs home).
       if (data?.ok === false) {
         toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
+        setLastDispatchDebug(data);
       } else if (data?.tracking_number) {
+        // Tell the merchant which mode it actually shipped as, so a home/desk
+        // mismatch is obvious right from the toast.
         toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
       } else {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
       }
-      setLastDispatchDebug(data);
       const dcName = companies.find(c => String(c.id) === String(deliveryCompanyId))?.name || null;
       setOrders(prev => prev.map(o => o.id === orderId ? {
         ...o,
@@ -664,7 +668,7 @@ export default function StoreOrders() {
 
       case 'shipping_method':
         return <td className="px-3 py-3">{cellBtn(o, 'shipping_method',
-          o.shipping_type === 'home'
+          !isDeskType(o.shipping_type)
             ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><Home size={10}/> {t('checkout.homeDelivery','Home Delivery')}</span>
             : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Package size={10}/> {t('checkout.deskDelivery','Stop Desk')}</span>
         )}</td>;
@@ -1649,7 +1653,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.shippingMethod','Shipping Method')}</label>
         <div className="grid grid-cols-2 gap-2">
           {['home','desk'].map(m => {
-            const active = (o.shipping_type || 'home') === m || (m === 'desk' && o.shipping_type === 'stop_desk');
+            const active = m === 'desk' ? isDeskType(o.shipping_type) : !isDeskType(o.shipping_type);
             return (
               <button key={m} onClick={() => { onSaveField({ shipping_type: m }); onClose(); }}
                 className={`py-4 rounded-xl font-bold text-xs flex flex-col items-center gap-1 ${active ? 'bg-emerald-500 text-white ring-2 ring-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
