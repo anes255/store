@@ -346,6 +346,18 @@ export default function DashboardLayout({children}){
   const pl = theme.palette;
   // Initialize theme CSS vars on mount
   useEffect(() => { theme.init(); }, []); // eslint-disable-line
+  // Breadcrumb for the current route: main page (group/link) + sub page (child).
+  // Replaces the old "STORE DASHBOARD" label so each page shows where you are.
+  const breadcrumb = (() => {
+    const path = location.pathname;
+    for (const it of DEFAULT_ITEMS) {
+      if (it.type === 'link' && it.to === path) return { main: t(it.label), sub: '' };
+      if (it.children) { const c = it.children.find(c => c.to === path); if (c) return { main: t(it.label), sub: t(c.label) }; }
+    }
+    if (path.startsWith('/dashboard/settings')) return { main: t('sidebar.settings', 'Settings'), sub: '' };
+    const last = path.split('/').pop();
+    return { main: last ? last.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : t('sidebar.dashboard', 'Dashboard'), sub: '' };
+  })();
   // Apply the store's favicon + tab title to the admin dashboard (mirrors the
   // storefront behavior so admins see the same identity in their browser tab)
   useEffect(()=>{
@@ -529,7 +541,7 @@ export default function DashboardLayout({children}){
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-full object-cover shrink-0"/>:<div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px]" style={{color:pl[400]}}>{t('sidebar.storeDashboard','STORE DASHBOARD')}</p></div>}</Link>
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-full object-cover shrink-0"/>:<div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px] truncate" style={{color:pl[400]}}>{breadcrumb.main}{breadcrumb.sub?' › '+breadcrumb.sub:''}</p></div>}</Link>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
       {/* Store switcher — only shows when owner has multiple stores */}
@@ -629,8 +641,8 @@ export default function DashboardLayout({children}){
       <header className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center gap-2 transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
         <div className="flex items-center gap-3 shrink-0">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}
-          <div className="hidden md:flex items-center gap-3"><div className="w-8 h-8 rounded-lg overflow-hidden">{currentStore?.logo&&<img src={currentStore.logo} className="w-full h-full object-cover"/>}</div><div><p className="text-[10px] text-gray-400">{t('sidebar.storeDashboard','STORE DASHBOARD')}</p><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p></div></div>
-          <p className={`md:hidden font-bold text-sm truncate max-w-[140px] ${isDark?'text-gray-100':'text-gray-800'}`}>{location.pathname.split('/').pop()?.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||t('sidebar.dashboard','Dashboard')}</p>
+          <div className="hidden md:flex items-center gap-3"><div>{breadcrumb.sub?<><p className="text-[10px] text-gray-400">{breadcrumb.main}</p><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{breadcrumb.sub}</p></>:<p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{breadcrumb.main}</p>}</div></div>
+          <p className={`md:hidden font-bold text-sm truncate max-w-[140px] ${isDark?'text-gray-100':'text-gray-800'}`}>{breadcrumb.sub||breadcrumb.main}</p>
         </div>
         <div className="flex-1 min-w-0 overflow-visible">
         <div className="flex items-center justify-end gap-2 md:gap-3 ml-auto">
@@ -706,7 +718,7 @@ export default function DashboardLayout({children}){
           )}
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`hidden sm:inline-flex p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
-          <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor}/>
+          <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor} buttonColor={theme.buttonColor} onButtonColorChange={theme.setButtonColor}/>
           <LanguageSwitcher/>
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
           {currentStore?.is_live!==false&&<span className="md:hidden"><LiveBadge storeId={currentStore?.id}/></span>}

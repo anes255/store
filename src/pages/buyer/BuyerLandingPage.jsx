@@ -145,6 +145,22 @@ function ProductGallery({item,accent,imgClass='',aspect='aspect-square'}){
   );
 }
 
+/* ── Auto-rotating product image ──
+   Drop-in replacement for a single <img>. When the merchant hasn't generated a
+   custom/AI image, the landing item still carries every image the product was
+   uploaded with — so we cycle through all of them (auto every ~2.8s, or on tap)
+   instead of showing just the first. Falls back to a single image gracefully. */
+function AutoImg({item,className='',...props}){
+  const imgs=itemImages(item);
+  const[idx,setIdx]=useState(0);
+  useEffect(()=>{setIdx(0);},[item?.product_id]);
+  useEffect(()=>{if(imgs.length<2)return;const id=setInterval(()=>setIdx(i=>(i+1)%imgs.length),2800);return()=>clearInterval(id);},[imgs.length]);
+  if(!imgs.length)return null;
+  const src=imgs[idx%imgs.length];
+  const multi=imgs.length>1;
+  return <img src={src} className={className} {...props} onClick={()=>multi&&setIdx(i=>(i+1)%imgs.length)} style={{...(props.style||{}),...(multi?{cursor:'pointer'}:{})}}/>;
+}
+
 /* ── Floating product thumbnails strip ── */
 function ProductStrip({items,accent}){
   const images=items.filter(it=>it.custom_image||it.image).slice(0,5);
@@ -233,24 +249,95 @@ function SocialProof({accent,textColor,showReviews}){
           <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.trustedBuyers','Trusted by buyers')}</span>
         </div>
       </div>
-      {showReviews&&(
-        <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl" style={{backgroundColor:accent+'08',border:`1px solid ${accent}15`}}>
-          <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={14} fill="#FBBF24" color="#FBBF24"/>)}</div>
-          <span className="text-[10px] opacity-50" style={{color:textColor}}>{t('lp.topRated','Top Rated')}</span>
-        </div>
-      )}
     </div>
   );
 }
 
+/* ── Real customer reviews ──
+   Replaces the old decorative star bars. Reuses the storefront product-review
+   API against the landing page's primary product, so buyers can leave a real
+   review and approved reviews show up here (and in the store admin). */
+function LandingReviews({slug,productSlug,accent,textColor}){
+  const{t}=useTranslation();
+  const[reviews,setReviews]=useState([]);
+  const[stats,setStats]=useState({});
+  const[form,setForm]=useState({customer_name:'',customer_phone:'',rating:5,content:''});
+  const[submitting,setSubmitting]=useState(false);
+  const[open,setOpen]=useState(false);
+  const load=useCallback(()=>{if(!slug||!productSlug)return;storeApi.getProductReviews(slug,productSlug).then(r=>{setReviews(Array.isArray(r.data?.reviews)?r.data.reviews:[]);setStats(r.data?.stats||{});}).catch(()=>{});},[slug,productSlug]);
+  useEffect(()=>{load();},[load]);
+  const submit=async()=>{
+    if(!form.customer_name.trim()){toast.error(t('lp.reviewNameRequired','Please enter your name'));return;}
+    setSubmitting(true);
+    try{
+      const{data}=await storeApi.submitReview(slug,productSlug,form);
+      if(data?.auto_approved){toast.success(t('lp.reviewPublished','Thanks! Your review is now live'));load();}
+      else toast.success(t('lp.reviewPending','Thanks! Your review will appear once approved'));
+      setForm({customer_name:'',customer_phone:'',rating:5,content:''});setOpen(false);
+    }catch(e){toast.error(e.response?.data?.error||t('lp.reviewFailed','Could not submit your review'));}
+    setSubmitting(false);
+  };
+  if(!slug||!productSlug)return null;
+  const avg=parseFloat(stats.avg_rating)||0;const total=parseInt(stats.total)||0;
+  return(
+    <section className="py-12" style={{backgroundColor:'transparent'}}>
+      <div className="max-w-2xl mx-auto px-5">
+        <h2 className="text-xl font-black text-center mb-5" style={{color:textColor}}>{t('lp.customerReviews','Customer Reviews')}</h2>
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl font-black" style={{color:accent}}>{avg?avg.toFixed(1):'—'}</span>
+            <div>
+              <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={16} fill={i<Math.round(avg)?'#FBBF24':'none'} color="#FBBF24"/>)}</div>
+              <p className="text-xs opacity-50" style={{color:textColor}}>{total} {total===1?t('lp.review','review'):t('lp.reviews','reviews')}</p>
+            </div>
+          </div>
+          <button onClick={()=>setOpen(o=>!o)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg hover:brightness-110 active:scale-[0.97] transition-all" style={{backgroundColor:accent}}>{t('lp.writeReview','Write a review')}</button>
+        </div>
+        {open&&(
+          <div className="mb-6 p-4 rounded-2xl space-y-3" style={{backgroundColor:accent+'08',border:`1px solid ${accent}20`}}>
+            <div className="flex items-center gap-1">{[1,2,3,4,5].map(n=>(<button key={n} type="button" onClick={()=>setForm(f=>({...f,rating:n}))}><Star size={26} fill={n<=form.rating?'#FBBF24':'none'} color="#FBBF24"/></button>))}</div>
+            <input className="lp-input w-full px-4 py-2.5 rounded-xl text-sm" placeholder={t('lp.yourName','Your name')} value={form.customer_name} onChange={e=>setForm(f=>({...f,customer_name:e.target.value}))}/>
+            <input className="lp-input w-full px-4 py-2.5 rounded-xl text-sm" placeholder={t('lp.yourPhone','Phone (optional)')} value={form.customer_phone} onChange={e=>setForm(f=>({...f,customer_phone:e.target.value}))}/>
+            <textarea className="lp-input w-full px-4 py-2.5 rounded-xl text-sm" rows={3} placeholder={t('lp.yourReview','Share your experience...')} value={form.content} onChange={e=>setForm(f=>({...f,content:e.target.value}))}/>
+            <button onClick={submit} disabled={submitting} className="w-full py-3 rounded-xl text-sm font-bold text-white shadow-lg disabled:opacity-60 flex items-center justify-center gap-2" style={{backgroundColor:accent}}>{submitting?<Loader2 size={15} className="animate-spin"/>:<Check size={15}/>}{t('lp.submitReview','Submit review')}</button>
+          </div>
+        )}
+        {reviews.length>0?(
+          <div className="space-y-3">
+            {reviews.slice(0,12).map(rv=>(
+              <div key={rv.id} className="p-4 rounded-2xl" style={{backgroundColor:'rgba(0,0,0,0.025)',border:'1px solid rgba(0,0,0,0.05)'}}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-bold text-sm" style={{color:textColor}}>{rv.customer_name}</span>
+                  <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={13} fill={i<rv.rating?'#FBBF24':'none'} color="#FBBF24"/>)}</div>
+                </div>
+                {rv.title&&<p className="text-sm font-semibold mb-0.5" style={{color:textColor}}>{rv.title}</p>}
+                {rv.content&&<p className="text-sm opacity-70" style={{color:textColor}}>{rv.content}</p>}
+                <p className="text-[10px] opacity-40 mt-1.5" style={{color:textColor}}>{new Date(rv.created_at).toLocaleDateString()}</p>
+              </div>
+            ))}
+          </div>
+        ):(
+          <p className="text-sm opacity-50 text-center py-4" style={{color:textColor}}>{t('lp.noReviewsYet','No reviews yet — be the first!')}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ── Quantity control ── */
-function QtyControl({qty,onMinus,onPlus,onAdd,accent,variant='light',t}){
+function QtyControl({qty,onMinus,onPlus,onAdd,accent,variant='light',t,packSize=0}){
   const isDark=variant==='dark';
+  // When the product is sold in offer packs, the counter shows the number of
+  // offers (packs) selected, not the raw unit quantity.
+  const display=packSize>0?Math.max(1,Math.round(qty/packSize)):qty;
   if(qty>0)return(
-    <div className="flex items-center rounded-xl overflow-hidden backdrop-blur-sm" style={{border:`1.5px solid ${isDark?'rgba(255,255,255,0.15)':'oklch(0.88 0.005 280)'}`,backgroundColor:isDark?'rgba(255,255,255,0.06)':'transparent'}}>
-      <button onClick={onMinus} className="px-3.5 py-2.5 transition-colors hover:bg-white/10" style={{color:isDark?'#FFF':undefined}}><Minus size={14}/></button>
-      <span className="px-4 py-2.5 font-bold text-base min-w-[2.5rem] text-center tabular-nums" style={{color:isDark?'#FFF':undefined}}>{qty}</span>
-      <button onClick={onPlus} className="px-3.5 py-2.5 transition-colors hover:bg-white/10" style={{color:isDark?'#FFF':undefined}}><Plus size={14}/></button>
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-center rounded-xl overflow-hidden backdrop-blur-sm" style={{border:`1.5px solid ${isDark?'rgba(255,255,255,0.15)':'oklch(0.88 0.005 280)'}`,backgroundColor:isDark?'rgba(255,255,255,0.06)':'transparent'}}>
+        <button onClick={onMinus} className="px-3.5 py-2.5 transition-colors hover:bg-white/10" style={{color:isDark?'#FFF':undefined}}><Minus size={14}/></button>
+        <span className="px-4 py-2.5 font-bold text-base min-w-[2.5rem] text-center tabular-nums" style={{color:isDark?'#FFF':undefined}}>{display}</span>
+        <button onClick={onPlus} className="px-3.5 py-2.5 transition-colors hover:bg-white/10" style={{color:isDark?'#FFF':undefined}}><Plus size={14}/></button>
+      </div>
+      {packSize>0&&<span className="text-[11px] font-semibold opacity-60" style={{color:isDark?'#FFF':undefined}}>{display>1?t('store.offersSelected','offers'):t('store.offerSelected','offer')} · {display*packSize} {t('store.pcs','pcs')}</span>}
     </div>
   );
   return(
@@ -320,13 +407,13 @@ function FloatingCartButton({totalQty,subtotal,currency,accent,onClick}){
 }
 
 const BUYER_LANGS=[
-  {code:'en',label:'EN',flag:'🇬🇧',name:'English'},
-  {code:'fr',label:'FR',flag:'🇫🇷',name:'Français'},
-  {code:'ar',label:'AR',flag:'🇩🇿',name:'العربية'},
+  {code:'en',label:'EN',flag:'🇬🇧',name:'English',tKey:'lang.english'},
+  {code:'fr',label:'FR',flag:'🇫🇷',name:'Français',tKey:'lang.french'},
+  {code:'ar',label:'AR',flag:'🇩🇿',name:'العربية',tKey:'lang.arabic'},
 ];
 
 function BuyerLangSwitcher({accent}){
-  const{i18n}=useTranslation();
+  const{i18n,t}=useTranslation();
   const[open,setOpen]=useState(false);
   const cur=BUYER_LANGS.find(l=>l.code===i18n.language)||BUYER_LANGS[0];
   const change=(code)=>{
@@ -346,7 +433,7 @@ function BuyerLangSwitcher({accent}){
           {BUYER_LANGS.map(l=>(
             <button key={l.code} onClick={()=>change(l.code)} className={`w-full px-4 py-2.5 flex items-center gap-2.5 text-left text-sm transition-all ${i18n.language===l.code?'bg-gray-50 font-bold':'hover:bg-gray-50'}`}>
               <span className="text-base">{l.flag}</span>
-              <span className={i18n.language===l.code?'text-gray-900':'text-gray-600'}>{l.name}</span>
+              <span className={i18n.language===l.code?'text-gray-900':'text-gray-600'}>{t(l.tKey,l.name)}</span>
               {i18n.language===l.code&&<Check size={13} className="text-emerald-500 ml-auto"/>}
             </button>
           ))}
@@ -365,6 +452,9 @@ export default function BuyerLandingPage(){
   const[notFound,setNotFound]=useState(false);
   const[cart,setCart]=useState({});
   const[offersMap,setOffersMap]=useState({}); // product_id -> quantity_offers[]
+  const[slugMap,setSlugMap]=useState({}); // product_id -> product slug (for reviews)
+  const[variantsMap,setVariantsMap]=useState({}); // product_id -> variants[]
+  const[variantSel,setVariantSel]=useState({}); // product_id -> { [type]: variantIndex }
   const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp',coupon_code:''});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
@@ -398,7 +488,7 @@ export default function BuyerLandingPage(){
         setCart(initCart);
         // Fetch live products to get each item's quantity offers (landing item
         // snapshots don't store them) so the checkout can show offer tiers.
-        try{const{data:pData}=await storeApi.getProducts(storeSlug);const arr=pData?.products||(Array.isArray(pData)?pData:[]);const m={};arr.forEach(p=>{if(p&&p.id!=null)m[p.id]=p.quantity_offers||[];});setOffersMap(m);}catch{}
+        try{const{data:pData}=await storeApi.getProducts(storeSlug);const arr=pData?.products||(Array.isArray(pData)?pData:[]);const m={};const sm={};const vm={};arr.forEach(p=>{if(p&&p.id!=null){m[p.id]=p.quantity_offers||[];sm[p.id]=p.slug;let v=p.variants;if(typeof v==='string'){try{v=JSON.parse(v);}catch{v=[];}}vm[p.id]=Array.isArray(v)?v:[];}});setOffersMap(m);setSlugMap(sm);setVariantsMap(vm);}catch{}
         try{const{data:wData}=await storeApi.getShippingWilayas(storeSlug);const w=Array.isArray(wData)?wData:(wData?.wilayas||[]);setWilayas(w.filter(x=>x.is_active!==false));}catch{}
         try{const{data:cData}=await storeApi.getDeliveryCompanies?.(storeSlug)||{data:[]};if(Array.isArray(cData))setCompanies(cData);}catch{}finally{setCompaniesLoaded(true);}
       }catch(e){setNotFound(true);}
@@ -471,15 +561,62 @@ export default function BuyerLandingPage(){
       </div>
     ));
   };
-  const setQty=useCallback((pid,delta)=>setCart(c=>{const n=Math.max(0,(c[pid]||0)+delta);return{...c,[pid]:n};}),[]);
-  const setQtyTo=useCallback((pid,n)=>setCart(c=>({...c,[pid]:Math.max(0,n)})),[]);
-  const totalQty=Object.values(cart).reduce((s,q)=>s+q,0);
-  const cartItems=(page?.items||[]).filter(it=>cart[it.product_id]>0);
   // Quantity offers: prefer the item's own data, else the live product map.
   const parseOffers=(v)=>{let q=v||[];if(typeof q==='string'){try{q=JSON.parse(q);}catch{q=[];}}return Array.isArray(q)?q:[];};
   const itemQtyOffers=(it)=>{const own=parseOffers(it?.quantity_offers);return own.length?own:parseOffers(offersMap[it?.product_id]);};
+  // Selected offer pack per product (product_id -> pack size). Defaults to the
+  // smallest offer tier so an offer product starts as "1 offer = N units".
+  const[packMap,setPackMap]=useState({});
+  const packSizeFor=useCallback((pid)=>{
+    if(packMap[pid]>0)return packMap[pid];
+    const it=(page?.items||[]).find(x=>x.product_id===pid);
+    const o=itemQtyOffers(it).map(q=>parseInt(q.quantity)).filter(n=>n>0);
+    return o.length?Math.min(...o):0;
+  },[packMap,page,offersMap]);
+  // Step in pack units when the product has offers, else in single units.
+  const setQty=useCallback((pid,delta)=>{const ps=packSizeFor(pid);setCart(c=>{const cur=c[pid]||0;if(ps>0){const packs=Math.max(0,Math.round(cur/ps)+delta);return{...c,[pid]:packs*ps};}return{...c,[pid]:Math.max(0,cur+delta)};});},[packSizeFor]);
+  const setQtyTo=useCallback((pid,n)=>setCart(c=>({...c,[pid]:Math.max(0,n)})),[]);
+  const totalQty=Object.values(cart).reduce((s,q)=>s+q,0);
+  const cartItems=(page?.items||[]).filter(it=>cart[it.product_id]>0);
   // Effective unit price after applying the best qualifying tier (mirrors backend).
-  const effPrice=(it,qty)=>{let up=parseFloat(it?.price)||0;const offers=itemQtyOffers(it);if(offers.length){const m=offers.filter(qo=>parseInt(qo.quantity)>0&&(qty||1)>=parseInt(qo.quantity)).sort((a,b)=>parseInt(b.quantity)-parseInt(a.quantity))[0];if(m){const dv=parseFloat(m.discount_value)||0;if(dv>0)up=m.discount_type==='fixed'?Math.max(0,up-dv):Math.round(up*(1-dv/100));else if(m.label){const lm=String(m.label).match(/(\d+(?:\.\d+)?)\s*%/);if(lm)up=Math.round(up*(1-parseFloat(lm[1])/100));}}}return up;};
+  // ── Product variants ──
+  const productVariants=(pid)=>Array.isArray(variantsMap[pid])?variantsMap[pid]:[];
+  const variantGroupsFor=(pid)=>{const g={};productVariants(pid).forEach((v,i)=>{const t=(v.type||'option').toLowerCase();(g[t]=g[t]||[]).push({...v,_idx:i});});return g;};
+  const selectVariant=(pid,type,idx)=>setVariantSel(s=>({...s,[pid]:{...(s[pid]||{}),[type]:(s[pid]||{})[type]===idx?null:idx}}));
+  const selectedVariantIdxes=(pid)=>{const sel=variantSel[pid]||{};return Object.values(sel).filter(v=>v!=null&&v!==undefined);};
+  // Price adjustment (sum of selected variants' price_adjustment).
+  const variantAdj=(pid)=>{const vs=productVariants(pid);return selectedVariantIdxes(pid).reduce((s,idx)=>s+(parseFloat(vs[idx]?.price_adjustment)||0),0);};
+  // Variant object sent to the backend (it applies price_diff / selections[].price_diff).
+  const buildVariant=(pid)=>{const vs=productVariants(pid);const idxes=selectedVariantIdxes(pid);if(!idxes.length)return null;const parts=idxes.map(idx=>{const v=vs[idx];return{name:v.name,type:v.type,value:v.value,price_diff:parseFloat(v.price_adjustment)||0};});const label=idxes.map(idx=>vs[idx]?.name||vs[idx]?.value||'').filter(Boolean).join(' / ');return parts.length===1?parts[0]:{selections:parts,label};};
+  // True if a product still has an unanswered variant group (every group needs a pick).
+  const variantIncomplete=(pid)=>{const groups=variantGroupsFor(pid);const sel=variantSel[pid]||{};return Object.keys(groups).some(t=>sel[t]==null);};
+  // Variant selector shown under each cart line in the order summary.
+  const renderVariantPicker=(it)=>{
+    const pid=it.product_id;const groups=variantGroupsFor(pid);const types=Object.keys(groups);
+    if(!types.length)return null;
+    return(
+      <div className="mt-2 space-y-2">
+        {types.map(type=>(
+          <div key={type}>
+            <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1 opacity-70">{type}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {groups[type].map(v=>{const active=(variantSel[pid]||{})[type]===v._idx;const isColor=v.type==='color'&&v.value&&/^#[0-9a-f]{3,8}$/i.test(v.value);return(
+                <button key={v._idx} type="button" onClick={()=>selectVariant(pid,type,v._idx)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${active?'border-transparent text-white shadow-md':'border-black/15 text-gray-700 bg-white hover:border-gray-400'}`}
+                  style={active?{backgroundColor:pc}:{}}>
+                  {isColor&&<span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{backgroundColor:v.value}}/>}
+                  <span>{v.name||v.value}</span>
+                  {parseFloat(v.price_adjustment)>0&&<span className="opacity-70">+{parseFloat(v.price_adjustment).toLocaleString()}</span>}
+                  {active&&<Check size={12} className="shrink-0"/>}
+                </button>
+              );})}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+  const effPrice=(it,qty)=>{let up=parseFloat(it?.price)||0;const offers=itemQtyOffers(it);if(offers.length){const m=offers.filter(qo=>parseInt(qo.quantity)>0&&(qty||1)>=parseInt(qo.quantity)).sort((a,b)=>parseInt(b.quantity)-parseInt(a.quantity))[0];if(m){const dv=parseFloat(m.discount_value)||0;if(dv>0)up=m.discount_type==='fixed'?Math.max(0,up-dv):Math.round(up*(1-dv/100));else if(m.label){const lm=String(m.label).match(/(\d+(?:\.\d+)?)\s*%/);if(lm)up=Math.round(up*(1-parseFloat(lm[1])/100));}}}return Math.max(0,up+variantAdj(it?.product_id));};
   const subtotal=cartItems.reduce((s,it)=>s+effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0),0);
   const total=Math.max(0,subtotal+shippingPrice-couponDiscount);
   const pc=page?.accent_color||store?.primary_color||'#7C3AED';
@@ -491,15 +628,14 @@ export default function BuyerLandingPage(){
     const qty=cart[it.product_id]||0;
     return(
       <div className="mt-1.5">
-        <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1" style={{color:pc}}>🏷️ {t('store.buyMoreSaveMore','Buy more, save more')}</p>
-        <div className="flex flex-wrap gap-1.5">
-          {offers.map((qo,qi)=>{const tq=parseInt(qo.quantity)||1;const active=qty===tq;return(
-            <button key={qi} type="button" onClick={()=>setQtyTo(it.product_id,active?1:tq)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${active?'border-transparent text-white shadow-sm':'border-black/15 text-gray-700 bg-white'}`}
+        <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{color:pc}}>🏷️ {t('store.buyMoreSaveMore','Buy more, save more')}</p>
+        <div className="flex flex-wrap gap-2">
+          {offers.map((qo,qi)=>{const tq=parseInt(qo.quantity)||1;const active=packSizeFor(it.product_id)===tq;return(
+            <button key={qi} type="button" onClick={()=>{setPackMap(m=>({...m,[it.product_id]:tq}));setQtyTo(it.product_id,tq);}}
+              className={`flex flex-col items-start gap-1 px-4 py-2.5 rounded-2xl border-2 text-left transition-all ${active?'border-transparent text-white shadow-lg scale-[1.03]':'border-black/15 text-gray-800 bg-white hover:border-gray-400 hover:shadow-md'}`}
               style={active?{backgroundColor:pc}:{}}>
-              {active&&<Check size={11} className="shrink-0"/>}
-              <span>{t('store.buyQty','Buy')} {qo.quantity}</span>
-              {qo.label&&<span className={`px-1 py-0.5 rounded ${active?'bg-white/25':'text-white'}`} style={active?{}:{backgroundColor:pc}}>{qo.label}</span>}
+              <span className="flex items-center gap-1.5 text-sm font-extrabold">{active&&<Check size={15} className="shrink-0"/>}{t('store.buyQty','Buy')} {tq}</span>
+              {qo.label&&<span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${active?'bg-white/25 text-white':'text-white'}`} style={active?{}:{backgroundColor:pc}}>{qo.label}</span>}
             </button>
           );})}
         </div>
@@ -572,6 +708,8 @@ export default function BuyerLandingPage(){
     if(!companiesLoaded)return toast.error(t('checkout.errDeliveryLoading','Loading delivery companies, please wait...'));
     if(companies.length>0&&!form.delivery_company_id)return toast.error(t('checkout.errDeliveryCompany','Please choose a delivery company'));
     if(!cartItems.length)return toast.error(t('lp.noItemsInCart','Add at least one product'));
+    // Require a choice for every variant group on each product in the cart.
+    if(cartItems.some(it=>variantIncomplete(it.product_id)))return toast.error(t('lp.chooseVariant','Please choose product options first'));
     try{localStorage.setItem('checkout.savedInfo',JSON.stringify({customer_name:form.customer_name,customer_phone:form.customer_phone,customer_email:form.customer_email,shipping_wilaya:form.shipping_wilaya,shipping_city:form.shipping_city,shipping_address:form.shipping_address}));}catch{}
     setSubmitting(true);
     try{
@@ -580,7 +718,7 @@ export default function BuyerLandingPage(){
       const customer_id=authRole==='customer'&&authUser?.id?authUser.id:undefined;
       const{data}=await storeApi.placeOrder(storeSlug,{
         ...form,customer_id,
-        items:cartItems.map(it=>({product_id:it.product_id,quantity:cart[it.product_id]||1})),
+        items:cartItems.map(it=>({product_id:it.product_id,quantity:cart[it.product_id]||1,variant:buildVariant(it.product_id)})),
         source:'landing_page',
         landing_page:page.slug,
       });
@@ -825,7 +963,7 @@ export default function BuyerLandingPage(){
                     </ul>
                   )}
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc}/>
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
               </div>
             </Reveal>
@@ -857,7 +995,7 @@ export default function BuyerLandingPage(){
                   )}
                   <div className="flex flex-wrap items-center gap-4 pt-2">
                     <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc}/>
-                    <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                    <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                   </div>
                 </div>
               </div>
@@ -892,7 +1030,7 @@ export default function BuyerLandingPage(){
                 )}
                 <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="xl" variant="dark"/>
                 <div className="flex items-center justify-center">
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
               </div>
             </Reveal>
@@ -916,7 +1054,7 @@ export default function BuyerLandingPage(){
                   {item.description&&<p className="text-base text-white/45 leading-relaxed max-w-lg">{item.description}</p>}
                   {item.features?.length>0&&<div className="flex flex-wrap gap-3 pt-2">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="px-4 py-2 rounded-xl text-xs font-medium text-white/70 backdrop-blur-sm" style={{border:'1px solid rgba(255,255,255,0.08)',backgroundColor:'rgba(255,255,255,0.04)'}}>{f}</span>)}</div>}
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="xl" variant="dark"/>
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
                 {hasImage&&<div className="flex-1 max-w-lg"><div className="relative"><div className="absolute -inset-8 rounded-[2rem] blur-[60px] opacity-25" style={{backgroundColor:pc}}/><div className="relative"><ProductGallery item={item} accent={pc} imgClass="rounded-3xl shadow-2xl ring-1 ring-white/10"/></div></div></div>}
               </div>
@@ -946,7 +1084,7 @@ export default function BuyerLandingPage(){
                   {item.description&&<p className="text-sm leading-relaxed opacity-55" style={{color:textColor}}>{item.description}</p>}
                   {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><Check size={14} style={{color:pc}}/><span style={{color:textColor}}>{f}</span></li>)}</ul>}
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
               </div>
             </Reveal>
@@ -959,7 +1097,7 @@ export default function BuyerLandingPage(){
             <Reveal animation={anim} delay={idx*60}>
               <div className="flex flex-col sm:flex-row gap-5 items-center p-5 rounded-3xl hover:shadow-xl transition-all duration-300 group" style={{backgroundColor:'white',border:'1px solid oklch(0.93 0.005 280)'}}>
                 <div className="w-32 h-32 rounded-2xl overflow-hidden shrink-0 shadow-lg ring-1 ring-black/5">
-                  {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={28} className="opacity-20"/></div>}
+                  {hasImage?<AutoImg item={item} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={28} className="opacity-20"/></div>}
                 </div>
                 <div className="flex-1 space-y-2">
                   <h3 className="text-lg font-bold" style={{color:textColor}}>{item.name}</h3>
@@ -968,7 +1106,7 @@ export default function BuyerLandingPage(){
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
               </div>
             </Reveal>
@@ -999,14 +1137,14 @@ export default function BuyerLandingPage(){
                     <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
                   </div>
                   <div className={`flex items-center gap-3 mt-3 ${isEven?'md:justify-end':''}`}>
-                    <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                    <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                   </div>
                 </div>
                 <div className="hidden md:flex w-5 h-5 rounded-full shrink-0 z-10 shadow-lg" style={{backgroundColor:pc,border:`3px solid ${bgColor}`}}/>
                 <div className="flex-1">
                   <div className="relative group">
                     <div className="absolute -inset-3 rounded-3xl blur-xl opacity-15 transition-opacity group-hover:opacity-25" style={{backgroundColor:pc}}/>
-                    {hasImage?<img src={hasImage} alt={item.name} className="relative w-full max-w-sm mx-auto rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-black/5"/>:<div className="w-full max-w-sm mx-auto aspect-square rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
+                    {hasImage?<AutoImg item={item} alt={item.name} className="relative w-full max-w-sm mx-auto rounded-3xl shadow-2xl object-cover aspect-square ring-1 ring-black/5"/>:<div className="w-full max-w-sm mx-auto aspect-square rounded-3xl flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
                   </div>
                 </div>
               </div>
@@ -1026,7 +1164,7 @@ export default function BuyerLandingPage(){
                 {hasImage&&(
                   <div className="relative inline-block">
                     <div className="absolute -inset-4 rounded-full blur-2xl opacity-15" style={{backgroundColor:pc}}/>
-                    <img src={hasImage} alt={item.name} className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-full mx-auto object-cover shadow-2xl ring-4" style={{ringColor:pc+'25'}}/>
+                    <AutoImg item={item} alt={item.name} className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-full mx-auto object-cover shadow-2xl ring-4" style={{ringColor:pc+'25'}}/>
                   </div>
                 )}
                 <div className="space-y-4">
@@ -1037,7 +1175,7 @@ export default function BuyerLandingPage(){
                 </div>
                 {item.features?.length>0&&<div className="flex flex-wrap justify-center gap-4">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-xs font-light tracking-wider opacity-50" style={{color:textColor}}>— {f}</span>)}</div>}
                 <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
-                <div className="flex justify-center"><QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/></div>
+                <div className="flex justify-center"><QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/></div>
               </div>
             </Reveal>
           </div>
@@ -1053,7 +1191,7 @@ export default function BuyerLandingPage(){
         <section key={item.product_id} className="relative min-h-[70vh] flex">
           <div className={`flex flex-col md:flex-row w-full ${isEven?'':'md:flex-row-reverse'}`}>
             <div className="flex-1 relative overflow-hidden" style={{backgroundColor:'oklch(0.1 0.02 280)'}}>
-              {hasImage?<img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"/>:<div className="absolute inset-0 flex items-center justify-center" style={{backgroundColor:'oklch(0.15 0.01 280)'}}><Package size={64} className="text-white/10"/></div>}
+              {hasImage?<AutoImg item={item} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"/>:<div className="absolute inset-0 flex items-center justify-center" style={{backgroundColor:'oklch(0.15 0.01 280)'}}><Package size={64} className="text-white/10"/></div>}
               <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent md:hidden"/>
             </div>
@@ -1066,7 +1204,7 @@ export default function BuyerLandingPage(){
                   {item.description&&<p className="text-sm leading-relaxed opacity-50" style={{color:textColor}}>{item.description}</p>}
                   {item.features?.length>0&&<ul className="space-y-2">{item.features.filter(f=>f.trim()).map((f,i)=><li key={i} className="flex items-center gap-2.5 text-sm"><div className="w-2 h-2 rounded-full shadow-sm" style={{backgroundColor:pc}}/><span style={{color:textColor}}>{f}</span></li>)}</ul>}
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
               </Reveal>
             </div>
@@ -1082,7 +1220,7 @@ export default function BuyerLandingPage(){
         <section key={item.product_id}>
           {hasImage&&(
             <div className="relative h-[55vh] overflow-hidden">
-              <img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>
+              <AutoImg item={item} alt={item.name} className="absolute inset-0 w-full h-full object-cover"/>
               <div className="absolute inset-0" style={{background:`linear-gradient(to bottom, transparent 30%, ${bgColor} 100%)`}}/>
               <div className="absolute top-8 left-8"><span className="text-7xl font-black text-white/8">{chapterNum}</span></div>
             </div>
@@ -1100,7 +1238,7 @@ export default function BuyerLandingPage(){
                 {item.features?.length>0&&<div className="space-y-2 py-2 border-l-2 pl-4" style={{borderColor:pc+'30'}}>{item.features.filter(f=>f.trim()).map((f,i)=><p key={i} className="text-sm" style={{color:textColor}}>{f}</p>)}</div>}
                 <div className="flex items-center justify-between pt-4 border-t" style={{borderColor:'oklch(0.93 0.005 280)'}}>
                   <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
-                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                  <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                 </div>
               </div>
             </Reveal>
@@ -1134,7 +1272,7 @@ export default function BuyerLandingPage(){
               return(
                 <Reveal key={item.product_id} animation={anim} delay={idx*80} className={getBentoClass(idx,allItems.length)}>
                   <div className="relative w-full h-full rounded-3xl overflow-hidden group cursor-pointer shadow-xl" style={{backgroundColor:'oklch(0.12 0.015 280)'}}>
-                    {hasImage&&<img src={hasImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>}
+                    {hasImage&&<AutoImg item={item} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/5"/>
                     <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
                     <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 space-y-2">
@@ -1143,7 +1281,7 @@ export default function BuyerLandingPage(){
                       {isLarge&&item.description&&<p className="text-xs text-white/50 line-clamp-2 max-w-md">{item.description}</p>}
                       <div className="flex items-center justify-between gap-3 pt-1">
                         <span className={`font-black text-white ${isLarge?'text-2xl':'text-lg'}`}>{parseFloat(item.price).toLocaleString()} <span className="text-xs opacity-40">{currency}</span></span>
-                        <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t}/>
+                        <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} variant="dark" t={t} packSize={packSizeFor(item.product_id)}/>
                       </div>
                     </div>
                   </div>
@@ -1170,7 +1308,7 @@ export default function BuyerLandingPage(){
                 <Reveal key={item.product_id} animation={anim} delay={idx*80}>
                   <div className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 group" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
                     <div className="relative overflow-hidden aspect-[4/5]">
-                      {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
+                      {hasImage?<AutoImg item={item} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={48} className="opacity-20"/></div>}
                       <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
                       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 to-transparent"/>
                       <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
@@ -1183,7 +1321,7 @@ export default function BuyerLandingPage(){
                       <h3 className="text-lg font-black tracking-tight" style={{color:page.text_color||'#1F2937'}}>{item.name}</h3>
                       {item.description&&<p className="text-xs opacity-45 line-clamp-2" style={{color:page.text_color}}>{item.description}</p>}
                       {item.features?.length>0&&<div className="space-y-1">{item.features.filter(f=>f.trim()).slice(0,3).map((f,i)=><div key={i} className="flex items-center gap-1.5 text-xs"><Check size={10} style={{color:pc}}/><span style={{color:page.text_color}}>{f}</span></div>)}</div>}
-                      <div className="pt-2"><QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/></div>
+                      <div className="pt-2"><QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/></div>
                     </div>
                   </div>
                 </Reveal>
@@ -1211,7 +1349,7 @@ export default function BuyerLandingPage(){
                   <div className="rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 group" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
                     <div className={`flex ${isWide?'flex-col sm:flex-row':'flex-col'}`}>
                       <div className={`relative overflow-hidden ${isWide?'sm:w-2/5':''}`}>
-                        {hasImage?<img src={hasImage} alt={item.name} className={`w-full object-cover ${isWide?'h-64 sm:h-full':'aspect-[3/2]'} transition-transform duration-700 group-hover:scale-105`}/>:<div className={`w-full flex items-center justify-center ${isWide?'h-64 sm:h-full':'aspect-[3/2]'}`} style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={36} className="opacity-20"/></div>}
+                        {hasImage?<AutoImg item={item} alt={item.name} className={`w-full object-cover ${isWide?'h-64 sm:h-full':'aspect-[3/2]'} transition-transform duration-700 group-hover:scale-105`}/>:<div className={`w-full flex items-center justify-center ${isWide?'h-64 sm:h-full':'aspect-[3/2]'}`} style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={36} className="opacity-20"/></div>}
                         <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
                       </div>
                       <div className="flex-1 p-6 space-y-3">
@@ -1221,7 +1359,7 @@ export default function BuyerLandingPage(){
                         {isWide&&item.features?.length>0&&<div className="flex flex-wrap gap-1.5">{item.features.filter(f=>f.trim()).map((f,i)=><span key={i} className="text-[10px] px-2.5 py-1 rounded-full font-medium" style={{backgroundColor:pc+'10',color:pc,border:`1px solid ${pc}15`}}>{f}</span>)}</div>}
                         <div className="flex items-center justify-between pt-2">
                           <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="md"/>
-                          <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                          <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                         </div>
                       </div>
                     </div>
@@ -1282,12 +1420,6 @@ export default function BuyerLandingPage(){
             <div className="flex -space-x-1.5">
               {[...Array(3)].map((_,i)=><div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white shadow-sm" style={{backgroundColor:pc,filter:`hue-rotate(${i*40}deg)`}}>{['A','M','S'][i]}</div>)}
             </div>
-            {page.show_reviews!==false&&(
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-0.5">{[...Array(5)].map((_,i)=><Star key={i} size={12} fill="#FBBF24" color="#FBBF24"/>)}</div>
-                <span className="text-xs font-semibold opacity-50" style={{color:textColor}}>{t('lp.topRated','Top Rated')}</span>
-              </div>
-            )}
           </div>
         )}
 
@@ -1324,7 +1456,7 @@ export default function BuyerLandingPage(){
                       /* First product — large featured card */
                       <div className="rounded-3xl overflow-hidden shadow-2xl" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
                         <div className="relative aspect-[16/10] overflow-hidden group">
-                          {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
+                          {hasImage?<AutoImg item={item} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.93 0.005 280)'}}><Package size={56} className="opacity-20"/></div>}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"/>
                           <DiscountBadge price={item.price} comparePrice={item.compare_price} accent={pc}/>
                           <div className="absolute bottom-4 left-5 right-5">
@@ -1340,7 +1472,7 @@ export default function BuyerLandingPage(){
                           )}
                           <div className="flex items-center justify-between pt-1">
                             <PriceTag price={item.price} comparePrice={item.compare_price} currency={currency} accent={pc} size="lg"/>
-                            <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t}/>
+                            <QtyControl qty={qty} onMinus={()=>setQty(item.product_id,-1)} onPlus={()=>setQty(item.product_id,1)} onAdd={()=>setQty(item.product_id,1)} accent={pc} t={t} packSize={packSizeFor(item.product_id)}/>
                           </div>
                         </div>
                       </div>
@@ -1348,7 +1480,7 @@ export default function BuyerLandingPage(){
                       /* Other products — compact cards */
                       <div className="flex items-center gap-4 p-4 rounded-2xl shadow-lg transition-all hover:shadow-xl group" style={{backgroundColor:'white',border:'1px solid rgba(0,0,0,0.05)'}}>
                         <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 shadow-md ring-1 ring-black/5">
-                          {hasImage?<img src={hasImage} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={20} className="opacity-20"/></div>}
+                          {hasImage?<AutoImg item={item} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>:<div className="w-full h-full flex items-center justify-center" style={{backgroundColor:'oklch(0.95 0.005 280)'}}><Package size={20} className="opacity-20"/></div>}
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
                           <h3 className="text-sm font-bold truncate" style={{color:textColor}}>{item.name}</h3>
@@ -1362,7 +1494,7 @@ export default function BuyerLandingPage(){
                           {qty>0?(
                             <div className="flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid oklch(0.9 0.005 280)'}}>
                               <button onClick={()=>setQty(item.product_id,-1)} className="px-2.5 py-2 hover:bg-gray-100"><Minus size={12}/></button>
-                              <span className="px-2.5 py-2 font-bold text-sm tabular-nums">{qty}</span>
+                              <span className="px-2.5 py-2 font-bold text-sm tabular-nums">{packSizeFor(item.product_id)>0?Math.max(1,Math.round(qty/packSizeFor(item.product_id))):qty}</span>
                               <button onClick={()=>setQty(item.product_id,1)} className="px-2.5 py-2 hover:bg-gray-100"><Plus size={12}/></button>
                             </div>
                           ):(
@@ -1486,6 +1618,7 @@ export default function BuyerLandingPage(){
                         </div>
                         <span className="font-bold tabular-nums">{(effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
                       </div>
+                      {renderVariantPicker(it)}
                       {renderOfferTiers(it)}
                     </div>
                   ))}
@@ -1688,6 +1821,7 @@ export default function BuyerLandingPage(){
                           </div>
                           <span className="text-sm font-bold tabular-nums">{(effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
                         </div>
+                        {renderVariantPicker(it)}
                         {renderOfferTiers(it)}
                       </div>
                     ))}
@@ -1714,6 +1848,7 @@ export default function BuyerLandingPage(){
         </>
       )}
 
+      {page.show_reviews!==false&&<LandingReviews slug={storeSlug} productSlug={slugMap[allItems[0]?.product_id]} accent={pc} textColor={page.text_color||'#1F2937'}/>}
       {renderAIImages('footer')}
       {/* Footer */}
       <footer className="py-8 text-center space-y-2 relative overflow-hidden" style={{backgroundColor:'oklch(0.97 0.005 280)'}}>

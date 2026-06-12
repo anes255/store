@@ -346,11 +346,10 @@ export default function StoreOrders() {
         toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
         setLastDispatchDebug(data);
       } else if (data?.tracking_number) {
+        // Success — the top toast is enough; no detail card on a clean transfer.
         toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
-        setLastDispatchDebug(data);
       } else {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
-        setLastDispatchDebug(data);
       }
       const dcName = companies.find(c => String(c.id) === String(deliveryCompanyId))?.name || null;
       setOrders(prev => prev.map(o => o.id === orderId ? {
@@ -658,8 +657,8 @@ export default function StoreOrders() {
       case 'shipping_method':
         return <td className="px-3 py-3">{cellBtn(o, 'shipping_method',
           o.shipping_type === 'home'
-            ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><Home size={10}/> HOME</span>
-            : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Package size={10}/> STOP DESK</span>
+            ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><Home size={10}/> {t('checkout.homeDelivery','Home Delivery')}</span>
+            : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Package size={10}/> {t('checkout.deskDelivery','Stop Desk')}</span>
         )}</td>;
 
       case 'shipping_cost':
@@ -1036,7 +1035,7 @@ export default function StoreOrders() {
           <div className="relative group shrink-0">
             <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
             <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
-              {allStatuses.filter(s=>s!=='archived').map(s=>{const sc2=statusConfig[s];return(
+              {(isPreparingPage?['ready','cancelled']:allStatuses.filter(s=>s!=='archived')).map(s=>{const sc2=statusConfig[s];return(
                 <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
                   <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.label}
@@ -1044,6 +1043,8 @@ export default function StoreOrders() {
               );})}
             </div></div>
           </div>
+          {/* On the Preparing page only Status + Print are allowed */}
+          {!isPreparingPage && (<>
           {/* Bulk financial status change */}
           <div className="relative group shrink-0">
             <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">Payment</span> <ChevronDown size={10}/></button>
@@ -1074,8 +1075,11 @@ export default function StoreOrders() {
             </div></div>
           </div>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
+          </>)}
           <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold shrink-0"><Printer size={12}/><span className="hidden sm:inline">{t('orders.print','Print')}</span></button>
+          {!isPreparingPage && (
           <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold shrink-0"><Trash2 size={12}/><span className="hidden sm:inline">{t('common.delete','Delete')}</span></button>
+          )}
           <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg shrink-0"><X size={14}/></button>
         </div>
       )}
@@ -1294,7 +1298,7 @@ export default function StoreOrders() {
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(isPreparingPage ? ['preparing','ready','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
+                  {(isPreparingPage ? ['ready','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
 
                     const sc2 = statusConfig[s];
                     return (
@@ -1452,7 +1456,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   }
 
   if (type === 'status') {
-    const statusList = isPreparingPage ? ['preparing','ready','cancelled'] : allStatuses;
+    const statusList = isPreparingPage ? ['ready','cancelled'] : allStatuses;
     return wrap(
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
@@ -1467,7 +1471,9 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
             );
           })}
         </div>
-        {/* Archive toggle — moves the order in/out of the archive vault */}
+        {/* Archive toggle — moves the order in/out of the archive vault.
+            Hidden on the Preparing page (only Ready / Cancelled are relevant there). */}
+        {!isPreparingPage && (
         <button onClick={async () => {
           try {
             const{orderApi}=await import('../../utils/api');
@@ -1479,6 +1485,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         }} className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${o.is_archived?'bg-emerald-100 text-emerald-700 hover:bg-emerald-200':'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}>
           {o.is_archived?t('orders.qa.restoreArchive','📤 Restore from archive'):t('orders.qa.archiveOrder','📦 Archive order')}
         </button>
+        )}
       </div>
     );
   }
@@ -1906,8 +1913,8 @@ function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
         {/* Shipping + status */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <select className="input-field" value={form.shipping_type} onChange={e => setForm({ ...form, shipping_type: e.target.value })}>
-            <option value="home">{t('orders.homeDelivery', 'Home delivery')}</option>
-            <option value="desk">{t('orders.deskDelivery', 'Desk pickup')}</option>
+            <option value="home">{t('checkout.homeDelivery', 'Home delivery')}</option>
+            <option value="desk">{t('checkout.deskDelivery', 'Desk pickup')}</option>
           </select>
           <input type="number" className="input-field" placeholder={t('orders.shippingCost', 'Shipping cost')} value={form.shipping_cost} onChange={e => setForm({ ...form, shipping_cost: e.target.value })} />
           <select className="input-field" value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value })}>

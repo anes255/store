@@ -25,10 +25,11 @@ const PRESET_COLORS = [
  * @param {Function} props.onColorChange - (hex) => void
  * @param {boolean} [props.compact] - Render as a compact dropdown button
  */
-export default function ThemePanel({ mode, primaryColor, onModeChange, onColorChange, compact = false, modeOnly = false }) {
+export default function ThemePanel({ mode, primaryColor, onModeChange, onColorChange, compact = false, modeOnly = false, buttonColor, onButtonColorChange }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [customColor, setCustomColor] = useState(primaryColor);
+  const [customBtnColor, setCustomBtnColor] = useState(buttonColor || '#C5A55A');
   const isDark = mode === 'dark';
 
   const content = (
@@ -134,6 +135,32 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
             placeholder="#7C3AED"
           />
           <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('theme.custom', 'Custom')}</span>
+        </div>
+      </div>}
+
+      {/* Button (golden) Color — admin only; drives the brand-* action buttons */}
+      {!modeOnly && onButtonColorChange && <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+          {t('theme.buttonColor', 'Button Color')}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {['#C5A55A','#7C3AED','#3B82F6','#10B981','#06B6D4','#F59E0B','#F97316','#EF4444','#EC4899','#111827'].map(hex => {
+            const sel = (customBtnColor || '').toLowerCase() === hex.toLowerCase();
+            return (
+              <button key={hex} onClick={() => { onButtonColorChange(hex); setCustomBtnColor(hex); }}
+                className={`relative transition-all ${sel ? 'scale-110' : 'hover:scale-105'}`}>
+                <div className={`w-8 h-8 rounded-full border-2 ${sel ? 'border-gray-900 dark:border-white shadow-lg' : isDark ? 'border-gray-700' : 'border-gray-200'}`} style={{ backgroundColor: hex }}>
+                  {sel && <Check size={14} className="absolute inset-0 m-auto text-white drop-shadow-md" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <input type="color" value={customBtnColor} onChange={e => { setCustomBtnColor(e.target.value); onButtonColorChange(e.target.value); }} className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0" style={{ appearance: 'none' }} />
+          <input type="text" value={customBtnColor} onChange={e => { const v = e.target.value; setCustomBtnColor(v); if (/^#[0-9A-Fa-f]{6}$/.test(v)) onButtonColorChange(v); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'} w-24 focus:outline-none`} placeholder="#C5A55A" />
+          <button className="px-3 py-1.5 rounded-lg text-white text-[10px] font-bold" style={{ backgroundColor: customBtnColor }}>{t('theme.button', 'Button')}</button>
         </div>
       </div>}
 

@@ -84,6 +84,23 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     return up;
   };
   const getTotal = () => items.reduce((s,i) => s + getItemPrice(i) * (i.quantity||1), 0);
+  // Patch arbitrary fields on a line (works for both Buy-Now and cart flows).
+  const updateItemField = (idx, patch) => { if (isBuyNow) setBuyNowItems(prev => { const n=[...prev]; n[idx]={...n[idx],...patch}; return n; }); else cartStore.updateItem(idx, patch); };
+  // ── Quantity-offer packs ──
+  // When a product has quantity offers it is sold in "packs". The pack size is
+  // the offer the buyer picked (item.offer_qty) or, by default, the smallest
+  // offer tier. The quantity counter then counts PACKS (offers), and the real
+  // unit quantity sent with the order = packs × packSize.
+  const itemPackSize = (item) => {
+    if (parseInt(item.offer_qty) > 0) return parseInt(item.offer_qty);
+    const o = itemQtyOffers(item).map(q => parseInt(q.quantity)).filter(n => n > 0);
+    return o.length ? Math.min(...o) : 0;
+  };
+  const itemPacks = (item) => { const ps = itemPackSize(item); return ps ? Math.max(1, Math.round((item.quantity || 1) / ps)) : (item.quantity || 1); };
+  // On load, snap offer products up to at least one full pack so "1 offer = N units".
+  useEffect(() => {
+    items.forEach((it, i) => { const ps = itemPackSize(it); if (ps > 1 && (it.quantity || 1) < ps) updateQuantity(i, ps); });
+  }, [items.length]); // eslint-disable-line
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -761,37 +778,51 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                           <span className="text-[11px] text-gray-500 font-medium truncate">{vLabel}</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 mt-1">
-                        <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-7 h-7 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Minus size={12}/></button>
-                        <span className="text-xs font-bold min-w-[20px] text-center text-gray-900">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-7 h-7 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Plus size={12}/></button>
-                      </div>
-                      {/* Quantity offers — tap a tier to jump to that quantity and unlock the discount */}
+                      {/* Quantity offers — pick a pack (Shopify-style). Each pack = N units. */}
                       {itemQtyOffers(item).length > 0 && (
                         <div className="mt-2">
                           <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: pc }}>🏷️ {t('store.buyMoreSaveMore', 'Buy more, save more')}</p>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-2">
                             {itemQtyOffers(item)
                               .filter(qo => parseInt(qo.quantity) > 0)
                               .sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
                               .map((qo, qi) => {
                                 const tierQty = parseInt(qo.quantity) || 1;
-                                // Single-select toggle: a tier is active only when the
-                                // quantity matches it exactly; clicking it again cancels.
-                                const active = (item.quantity || 1) === tierQty;
+                                const active = itemPackSize(item) === tierQty;
                                 return (
-                                  <button key={qi} type="button" onClick={() => updateQuantity(i, active ? 1 : tierQty)}
-                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-bold transition-all ${active ? 'border-transparent text-white shadow-md scale-[1.03]' : 'border-gray-200 text-gray-700 bg-white hover:border-gray-400'}`}
+                                  <button key={qi} type="button" onClick={() => { updateItemField(i, { offer_qty: tierQty }); updateQuantity(i, tierQty); }}
+                                    className={`flex flex-col items-start gap-1 px-4 py-2.5 rounded-2xl border-2 text-left transition-all ${active ? 'border-transparent text-white shadow-lg scale-[1.03]' : 'border-gray-200 text-gray-800 bg-white hover:border-gray-400 hover:shadow-md'}`}
                                     style={active ? { backgroundColor: pc } : {}}>
-                                    {active && <Check size={12} className="shrink-0" />}
-                                    <span>{t('store.buyQty', 'Buy')} {qo.quantity}</span>
-                                    {qo.label && <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${active ? 'bg-white/25' : 'text-white'}`} style={active ? {} : { backgroundColor: pc }}>{qo.label}</span>}
+                                    <span className="flex items-center gap-1.5 text-sm font-extrabold">{active && <Check size={15} className="shrink-0" />}{t('store.buyQty', 'Buy')} {tierQty}</span>
+                                    {qo.label && <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${active ? 'bg-white/25 text-white' : 'text-white'}`} style={active ? {} : { backgroundColor: pc }}>{qo.label}</span>}
                                   </button>
                                 );
                               })}
                           </div>
                         </div>
                       )}
+                      {/* Counter — counts offers (packs) when sold in packs, else units */}
+                      {(() => {
+                        const ps = itemPackSize(item);
+                        if (ps > 0) {
+                          const packs = itemPacks(item);
+                          return (
+                            <div className="flex items-center gap-2 mt-2">
+                              <button onClick={() => updateQuantity(i, Math.max(ps, (packs - 1) * ps))} className="w-8 h-8 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Minus size={13}/></button>
+                              <span className="text-sm font-bold min-w-[20px] text-center text-gray-900">{packs}</span>
+                              <button onClick={() => updateQuantity(i, (packs + 1) * ps)} className="w-8 h-8 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Plus size={13}/></button>
+                              <span className="text-[11px] text-gray-500 font-semibold">{packs > 1 ? t('store.offersSelected', 'offers') : t('store.offerSelected', 'offer')} · {packs * ps} {t('store.pcs', 'pcs')}</span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex items-center gap-2 mt-1">
+                            <button onClick={() => updateQuantity(i, item.quantity - 1)} className="w-7 h-7 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Minus size={12}/></button>
+                            <span className="text-xs font-bold min-w-[20px] text-center text-gray-900">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(i, item.quantity + 1)} className="w-7 h-7 bg-gray-200 text-gray-900 rounded-lg flex items-center justify-center border border-gray-300 hover:bg-gray-300 transition-colors"><Plus size={12}/></button>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="text-right"><p className="font-bold text-sm text-gray-900">{(getItemPrice(item) * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>

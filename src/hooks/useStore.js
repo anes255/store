@@ -122,6 +122,14 @@ export const useCartStore = create((set, get) => ({
     set({ items: newItems });
   },
 
+  // Patch arbitrary fields on a cart line (e.g. the selected quantity-offer pack).
+  updateItem: (index, patch) => {
+    const newItems = [...get().items];
+    newItems[index] = { ...newItems[index], ...patch };
+    localStorage.setItem('cart', JSON.stringify(newItems));
+    set({ items: newItems });
+  },
+
   clearCart: () => {
     localStorage.removeItem('cart');
     set({ items: [] });
@@ -324,15 +332,34 @@ function applyThemeToDOM(mode, color, context) {
   }
 }
 
+// Apply the "golden" button palette (the `brand-*` Tailwind colors) from a hex.
+// Drives the --brand-* CSS variables that tailwind.config now references.
+function applyBrandToDOM(color) {
+  const root = document.documentElement;
+  const palette = generatePalette(color);
+  Object.entries(palette).forEach(([shade, val]) => root.style.setProperty(`--brand-${shade}`, val));
+  root.style.setProperty('--brand', color);
+}
+
 // Store admin theme
 export const useAdminTheme = create((set, get) => ({
   mode: localStorage.getItem('admin_theme_mode') || 'light',
   primaryColor: localStorage.getItem('admin_theme_color') || '#7C3AED',
   palette: generatePalette(localStorage.getItem('admin_theme_color') || '#7C3AED'),
+  // Color of the primary/"golden" action buttons in the dashboard. Defaults to
+  // the original golden so existing stores look unchanged until customized.
+  buttonColor: localStorage.getItem('admin_button_color') || '#C5A55A',
 
   init: () => {
     const state = get();
     applyThemeToDOM(state.mode, state.primaryColor, 'admin');
+    applyBrandToDOM(state.buttonColor);
+  },
+
+  setButtonColor: (color) => {
+    localStorage.setItem('admin_button_color', color);
+    applyBrandToDOM(color);
+    set({ buttonColor: color });
   },
 
   setMode: (mode) => {
