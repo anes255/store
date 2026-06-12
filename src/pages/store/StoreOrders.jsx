@@ -251,7 +251,9 @@ export default function StoreOrders() {
       const params = { search };
       if (wantArchive) { params.archived = 'only'; }
       else if (!wantPreparingBucket && effectiveFilter !== 'all') { params.status = effectiveFilter; }
-      const { data } = await orderApi.getAll(currentStore.id, params);
+      // Fetch fresh (bypass the stale-while-revalidate cache): the admin orders
+      // list is time-sensitive — new orders must show up promptly.
+      const { data } = await api.get(`/manage/stores/${currentStore.id}/orders`, { params });
       let rows = data.orders || [];
       if (wantPreparingBucket) {
         rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
@@ -265,6 +267,15 @@ export default function StoreOrders() {
     if (pathFilter && filter !== pathFilter) { setFilter(pathFilter); setLoading(true); loadOrders(pathFilter); }
     else if (!pathFilter && (filter === 'preparing' || filter === 'archived')) { setFilter('all'); setLoading(true); loadOrders('all'); }
     else { setLoading(true); loadOrders(); }
+  }, [currentStore?.id, filter, search, location.pathname]);
+  // Silent auto-refresh so newly placed orders appear without a manual reload:
+  // poll every 20s and also refetch when the tab regains focus.
+  useEffect(() => {
+    if (!currentStore?.id) return;
+    const iv = setInterval(() => { if (!document.hidden) loadOrders(); }, 20000);
+    const onFocus = () => loadOrders();
+    window.addEventListener('focus', onFocus);
+    return () => { clearInterval(iv); window.removeEventListener('focus', onFocus); };
   }, [currentStore?.id, filter, search, location.pathname]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
   const [shippingWilayas, setShippingWilayas] = useState([]);
