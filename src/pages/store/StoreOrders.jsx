@@ -1356,6 +1356,7 @@ export default function StoreOrders() {
             <div>Sent by app: <b>{String(d.req_shipping_type)}</b></div>
             <div>Seen by carrier: <b>{String(d.shipping_type_seen_by_carrier)}</b></div>
             <div>Body stopdesk = <b>{sd}</b> · delivery_mode = <b>{String(d.delivery_mode)}</b> · attempts = <b>{String(d.attempts)}</b></div>
+            {d.desk_reject && <div className="mt-1 pt-1 border-t border-amber-300 text-red-700">Carrier rejected DESK (HTTP {String(d.desk_reject.status)}): <b className="break-all">{String(d.desk_reject.body)}</b></div>}
           </div>
         );})()}
         {lastDispatchDebug.tracking_number&&<p className="text-sm mb-2">Tracking: <span className="font-mono font-bold text-emerald-700">{lastDispatchDebug.tracking_number}</span></p>}
