@@ -369,14 +369,12 @@ export default function StoreOrders() {
       toast.dismiss(tid);
       if (data?.ok === false) {
         toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
+        setLastDispatchDebug(data); // show the detail card only on failure
       } else if (data?.tracking_number) {
         toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
       } else {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
       }
-      // DIAGNOSTIC: always show the detail card so we can read db/req/seen
-      // shipping_type + the full request body (stopdesk value) for desk debugging.
-      setLastDispatchDebug(data);
       const dcName = companies.find(c => String(c.id) === String(deliveryCompanyId))?.name || null;
       setOrders(prev => prev.map(o => o.id === orderId ? {
         ...o,
