@@ -348,20 +348,17 @@ export default function StoreOrders() {
     try {
       const { data } = await orderApi.dispatch(currentStore.id, orderId, { delivery_company_id: deliveryCompanyId });
       toast.dismiss(tid);
-      // Show the detail card on errors, and on DESK dispatches (diagnostic — so
-      // we can see exactly what was sent to the carrier when desk vs home is
-      // wrong). Home dispatches stay clean (toast only).
-      const isDeskDispatch = data?.debug?.order_shipping_type === 'desk' || data?.delivery_mode === 'desk';
+      // DIAGNOSTIC: always show the detail card after a single-order transfer so
+      // we can read order_shipping_type + the exact request body sent to the
+      // carrier (debugging desk vs home).
       if (data?.ok === false) {
         toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
-        setLastDispatchDebug(data);
       } else if (data?.tracking_number) {
         toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
-        if (isDeskDispatch) setLastDispatchDebug(data);
       } else {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
-        if (isDeskDispatch) setLastDispatchDebug(data);
       }
+      setLastDispatchDebug(data);
       const dcName = companies.find(c => String(c.id) === String(deliveryCompanyId))?.name || null;
       setOrders(prev => prev.map(o => o.id === orderId ? {
         ...o,
