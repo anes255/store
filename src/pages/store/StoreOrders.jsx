@@ -309,28 +309,34 @@ export default function StoreOrders() {
     catch { toast.error(t('store.failed','Failed')); }
   };
 
-  // Save any field of an order via PATCH.
+  // Save any field of an order via PATCH. Updates the UI optimistically so the
+  // cell/buttons flip instantly instead of waiting for a full re-fetch.
   const saveOrderField = async (orderId, patch) => {
-    try {
-      // When the shipping method changes, recompute the shipping cost from the
-      // store's per-wilaya pricing and adjust the order total accordingly so the
-      // displayed total reflects the new home/desk delivery price.
-      if (patch.shipping_type && patch.shipping_cost == null) {
-        const o = orders.find(x => x.id === orderId);
-        if (o) {
-          const newCost = deliveryPriceFor(o, patch.shipping_type);
-          if (newCost != null) {
-            const prevCost = parseFloat(o.shipping_cost) || 0;
-            const prevTotal = parseFloat(o.total) || 0;
-            patch = { ...patch, shipping_cost: newCost, total: Math.max(0, prevTotal - prevCost + newCost) };
-          }
+    // When the shipping method changes, recompute the shipping cost from the
+    // store's per-wilaya pricing and adjust the order total accordingly so the
+    // displayed total reflects the new home/desk delivery price.
+    if (patch.shipping_type && patch.shipping_cost == null) {
+      const o = orders.find(x => x.id === orderId);
+      if (o) {
+        const newCost = deliveryPriceFor(o, patch.shipping_type);
+        if (newCost != null) {
+          const prevCost = parseFloat(o.shipping_cost) || 0;
+          const prevTotal = parseFloat(o.total) || 0;
+          patch = { ...patch, shipping_cost: newCost, total: Math.max(0, prevTotal - prevCost + newCost) };
         }
       }
+    }
+    // Optimistic: flip the row immediately, persist in the background, roll back on failure.
+    const snapshot = orders;
+    setOrders(prev => prev.map(x => x.id === orderId ? { ...x, ...patch } : x));
+    if (selectedOrder?.id === orderId) setSelectedOrder(prev => prev ? { ...prev, ...patch } : prev);
+    try {
       await api.patch(`/manage/stores/${currentStore.id}/orders/${orderId}`, patch);
-      toast.success(t('store.saved','Saved'));
-      loadOrders();
-      if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
-    } catch { toast.error(t('store.failedToSave','Failed to save')); }
+    } catch {
+      toast.error(t('store.failedToSave','Failed to save'));
+      setOrders(snapshot);
+      if (selectedOrder?.id === orderId) { try { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); } catch {} }
+    }
   };
 
   // Dispatch order: create the parcel on the carrier's platform via API and
