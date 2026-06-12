@@ -369,14 +369,14 @@ export default function StoreOrders() {
       toast.dismiss(tid);
       if (data?.ok === false) {
         toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
-        setLastDispatchDebug(data);
       } else if (data?.tracking_number) {
-        // Tell the merchant which mode it actually shipped as, so a home/desk
-        // mismatch is obvious right from the toast.
         toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
       } else {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
       }
+      // DIAGNOSTIC: always show the detail card so we can read db/req/seen
+      // shipping_type + the full request body (stopdesk value) for desk debugging.
+      setLastDispatchDebug(data);
       const dcName = companies.find(c => String(c.id) === String(deliveryCompanyId))?.name || null;
       setOrders(prev => prev.map(o => o.id === orderId ? {
         ...o,
@@ -1349,6 +1349,15 @@ export default function StoreOrders() {
         </div>
         {lastDispatchDebug.message&&<p className="text-sm font-medium text-gray-700 mb-2">{lastDispatchDebug.message}</p>}
         {lastDispatchDebug.error&&<p className="text-sm font-bold text-red-600 mb-2">{lastDispatchDebug.error}</p>}
+        {/* DIAGNOSTIC SUMMARY — desk/home debugging */}
+        {lastDispatchDebug.debug&&(()=>{const d=lastDispatchDebug.debug;let sd='?';try{sd=String(JSON.parse(d.request_body)?.stopdesk);}catch{}return(
+          <div className="mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono space-y-0.5 text-amber-900">
+            <div>DB shipping_type: <b>{String(d.db_shipping_type)}</b></div>
+            <div>Sent by app: <b>{String(d.req_shipping_type)}</b></div>
+            <div>Seen by carrier: <b>{String(d.shipping_type_seen_by_carrier)}</b></div>
+            <div>Body stopdesk = <b>{sd}</b> · delivery_mode = <b>{String(d.delivery_mode)}</b> · attempts = <b>{String(d.attempts)}</b></div>
+          </div>
+        );})()}
         {lastDispatchDebug.tracking_number&&<p className="text-sm mb-2">Tracking: <span className="font-mono font-bold text-emerald-700">{lastDispatchDebug.tracking_number}</span></p>}
         {lastDispatchDebug.carrier_response&&<details open><summary className="text-[10px] text-gray-500 cursor-pointer mb-1">Carrier response</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{typeof lastDispatchDebug.carrier_response==='string'?lastDispatchDebug.carrier_response:JSON.stringify(lastDispatchDebug.carrier_response,null,2)}</pre></details>}
         {lastDispatchDebug.debug&&<>
