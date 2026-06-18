@@ -205,6 +205,8 @@ export default function ProductDetail() {
   // e.g. { color: 2, size: 0 }
   const [selectedVariants, setSelectedVariants] = useState({});
   const [cartOpen, setCartOpen] = useState(false);
+  const [buyNowOpen, setBuyNowOpen] = useState(false);
+  const [buyNowItems, setBuyNowItems] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e) => {
@@ -331,11 +333,9 @@ export default function ProductDetail() {
       quantity,
       variant: buildVariantObj(),
       quantity_offers: product.quantity_offers || [],
-      variants: product.variants || [],
     };
-    // Go straight to the full checkout page (no modal). The item rides along in
-    // navigation state so offers/variants render on the real checkout page.
-    navigate(`/s/${storeSlug}/checkout`, { state: { directItems: [directItem] } });
+    setBuyNowItems([directItem]);
+    setBuyNowOpen(true);
   };
 
   const handleToggleWishlist = () => {
@@ -641,6 +641,7 @@ export default function ProductDetail() {
         <ReviewsSection storeSlug={storeSlug} productSlug={productSlug} pc={pc}/>
       </div>
       {cartOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/></Suspense>}
+      {buyNowOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/></Suspense>}
 
       {/* Image lightbox — full-screen view with click/scroll/pinch zoom. */}
       {lightboxIdx !== null && allImages[lightboxIdx] && (

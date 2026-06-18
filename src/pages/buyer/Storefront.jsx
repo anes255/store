@@ -841,21 +841,30 @@ export default function Storefront() {
     const slug = product.slug || product.id;
     navigate(`/s/${storeSlug}/product/${slug}`);
   };
-  // Buy now: go straight to the full checkout page (no popup card). Offers and
-  // per-item variant pickers are chosen there. The item rides in nav state.
+  // Buy now: open the variant picker (same as Add to Cart) so the buyer can
+  // choose color/size/qty, then proceed directly to checkout.
   const handleBuyNow = (product, qty = 1, variant = null) => {
     const p = typeof product.price === 'number' ? product : { ...product, price: parseFloat(product.price) || 0 };
-    let finalP = p.price;
-    if (p.is_on_sale && p.offer_discount) {
-      const opct = parseFloat(String(p.offer_discount).replace(/[^0-9.]/g, '')) || 0;
-      if (opct > 0) finalP = Math.round(finalP * (1 - opct / 100));
+    let variants = p.variants || [];
+    if (typeof variants === 'string') { try { variants = JSON.parse(variants); } catch { variants = []; } }
+    if (Array.isArray(variants) && variants.length > 0) {
+      setBuyNowProduct(p);
+    } else {
+      // Apply offer discount for products without variants
+      let finalP = p.price;
+      if (p.is_on_sale && p.offer_discount) {
+        const opct = parseFloat(String(p.offer_discount).replace(/[^0-9.]/g, '')) || 0;
+        if (opct > 0) finalP = Math.round(finalP * (1 - opct / 100));
+      }
+      const items = [{ product_id: p.id, name: getName(p), price: finalP, image: getThumb(p), quantity: qty, variant }];
+      setBuyNowItems(items);
+      setBuyNowOpen(true);
     }
-    const item = { product_id: p.id, name: getName(p), price: finalP, image: getThumb(p), quantity: qty, variant, quantity_offers: p.quantity_offers || [], variants: p.variants || [] };
-    navigate(`/s/${storeSlug}/checkout`, { state: { directItems: [item] } });
   };
   const handleBuyNowFromQuickAdd = ({ product: p, selectedVariant, quantity: qty }) => {
-    const item = { product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant: selectedVariant, quantity_offers: p.quantity_offers || [], variants: p.variants || [] };
-    navigate(`/s/${storeSlug}/checkout`, { state: { directItems: [item] } });
+    const items = [{ product_id: p.id, name: getName(p), price: p.price, image: getThumb(p), quantity: qty, variant: selectedVariant }];
+    setBuyNowItems(items);
+    setBuyNowOpen(true);
   };
   // Opens the quick-add popup so the buyer can pick variants before adding.
   const openQuickAdd = (product) => setQuickAddProduct(product);
