@@ -1637,8 +1637,8 @@ export default function BuyerLandingPage(){
                         </div>
                         <span className="font-bold tabular-nums">{lineTotal(it).toLocaleString()} {currency}</span>
                       </div>
-                      {renderVariantPicker(it)}
                       {renderOfferTiers(it)}
+                      {renderVariantPicker(it)}
                     </div>
                   ))}
                   {cartItems.length===0&&<p className="text-xs text-center opacity-35">{t('lp.emptyCart','No products added')}</p>}
@@ -1840,8 +1840,8 @@ export default function BuyerLandingPage(){
                           </div>
                           <span className="text-sm font-bold tabular-nums">{lineTotal(it).toLocaleString()} {currency}</span>
                         </div>
-                        {renderVariantPicker(it)}
                         {renderOfferTiers(it)}
+                        {renderVariantPicker(it)}
                       </div>
                     ))}
                     <div className="border-t pt-3 mt-3 space-y-2" style={{borderColor:'oklch(0.9 0.005 280)'}}>
