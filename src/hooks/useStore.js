@@ -103,6 +103,7 @@ export const useCartStore = create((set, get) => ({
         coupon_discount_percent: product.coupon_discount_percent || 0,
         coupon_active: !!product.coupon_active,
         quantity_offers: product.quantity_offers || [],
+        variants: product.variants || [],
       }];
     }
     localStorage.setItem('cart', JSON.stringify(newItems));

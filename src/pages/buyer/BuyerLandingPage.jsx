@@ -582,42 +582,61 @@ export default function BuyerLandingPage(){
   // ── Product variants ──
   const productVariants=(pid)=>Array.isArray(variantsMap[pid])?variantsMap[pid]:[];
   const variantGroupsFor=(pid)=>{const g={};productVariants(pid).forEach((v,i)=>{const t=(v.type||'option').toLowerCase();(g[t]=g[t]||[]).push({...v,_idx:i});});return g;};
-  const selectVariant=(pid,type,idx)=>setVariantSel(s=>({...s,[pid]:{...(s[pid]||{}),[type]:(s[pid]||{})[type]===idx?null:idx}}));
-  const selectedVariantIdxes=(pid)=>{const sel=variantSel[pid]||{};return Object.values(sel).filter(v=>v!=null&&v!==undefined);};
-  // Price adjustment (sum of selected variants' price_adjustment).
-  const variantAdj=(pid)=>{const vs=productVariants(pid);return selectedVariantIdxes(pid).reduce((s,idx)=>s+(parseFloat(vs[idx]?.price_adjustment)||0),0);};
-  // Variant object sent to the backend (it applies price_diff / selections[].price_diff).
-  const buildVariant=(pid)=>{const vs=productVariants(pid);const idxes=selectedVariantIdxes(pid);if(!idxes.length)return null;const parts=idxes.map(idx=>{const v=vs[idx];return{name:v.name,type:v.type,value:v.value,price_diff:parseFloat(v.price_adjustment)||0};});const label=idxes.map(idx=>vs[idx]?.name||vs[idx]?.value||'').filter(Boolean).join(' / ');return parts.length===1?parts[0]:{selections:parts,label};};
-  // True if a product still has an unanswered variant group (every group needs a pick).
-  const variantIncomplete=(pid)=>{const groups=variantGroupsFor(pid);const sel=variantSel[pid]||{};return Object.keys(groups).some(t=>sel[t]==null);};
+  // Per-unit variant selection. variantSel[pid] is an array indexed by unit:
+  // [{ [type]: variantIndex }, ...] — so a buyer who picks a "Buy 3" offer can
+  // choose a different variant for each of the 3 items.
+  const unitCount=(pid)=>Math.max(1,cart[pid]||0);
+  const selectVariant=(pid,unit,type,idx)=>setVariantSel(s=>{const cur=Array.isArray(s[pid])?s[pid].map(x=>({...x})):[];while(cur.length<=unit)cur.push({});const u={...(cur[unit]||{})};u[type]=u[type]===idx?null:idx;cur[unit]=u;return{...s,[pid]:cur};});
+  const unitSel=(pid,unit)=>{const a=variantSel[pid];return(Array.isArray(a)&&a[unit])||{};};
+  const unitIdxes=(pid,unit)=>Object.values(unitSel(pid,unit)).filter(v=>v!=null&&v!==undefined);
+  // Total variant price adjustment for the whole line (every unit summed).
+  const lineVariantAdj=(pid)=>{const vs=productVariants(pid);let s=0;for(let u=0;u<unitCount(pid);u++){for(const idx of unitIdxes(pid,u))s+=parseFloat(vs[idx]?.price_adjustment)||0;}return s;};
+  // Build one unit's variant object (flat for a single pick, else { selections,label }).
+  const buildUnitVariant=(pid,unit)=>{const vs=productVariants(pid);const idxes=unitIdxes(pid,unit);if(!idxes.length)return null;const parts=idxes.map(idx=>{const v=vs[idx];return{name:v.name,type:v.type,value:v.value,price_diff:parseFloat(v.price_adjustment)||0};});const label=idxes.map(idx=>vs[idx]?.name||vs[idx]?.value||'').filter(Boolean).join(' / ');return parts.length===1?{...parts[0],label}:{selections:parts,label};};
+  // Order payload: single unit → flat object (back-compat); pack → { units:[...], label }.
+  const buildVariant=(pid)=>{const n=unitCount(pid);if(n<=1)return buildUnitVariant(pid,0);const units=[];for(let u=0;u<n;u++){const o=buildUnitVariant(pid,u);if(o)units.push(o);}if(!units.length)return null;const label=units.map((o,i)=>`#${i+1} ${o.label||''}`.trim()).join(' · ');return{units,label};};
+  // True if any unit still has an unanswered variant group (every group needs a pick).
+  const variantIncomplete=(pid)=>{const groups=variantGroupsFor(pid);const types=Object.keys(groups);if(!types.length)return false;for(let u=0;u<unitCount(pid);u++){const sel=unitSel(pid,u);if(types.some(t=>sel[t]==null))return true;}return false;};
   // Variant selector shown under each cart line in the order summary.
   const renderVariantPicker=(it)=>{
     const pid=it.product_id;const groups=variantGroupsFor(pid);const types=Object.keys(groups);
     if(!types.length)return null;
+    const n=unitCount(pid);
+    const groupRows=(u)=>types.map(type=>(
+      <div key={type}>
+        <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1 opacity-70">{type}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {groups[type].map(v=>{const active=unitSel(pid,u)[type]===v._idx;const isColor=v.type==='color'&&v.value&&/^#[0-9a-f]{3,8}$/i.test(v.value);return(
+            <button key={v._idx} type="button" onClick={()=>selectVariant(pid,u,type,v._idx)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${active?'border-transparent text-white shadow-md':'border-black/15 text-gray-700 bg-white hover:border-gray-400'}`}
+              style={active?{backgroundColor:pc}:{}}>
+              {isColor&&<span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{backgroundColor:v.value}}/>}
+              <span>{v.name||v.value}</span>
+              {parseFloat(v.price_adjustment)>0&&<span className="opacity-70">+{parseFloat(v.price_adjustment).toLocaleString()}</span>}
+              {active&&<Check size={12} className="shrink-0"/>}
+            </button>
+          );})}
+        </div>
+      </div>
+    ));
+    if(n<=1)return(<div className="mt-2 space-y-2">{groupRows(0)}</div>);
+    // Pack: one variant block per item so each of the N units can differ.
     return(
       <div className="mt-2 space-y-2">
-        {types.map(type=>(
-          <div key={type}>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1 opacity-70">{type}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {groups[type].map(v=>{const active=(variantSel[pid]||{})[type]===v._idx;const isColor=v.type==='color'&&v.value&&/^#[0-9a-f]{3,8}$/i.test(v.value);return(
-                <button key={v._idx} type="button" onClick={()=>selectVariant(pid,type,v._idx)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${active?'border-transparent text-white shadow-md':'border-black/15 text-gray-700 bg-white hover:border-gray-400'}`}
-                  style={active?{backgroundColor:pc}:{}}>
-                  {isColor&&<span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{backgroundColor:v.value}}/>}
-                  <span>{v.name||v.value}</span>
-                  {parseFloat(v.price_adjustment)>0&&<span className="opacity-70">+{parseFloat(v.price_adjustment).toLocaleString()}</span>}
-                  {active&&<Check size={12} className="shrink-0"/>}
-                </button>
-              );})}
-            </div>
+        <p className="text-[10px] font-extrabold uppercase tracking-wider opacity-70">{t('lp.chooseEachItem','Choose options for each item')}</p>
+        {Array.from({length:n},(_,u)=>(
+          <div key={u} className="rounded-xl border-2 border-black/10 bg-white/60 p-2.5 space-y-2">
+            <p className="text-[11px] font-black" style={{color:pc}}>{t('lp.itemN','Item')} {u+1}{unitIdxes(pid,u).length<types.length&&<span className="ml-1.5 text-[9px] font-bold text-red-500 align-middle">• {t('lp.required','required')}</span>}</p>
+            {groupRows(u)}
           </div>
         ))}
       </div>
     );
   };
-  const effPrice=(it,qty)=>{let up=parseFloat(it?.price)||0;const offers=itemQtyOffers(it);if(offers.length){const m=offers.filter(qo=>parseInt(qo.quantity)>0&&(qty||1)>=parseInt(qo.quantity)).sort((a,b)=>parseInt(b.quantity)-parseInt(a.quantity))[0];if(m){const dv=parseFloat(m.discount_value)||0;if(dv>0)up=m.discount_type==='fixed'?Math.max(0,up-dv):Math.round(up*(1-dv/100));else if(m.label){const lm=String(m.label).match(/(\d+(?:\.\d+)?)\s*%/);if(lm)up=Math.round(up*(1-parseFloat(lm[1])/100));}}}return Math.max(0,up+variantAdj(it?.product_id));};
-  const subtotal=cartItems.reduce((s,it)=>s+effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0),0);
+  const effPrice=(it,qty)=>{let up=parseFloat(it?.price)||0;const offers=itemQtyOffers(it);if(offers.length){const m=offers.filter(qo=>parseInt(qo.quantity)>0&&(qty||1)>=parseInt(qo.quantity)).sort((a,b)=>parseInt(b.quantity)-parseInt(a.quantity))[0];if(m){const dv=parseFloat(m.discount_value)||0;if(dv>0)up=m.discount_type==='fixed'?Math.max(0,up-dv):Math.round(up*(1-dv/100));else if(m.label){const lm=String(m.label).match(/(\d+(?:\.\d+)?)\s*%/);if(lm)up=Math.round(up*(1-parseFloat(lm[1])/100));}}}return Math.max(0,up);};
+  // Line total = discounted unit price × qty + per-unit variant adjustments (mirrors backend).
+  const lineTotal=(it)=>{const q=cart[it.product_id]||0;return effPrice(it,q)*q+lineVariantAdj(it.product_id);};
+  const subtotal=cartItems.reduce((s,it)=>s+lineTotal(it),0);
   const total=Math.max(0,subtotal+shippingPrice-couponDiscount);
   const pc=page?.accent_color||store?.primary_color||'#7C3AED';
   // Quantity-offer tiers shown under each checkout line. Single-select toggle:
@@ -1616,7 +1635,7 @@ export default function BuyerLandingPage(){
                           {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-8 h-8 rounded-lg object-cover shadow-sm"/>}
                           <span className="font-medium">{it.name} <span className="opacity-35">x{cart[it.product_id]}</span></span>
                         </div>
-                        <span className="font-bold tabular-nums">{(effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
+                        <span className="font-bold tabular-nums">{lineTotal(it).toLocaleString()} {currency}</span>
                       </div>
                       {renderVariantPicker(it)}
                       {renderOfferTiers(it)}
@@ -1819,7 +1838,7 @@ export default function BuyerLandingPage(){
                             {(it.custom_image||it.image)&&<img src={it.custom_image||it.image} className="w-10 h-10 rounded-xl object-cover shadow-sm ring-1 ring-black/5"/>}
                             <div><span className="text-sm font-semibold">{it.name}</span><span className="text-xs opacity-35 ml-2">x{cart[it.product_id]}</span></div>
                           </div>
-                          <span className="text-sm font-bold tabular-nums">{(effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0)).toLocaleString()} {currency}</span>
+                          <span className="text-sm font-bold tabular-nums">{lineTotal(it).toLocaleString()} {currency}</span>
                         </div>
                         {renderVariantPicker(it)}
                         {renderOfferTiers(it)}

@@ -541,6 +541,30 @@ export default function LandingPageBuilder(){
     updatePage(pageIdx,{ai_images:(page.ai_images||[]).filter(img=>img.id!==imageId)});
   };
 
+  // Voice123-style: after AI writes the copy, auto-generate AI imagery (hero +
+  // lifestyle + detail shots) from the product description so a single provided
+  // image + description yields a complete, unique landing page. No-op without puter.
+  const autoGenAIImages=async(pageIdx,meta)=>{
+    if(typeof window==='undefined'||typeof window.puter==='undefined'||!window.puter?.ai?.txt2img)return;
+    const{productNames,desc,mood,bg,accent}=meta;
+    const gen=async(prompt)=>{try{const img=await window.puter.ai.txt2img(prompt,{model:'flux-schnell',quality:'medium'});return img?.src||null;}catch(e){console.error('[AI auto-img]',e);return null;}};
+    setGeneratingImage(true);
+    try{
+      const heroSrc=await gen(`Professional e-commerce hero banner for ${productNames}. ${desc?desc+'. ':''}Mood: ${mood||'premium'}. Cinematic studio lighting, elegant composition, rich background color ${bg} with accent ${accent}. No text, no watermark, commercial photography style, 16:9 aspect ratio.`);
+      if(heroSrc)updatePage(pageIdx,{ai_hero_image:heroSrc});
+      // Only seed placed lifestyle images once, so repeat clicks don't pile up.
+      const already=(pages[pageIdx]?.ai_images||[]).length>0;
+      if(!already){
+        let acc=[...((pages[pageIdx]?.ai_images)||[])];
+        const placed=[
+          {placement:'after_hero',prompt:`Aspirational lifestyle scene featuring ${productNames}. ${desc?desc+'. ':''}Natural ambient light, ${mood||'premium'} aesthetic, complementary colors to ${accent}. No text, no watermark, editorial photography.`},
+          {placement:'before_checkout',prompt:`Premium close-up detail shot of ${productNames} on a clean minimal backdrop, soft shadows, accent color ${accent}. No text, no watermark, high-end product photography.`},
+        ];
+        for(const p of placed){const src=await gen(p.prompt);if(src){acc=[...acc,{id:Date.now().toString()+Math.random().toString(36).slice(2,6),src,description:'',placement:p.placement}];updatePage(pageIdx,{ai_images:acc});}}
+      }
+    }finally{setGeneratingImage(false);}
+  };
+
   const generateAI=async(pageIdx)=>{
     const page=pages[pageIdx];
     if(!page.items.length){toast.error(t('lp.addProductsFirst','Add products first'));return;}
@@ -617,6 +641,10 @@ export default function LandingPageBuilder(){
         updatePage(pageIdx,patch);
         const layoutName=LAYOUT_STYLES.find(l=>l.value===ai.layout_style)?.label||ai.layout_style;
         toast.success(`✨ AI generated: ${layoutName} layout${ai.page_mood?' • '+ai.page_mood+' mood':''}`);
+        // Auto-generate matching AI imagery from the product description (voice123-style).
+        const productNames=page.items.map(it=>it.name).filter(Boolean).join(', ');
+        const firstDesc=(page.items.find(it=>it.description)?.description||page.items[0]?.description||'').slice(0,160);
+        await autoGenAIImages(pageIdx,{productNames,desc:firstDesc,mood:ai.page_mood,bg:patch.hero_bg||page.hero_bg,accent:patch.accent_color||page.accent_color});
       }else{
         // Fallback to basic generation
         const updatedItems=page.items.map(item=>({

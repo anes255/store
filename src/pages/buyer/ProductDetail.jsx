@@ -333,6 +333,7 @@ export default function ProductDetail() {
       quantity,
       variant: buildVariantObj(),
       quantity_offers: product.quantity_offers || [],
+      variants: product.variants || [],
     };
     setBuyNowItems([directItem]);
     setBuyNowOpen(true);
