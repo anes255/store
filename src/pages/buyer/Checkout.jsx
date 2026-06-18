@@ -395,7 +395,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       clearItems();
       // If non-COD method, show payment step
       if (form.payment_method !== 'cod') setPaymentStep(form.payment_method);
-    } catch (err) { toast.error(err.response?.data?.error || 'Order failed'); }
+    } catch (err) { toast.error(err.response?.data?.error || t('checkout.orderFailed','Order failed')); }
     setLoading(false);
   };
 
@@ -417,34 +417,34 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       <Shell {...shellProps}>
         <header className="bg-white border-b sticky top-0 z-30 px-4 py-3">
           <div className="max-w-lg mx-auto flex items-center justify-between">
-            <span className="font-bold text-sm text-gray-700">Complete Payment</span>
+            <span className="font-bold text-sm text-gray-700">{t('checkout.completePayment','Complete Payment')}</span>
             <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
           </div>
         </header>
         <div className={`max-w-lg mx-auto px-4 py-8 ${isDark ? 'text-gray-100' : ''}`}>
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{backgroundColor: pc + '20'}}><CreditCard size={28} style={{color: pc}}/></div>
-            <h2 className={`text-xl font-black ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Order {orderNum} Placed!</h2>
-            <p className="text-3xl font-black mt-2" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} DZD</p>
+            <h2 className={`text-xl font-black ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('checkout.orderPlaced','Order {{num}} Placed!', {num: orderNum})}</h2>
+            <p className="text-3xl font-black mt-2" style={{color: pc}}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency||'DZD'}</p>
           </div>
 
           {/* CCP Payment */}
           {paymentStep === 'ccp' && (
             <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-sm space-y-4`}>
-              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-amber-900/40' : 'bg-amber-50'} flex items-center justify-center`}><CreditCard size={20} className="text-amber-600"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>CCP Transfer</h3><p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>Transfer to our CCP account</p></div></div>
+              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-amber-900/40' : 'bg-amber-50'} flex items-center justify-center`}><CreditCard size={20} className="text-amber-600"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('checkout.ccpTransfer','CCP Transfer')}</h3><p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{t('checkout.ccpTransferDesc','Transfer to our CCP account')}</p></div></div>
               <div className={`${isDark ? 'bg-amber-900/30 border border-amber-800/40' : 'bg-amber-50'} rounded-xl p-4 space-y-3`}>
-                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>CCP Account</span><div className="flex items-center gap-2"><span className={`font-mono font-bold text-lg ${isDark ? 'text-gray-100' : ''}`}>{store.ccp_account || 'N/A'}</span><button onClick={() => copyToClipboard(store.ccp_account || '')} className={`p-1 ${isDark ? 'hover:bg-amber-800/40' : 'hover:bg-amber-100'} rounded`}><Copy size={14}/></button></div></div>
-                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Account Name</span><span className={`font-bold ${isDark ? 'text-gray-100' : ''}`}>{store.ccp_name || 'N/A'}</span></div>
-                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Amount to Transfer</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} DZD</span></div>
-                <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'} text-right`}>Product price only — shipping ({parseFloat(orderSuccess.shipping_cost||0).toLocaleString()} DZD) is paid on delivery</p>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.ccpAccount','CCP Account')}</span><div className="flex items-center gap-2"><span className={`font-mono font-bold text-lg ${isDark ? 'text-gray-100' : ''}`}>{store.ccp_account || 'N/A'}</span><button onClick={() => copyToClipboard(store.ccp_account || '')} className={`p-1 ${isDark ? 'hover:bg-amber-800/40' : 'hover:bg-amber-100'} rounded`}><Copy size={14}/></button></div></div>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.accountName','Account Name')}</span><span className={`font-bold ${isDark ? 'text-gray-100' : ''}`}>{store.ccp_name || 'N/A'}</span></div>
+                <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.amount','Amount to Transfer')}</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} {store.currency||'DZD'}</span></div>
+                <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'} text-right`}>{t('checkout.productPriceOnly','Product price only — shipping is paid on delivery')}</p>
               </div>
-              <div className={`${isDark ? 'bg-blue-900/30 border border-blue-800/40' : 'bg-blue-50'} rounded-xl p-3`}><p className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>After transferring, upload your CCP receipt below to confirm your payment.</p></div>
-              <div><label className={`input-label text-xs ${isDark ? 'text-gray-300' : ''}`}>Reference Number (optional)</label><input className={`input-field ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : ''}`} value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder="CCP transfer reference"/></div>
+              <div className={`${isDark ? 'bg-blue-900/30 border border-blue-800/40' : 'bg-blue-50'} rounded-xl p-3`}><p className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{t('checkout.ccpUploadHint','After transferring, upload your CCP receipt below to confirm your payment.')}</p></div>
+              <div><label className={`input-label text-xs ${isDark ? 'text-gray-300' : ''}`}>{t('checkout.refNumberOptional','Reference Number (optional)')}</label><input className={`input-field ${isDark ? 'bg-gray-700 border-gray-600 text-gray-100' : ''}`} value={receiptRef} onChange={e => setReceiptRef(e.target.value)} placeholder={t('checkout.ccpRefPh','CCP transfer reference')}/></div>
               <div className={`border-2 border-dashed ${isDark ? 'border-gray-600 hover:border-amber-500' : 'border-gray-300 hover:border-amber-400'} rounded-xl p-6 text-center cursor-pointer transition-colors`} onClick={() => document.getElementById('receipt-upload').click()}>
-                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ Receipt uploaded</p></div> : <div><Upload size={24} className={`mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'} mb-2`}/><p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Click to upload receipt photo</p></div>}
+                {receiptImage ? <div><img src={receiptImage} className="max-h-40 mx-auto rounded-lg mb-2" alt=""/><p className="text-xs text-emerald-600 font-bold">✓ {t('checkout.receiptUploaded','Receipt uploaded')}</p></div> : <div><Upload size={24} className={`mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'} mb-2`}/><p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.clickUploadReceipt','Click to upload receipt photo')}</p></div>}
               </div>
               <input id="receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload}/>
-              <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>Submit Receipt <ArrowRight size={16}/></button>
+              <button onClick={submitReceipt} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>{t('checkout.submitReceipt','Submit Receipt')} <ArrowRight size={16}/></button>
             </div>
           )}
 
@@ -478,26 +478,26 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           {/* Bank Transfer - Under Development */}
           {paymentStep === 'bank_transfer' && (
             <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl p-6 shadow-sm space-y-4`}>
-              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}><Building size={20} className="text-gray-500"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Bank Transfer</h3><p className="text-xs text-gray-400">Direct bank wire</p></div></div>
+              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}><Building size={20} className="text-gray-500"/></div><div><h3 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('checkout.bankTransfer','Bank Transfer')}</h3><p className="text-xs text-gray-400">{t('checkout.directBankWire','Direct bank wire')}</p></div></div>
               <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-center">
                 <AlertTriangle size={32} className="mx-auto text-amber-500 mb-3"/>
-                <h3 className="font-bold text-amber-800 text-lg mb-2">Under Development</h3>
-                <p className="text-sm text-amber-700">Bank transfer payment is currently being set up. Please use CCP, BaridiPay, or Cash on Delivery for now.</p>
-                <p className="text-xs text-amber-600 mt-3">We apologize for the inconvenience. This feature will be available soon.</p>
+                <h3 className="font-bold text-amber-800 text-lg mb-2">{t('checkout.underDevelopment','Under Development')}</h3>
+                <p className="text-sm text-amber-700">{t('checkout.bankTransferMsg','Bank transfer payment is currently being set up. Please use another payment method for now.')}</p>
+                <p className="text-xs text-amber-600 mt-3">{t('checkout.bankTransferSoon','This feature will be available soon.')}</p>
               </div>
-              <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="w-full py-3 rounded-xl font-bold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">Back to Store</button>
+              <button onClick={() => { setPaymentStep(null); closeOrGoHome(); }} className="w-full py-3 rounded-xl font-bold text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">{t('checkout.backToStore','Back to Store')}</button>
             </div>
           )}
 
           {/* Chargily - Online Card */}
           {paymentStep === 'chargily' && (
             <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><Wifi size={20} className="text-brand-600"/></div><div><h3 className="font-bold text-gray-900">Online Card Payment</h3><p className="text-xs text-gray-400">Pay with Edahabia or CIB card</p></div></div>
-              <p className="text-sm text-gray-500">You will be redirected to a secure payment page to complete your transaction.</p>
+              <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><Wifi size={20} className="text-brand-600"/></div><div><h3 className="font-bold text-gray-900">{t('checkout.onlineCardPayment','Online Card Payment')}</h3><p className="text-xs text-gray-400">{t('checkout.payWithCard','Pay with Edahabia or CIB card')}</p></div></div>
+              <p className="text-sm text-gray-500">{t('checkout.redirectSecure','You will be redirected to a secure payment page to complete your transaction.')}</p>
               <button onClick={async () => {
                 try { const { data } = await paymentApi.chargilyCheckout({ store_slug: storeSlug, order_id: orderSuccess.id }); window.location.href = data.checkoutUrl; }
                 catch { toast.error(t('checkout.paymentUnavailable','Payment gateway unavailable')); }
-              }} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>Pay Now with Card <ArrowRight size={16}/></button>
+              }} className="w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2" style={{backgroundColor: pc}}>{t('checkout.payNowCard','Pay Now with Card')} <ArrowRight size={16}/></button>
             </div>
           )}
 
@@ -518,7 +518,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               : <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"><Check size={36} className="text-emerald-600"/></div>}
             <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{store.success_title || store.success_message || t('store.orderSuccess')}</h2>
             {store?.success_subtitle && <p className="text-gray-600 mb-2 whitespace-pre-line">{store.success_subtitle}</p>}
-            <p className="text-gray-500 mb-4">Order #{orderSuccess.order_number}</p>
+            <p className="text-gray-500 mb-4">{t('checkout.orderNum','Order')} #{orderSuccess.order_number}</p>
             {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
               <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-1.5 max-h-48 overflow-y-auto">
                 {orderSuccess.items.map((it, idx) => (
@@ -530,10 +530,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               </div>
             )}
             <p className="text-3xl font-extrabold mb-2" style={{ color: pc }}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency || 'DZD'}</p>
-            <p className="text-sm text-gray-400 mb-6">Cash on Delivery — Pay when you receive your order</p>
+            <p className="text-sm text-gray-400 mb-6">{t('checkout.codDesc','Cash on Delivery — Pay when you receive your order')}</p>
             {isModal
-              ? <button onClick={onClose} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>Continue Shopping</button>
-              : <Link to={`/s/${storeSlug}`} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>Continue Shopping</Link>}
+              ? <button onClick={onClose} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>{t('checkout.continueShopping','Continue Shopping')}</button>
+              : <Link to={`/s/${storeSlug}`} className="inline-flex px-8 py-3 rounded-xl text-white font-bold" style={{backgroundColor: pc}}>{t('checkout.continueShopping','Continue Shopping')}</Link>}
           </div>
         </div>
       </Shell>
@@ -542,11 +542,11 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
   // ═══════ MAIN CHECKOUT ═══════
   const paymentMethods = [
-    store.enable_cod && { key: 'cod', icon: Banknote, label: 'Cash on Delivery', desc: 'Pay in cash upon delivery', color: 'emerald' },
-    store.enable_ccp && { key: 'ccp', icon: CreditCard, label: 'CCP Transfer', desc: 'Transfer via CCP postal account', color: 'amber' },
-    store.enable_baridimob && { key: 'baridimob', icon: QrCode, label: 'BaridiPay', desc: 'Pay via BaridiPay app', color: 'green' },
-    store.enable_chargily && { key: 'chargily', icon: Wifi, label: 'Edahabia / CIB Card', desc: 'Pay online with your bank card', color: 'brand' },
-    store.enable_bank_transfer && { key: 'bank_transfer', icon: Building, label: 'Bank Transfer', desc: 'Under development', color: 'gray', disabled: true },
+    store.enable_cod && { key: 'cod', icon: Banknote, label: t('checkout.cod','Cash on Delivery'), desc: t('checkout.codShort','Pay in cash upon delivery'), color: 'emerald' },
+    store.enable_ccp && { key: 'ccp', icon: CreditCard, label: t('checkout.ccpTransfer','CCP Transfer'), desc: t('checkout.ccpShort','Transfer via CCP postal account'), color: 'amber' },
+    store.enable_baridimob && { key: 'baridimob', icon: QrCode, label: 'BaridiPay', desc: t('checkout.baridiShort','Pay via BaridiPay app'), color: 'green' },
+    store.enable_chargily && { key: 'chargily', icon: Wifi, label: t('checkout.edahabiaCib','Edahabia / CIB Card'), desc: t('checkout.payOnlineCard','Pay online with your bank card'), color: 'brand' },
+    store.enable_bank_transfer && { key: 'bank_transfer', icon: Building, label: t('checkout.bankTransfer','Bank Transfer'), desc: t('checkout.underDevelopment','Under development'), color: 'gray', disabled: true },
   ].filter(Boolean);
 
   return (
@@ -556,13 +556,13 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           {isModal ? (
             <div className="flex items-center gap-2.5">
               <ShoppingCart size={22} style={{color:pc}}/>
-              <span className="text-lg font-extrabold text-gray-900">Your Cart</span>
+              <span className="text-lg font-extrabold text-gray-900">{t('checkout.yourCart','Your Cart')}</span>
               {items.length>0 && <span className="w-[22px] h-[22px] rounded-full text-[11px] font-bold text-white grid place-items-center" style={{backgroundColor:pc}}>{items.length}</span>}
             </div>
           ) : (
             <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
               {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-full object-cover shrink-0" alt=""/> : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
-              <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
+              <span className="text-lg font-extrabold text-gray-900">{store?.name||t('checkout.store','Store')}</span>
             </Link>
           )}
           <div className="flex items-center gap-2">
@@ -579,7 +579,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             {isModal ? (
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20}/></button>
             ) : (<>
-              <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>Store</Link>
+              <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>{t('checkout.store','Store')}</Link>
               <Link to={`/s/${storeSlug}/auth`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><User size={20}/></Link>
               <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
               <div className="p-2 text-gray-500 relative"><ShoppingCart size={20} style={{color:pc}}/>{items.length>0&&<span className="notif-badge">{items.length}</span>}</div>
@@ -635,7 +635,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   </div>
                   <div>
                     <label className="input-label">ZIP</label>
-                    <input className="input-field bg-gray-50" value={form.shipping_zip} onChange={set('shipping_zip')} placeholder="Auto-filled"/>
+                    <input className="input-field bg-gray-50" value={form.shipping_zip} onChange={set('shipping_zip')} placeholder={t('checkout.autoFilled','Auto-filled')}/>
                   </div>
                 </div>
 
@@ -982,23 +982,23 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   );
                 })}
               </div>
-              <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder="Coupon code" value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">Apply</button></div>
+              <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">{t('checkout.apply','Apply')}</button></div>
               <div className="space-y-2 border-t border-gray-200 pt-4">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span className="font-semibold text-gray-900">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500 flex items-center gap-1"><Truck size={14}/> Shipping</span><span className="font-semibold text-gray-900">{shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
-                {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">Discount</span><span className="text-emerald-600 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
-                <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200"><span className="text-gray-900">Total</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
-                {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">You saved {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.subtotal','Subtotal')}</span><span className="font-semibold text-gray-900">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500 flex items-center gap-1"><Truck size={14}/> {t('checkout.shipping','Shipping')}</span><span className="font-semibold text-gray-900">{shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
+                {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.discount','Discount')}</span><span className="text-emerald-600 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
+                <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200"><span className="text-gray-900">{t('checkout.total','Total')}</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
+                {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">{t('checkout.youSaved','You saved')} {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
               </div>
-              {store?.order_notes && <div className="mt-4"><label className="input-label text-xs">Order Notes</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder="Special instructions..."/></div>}
+              {store?.order_notes && <div className="mt-4"><label className="input-label text-xs">{t('checkout.orderNotes','Order Notes')}</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder={t('checkout.specialInstructions','Special instructions...')}/></div>}
               <button onClick={placeOrder} disabled={loading || items.length === 0} className={`w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all ${store?.sticky_checkout?'sm:sticky sm:bottom-4':''}`} style={{backgroundColor: pc}}>
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <>{store?.btn_order_now || t('store.placeOrder')}</>}
               </button>
               {store?.trust_signals!==false && (
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[10px] text-gray-400">
-                  <span className="flex items-center gap-1"><Lock size={12}/> Secure checkout</span>
-                  <span className="flex items-center gap-1"><Check size={12}/> Money-back</span>
-                  <span className="flex items-center gap-1"><Wifi size={12}/> Verified store</span>
+                  <span className="flex items-center gap-1"><Lock size={12}/> {t('checkout.secureCheckout','Secure checkout')}</span>
+                  <span className="flex items-center gap-1"><Check size={12}/> {t('checkout.moneyBack','Money-back')}</span>
+                  <span className="flex items-center gap-1"><Wifi size={12}/> {t('checkout.verifiedStore','Verified store')}</span>
                 </div>
               )}
               {store?.post_script && <div dangerouslySetInnerHTML={{__html:store.post_script}}/>}

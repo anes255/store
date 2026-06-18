@@ -1167,7 +1167,7 @@ export default function BuyerLandingPage(){
                 <div className={`flex-1 ${isEven?'md:text-right md:pr-12':'md:text-left md:pl-12'}`}>
                   <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm" style={{backgroundColor:pc+'12',color:pc,border:`1px solid ${pc}20`}}>
                     <span className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-black shadow-md" style={{backgroundColor:pc}}>{idx+1}</span>
-                    {item.headline||`Step ${idx+1}`}
+                    {item.headline||t('lp.step','Step {{n}}',{n:idx+1})}
                   </div>
                   <h3 className="text-2xl font-black tracking-tight mb-2" style={{color:textColor}}>{item.name}</h3>
                   {item.description&&<p className="text-sm opacity-55 mb-4 max-w-md" style={{color:textColor}}>{item.description}</p>}
@@ -1268,7 +1268,7 @@ export default function BuyerLandingPage(){
             <Reveal animation={anim} delay={100}>
               <div className="rounded-3xl p-8 sm:p-10 shadow-2xl space-y-5 backdrop-blur-sm" style={{backgroundColor:'rgba(255,255,255,0.95)',border:'1px solid rgba(0,0,0,0.05)'}}>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-25" style={{color:textColor}}>Chapter {chapterNum}</span>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] opacity-25" style={{color:textColor}}>{t('lp.chapter','Chapter {{n}}',{n:chapterNum})}</span>
                   <div className="flex-1 h-px" style={{background:`linear-gradient(to right, ${pc}30, transparent)`}}/>
                 </div>
                 {item.headline&&<p className="text-sm font-bold" style={{color:pc}}>{item.headline}</p>}
@@ -1572,7 +1572,7 @@ export default function BuyerLandingPage(){
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>ZIP</label>
+                    <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.zip','ZIP')}</label>
                     <input className="lp-input w-full px-4 py-3 rounded-xl text-sm bg-gray-50" value={form.shipping_zip} readOnly placeholder={t('lp.autoFilled','Auto-filled')}/>
                   </div>
                   <FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street, building, floor...')} accent={pc}/>
@@ -1764,7 +1764,7 @@ export default function BuyerLandingPage(){
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>ZIP</label>
+                      <label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5" style={{color:'oklch(0.55 0.01 280)'}}>{t('lp.zip','ZIP')}</label>
                       <input className="lp-input w-full px-4 py-3 rounded-xl text-sm bg-gray-50" value={form.shipping_zip} readOnly placeholder={t('lp.autoFilled','Auto-filled')}/>
                     </div>
                     <div className="sm:col-span-2"><FormInput icon={MapPin} label={t('lp.address','Address')} value={form.shipping_address} onChange={set('shipping_address')} placeholder={t('lp.addressPh','Street address, building, etc.')} accent={pc}/></div>
