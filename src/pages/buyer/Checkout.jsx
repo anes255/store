@@ -108,42 +108,45 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const applyOffer = (unit, item) => { const offers = itemQtyOffers(item); if (!offers.length) return unit; const m = offers.filter(qo => parseInt(qo.quantity) > 0 && (item.quantity || 1) >= parseInt(qo.quantity)).sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))[0]; if (!m) return unit; const dv = parseFloat(m.discount_value) || 0; if (dv > 0) return m.discount_type === 'fixed' ? Math.max(0, unit - dv) : Math.round(unit * (1 - dv / 100)); if (m.label) { const lm = String(m.label).match(/(\d+(?:\.\d+)?)\s*%/); if (lm) return Math.round(unit * (1 - parseFloat(lm[1]) / 100)); } return unit; };
   // Line total — packs with variants use base price + per-unit adjustments so
   // the displayed total matches what the backend bills. Other lines unchanged.
-  const itemLineTotal = (i, item) => { const q = item.quantity || 1; const hasV = Object.keys(itemVariantGroups(item)).length > 0; if (!hasV || q <= 1) return getItemPrice(item) * q; return applyOffer(itemBasePrice(item), item) * q + lineVariantAdj(i, item); };
-  // Variant payload — single item keeps legacy shape; packs send units[] with price_diff.
-  const buildItemVariant = (i, item) => { const q = item.quantity || 1; const hasV = Object.keys(itemVariantGroups(item)).length > 0; if (!hasV || q <= 1) return item.variant || null; const vs = parseItemVariants(item); const units = []; for (let u = 0; u < q; u++) { const idxes = unitIdxes(i, u, item); if (!idxes.length) { units.push(null); continue; } const parts = idxes.map(idx => { const v = vs[idx]; return { name: v.name, type: v.type, value: v.value, price_diff: parseFloat(v.price_adjustment) || 0 }; }); const label = idxes.map(idx => vs[idx]?.name || vs[idx]?.value || '').filter(Boolean).join(' / '); units.push(parts.length === 1 ? { ...parts[0], label } : { selections: parts, label }); } const label = units.map((o, k) => `#${k + 1} ${o?.label || ''}`.trim()).join(' · '); return { units, label }; };
-  // Per-item variant pickers, shown when a variant product is bought as a pack.
+  const itemLineTotal = (i, item) => { const q = item.quantity || 1; const hasV = Object.keys(itemVariantGroups(item)).length > 0; if (!hasV) return getItemPrice(item) * q; return applyOffer(itemBasePrice(item), item) * q + lineVariantAdj(i, item); };
+  // Variant payload — no variants keeps legacy shape; variant products send units[] with price_diff.
+  const buildItemVariant = (i, item) => { const q = item.quantity || 1; const hasV = Object.keys(itemVariantGroups(item)).length > 0; if (!hasV) return item.variant || null; const vs = parseItemVariants(item); const units = []; for (let u = 0; u < q; u++) { const idxes = unitIdxes(i, u, item); if (!idxes.length) { units.push(null); continue; } const parts = idxes.map(idx => { const v = vs[idx]; return { name: v.name, type: v.type, value: v.value, price_diff: parseFloat(v.price_adjustment) || 0 }; }); const label = idxes.map(idx => vs[idx]?.name || vs[idx]?.value || '').filter(Boolean).join(' / '); units.push(parts.length === 1 ? { ...parts[0], label } : { selections: parts, label }); } const label = units.map((o, k) => `#${k + 1} ${o?.label || ''}`.trim()).join(' · '); return q <= 1 && units[0] ? units[0] : { units, label }; };
+  // Per-item variant pickers, shown for any variant product. One block per item
+  // when bought as a pack, a single picker otherwise.
   const renderUnitPickers = (i, item) => {
     const groups = itemVariantGroups(item);
     const types = Object.keys(groups);
     const q = item.quantity || 1;
-    if (!types.length || q <= 1) return null;
+    if (!types.length) return null;
+    const groupRows = (u) => types.map(type => (
+      <div key={type}>
+        <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1 opacity-60">{type}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {groups[type].map(v => {
+            const active = unitSel(i, u, item)[type] === v._idx;
+            const isColor = v.type === 'color' && v.value && /^#[0-9a-f]{3,8}$/i.test(v.value);
+            return (
+              <button key={v._idx} type="button" onClick={() => selectUnit(i, u, item, type, v._idx)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${active ? 'border-transparent text-white shadow-md' : 'border-gray-200 text-gray-700 bg-white hover:border-gray-400'}`}
+                style={active ? { backgroundColor: pc } : {}}>
+                {isColor && <span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.value }} />}
+                <span>{v.name || v.value}</span>
+                {parseFloat(v.price_adjustment) > 0 && <span className="opacity-70">+{parseFloat(v.price_adjustment).toLocaleString()}</span>}
+                {active && <Check size={12} className="shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ));
+    if (q <= 1) return <div className="mt-2 space-y-2">{groupRows(0)}</div>;
     return (
       <div className="mt-2 space-y-2">
         <p className="text-[10px] font-extrabold uppercase tracking-wider opacity-70" style={{ color: pc }}>{t('checkout.chooseEachItem', 'Choose options for each item')}</p>
         {Array.from({ length: q }, (_, u) => (
           <div key={u} className="rounded-xl border-2 border-gray-200 bg-white p-2.5 space-y-2">
             <p className="text-[11px] font-black" style={{ color: pc }}>{t('checkout.itemN', 'Item')} {u + 1}{unitIdxes(i, u, item).length < types.length && <span className="ml-1.5 text-[9px] font-bold text-red-500 align-middle">• {t('checkout.required', 'required')}</span>}</p>
-            {types.map(type => (
-              <div key={type}>
-                <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1 opacity-60">{type}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {groups[type].map(v => {
-                    const active = unitSel(i, u, item)[type] === v._idx;
-                    const isColor = v.type === 'color' && v.value && /^#[0-9a-f]{3,8}$/i.test(v.value);
-                    return (
-                      <button key={v._idx} type="button" onClick={() => selectUnit(i, u, item, type, v._idx)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${active ? 'border-transparent text-white shadow-md' : 'border-gray-200 text-gray-700 bg-white hover:border-gray-400'}`}
-                        style={active ? { backgroundColor: pc } : {}}>
-                        {isColor && <span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: v.value }} />}
-                        <span>{v.name || v.value}</span>
-                        {parseFloat(v.price_adjustment) > 0 && <span className="opacity-70">+{parseFloat(v.price_adjustment).toLocaleString()}</span>}
-                        {active && <Check size={12} className="shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            {groupRows(u)}
           </div>
         ))}
       </div>
@@ -840,7 +843,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     {item.image && <img src={item.image} className="w-12 h-12 rounded-lg object-cover shrink-0" alt=""/>}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
-                      {vLabel && (
+                      {vLabel && Object.keys(itemVariantGroups(item)).length === 0 && (
                         <div className="flex items-center gap-1.5 mt-0.5">
                           {vColor && <span className="w-3.5 h-3.5 rounded-full border border-gray-200 shrink-0" style={{backgroundColor: vColor}}/>}
                           <span className="text-[11px] text-gray-500 font-medium truncate">{vLabel}</span>
