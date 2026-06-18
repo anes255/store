@@ -643,6 +643,44 @@ export default function LandingPageBuilder(){
     setGenerating(false);
   };
 
+  // Generate a COMPLETE bespoke landing page as raw HTML, purely from AI (no templates).
+  const generateFullAI=async(pageIdx)=>{
+    const page=pages[pageIdx];
+    if(!page.items.length){toast.error(t('lp.addProductsFirst','Add products first'));return;}
+    setGenerating(true);
+    try{
+      const aiLang=page.language||'ar';
+      const productData=page.items.map(item=>{
+        const prod=products.find(p=>p.id===item.product_id)||{};
+        return{
+          product_id:item.product_id,
+          name_en:item.name||prod.name_en||prod.name||'',
+          name_fr:item.name_fr||prod.name_fr||'',
+          name_ar:item.name_ar||prod.name_ar||'',
+          price:item.price,
+          compare_at_price:item.compare_price,
+          category_name:prod.category_name||'',
+          description_en:item.description||prod.description_en||prod.description||'',
+          description_ar:item.description_ar||prod.description_ar||'',
+          images:(prod.images&&prod.images.length?prod.images:[item.image].filter(Boolean)),
+          thumbnail:item.image||prod.thumbnail||'',
+        };
+      });
+      const storeInfo={name:currentStore?.store_name||currentStore?.name||'Store',currency:currentStore?.currency||'DZD'};
+      const{data}=await aiApi.generateLandingHtml({products:productData,store:storeInfo,language:aiLang});
+      if(data?.html){
+        updatePage(pageIdx,{ai_html:data.html,layout_style:'ai-custom',ai_generated:true});
+        toast.success(`✨ ${t('lp.fullAiGenerated','Full AI page generated')} (${data.model||'ai'})`);
+      }else{
+        toast.error(t('lp.themeFailed','AI generation failed'));
+      }
+    }catch(err){
+      console.error('Full AI generate error:',err);
+      toast.error(err.response?.data?.error||t('lp.themeFailed','AI generation failed'));
+    }
+    setGenerating(false);
+  };
+
   const filteredProducts=products.filter(p=>!prodSearch||(p.name_en||p.name||'').toLowerCase().includes(prodSearch.toLowerCase()));
   const storeSlug=currentStore?.slug;
   const baseUrl=typeof window!=='undefined'?window.location.origin:'';
@@ -740,6 +778,11 @@ export default function LandingPageBuilder(){
             {generating?<RefreshCw size={13} className="animate-spin"/>:<Brain size={13}/>}
             {generating?t('lp.generating','AI Generating...'):form?.ai_generated?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate')}
           </button>
+          <button onClick={()=>generateFullAI(editing)} disabled={generating} title={t('lp.fullAiHint','Generate the entire page from scratch with GPT — no templates')} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-white shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.97]" style={{background:'linear-gradient(135deg, #059669, #0EA5E9)'}}>
+            {generating?<RefreshCw size={13} className="animate-spin"/>:<Wand2 size={13}/>}
+            {form?.ai_html?t('lp.fullAiRegenerate','Regenerate Full Page'):t('lp.fullAiGenerate','Full AI Page')}
+          </button>
+          {form?.ai_html&&<button onClick={()=>updatePage(editing,{ai_html:'',layout_style:form.layout_style==='ai-custom'?'alternating':form.layout_style})} title={t('lp.fullAiClear','Switch back to template layouts')} className="text-xs flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all text-gray-500 bg-gray-100 hover:bg-gray-200 active:scale-[0.97]"><X size={13}/></button>}
           <button onClick={()=>generateAIImage(editing,'hero')} disabled={generatingImage} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-white shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.97]" style={{background:'linear-gradient(135deg, #EC4899, #F59E0B)'}}>
             {generatingImage?<RefreshCw size={13} className="animate-spin"/>:<Image size={13}/>}
             {generatingImage?t('lp.generatingImage','Generating...'):form?.ai_hero_image?t('lp.regenImage','Regen Image'):t('lp.aiImage','AI Image')}

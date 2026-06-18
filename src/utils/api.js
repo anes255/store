@@ -301,6 +301,7 @@ export const aiApi = {
   // Reviews
   moderateReview: (data) => api.post('/ai/moderate-review', data),
   generateLanding: (data) => api.post('/ai/generate-landing', data),
+  generateLandingHtml: (data) => api.post('/ai/generate-landing-html', data),
   // Multi-language description
   generateDescriptionMulti: (data) => api.post('/ai/generate-description-multi', data),
   // WhatsApp QR (Baileys)

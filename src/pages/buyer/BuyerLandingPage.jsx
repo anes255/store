@@ -469,6 +469,7 @@ export default function BuyerLandingPage(){
   const[receiptImage,setReceiptImage]=useState(null);
   const[receiptRef,setReceiptRef]=useState('');
   const checkoutRef=useRef(null);
+  const aiHtmlRef=useRef(null);
   const set=useCallback(k=>e=>setForm(f=>({...f,[k]:e.target.value})),[]);
 
   useEffect(()=>{try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s)setForm(f=>({...f,...s}));}catch{}},[]);
@@ -684,6 +685,10 @@ export default function BuyerLandingPage(){
   const anim=page?.animation_style||'slide-up';
   const heroStyle=page?.hero_style||'centered';
   const layoutStyle=page?.layout_style||'alternating';
+  // Full AI page: render the GPT-generated HTML fragment as-is, but keep the
+  // functional React order form, reviews and footer around it.
+  const aiHtml=page?.ai_html||'';
+  const isAiCustom=layoutStyle==='ai-custom'&&!!aiHtml;
   const showTrust=page?.show_trust_badges!==false;
   const showSocial=page?.show_social_proof!==false;
   const showCountdown=page?.show_countdown&&(page?.countdown_hours||page?.countdown_minutes);
@@ -697,6 +702,30 @@ export default function BuyerLandingPage(){
       if(heroItem&&!cart[heroItem.product_id])setCart(c=>({...c,[heroItem.product_id]:1}));
     }
   },[layoutStyle,page?.items]);
+
+  // Wire CTA buttons inside the AI-generated HTML to the real order form.
+  // Any [data-order] / [data-add-product] click adds the product (if given,
+  // else the first product when the cart is empty) and scrolls to checkout.
+  useEffect(()=>{
+    if(!isAiCustom)return;
+    const root=aiHtmlRef.current;
+    if(!root)return;
+    const onClick=(e)=>{
+      const btn=e.target.closest('[data-order],[data-add-product]');
+      if(!btn||!root.contains(btn))return;
+      e.preventDefault();
+      const pid=btn.getAttribute('data-add-product');
+      if(pid&&allItems.some(it=>String(it.product_id)===String(pid))){
+        const key=allItems.find(it=>String(it.product_id)===String(pid)).product_id;
+        setCart(c=>({...c,[key]:(c[key]||0)+1}));
+      }else{
+        setCart(c=>{if(Object.values(c).some(q=>q>0))return c;const first=allItems[0];return first?{...c,[first.product_id]:1}:c;});
+      }
+      scrollToCheckout();
+    };
+    root.addEventListener('click',onClick);
+    return()=>root.removeEventListener('click',onClick);
+  },[isAiCustom,aiHtml,allItems,scrollToCheckout]);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
 
@@ -1710,33 +1739,39 @@ export default function BuyerLandingPage(){
         renderProductHeroAll()
       ):(
         <>
-          {renderHero()}
-          {renderAIImages('after_hero')}
+          {isAiCustom?(
+            <div ref={aiHtmlRef} className="lp-ai-html" dangerouslySetInnerHTML={{__html:aiHtml}}/>
+          ):(
+            <>
+              {renderHero()}
+              {renderAIImages('after_hero')}
 
-          {showSocial&&(
-            <div className="py-10 relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-              <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.03}/>
-              <div className="relative"><SocialProof accent={pc} textColor={page.text_color||'#1F2937'} showReviews={page.show_reviews!==false}/></div>
-            </div>
+              {showSocial&&(
+                <div className="py-10 relative overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+                  <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.03}/>
+                  <div className="relative"><SocialProof accent={pc} textColor={page.text_color||'#1F2937'} showReviews={page.show_reviews!==false}/></div>
+                </div>
+              )}
+
+              {renderAllProducts()}
+              {renderAIImages('between_products')}
+
+              {/* CTA divider */}
+              <Reveal animation={anim}>
+                <div className="relative py-16 text-center overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
+                  <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.04}/>
+                  <div className="relative">
+                    <p className="text-sm font-semibold opacity-45 mb-4" style={{color:page.text_color||'#1F2937'}}>{t('lp.readyToOrder','Ready to order?')}</p>
+                    <button onClick={scrollToCheckout} className="px-10 py-4 rounded-2xl text-white font-black text-sm shadow-2xl transition-all hover:brightness-110 active:scale-[0.96] inline-flex items-center gap-2" style={{backgroundColor:pc,boxShadow:`0 8px 30px ${pc}40`}}>
+                      <ShoppingBag size={16}/>{page.cta_text||t('lp.orderNow','Order Now')}
+                    </button>
+                  </div>
+                </div>
+              </Reveal>
+
+              {renderAIImages('before_checkout')}
+            </>
           )}
-
-          {renderAllProducts()}
-          {renderAIImages('between_products')}
-
-          {/* CTA divider */}
-          <Reveal animation={anim}>
-            <div className="relative py-16 text-center overflow-hidden" style={{backgroundColor:page.bg_color||'#FAFAFA'}}>
-              <MeshGradient color1={pc} color2={page.bg_color||'#FAFAFA'} opacity={0.04}/>
-              <div className="relative">
-                <p className="text-sm font-semibold opacity-45 mb-4" style={{color:page.text_color||'#1F2937'}}>{t('lp.readyToOrder','Ready to order?')}</p>
-                <button onClick={scrollToCheckout} className="px-10 py-4 rounded-2xl text-white font-black text-sm shadow-2xl transition-all hover:brightness-110 active:scale-[0.96] inline-flex items-center gap-2" style={{backgroundColor:pc,boxShadow:`0 8px 30px ${pc}40`}}>
-                  <ShoppingBag size={16}/>{page.cta_text||t('lp.orderNow','Order Now')}
-                </button>
-              </div>
-            </div>
-          </Reveal>
-
-          {renderAIImages('before_checkout')}
           {/* ═══ CHECKOUT ═══ */}
           <section ref={checkoutRef} className="relative overflow-hidden" style={{background:`linear-gradient(160deg, ${page.hero_bg||'oklch(0.15 0.04 280)'}, oklch(0.08 0.01 280))`}}>
             <ProductImageMosaic items={allItems} overlay={`linear-gradient(180deg, ${page.hero_bg||'oklch(0.15 0.04 280)'}e0 0%, oklch(0.08 0.01 280) 100%)`}/>
