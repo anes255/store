@@ -70,11 +70,6 @@ const statusConfig = {
 };
 const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','awaiting_pickup','archived'];
 
-// Treat an order as Stop Desk only for real desk values — must match the
-// backend dispatch logic exactly, otherwise an order can LOOK like desk in the
-// table but ship home (empty/unknown shipping_type = home delivery).
-const isDeskType = (st) => /^(desk|stop[\s_-]?desk|office|bureau|relais|pickup)$/.test(String(st || '').toLowerCase().trim());
-
 const TRANSFER_COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', yalid: '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
 function transferBadge(o) {
   if (!o.delivery_company_name) return null;
@@ -251,9 +246,7 @@ export default function StoreOrders() {
       const params = { search };
       if (wantArchive) { params.archived = 'only'; }
       else if (!wantPreparingBucket && effectiveFilter !== 'all') { params.status = effectiveFilter; }
-      // Fetch fresh (bypass the stale-while-revalidate cache): the admin orders
-      // list is time-sensitive — new orders must show up promptly.
-      const { data } = await api.get(`/manage/stores/${currentStore.id}/orders`, { params });
+      const { data } = await orderApi.getAll(currentStore.id, params);
       let rows = data.orders || [];
       if (wantPreparingBucket) {
         rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
@@ -267,15 +260,6 @@ export default function StoreOrders() {
     if (pathFilter && filter !== pathFilter) { setFilter(pathFilter); setLoading(true); loadOrders(pathFilter); }
     else if (!pathFilter && (filter === 'preparing' || filter === 'archived')) { setFilter('all'); setLoading(true); loadOrders('all'); }
     else { setLoading(true); loadOrders(); }
-  }, [currentStore?.id, filter, search, location.pathname]);
-  // Silent auto-refresh so newly placed orders appear without a manual reload:
-  // poll every 20s and also refetch when the tab regains focus.
-  useEffect(() => {
-    if (!currentStore?.id) return;
-    const iv = setInterval(() => { if (!document.hidden) loadOrders(); }, 20000);
-    const onFocus = () => loadOrders();
-    window.addEventListener('focus', onFocus);
-    return () => { clearInterval(iv); window.removeEventListener('focus', onFocus); };
   }, [currentStore?.id, filter, search, location.pathname]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
   const [shippingWilayas, setShippingWilayas] = useState([]);
@@ -325,34 +309,28 @@ export default function StoreOrders() {
     catch { toast.error(t('store.failed','Failed')); }
   };
 
-  // Save any field of an order via PATCH. Updates the UI optimistically so the
-  // cell/buttons flip instantly instead of waiting for a full re-fetch.
+  // Save any field of an order via PATCH.
   const saveOrderField = async (orderId, patch) => {
-    // When the shipping method changes, recompute the shipping cost from the
-    // store's per-wilaya pricing and adjust the order total accordingly so the
-    // displayed total reflects the new home/desk delivery price.
-    if (patch.shipping_type && patch.shipping_cost == null) {
-      const o = orders.find(x => x.id === orderId);
-      if (o) {
-        const newCost = deliveryPriceFor(o, patch.shipping_type);
-        if (newCost != null) {
-          const prevCost = parseFloat(o.shipping_cost) || 0;
-          const prevTotal = parseFloat(o.total) || 0;
-          patch = { ...patch, shipping_cost: newCost, total: Math.max(0, prevTotal - prevCost + newCost) };
+    try {
+      // When the shipping method changes, recompute the shipping cost from the
+      // store's per-wilaya pricing and adjust the order total accordingly so the
+      // displayed total reflects the new home/desk delivery price.
+      if (patch.shipping_type && patch.shipping_cost == null) {
+        const o = orders.find(x => x.id === orderId);
+        if (o) {
+          const newCost = deliveryPriceFor(o, patch.shipping_type);
+          if (newCost != null) {
+            const prevCost = parseFloat(o.shipping_cost) || 0;
+            const prevTotal = parseFloat(o.total) || 0;
+            patch = { ...patch, shipping_cost: newCost, total: Math.max(0, prevTotal - prevCost + newCost) };
+          }
         }
       }
-    }
-    // Optimistic: flip the row immediately, persist in the background, roll back on failure.
-    const snapshot = orders;
-    setOrders(prev => prev.map(x => x.id === orderId ? { ...x, ...patch } : x));
-    if (selectedOrder?.id === orderId) setSelectedOrder(prev => prev ? { ...prev, ...patch } : prev);
-    try {
       await api.patch(`/manage/stores/${currentStore.id}/orders/${orderId}`, patch);
-    } catch {
-      toast.error(t('store.failedToSave','Failed to save'));
-      setOrders(snapshot);
-      if (selectedOrder?.id === orderId) { try { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); } catch {} }
-    }
+      toast.success(t('store.saved','Saved'));
+      loadOrders();
+      if (selectedOrder?.id === orderId) { const { data } = await orderApi.getOne(currentStore.id, orderId); setSelectedOrder(data); }
+    } catch { toast.error(t('store.failedToSave','Failed to save')); }
   };
 
   // Dispatch order: create the parcel on the carrier's platform via API and
@@ -362,15 +340,13 @@ export default function StoreOrders() {
   const dispatchOrder = async (orderId, deliveryCompanyId) => {
     const tid = toast.loading(t('orders.pushingToCarrier','Pushing order to carrier…'));
     try {
-      // Send the current UI shipping mode so a just-toggled Home/Desk choice is
-      // honoured even if its background save hasn't landed yet.
-      const o = orders.find(x => x.id === orderId) || (selectedOrder?.id === orderId ? selectedOrder : null);
-      const { data } = await orderApi.dispatch(currentStore.id, orderId, { delivery_company_id: deliveryCompanyId, shipping_type: o?.shipping_type });
+      const { data } = await orderApi.dispatch(currentStore.id, orderId, { delivery_company_id: deliveryCompanyId });
       toast.dismiss(tid);
       if (data?.ok === false) {
         toast.error(`❌ ${data.error || 'Carrier rejected'}`, { duration: 8000 });
-        setLastDispatchDebug(data); // show the detail card only on failure
+        setLastDispatchDebug(data);
       } else if (data?.tracking_number) {
+        // Success — the top toast is enough; no detail card on a clean transfer.
         toast.success(`✅ ${data.message || 'Order pushed'} · TN: ${data.tracking_number}`, { duration: 6000 });
       } else {
         toast.success(data?.message || t('orders.transferred','Order transferred'));
@@ -680,7 +656,7 @@ export default function StoreOrders() {
 
       case 'shipping_method':
         return <td className="px-3 py-3">{cellBtn(o, 'shipping_method',
-          !isDeskType(o.shipping_type)
+          o.shipping_type === 'home'
             ? <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><Home size={10}/> {t('checkout.homeDelivery','Home Delivery')}</span>
             : <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Package size={10}/> {t('checkout.deskDelivery','Stop Desk')}</span>
         )}</td>;
@@ -1085,13 +1061,13 @@ export default function StoreOrders() {
             </div></div>
           </div>
           {/* Auto transfer – uses each order's preferred delivery company */}
-          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];for(const o of eligible){try{await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id,shipping_type:o.shipping_type});ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch{}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);if(alreadyTransferred.length>0){toast.success(`${ok}/${eligible.length} auto-transferred (${alreadyTransferred.length} already transferred, skipped)`);}else{toast.success(`${ok}/${eligible.length} auto-transferred`);}clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
+          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];for(const o of eligible){try{await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch{}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);if(alreadyTransferred.length>0){toast.success(`${ok}/${eligible.length} auto-transferred (${alreadyTransferred.length} already transferred, skipped)`);}else{toast.success(`${ok}/${eligible.length} auto-transferred`);}clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
           {/* Bulk transfer to delivery company */}
           <div className="relative group shrink-0">
             <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
             <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
               {companies.length?companies.map(c=>(
-                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;const done=[];for(const id of ids){try{const oo=orders.find(x=>x.id===id);await orderApi.dispatch(currentStore.id,id,{delivery_company_id:c.id,shipping_type:oo?.shipping_type});ok++;done.push(id);}catch{}}if(done.length)setOrders(prev=>prev.map(x=>done.includes(x.id)?{...x,status:'shipped',delivery_company_id:c.id,delivery_company_name:c.name}:x));toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();await loadOrders();}}
+                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;const done=[];for(const id of ids){try{await orderApi.dispatch(currentStore.id,id,{delivery_company_id:c.id});ok++;done.push(id);}catch{}}if(done.length)setOrders(prev=>prev.map(x=>done.includes(x.id)?{...x,status:'shipped',delivery_company_id:c.id,delivery_company_name:c.name}:x));toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();await loadOrders();}}
                   className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
                   <Truck size={10} className="text-emerald-500"/>{c.name}
                 </button>
@@ -1347,16 +1323,6 @@ export default function StoreOrders() {
         </div>
         {lastDispatchDebug.message&&<p className="text-sm font-medium text-gray-700 mb-2">{lastDispatchDebug.message}</p>}
         {lastDispatchDebug.error&&<p className="text-sm font-bold text-red-600 mb-2">{lastDispatchDebug.error}</p>}
-        {/* DIAGNOSTIC SUMMARY — desk/home debugging */}
-        {lastDispatchDebug.debug&&(()=>{const d=lastDispatchDebug.debug;let sd='?';try{sd=String(JSON.parse(d.request_body)?.stopdesk);}catch{}return(
-          <div className="mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono space-y-0.5 text-amber-900">
-            <div>DB shipping_type: <b>{String(d.db_shipping_type)}</b></div>
-            <div>Sent by app: <b>{String(d.req_shipping_type)}</b></div>
-            <div>Seen by carrier: <b>{String(d.shipping_type_seen_by_carrier)}</b></div>
-            <div>Body stopdesk = <b>{sd}</b> · delivery_mode = <b>{String(d.delivery_mode)}</b> · attempts = <b>{String(d.attempts)}</b></div>
-            {d.desk_reject && <div className="mt-1 pt-1 border-t border-amber-300 text-red-700">Carrier rejected DESK (HTTP {String(d.desk_reject.status)}): <b className="break-all">{String(d.desk_reject.body)}</b></div>}
-          </div>
-        );})()}
         {lastDispatchDebug.tracking_number&&<p className="text-sm mb-2">Tracking: <span className="font-mono font-bold text-emerald-700">{lastDispatchDebug.tracking_number}</span></p>}
         {lastDispatchDebug.carrier_response&&<details open><summary className="text-[10px] text-gray-500 cursor-pointer mb-1">Carrier response</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{typeof lastDispatchDebug.carrier_response==='string'?lastDispatchDebug.carrier_response:JSON.stringify(lastDispatchDebug.carrier_response,null,2)}</pre></details>}
         {lastDispatchDebug.debug&&<>
@@ -1675,7 +1641,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.shippingMethod','Shipping Method')}</label>
         <div className="grid grid-cols-2 gap-2">
           {['home','desk'].map(m => {
-            const active = m === 'desk' ? isDeskType(o.shipping_type) : !isDeskType(o.shipping_type);
+            const active = (o.shipping_type || 'home') === m || (m === 'desk' && o.shipping_type === 'stop_desk');
             return (
               <button key={m} onClick={() => { onSaveField({ shipping_type: m }); onClose(); }}
                 className={`py-4 rounded-xl font-bold text-xs flex flex-col items-center gap-1 ${active ? 'bg-emerald-500 text-white ring-2 ring-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
