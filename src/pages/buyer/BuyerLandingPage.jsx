@@ -455,6 +455,7 @@ export default function BuyerLandingPage(){
   const[slugMap,setSlugMap]=useState({}); // product_id -> product slug (for reviews)
   const[variantsMap,setVariantsMap]=useState({}); // product_id -> variants[]
   const[variantSel,setVariantSel]=useState({}); // product_id -> { [type]: variantIndex }
+  const[perUnitVariants,setPerUnitVariants]=useState({}); // product_id -> [ { [type]: variantIdx }, ... ] per unit
   const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp',coupon_code:''});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
@@ -583,6 +584,7 @@ export default function BuyerLandingPage(){
   const productVariants=(pid)=>Array.isArray(variantsMap[pid])?variantsMap[pid]:[];
   const variantGroupsFor=(pid)=>{const g={};productVariants(pid).forEach((v,i)=>{const t=(v.type||'option').toLowerCase();(g[t]=g[t]||[]).push({...v,_idx:i});});return g;};
   const selectVariant=(pid,type,idx)=>setVariantSel(s=>({...s,[pid]:{...(s[pid]||{}),[type]:(s[pid]||{})[type]===idx?null:idx}}));
+  const setLpUnitVariant=(pid,unitIdx,type,variantIdx)=>{setPerUnitVariants(prev=>{const copy={...prev};if(!copy[pid])copy[pid]=[];const arr=[...copy[pid]];if(!arr[unitIdx])arr[unitIdx]={};arr[unitIdx]={...arr[unitIdx],[type]:arr[unitIdx][type]===variantIdx?null:variantIdx};copy[pid]=arr;return copy;});};
   const selectedVariantIdxes=(pid)=>{const sel=variantSel[pid]||{};return Object.values(sel).filter(v=>v!=null&&v!==undefined);};
   // Price adjustment (sum of selected variants' price_adjustment).
   const variantAdj=(pid)=>{const vs=productVariants(pid);return selectedVariantIdxes(pid).reduce((s,idx)=>s+(parseFloat(vs[idx]?.price_adjustment)||0),0);};
@@ -591,28 +593,67 @@ export default function BuyerLandingPage(){
   // True if a product still has an unanswered variant group (every group needs a pick).
   const variantIncomplete=(pid)=>{const groups=variantGroupsFor(pid);const sel=variantSel[pid]||{};return Object.keys(groups).some(t=>sel[t]==null);};
   // Variant selector shown under each cart line in the order summary.
+  const isColorValue=(val)=>{if(!val)return false;if(/^#[0-9A-Fa-f]{3,8}$/.test(val))return true;if(/^(rgb|hsl)a?\(/.test(val))return true;return['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'].includes((val||'').toLowerCase());};
   const renderVariantPicker=(it)=>{
-    const pid=it.product_id;const groups=variantGroupsFor(pid);const types=Object.keys(groups);
+    const pid=it.product_id;const vs=productVariants(pid);const groups=variantGroupsFor(pid);const types=Object.keys(groups);
     if(!types.length)return null;
+    const unitCount=cart[pid]||1;
+    const unitVars=perUnitVariants[pid]||[];
     return(
-      <div className="mt-2 space-y-2">
-        {types.map(type=>(
-          <div key={type}>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1 opacity-70">{type}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {groups[type].map(v=>{const active=(variantSel[pid]||{})[type]===v._idx;const isColor=v.type==='color'&&v.value&&/^#[0-9a-f]{3,8}$/i.test(v.value);return(
-                <button key={v._idx} type="button" onClick={()=>selectVariant(pid,type,v._idx)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${active?'border-transparent text-white shadow-md':'border-black/15 text-gray-700 bg-white hover:border-gray-400'}`}
-                  style={active?{backgroundColor:pc}:{}}>
-                  {isColor&&<span className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0" style={{backgroundColor:v.value}}/>}
-                  <span>{v.name||v.value}</span>
-                  {parseFloat(v.price_adjustment)>0&&<span className="opacity-70">+{parseFloat(v.price_adjustment).toLocaleString()}</span>}
-                  {active&&<Check size={12} className="shrink-0"/>}
-                </button>
-              );})}
-            </div>
-          </div>
-        ))}
+      <div className="mt-2">
+        <p className="text-[9px] font-extrabold uppercase tracking-wider mb-1" style={{color:pc}}>
+          {unitCount>1?t('store.customizeEachUnit','Customize each unit'):t('store.chooseOptions','Choose your options')}
+        </p>
+        <div className="space-y-1">
+          {Array.from({length:unitCount},(_,ui)=>{
+            const uv=unitVars[ui]||{};
+            return(
+              <div key={ui} className="rounded-lg border border-gray-200 bg-white p-1.5">
+                {unitCount>1&&(
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center" style={{backgroundColor:pc}}>{ui+1}</span>
+                    <span className="text-[10px] font-bold text-gray-500">{t('store.unit','Unit')} {ui+1}</span>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {types.map(type=>{
+                    const group=groups[type];
+                    const typeLabel=type==='color'?t('store.variantColor','Color'):type==='size'?t('store.variantSize','Size'):type==='material'?t('store.variantMaterial','Material'):type==='style'?t('store.variantStyle','Style'):type.charAt(0).toUpperCase()+type.slice(1);
+                    const sel=uv[type];
+                    return(
+                      <div key={type}>
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{typeLabel}</p>
+                        {type==='color'?(
+                          <div className="flex flex-wrap gap-1">
+                            {group.map(v=>{const isSel=sel===v._idx;const colorVal=v.value||'#ccc';const useColor=isColorValue(colorVal);const hasImg=v.images&&v.images.length>0;return(
+                              <button key={v._idx} onClick={()=>setLpUnitVariant(pid,ui,type,v._idx)} className="relative flex flex-col items-center gap-0.5" title={v.name}>
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel?'border-gray-900 scale-110 shadow ring-1 ring-gray-900/20':'border-gray-200 hover:border-gray-400'}`}
+                                  style={useColor&&!hasImg?{backgroundColor:colorVal}:{}}>
+                                  {hasImg?<img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/>:!useColor?<span className="text-[6px] font-bold text-gray-500">{(v.name||'?').slice(0,2)}</span>:null}
+                                  {isSel&&<Check size={8} className="absolute text-white drop-shadow-md"/>}
+                                </div>
+                              </button>
+                            );})}
+                          </div>
+                        ):(
+                          <div className="flex flex-wrap gap-1">
+                            {group.map(v=>{const isSel=sel===v._idx;return(
+                              <button key={v._idx} onClick={()=>setLpUnitVariant(pid,ui,type,v._idx)}
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${isSel?'text-white shadow':'border-gray-200 text-gray-600 bg-white hover:border-gray-400'}`}
+                                style={isSel?{backgroundColor:pc,borderColor:pc}:{}}>
+                                {v.name||v.value||t('store.variantOption','Option')}
+                              </button>
+                            );})}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -718,7 +759,7 @@ export default function BuyerLandingPage(){
       const customer_id=authRole==='customer'&&authUser?.id?authUser.id:undefined;
       const{data}=await storeApi.placeOrder(storeSlug,{
         ...form,customer_id,
-        items:cartItems.map(it=>({product_id:it.product_id,quantity:cart[it.product_id]||1,variant:buildVariant(it.product_id)})),
+        items:cartItems.map(it=>{const pid=it.product_id;const vs=productVariants(pid);const unitVars=perUnitVariants[pid]||[];let variant=buildVariant(pid);if(vs.length>0&&unitVars.length>0){const qty=cart[pid]||1;const perUnit=Array.from({length:qty},(_,ui)=>{const uv=unitVars[ui]||{};return Object.values(uv).filter(v=>v!=null).map(vidx=>{const v=vs[vidx];return v?{name:v.name,type:v.type,value:v.value}:null;}).filter(Boolean);});const countMap={};perUnit.forEach(parts=>{const key=parts.map(p=>p.type==='color'?p.name:(p.name||p.value||'')).filter(Boolean).join('/');if(key)countMap[key]=(countMap[key]||0)+1;});const label=Object.entries(countMap).map(([k,c])=>c>1?`${c}x ${k}`:k).join(', ');if(label)variant={label,per_unit:perUnit.map(parts=>parts.length===1?parts[0]:{selections:parts,label:parts.map(p=>p.name||p.value).filter(Boolean).join(' / ')})};}return{product_id:pid,quantity:cart[pid]||1,variant};}),
         source:'landing_page',
         landing_page:page.slug,
       });
