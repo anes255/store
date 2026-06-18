@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
@@ -48,9 +48,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const buyerTheme = useBuyerTheme();
   useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const isDark = buyerTheme.mode === 'dark';
-  // "Buy Now" uses directItems; regular checkout uses the cart store.
-  const isBuyNow = !!directItems;
-  const [buyNowItems, setBuyNowItems] = useState(directItems || []);
+  // "Buy Now" uses directItems — passed as a prop (modal) or via navigation
+  // state when the product page sends the buyer straight to this checkout page.
+  const location = useLocation();
+  const effectiveDirect = directItems || location.state?.directItems || null;
+  const isBuyNow = !!effectiveDirect;
+  const [buyNowItems, setBuyNowItems] = useState(effectiveDirect || []);
   const items = isBuyNow ? buyNowItems : cartStore.items;
   const removeItem = (idx) => { if (isBuyNow) setBuyNowItems(prev => prev.filter((_,i)=>i!==idx)); else cartStore.removeItem(idx); };
   const updateQuantity = (idx, qty) => { if (isBuyNow) setBuyNowItems(prev => { const n=[...prev]; n[idx]={...n[idx],quantity:Math.max(1,qty)}; return n; }); else cartStore.updateQuantity(idx, qty); };
