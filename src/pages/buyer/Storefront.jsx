@@ -10,7 +10,6 @@ import ThemePanel from '../../components/shared/ThemePanel';
 import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
-import DirectCheckoutModal from '../../components/shared/DirectCheckoutModal';
 import { initPixels, trackAddToCart, trackViewContent } from '../../utils/trackingPixels';
 
 // Ending-soon offer banner with live countdown. Merchants configure it in
@@ -448,7 +447,9 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                 <ShoppingCart size={16} /> {store.btn_add_cart || t('store.addToCart','Add to Cart')}
               </button>
               <button
-                onClick={() => { onBuyNow(product); onClose(); }}
+                onClick={() => {
+                  onBuyNow(product); onClose();
+                }}
                 disabled={stockCount <= 0 && !product.allow_oversell}
                 className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 disabled:opacity-50 transition-all text-sm"
                 style={{ borderColor: pc, color: pc, backgroundColor: pc + '15' }}
@@ -705,7 +706,6 @@ export default function Storefront() {
   const [buyNowItems, setBuyNowItems] = useState(null);
   const [previewItems, setPreviewItems] = useState(null);
   const [buyNowProduct, setBuyNowProduct] = useState(null);
-  const [directCheckoutProduct, setDirectCheckoutProduct] = useState(null);
   const buyerTheme = useBuyerTheme();
   useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const navigate = useNavigate();
@@ -838,14 +838,23 @@ export default function Storefront() {
     const slug = product.slug || product.id;
     navigate(`/s/${storeSlug}/product/${slug}`);
   };
-  // Buy now: open the DirectCheckoutModal so the buyer can pick an offer
-  // and customise variants per unit, then proceed to checkout.
   const handleBuyNow = (product) => {
     const p = typeof product.price === 'number' ? product : { ...product, price: parseFloat(product.price) || 0 };
-    setDirectCheckoutProduct(p);
-  };
-  const handleDirectCheckoutProceed = (items) => {
-    setDirectCheckoutProduct(null);
+    let finalP = p.price;
+    if (p.is_on_sale && p.offer_discount) {
+      const opct = parseFloat(String(p.offer_discount).replace(/[^0-9.]/g, '')) || 0;
+      if (opct > 0) finalP = Math.round(finalP * (1 - opct / 100));
+    }
+    const items = [{
+      product_id: p.id,
+      name: getName(p),
+      price: finalP,
+      image: getThumb(p),
+      quantity: 1,
+      variant: null,
+      quantity_offers: p.quantity_offers,
+      variants: p.variants,
+    }];
     setBuyNowItems(items);
     setBuyNowOpen(true);
   };
@@ -1233,18 +1242,6 @@ export default function Storefront() {
       )}
 
       {cartOpen && <Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/>}
-      {directCheckoutProduct && (
-        <DirectCheckoutModal
-          product={directCheckoutProduct}
-          store={store}
-          pc={pc}
-          currency={store.currency || 'DZD'}
-          getName={getName}
-          getThumb={getThumb}
-          onClose={() => setDirectCheckoutProduct(null)}
-          onProceedToCheckout={handleDirectCheckoutProceed}
-        />
-      )}
       {buyNowOpen && <Checkout isModal onClose={()=>{setBuyNowOpen(false);setBuyNowItems(null);}} storeSlug={storeSlug} directItems={buyNowItems}/>}
       <ProductQuickAdd
         show={!!quickAddProduct}

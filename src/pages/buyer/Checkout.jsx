@@ -5,7 +5,7 @@ import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 import i18n from '../../i18n';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift } from 'lucide-react';
 
 // Algerian phone validator: accepts 0[567]xxxxxxxx or +213[567]xxxxxxxx
 export function isValidAlgerianPhone(p) {
@@ -101,6 +101,41 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   useEffect(() => {
     items.forEach((it, i) => { const ps = itemPackSize(it); if (ps > 1 && (it.quantity || 1) < ps) updateQuantity(i, ps); });
   }, [items.length]); // eslint-disable-line
+
+  // ── Per-unit variant customization ──
+  // Keyed by item index → array of { [variantType]: variantIdx } per unit.
+  const [perUnitVariants, setPerUnitVariants] = useState({});
+  const setUnitVariant = (itemIdx, unitIdx, type, variantIdx) => {
+    setPerUnitVariants(prev => {
+      const copy = { ...prev };
+      if (!copy[itemIdx]) copy[itemIdx] = [];
+      const arr = [...copy[itemIdx]];
+      if (!arr[unitIdx]) arr[unitIdx] = {};
+      arr[unitIdx] = { ...arr[unitIdx], [type]: arr[unitIdx][type] === variantIdx ? null : variantIdx };
+      copy[itemIdx] = arr;
+      return copy;
+    });
+  };
+  const parseVariants = (item) => {
+    let v = item?.variants || [];
+    if (typeof v === 'string') try { v = JSON.parse(v); } catch { v = []; }
+    return Array.isArray(v) ? v : [];
+  };
+  const getVariantGroups = (variants) => {
+    const groups = {};
+    variants.forEach((v, i) => {
+      const tp = (v.type || 'option').toLowerCase();
+      if (!groups[tp]) groups[tp] = [];
+      groups[tp].push({ ...v, _idx: i });
+    });
+    return groups;
+  };
+  const isColorValue = (val) => {
+    if (!val) return false;
+    if (/^#[0-9A-Fa-f]{3,8}$/.test(val)) return true;
+    if (/^(rgb|hsl)a?\(/.test(val)) return true;
+    return ['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'].includes((val||'').toLowerCase());
+  };
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -331,7 +366,30 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       const authUser = useAuthStore.getState().user;
       const authRole = useAuthStore.getState().role;
       const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
-      const { data } = await storeApi.placeOrder(storeSlug, { ...form, shipping_type: form.shipping_type, customer_id, items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, variant: i.variant })) });
+      const { data } = await storeApi.placeOrder(storeSlug, { ...form, shipping_type: form.shipping_type, customer_id, items: items.map((it, idx) => {
+        const variants = parseVariants(it);
+        const unitVars = perUnitVariants[idx] || [];
+        let variant = it.variant;
+        if (variants.length > 0 && unitVars.length > 0) {
+          const groups = getVariantGroups(variants);
+          const groupTypes = Object.keys(groups);
+          const perUnit = Array.from({ length: it.quantity || 1 }, (_, ui) => {
+            const uv = unitVars[ui] || {};
+            return Object.values(uv).filter(v => v != null).map(vidx => {
+              const v = variants[vidx];
+              return v ? { name: v.name, type: v.type, value: v.value } : null;
+            }).filter(Boolean);
+          });
+          const countMap = {};
+          perUnit.forEach(parts => {
+            const key = parts.map(p => p.type === 'color' ? p.name : (p.name || p.value || '')).filter(Boolean).join('/');
+            if (key) countMap[key] = (countMap[key] || 0) + 1;
+          });
+          const label = Object.entries(countMap).map(([k, c]) => c > 1 ? `${c}x ${k}` : k).join(', ');
+          variant = { label, per_unit: perUnit.map(parts => parts.length === 1 ? parts[0] : { selections: parts, label: parts.map(p => p.name || p.value).filter(Boolean).join(' / ') }) };
+        }
+        return { product_id: it.product_id, quantity: it.quantity, variant };
+      }) });
       setOrderSuccess(data);
       try { trackPurchase(store?.tracking_pixels, { ...data, items, customer_name: form.customer_name, customer_phone: form.customer_phone, customer_email: form.customer_email }); } catch {}
       clearItems();
@@ -801,6 +859,83 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                           </div>
                         </div>
                       )}
+                      {/* Per-unit variant customization — appears when item has variants data */}
+                      {(() => {
+                        const variants = parseVariants(item);
+                        if (variants.length === 0) return null;
+                        const groups = getVariantGroups(variants);
+                        const groupTypes = Object.keys(groups);
+                        if (groupTypes.length === 0) return null;
+                        const unitCount = item.quantity || 1;
+                        const unitVars = perUnitVariants[i] || [];
+                        return (
+                          <div className="mt-3">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider mb-2" style={{ color: pc }}>
+                              {unitCount > 1 ? t('store.customizeEachUnit', 'Customize each unit') : t('store.chooseOptions', 'Choose your options')}
+                            </p>
+                            <div className="space-y-2">
+                              {Array.from({ length: unitCount }, (_, ui) => {
+                                const uv = unitVars[ui] || {};
+                                return (
+                                  <div key={ui} className="rounded-xl border border-gray-200 bg-white p-2.5">
+                                    {unitCount > 1 && (
+                                      <div className="flex items-center gap-1.5 mb-2">
+                                        <span className="w-5 h-5 rounded-full text-white text-[9px] font-bold flex items-center justify-center" style={{ backgroundColor: pc }}>{ui + 1}</span>
+                                        <span className="text-[11px] font-bold text-gray-600">{t('store.unit', 'Unit')} {ui + 1}</span>
+                                      </div>
+                                    )}
+                                    <div className="space-y-2">
+                                      {groupTypes.map(type => {
+                                        const group = groups[type];
+                                        const typeLabel = type === 'color' ? t('store.variantColor', 'Color') : type === 'size' ? t('store.variantSize', 'Size') : type === 'material' ? t('store.variantMaterial', 'Material') : type === 'style' ? t('store.variantStyle', 'Style') : type.charAt(0).toUpperCase() + type.slice(1);
+                                        const sel = uv[type];
+                                        return (
+                                          <div key={type}>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">{typeLabel}</p>
+                                            {type === 'color' ? (
+                                              <div className="flex flex-wrap gap-1.5">
+                                                {group.map(v => {
+                                                  const isSel = sel === v._idx;
+                                                  const colorVal = v.value || '#ccc';
+                                                  const useColor = isColorValue(colorVal);
+                                                  const hasImg = v.images && v.images.length > 0;
+                                                  return (
+                                                    <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)} className="relative flex flex-col items-center gap-0.5" title={v.name}>
+                                                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'border-gray-900 scale-110 shadow ring-2 ring-gray-900/20' : 'border-gray-200 hover:border-gray-400'}`}
+                                                        style={useColor && !hasImg ? { backgroundColor: colorVal } : {}}>
+                                                        {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[7px] font-bold text-gray-500">{(v.name||'?').slice(0,3)}</span> : null}
+                                                        {isSel && <Check size={10} className="absolute text-white drop-shadow-md"/>}
+                                                      </div>
+                                                      <span className={`text-[8px] ${isSel ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>{v.name}</span>
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            ) : (
+                                              <div className="flex flex-wrap gap-1">
+                                                {group.map(v => {
+                                                  const isSel = sel === v._idx;
+                                                  return (
+                                                    <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)}
+                                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 transition-all ${isSel ? 'text-white shadow' : 'border-gray-200 text-gray-700 bg-white hover:border-gray-400'}`}
+                                                      style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
+                                                      {v.name || v.value || 'Option'}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {/* Counter — counts offers (packs) when sold in packs, else units */}
                       {(() => {
                         const ps = itemPackSize(item);

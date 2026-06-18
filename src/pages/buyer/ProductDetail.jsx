@@ -8,7 +8,6 @@ import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, ArrowRight, Star, Truck, S
 const Checkout = lazy(() => import('./Checkout'));
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
-import DirectCheckoutModal from '../../components/shared/DirectCheckoutModal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Full-screen image lightbox with zoom controls. Supports:
@@ -208,7 +207,6 @@ export default function ProductDetail() {
   const [cartOpen, setCartOpen] = useState(false);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowItems, setBuyNowItems] = useState(null);
-  const [directCheckoutProduct, setDirectCheckoutProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e) => {
@@ -322,11 +320,20 @@ export default function ProductDetail() {
   };
 
   const handleBuyNow = () => {
-    setDirectCheckoutProduct(product);
-  };
-  const handleDirectCheckoutProceed = (items) => {
-    setDirectCheckoutProduct(null);
-    setBuyNowItems(items);
+    let imgs = product.images;
+    if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
+    if (!Array.isArray(imgs)) imgs = [];
+    const directItem = {
+      product_id: product.id,
+      name: product.name_en || product.name_fr || product.name_ar || product.name,
+      price: finalPrice,
+      image: product.thumbnail || imgs[0] || null,
+      quantity: 1,
+      variant: null,
+      quantity_offers: product.quantity_offers || [],
+      variants: product.variants || [],
+    };
+    setBuyNowItems([directItem]);
     setBuyNowOpen(true);
   };
 
@@ -633,18 +640,6 @@ export default function ProductDetail() {
         <ReviewsSection storeSlug={storeSlug} productSlug={productSlug} pc={pc}/>
       </div>
       {cartOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/></Suspense>}
-      {directCheckoutProduct && (
-        <DirectCheckoutModal
-          product={directCheckoutProduct}
-          store={store}
-          pc={pc}
-          currency={currency}
-          getName={getName}
-          getThumb={(p) => { let imgs = p.images; if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; } return p.thumbnail || (Array.isArray(imgs) && imgs[0]) || null; }}
-          onClose={() => setDirectCheckoutProduct(null)}
-          onProceedToCheckout={handleDirectCheckoutProceed}
-        />
-      )}
       {buyNowOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/></Suspense>}
 
       {/* Image lightbox — full-screen view with click/scroll/pinch zoom. */}
