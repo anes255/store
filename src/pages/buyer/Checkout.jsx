@@ -888,10 +888,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                         const hasImg = v.images && v.images.length > 0;
                                         return (
                                           <button key={v._idx} onClick={() => setUnitVariant(i, 0, type, v._idx)} title={v.name}>
-                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110 shadow' : 'border-gray-300 hover:border-gray-400'}`}
+                                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110 shadow' : 'border-gray-300 hover:border-gray-400'}`}
                                               style={{ ...(useColor && !hasImg ? { backgroundColor: colorVal } : {}), ...(isSel ? { borderColor: pc, boxShadow: `0 0 0 2px ${pc}40` } : {}) }}>
-                                              {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[6px] font-bold text-gray-500">{(v.name||'?').slice(0,2)}</span> : null}
-                                              {isSel && <Check size={8} className="absolute text-white drop-shadow-md"/>}
+                                              {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[7px] font-bold text-gray-500">{(v.name||'?').slice(0,3)}</span> : null}
+                                              {isSel && <Check size={10} className="absolute text-white drop-shadow-md"/>}
                                             </div>
                                           </button>
                                         );
@@ -927,10 +927,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                             const hasImg = v.images && v.images.length > 0;
                                             return (
                                               <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)} title={v.name}>
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110' : 'border-gray-400 hover:border-gray-300'}`}
+                                                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110' : 'border-gray-400 hover:border-gray-300'}`}
                                                   style={{ ...(useColor && !hasImg ? { backgroundColor: colorVal } : {}), ...(isSel ? { borderColor: pc, boxShadow: `0 0 0 2px ${pc}40` } : {}) }}>
-                                                  {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[5px] font-bold text-gray-400">{(v.name||'?').slice(0,2)}</span> : null}
-                                                  {isSel && <Check size={7} className="absolute text-white drop-shadow-md"/>}
+                                                  {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[6px] font-bold text-gray-400">{(v.name||'?').slice(0,2)}</span> : null}
+                                                  {isSel && <Check size={9} className="absolute text-white drop-shadow-md"/>}
                                                 </div>
                                               </button>
                                             );
