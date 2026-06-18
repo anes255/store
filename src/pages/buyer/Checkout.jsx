@@ -870,68 +870,87 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         const unitVars = perUnitVariants[i] || [];
                         return (
                           <div className="mt-2">
-                            <p className="text-[9px] font-extrabold uppercase tracking-wider mb-1" style={{ color: pc }}>
+                            <p className="text-[9px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: pc }}>
                               {unitCount > 1 ? t('store.customizeEachUnit', 'Customize each unit') : t('store.chooseOptions', 'Choose your options')}
                             </p>
-                            <div className="space-y-1">
-                              {Array.from({ length: unitCount }, (_, ui) => {
-                                const uv = unitVars[ui] || {};
-                                return (
-                                  <div key={ui} className="rounded-lg border border-gray-200 bg-white p-1.5">
-                                    {unitCount > 1 && (
-                                      <div className="flex items-center gap-1 mb-1">
-                                        <span className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center" style={{ backgroundColor: pc }}>{ui + 1}</span>
-                                        <span className="text-[10px] font-bold text-gray-500">{t('store.unit', 'Unit')} {ui + 1}</span>
-                                      </div>
-                                    )}
-                                    <div className="space-y-1">
-                                      {groupTypes.map(type => {
-                                        const group = groups[type];
-                                        const typeLabel = type === 'color' ? t('store.variantColor', 'Color') : type === 'size' ? t('store.variantSize', 'Size') : type === 'material' ? t('store.variantMaterial', 'Material') : type === 'style' ? t('store.variantStyle', 'Style') : type.charAt(0).toUpperCase() + type.slice(1);
-                                        const sel = uv[type];
+                            {unitCount === 1 ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                {groupTypes.map(type => {
+                                  const group = groups[type];
+                                  const uv = unitVars[0] || {};
+                                  const sel = uv[type];
+                                  return (
+                                    <div key={type} className="flex items-center gap-1.5">
+                                      {type === 'color' ? group.map(v => {
+                                        const isSel = sel === v._idx;
+                                        const colorVal = v.value || '#ccc';
+                                        const useColor = isColorValue(colorVal);
+                                        const hasImg = v.images && v.images.length > 0;
                                         return (
-                                          <div key={type}>
-                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{typeLabel}</p>
-                                            {type === 'color' ? (
-                                              <div className="flex flex-wrap gap-1">
-                                                {group.map(v => {
-                                                  const isSel = sel === v._idx;
-                                                  const colorVal = v.value || '#ccc';
-                                                  const useColor = isColorValue(colorVal);
-                                                  const hasImg = v.images && v.images.length > 0;
-                                                  return (
-                                                    <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)} className="relative flex flex-col items-center gap-0.5" title={v.name}>
-                                                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'border-gray-900 scale-110 shadow ring-1 ring-gray-900/20' : 'border-gray-200 hover:border-gray-400'}`}
-                                                        style={useColor && !hasImg ? { backgroundColor: colorVal } : {}}>
-                                                        {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[6px] font-bold text-gray-500">{(v.name||'?').slice(0,2)}</span> : null}
-                                                        {isSel && <Check size={8} className="absolute text-white drop-shadow-md"/>}
-                                                      </div>
-                                                    </button>
-                                                  );
-                                                })}
-                                              </div>
-                                            ) : (
-                                              <div className="flex flex-wrap gap-1">
-                                                {group.map(v => {
-                                                  const isSel = sel === v._idx;
-                                                  return (
-                                                    <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)}
-                                                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${isSel ? 'text-white shadow' : 'border-gray-200 text-gray-600 bg-white hover:border-gray-400'}`}
-                                                      style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
-                                                      {v.name || v.value || t('store.variantOption', 'Option')}
-                                                    </button>
-                                                  );
-                                                })}
-                                              </div>
-                                            )}
-                                          </div>
+                                          <button key={v._idx} onClick={() => setUnitVariant(i, 0, type, v._idx)} title={v.name}>
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110 shadow' : 'border-gray-300 hover:border-gray-400'}`}
+                                              style={{ ...(useColor && !hasImg ? { backgroundColor: colorVal } : {}), ...(isSel ? { borderColor: pc, boxShadow: `0 0 0 2px ${pc}40` } : {}) }}>
+                                              {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[6px] font-bold text-gray-500">{(v.name||'?').slice(0,2)}</span> : null}
+                                              {isSel && <Check size={8} className="absolute text-white drop-shadow-md"/>}
+                                            </div>
+                                          </button>
+                                        );
+                                      }) : group.map(v => {
+                                        const isSel = sel === v._idx;
+                                        return (
+                                          <button key={v._idx} onClick={() => setUnitVariant(i, 0, type, v._idx)}
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${isSel ? 'text-white' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}
+                                            style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
+                                            {v.name || v.value || t('store.variantOption', 'Option')}
+                                          </button>
                                         );
                                       })}
                                     </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(unitCount, 3)}, 1fr)` }}>
+                                {Array.from({ length: unitCount }, (_, ui) => {
+                                  const uv = unitVars[ui] || {};
+                                  return (
+                                    <div key={ui} className="flex items-center gap-1.5 rounded-lg px-1.5 py-1" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                      <span className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: pc }}>{ui + 1}</span>
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        {groupTypes.map(type => {
+                                          const group = groups[type];
+                                          const sel = uv[type];
+                                          return type === 'color' ? group.map(v => {
+                                            const isSel = sel === v._idx;
+                                            const colorVal = v.value || '#ccc';
+                                            const useColor = isColorValue(colorVal);
+                                            const hasImg = v.images && v.images.length > 0;
+                                            return (
+                                              <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)} title={v.name}>
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110' : 'border-gray-400 hover:border-gray-300'}`}
+                                                  style={{ ...(useColor && !hasImg ? { backgroundColor: colorVal } : {}), ...(isSel ? { borderColor: pc, boxShadow: `0 0 0 2px ${pc}40` } : {}) }}>
+                                                  {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[5px] font-bold text-gray-400">{(v.name||'?').slice(0,2)}</span> : null}
+                                                  {isSel && <Check size={7} className="absolute text-white drop-shadow-md"/>}
+                                                </div>
+                                              </button>
+                                            );
+                                          }) : group.map(v => {
+                                            const isSel = sel === v._idx;
+                                            return (
+                                              <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)}
+                                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all ${isSel ? 'text-white' : 'border-gray-500 text-gray-400 hover:border-gray-300'}`}
+                                                style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
+                                                {v.name || v.value || t('store.variantOption', 'Option')}
+                                              </button>
+                                            );
+                                          });
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
