@@ -431,6 +431,13 @@ export default function StoreOrders() {
       if (!v) return '';
       const cap = (s) => typeof s === 'string' && s.length ? s[0].toUpperCase() + s.slice(1) : s;
       if (Array.isArray(v)) return v.map(x => typeof x === 'string' ? x : (x?.name || x?.value || '')).filter(Boolean).join(' · ');
+      if (Array.isArray(v.per_unit)) {
+        const one = (s) => typeof s === 'string' ? s : (s ? (s.label || s.name || s.value || '') : '');
+        return v.per_unit.map((u, idx) => {
+          const txt = Array.isArray(u?.selections) ? u.selections.map(one).filter(Boolean).join(' / ') : one(u);
+          return txt ? `#${idx + 1}: ${txt}` : '';
+        }).filter(Boolean).join(' · ');
+      }
       if (Array.isArray(v.selections)) return v.selections.map(s => `${s.type ? cap(s.type) + ': ' : ''}${s.label || s.name || s.value || ''}`).filter(Boolean).join(' · ');
       if (v.name || v.value || v.label) return `${v.type ? cap(v.type) + ': ' : ''}${v.label || v.name || v.value}`;
       if (typeof v === 'object') {
@@ -547,8 +554,22 @@ export default function StoreOrders() {
   };
 
   const exportCsv = (rows) => {
-    const csv = ['Order,Customer,Phone,Wilaya,Commune,Status,Shipping,Total,Date',
-      ...rows.map(o => `${o.order_number},"${o.customer_name||''}",${o.customer_phone||''},${o.shipping_wilaya||''},${o.shipping_city||''},${o.status},${o.shipping_type||''},${o.total},${o.created_at}`)
+    // One-line product+variant summary per order, so the CSV/receipt shows
+    // exactly what was ordered (color/size/per-unit), not just totals.
+    const one = (s) => typeof s === 'string' ? s : (s ? (s.label || s.name || s.value || '') : '');
+    const fmtVariant = (i) => {
+      let v = i.variant_info ?? i.variant;
+      if (v == null) return '';
+      if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return v; } }
+      if (Array.isArray(v?.per_unit)) return v.per_unit.map((u, idx) => { const txt = Array.isArray(u?.selections) ? u.selections.map(one).filter(Boolean).join(' / ') : one(u); return txt ? `#${idx + 1}: ${txt}` : ''; }).filter(Boolean).join(' | ');
+      if (v?.label) return String(v.label);
+      if (Array.isArray(v?.selections)) return v.selections.map(one).filter(Boolean).join(' / ');
+      if (v?.name || v?.value) return v.name || v.value;
+      return '';
+    };
+    const productsOf = (o) => (o.items || []).map(i => { const vs = fmtVariant(i); return `${i.product_name || i.name || 'Item'}${vs ? ` (${vs})` : ''} x${i.quantity || 1}`; }).join(' ; ');
+    const csv = ['Order,Customer,Phone,Wilaya,Commune,Status,Shipping,Total,Date,Products',
+      ...rows.map(o => `${o.order_number},"${o.customer_name||''}",${o.customer_phone||''},${o.shipping_wilaya||''},${o.shipping_city||''},${o.status},${o.shipping_type||''},${o.total},${o.created_at},"${productsOf(o).replace(/"/g,'""')}"`)
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'orders.csv'; a.click(); URL.revokeObjectURL(url); toast.success(t('orders.exported','Exported'));
@@ -1221,6 +1242,14 @@ export default function StoreOrders() {
                       if (it.variant_name) return String(it.variant_name).split(/\s*[·,/]\s*/).filter(Boolean);
                       if (!v) return [];
                       if (Array.isArray(v)) return v.map(x => typeof x === 'string' ? x : (x?.name || x?.value || JSON.stringify(x))).filter(Boolean);
+                      // Per-unit customization: one chip per unit (e.g. "#1: Red / XL").
+                      if (Array.isArray(v?.per_unit)) {
+                        const one = (s) => typeof s === 'string' ? s : (s ? (s.label || s.name || s.value || '') : '');
+                        return v.per_unit.map((u, idx) => {
+                          const txt = Array.isArray(u?.selections) ? u.selections.map(one).filter(Boolean).join(' / ') : one(u);
+                          return txt ? `#${idx + 1}: ${txt}` : '';
+                        }).filter(Boolean);
+                      }
                       if (Array.isArray(v?.selections)) return v.selections.map(s => `${s.type ? cap(s.type) + ': ' : ''}${s.label || s.name || s.value || ''}`).filter(Boolean);
                       if (v.name || v.value || v.label) return [`${v.type ? cap(v.type) + ': ' : ''}${v.label || v.name || v.value}`];
                       // Plain map like {color:'Black',size:'40-41',material:'Synthetic'}

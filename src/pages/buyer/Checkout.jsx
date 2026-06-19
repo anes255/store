@@ -136,6 +136,21 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (/^(rgb|hsl)a?\(/.test(val)) return true;
     return ['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'].includes((val||'').toLowerCase());
   };
+  // A line is "incomplete" when it has variant groups but some unit hasn't
+  // picked an option for every group — used to block ordering until chosen.
+  const variantIncomplete = (item, idx) => {
+    const variants = parseVariants(item);
+    if (!variants.length) return false;
+    const types = Object.keys(getVariantGroups(variants));
+    if (!types.length) return false;
+    const unitCount = item.quantity || 1;
+    const unitVars = perUnitVariants[idx] || [];
+    for (let ui = 0; ui < unitCount; ui++) {
+      const uv = unitVars[ui] || {};
+      for (const type of types) if (uv[type] == null) return true;
+    }
+    return false;
+  };
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -350,6 +365,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     // Delivery company is ALWAYS required when companies are available or still loading
     if (!companiesLoaded) return toast.error(t('checkout.errDeliveryLoading', 'Loading delivery companies, please wait...'));
     if (deliveryCompanies.length > 0 && !form.delivery_company_id) return toast.error(t('checkout.errDeliveryCompany', 'Please choose a delivery company'));
+    // Variant options are mandatory — block the order until every unit is configured.
+    if (items.some((it, idx) => variantIncomplete(it, idx))) return toast.error(t('lp.chooseVariant', 'Please choose product options first'));
     // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
       try {

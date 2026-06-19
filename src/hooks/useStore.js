@@ -92,6 +92,11 @@ export const useCartStore = create((set, get) => ({
       let imgs = product.images;
       if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
       if (!Array.isArray(imgs)) imgs = [];
+      // Keep the full variant options so checkout can render the per-unit
+      // variant picker (not just the single chosen variant).
+      let variants = product.variants;
+      if (typeof variants === 'string') try { variants = JSON.parse(variants); } catch { variants = []; }
+      if (!Array.isArray(variants)) variants = [];
       newItems = [...items, {
         product_id: product.id,
         name: product.name_en || product.name_fr || product.name_ar || product.name,
@@ -99,6 +104,7 @@ export const useCartStore = create((set, get) => ({
         image: product.thumbnail || imgs[0] || null,
         quantity,
         variant,
+        variants,
         coupon_code: product.coupon_code || '',
         coupon_discount_percent: product.coupon_discount_percent || 0,
         coupon_active: !!product.coupon_active,
