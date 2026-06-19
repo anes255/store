@@ -84,6 +84,7 @@ export default function TrackOrder() {
         tracking_show_address: d.tracking_show_address !== false,
         tracking_show_payment: d.tracking_show_payment !== false,
         tracking_show_tracking_number: d.tracking_show_tracking_number !== false,
+        tracking_bg: d.config?.tracking_bg_color || '',
       }));
       setMode((d.tracking_search_method === 'order_id') ? 'order_id' : 'phone');
       setStoreReady(true);
@@ -200,7 +201,7 @@ export default function TrackOrder() {
   const showOrderInput = method === 'order_id' || (method === 'both' && mode === 'order_id');
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden" style={{ background: 'radial-gradient(circle at 20% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%)' }}>
+    <div className="min-h-screen text-white relative overflow-hidden" style={{ background: store.tracking_bg || 'radial-gradient(circle at 20% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%)' }}>
       <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${pc}66 0%, transparent 70%)` }} />
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
 

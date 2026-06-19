@@ -300,3 +300,45 @@ html.dark .btn-ghost:hover{background-color:#1f2937;}
 .orders-row-normal td,.orders-row-normal th{padding-top:.75rem;padding-bottom:.75rem;}
 .orders-row-large td,.orders-row-large th{padding-top:1.1rem !important;padding-bottom:1.1rem !important;}
 .orders-row-large td{font-size:1.05em;}
+
+/* ═══ TRUE-BLACK DARK MODE (Neon-style) ═══
+   Overrides the gray dashboard palette to near-pure black. Placed last so it
+   wins over the earlier admin-dark/platform-dark rules (equal specificity). */
+html.admin-dark, html.platform-dark{background:#000 !important;}
+html.admin-dark body, html.platform-dark body{background:#000 !important;}
+/* Page base / light gray surfaces → pure black */
+html.admin-dark .bg-gray-50, html.platform-dark .bg-gray-50,
+html.admin-dark .bg-slate-50, html.platform-dark .bg-slate-50,
+html.admin-dark .bg-stone-50, html.platform-dark .bg-stone-50,
+html.admin-dark .bg-neutral-50, html.platform-dark .bg-neutral-50,
+html.admin-dark .bg-zinc-50, html.platform-dark .bg-zinc-50{background:#000 !important;}
+/* Cards / panels → near-black with a faint border */
+html.admin-dark .bg-white, html.platform-dark .bg-white,
+html.admin-dark .glass-card-solid, html.platform-dark .glass-card-solid,
+html.admin-dark .rounded-2xl.bg-white, html.platform-dark .rounded-2xl.bg-white,
+html.admin-dark .rounded-xl.bg-white, html.platform-dark .rounded-xl.bg-white{background:#0a0a0a !important;border-color:#1a1a1a;}
+html.admin-dark .glass-card, html.platform-dark .glass-card{background:rgba(10,10,10,0.85) !important;border-color:rgba(38,38,38,0.6) !important;}
+html.admin-dark .bg-gray-100, html.platform-dark .bg-gray-100{background:#141414 !important;}
+html.admin-dark .bg-gray-200, html.platform-dark .bg-gray-200{background:#1f1f1f !important;}
+/* Inputs */
+html.admin-dark .input-field, html.platform-dark .input-field{background:#000 !important;border-color:#262626 !important;}
+/* Borders */
+html.admin-dark .border-gray-100, html.platform-dark .border-gray-100,
+html.admin-dark .border-gray-200, html.platform-dark .border-gray-200{border-color:#1a1a1a !important;}
+html.admin-dark .border-gray-300, html.platform-dark .border-gray-300{border-color:#262626 !important;}
+html.admin-dark .divide-gray-100>*, html.admin-dark .divide-gray-200>*, html.platform-dark .divide-gray-100>*, html.platform-dark .divide-gray-200>*{border-color:#1a1a1a !important;}
+/* Tables */
+html.admin-dark table thead, html.platform-dark table thead{background:#050505 !important;}
+html.admin-dark table tbody tr, html.platform-dark table tbody tr{border-color:#1a1a1a !important;}
+/* Hover + white-opacity surfaces */
+html.admin-dark .hover\:bg-gray-50:hover, html.admin-dark .hover\:bg-gray-100:hover,
+html.platform-dark .hover\:bg-gray-50:hover, html.platform-dark .hover\:bg-gray-100:hover{background:#1a1a1a !important;}
+html.admin-dark .hover\:bg-white:hover, html.platform-dark .hover\:bg-white:hover{background:#0a0a0a !important;}
+html.admin-dark .bg-white\/50, html.platform-dark .bg-white\/50{background-color:rgba(10,10,10,0.6) !important;}
+html.admin-dark .bg-white\/80, html.platform-dark .bg-white\/80{background-color:rgba(10,10,10,0.85) !important;}
+html.admin-dark .bg-white\/90, html.platform-dark .bg-white\/90{background-color:rgba(10,10,10,0.92) !important;}
+html.admin-dark .bg-white\/95, html.platform-dark .bg-white\/95{background-color:rgba(10,10,10,0.95) !important;}
+html.admin-dark .from-white, html.platform-dark .from-white{--tw-gradient-from:#0a0a0a !important;}
+html.admin-dark .to-white, html.platform-dark .to-white{--tw-gradient-to:#0a0a0a !important;}
+html.admin-dark .via-white, html.platform-dark .via-white{--tw-gradient-via:#0a0a0a !important;}
+html.admin-dark ::-webkit-scrollbar-thumb, html.platform-dark ::-webkit-scrollbar-thumb{background:#262626 !important;}

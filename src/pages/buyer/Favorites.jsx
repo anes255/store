@@ -136,7 +136,7 @@ export default function Favorites() {
   const currency = store.currency || 'DZD';
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: 'Arial, sans-serif', background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+    <div className="min-h-screen" style={{ fontFamily: 'Arial, sans-serif', background: store?.config?.favorites_bg_color || 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
 
       {/* ==================== TOP BAR ==================== */}
       <div className="sticky top-0 z-30 bg-gray-900/70 backdrop-blur-xl border-b border-white/10">
