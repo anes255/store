@@ -912,7 +912,7 @@ export default function Storefront() {
   ` : '';
 
   return (
-    <div className={`storefront-scope min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={bodyTextColor?{color:bodyTextColor}:undefined}>
+    <div className={`storefront-scope min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={{...(bodyTextColor?{color:bodyTextColor}:{}),...(store?.config?.store_bg_color&&buyerTheme.mode!=='dark'?{background:store.config.store_bg_color}:{})}}>
       {fontHref && <link rel="stylesheet" href={fontHref}/>}
       {sbCss && <style>{sbCss}</style>}
       {/* ============ OFFER BANNER ============ */}
