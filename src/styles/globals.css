@@ -342,3 +342,25 @@ html.admin-dark .from-white, html.platform-dark .from-white{--tw-gradient-from:#
 html.admin-dark .to-white, html.platform-dark .to-white{--tw-gradient-to:#0a0a0a !important;}
 html.admin-dark .via-white, html.platform-dark .via-white{--tw-gradient-via:#0a0a0a !important;}
 html.admin-dark ::-webkit-scrollbar-thumb, html.platform-dark ::-webkit-scrollbar-thumb{background:#262626 !important;}
+
+/* Dark-gray surfaces used directly by the sidebar, header, modals and many
+   dashboard panels (bg-gray-700/800/900/950 + every /opacity, gradient and
+   hover variant). Attribute selectors catch them all so NOTHING stays gray. */
+html.admin-dark [class*="bg-gray-900"], html.platform-dark [class*="bg-gray-900"],
+html.admin-dark [class*="bg-gray-950"], html.platform-dark [class*="bg-gray-950"]{background-color:#000 !important;}
+html.admin-dark [class*="bg-gray-800"], html.platform-dark [class*="bg-gray-800"]{background-color:#0a0a0a !important;}
+html.admin-dark [class*="bg-gray-700"], html.platform-dark [class*="bg-gray-700"]{background-color:#141414 !important;}
+html.admin-dark [class*="hover\:bg-gray-700"]:hover, html.platform-dark [class*="hover\:bg-gray-700"]:hover,
+html.admin-dark [class*="hover\:bg-gray-800"]:hover, html.platform-dark [class*="hover\:bg-gray-800"]:hover,
+html.admin-dark [class*="hover\:bg-gray-900"]:hover, html.platform-dark [class*="hover\:bg-gray-900"]:hover{background-color:#1a1a1a !important;}
+html.admin-dark [class*="border-gray-700"], html.platform-dark [class*="border-gray-700"],
+html.admin-dark [class*="border-gray-800"], html.platform-dark [class*="border-gray-800"],
+html.admin-dark [class*="border-gray-900"], html.platform-dark [class*="border-gray-900"]{border-color:#1a1a1a !important;}
+html.admin-dark [class*="from-gray-800"], html.platform-dark [class*="from-gray-800"],
+html.admin-dark [class*="from-gray-900"], html.platform-dark [class*="from-gray-900"],
+html.admin-dark [class*="from-gray-950"], html.platform-dark [class*="from-gray-950"]{--tw-gradient-from:#000 !important;}
+html.admin-dark [class*="via-gray-800"], html.platform-dark [class*="via-gray-800"],
+html.admin-dark [class*="via-gray-900"], html.platform-dark [class*="via-gray-900"]{--tw-gradient-via:#0a0a0a !important;}
+html.admin-dark [class*="to-gray-800"], html.platform-dark [class*="to-gray-800"],
+html.admin-dark [class*="to-gray-900"], html.platform-dark [class*="to-gray-900"],
+html.admin-dark [class*="to-gray-950"], html.platform-dark [class*="to-gray-950"]{--tw-gradient-to:#000 !important;}
