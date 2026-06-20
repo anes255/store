@@ -256,8 +256,8 @@ const EMPTY_LP={
   ai_generated:false,
   theme_preset:null,
   language:'ar', // ar, fr, en — controls the landing page display language
-  ai_hero_image:null, // puter.js AI-generated hero image (data URL)
-  ai_section_images:[], // puter.js AI-generated section images
+  ai_hero_image:null, // GPT (gpt-image-1/DALL·E) AI-generated hero image (data URL)
+  ai_section_images:[], // GPT AI-generated section images
   ai_images:[], // {id,src,description,placement} — multi AI images with placement config
 };
 
@@ -463,7 +463,7 @@ export default function LandingPageBuilder(){
     setShowThemePicker(false);
   };
 
-  /* ─── puter.js AI Image Generation ─── */
+  /* ─── GPT AI Image Generation (gpt-image-1 / DALL·E 3, via backend) ─── */
   const[generatingImage,setGeneratingImage]=useState(false);
   const[generatingImageId,setGeneratingImageId]=useState(null); // track which image slot is generating
 
@@ -479,7 +479,6 @@ export default function LandingPageBuilder(){
   const generateAIImage=async(pageIdx,type='hero',customPrompt='',imageId=null)=>{
     const page=pages[pageIdx];
     if(!page?.items?.length){toast.error('Add products first');return;}
-    if(typeof window.puter==='undefined'){toast.error('puter.js not loaded');return;}
     if(imageId)setGeneratingImageId(imageId); else setGeneratingImage(true);
     try{
       const productNames=page.items.map(it=>it.name).filter(Boolean).join(', ');
@@ -499,8 +498,10 @@ export default function LandingPageBuilder(){
         };
         prompt=prompts[type]||prompts.hero;
       }
-      const image=await window.puter.ai.txt2img(prompt,{model:'flux-schnell',quality:'medium'});
-      const dataUrl=image.src;
+      // GPT ONLY — generate the image with OpenAI (gpt-image-1 / DALL·E 3) via the backend.
+      const{data}=await aiApi.generateImage({prompt,size:type==='hero'?'1536x1024':'1024x1024'});
+      const dataUrl=data?.image;
+      if(!dataUrl)throw new Error('no image returned');
 
       if(imageId){
         // Update existing image in ai_images array
@@ -516,8 +517,8 @@ export default function LandingPageBuilder(){
         toast.success('🎨 AI section image generated!');
       }
     }catch(err){
-      console.error('puter.js image generation error:',err);
-      toast.error('Image generation failed — try again');
+      console.error('GPT image generation error:',err);
+      toast.error(err?.response?.data?.error||'Image generation failed — check OPENAI_API_KEY');
     }
     setGeneratingImage(false);
     setGeneratingImageId(null);

@@ -304,6 +304,8 @@ export const aiApi = {
   generateLanding: (data) => api.post('/ai/generate-landing', data),
   // Full-page GPT generation + image generation can take 60-90s — override the default 15s timeout.
   generateLandingHtml: (data) => api.post('/ai/generate-landing-html', data, { timeout: 180000 }),
+  // GPT image generation (gpt-image-1 / DALL·E 3) — replaces any 3rd-party image AI.
+  generateImage: (data) => api.post('/ai/generate-image', data, { timeout: 120000 }),
   // Multi-language description
   generateDescriptionMulti: (data) => api.post('/ai/generate-description-multi', data),
   // WhatsApp QR (Baileys)
