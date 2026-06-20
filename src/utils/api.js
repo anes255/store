@@ -301,7 +301,8 @@ export const aiApi = {
   // Reviews
   moderateReview: (data) => api.post('/ai/moderate-review', data),
   generateLanding: (data) => api.post('/ai/generate-landing', data),
-  generateLandingHtml: (data) => api.post('/ai/generate-landing-html', data),
+  // Full-page GPT generation can take 30-60s — override the default 15s timeout.
+  generateLandingHtml: (data) => api.post('/ai/generate-landing-html', data, { timeout: 120000 }),
   // Multi-language description
   generateDescriptionMulti: (data) => api.post('/ai/generate-description-multi', data),
   // WhatsApp QR (Baileys)
