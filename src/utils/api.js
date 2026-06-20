@@ -250,6 +250,7 @@ export function invalidateCache(prefix) {
 }
 
 export const storeApi = {
+  getLanding: (slug, lpSlug) => api.get(`/store/${slug}/landing/${lpSlug}`),
   getStore: (slug) => cachedGet(`store:${slug}`, () => api.get(`/store/${slug}`)),
   getProducts: (slug, params) => {
     const k = `prods:${slug}:${JSON.stringify(params||{})}`;

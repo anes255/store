@@ -484,9 +484,12 @@ export default function BuyerLandingPage(){
                   Array.isArray(storeData.config?.landing_pages)?storeData.config.landing_pages.filter(p=>p.enabled):[];
         const lp=lps.find(p=>p.slug===landingSlug&&p.enabled);
         if(!lp){setNotFound(true);setLoading(false);return;}
-        setPage(lp);
+        // The store list omits the heavy ai_html — fetch the full page on demand.
+        let fullPage=lp;
+        if(lp.has_ai_html){try{const{data:full}=await storeApi.getLanding(storeSlug,landingSlug);if(full&&full.ai_html)fullPage=full;}catch{}}
+        setPage(fullPage);
         const initCart={};
-        lp.items.forEach((it,i)=>{initCart[it.product_id]=i===0?1:0;});
+        (fullPage.items||[]).forEach((it,i)=>{initCart[it.product_id]=i===0?1:0;});
         setCart(initCart);
         // Fetch live products to get each item's quantity offers (landing item
         // snapshots don't store them) so the checkout can show offer tiers.
