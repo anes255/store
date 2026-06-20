@@ -653,6 +653,11 @@ export default function LandingPageBuilder(){
       const aiLang=page.language||'ar';
       const productData=page.items.map(item=>{
         const prod=products.find(p=>p.id===item.product_id)||{};
+        // Variants can be a JSON string or an array; normalize and keep each
+        // variant's own images so the backend can build an auto-rotating gallery.
+        let vars=prod.variants;
+        if(typeof vars==='string'){try{vars=JSON.parse(vars);}catch{vars=[];}}
+        if(!Array.isArray(vars))vars=[];
         return{
           product_id:item.product_id,
           name_en:item.name||prod.name_en||prod.name||'',
@@ -665,6 +670,7 @@ export default function LandingPageBuilder(){
           description_ar:item.description_ar||prod.description_ar||'',
           images:(prod.images&&prod.images.length?prod.images:[item.image].filter(Boolean)),
           thumbnail:item.image||prod.thumbnail||'',
+          variants:vars.map(v=>({name:v.name||v.value||'',value:v.value||'',images:Array.isArray(v.images)?v.images:[]})),
         };
       });
       const storeInfo={name:currentStore?.store_name||currentStore?.name||'Store',currency:currentStore?.currency||'DZD'};
