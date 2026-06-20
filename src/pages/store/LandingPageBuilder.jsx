@@ -668,19 +668,27 @@ export default function LandingPageBuilder(){
       });
       const storeInfo={name:currentStore?.store_name||currentStore?.name||'Store',currency:currentStore?.currency||'DZD'};
       const{data}=await aiApi.generateLandingHtml({products:productData,store:storeInfo,language:aiLang});
+      const len=data?.html?data.html.length:0;
+      console.log('[AI page] generated html length:',len,'model:',data?.model,'image:',data?.imageModel);
       if(data?.html){
         // Persist immediately so the live page reflects the new generation — no
         // risk of viewing a stale page because the user forgot to hit Save.
         const patched=pages.map((pg,i)=>i===pageIdx?{...pg,ai_html:data.html,layout_style:'ai-custom',ai_generated:true}:pg);
         setPages(patched);
-        await save(patched);
-        toast.success(`✨ ${t('lp.fullAiGenerated','Full AI page generated')}${data.imageModel?' + image':''}`);
+        try{
+          await save(patched);
+          toast.success(`✨ Generated ${(len/1024).toFixed(0)}KB${data.imageModel?' + image':''} & saved ✓`,{duration:6000});
+        }catch(saveErr){
+          console.error('[AI page] SAVE failed:',saveErr);
+          toast.error(`Generated OK but SAVE failed: ${saveErr.response?.data?.error||saveErr.message||'unknown'}`,{duration:9000});
+        }
       }else{
-        toast.error(t('lp.themeFailed','AI generation failed'));
+        toast.error('AI returned no HTML — try again',{duration:7000});
       }
     }catch(err){
       console.error('Full AI generate error:',err);
-      toast.error(err.response?.data?.error||t('lp.themeFailed','AI generation failed'));
+      const reason=err.code==='ECONNABORTED'?'timed out (try again)':(err.response?.data?.error||err.message||'failed');
+      toast.error(`AI generation: ${reason}`,{duration:9000});
     }
     setGenerating(false);
   };
