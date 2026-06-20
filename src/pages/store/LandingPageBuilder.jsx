@@ -669,8 +669,12 @@ export default function LandingPageBuilder(){
       const storeInfo={name:currentStore?.store_name||currentStore?.name||'Store',currency:currentStore?.currency||'DZD'};
       const{data}=await aiApi.generateLandingHtml({products:productData,store:storeInfo,language:aiLang});
       if(data?.html){
-        updatePage(pageIdx,{ai_html:data.html,layout_style:'ai-custom',ai_generated:true});
-        toast.success(`✨ ${t('lp.fullAiGenerated','Full AI page generated')} (${data.model||'ai'})`);
+        // Persist immediately so the live page reflects the new generation — no
+        // risk of viewing a stale page because the user forgot to hit Save.
+        const patched=pages.map((pg,i)=>i===pageIdx?{...pg,ai_html:data.html,layout_style:'ai-custom',ai_generated:true}:pg);
+        setPages(patched);
+        await save(patched);
+        toast.success(`✨ ${t('lp.fullAiGenerated','Full AI page generated')}${data.imageModel?' + image':''}`);
       }else{
         toast.error(t('lp.themeFailed','AI generation failed'));
       }
