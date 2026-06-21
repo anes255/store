@@ -301,6 +301,10 @@ export default function LandingPageBuilder(){
   const{currentStore,setCurrentStore}=useStoreManagement();
   const[products,setProducts]=useState([]);
   const[pages,setPages]=useState([]);
+  const[htmlEditor,setHtmlEditor]=useState(false); // visual edit mode for the AI page
+  const htmlEditorRef=useRef(null);
+  const imgReplaceRef=useRef(null); // <input type=file> for replacing an image
+  const imgTargetRef=useRef(null); // the <img> currently being replaced
   const[editing,setEditing]=useState(null);
   const[saving,setSaving]=useState(false);
   const[prodSearch,setProdSearch]=useState('');
@@ -700,6 +704,25 @@ export default function LandingPageBuilder(){
     setGenerating(false);
   };
 
+  // ── Visual page editor (edit any text/image on the AI-generated page) ──
+  const onEditorClick=(e)=>{
+    const img=e.target.closest('img');
+    if(img){e.preventDefault();imgTargetRef.current=img;imgReplaceRef.current?.click();}
+  };
+  const onImgReplace=(e)=>{
+    const f=e.target.files?.[0];const tgt=imgTargetRef.current;e.target.value='';
+    if(!f||!tgt)return;
+    const r=new FileReader();r.onload=()=>{tgt.src=r.result;};r.readAsDataURL(f);
+  };
+  const saveHtmlEditor=async()=>{
+    const node=htmlEditorRef.current;if(node==null)return;
+    const html=node.innerHTML;
+    const patched=pages.map((pg,i)=>i===editing?{...pg,ai_html:html,layout_style:'ai-custom',ai_generated:true}:pg);
+    setPages(patched);setHtmlEditor(false);
+    try{await save(patched);toast.success(t('lp.pageSaved','Page saved ✓'));}
+    catch(e){toast.error('Save failed: '+(e.response?.data?.error||e.message||'unknown'));}
+  };
+
   const filteredProducts=products.filter(p=>!prodSearch||(p.name_en||p.name||'').toLowerCase().includes(prodSearch.toLowerCase()));
   const storeSlug=currentStore?.slug;
   const baseUrl=typeof window!=='undefined'?window.location.origin:'';
@@ -798,6 +821,7 @@ export default function LandingPageBuilder(){
             {generating?<RefreshCw size={13} className="animate-spin"/>:<Wand2 size={13}/>}
             {generating?t('lp.generating','AI Generating...'):(form?.ai_html?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate'))}
           </button>
+          {form?.ai_html&&<button onClick={()=>setHtmlEditor(true)} title={t('lp.editPageHint','Edit any text or image on the page')} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-violet-600 bg-violet-50 hover:bg-violet-100 active:scale-[0.97]"><Type size={13}/>{t('lp.editPage','Edit Page')}</button>}
           {form?.ai_html&&<button onClick={()=>updatePage(editing,{ai_html:'',layout_style:form.layout_style==='ai-custom'?'alternating':form.layout_style})} title={t('lp.fullAiClear','Clear the AI page')} className="text-xs flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all text-gray-500 bg-gray-100 hover:bg-gray-200 active:scale-[0.97]"><X size={13}/></button>}
           {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="btn-ghost text-xs flex items-center gap-1"><Eye size={12}/>{t('lp.preview','Preview')}</a>}
           <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-xs flex items-center gap-1.5"><Save size={12}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
@@ -1046,5 +1070,31 @@ export default function LandingPageBuilder(){
         <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-sm flex items-center gap-2"><Save size={14}/>{saving?t('lp.saving','Saving...'):t('lp.savePage','Save Landing Page')}</button>
       </div>
     </div>}
+
+    {/* ═══ VISUAL PAGE EDITOR — edit any text inline, click an image to replace ═══ */}
+    {htmlEditor&&form?.ai_html&&(
+      <div className="fixed inset-0 z-[80] bg-black/40 flex flex-col">
+        <input ref={imgReplaceRef} type="file" accept="image/*" className="hidden" onChange={onImgReplace}/>
+        <div className="bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Type size={16} className="text-violet-500 shrink-0"/>
+            <div className="min-w-0">
+              <p className="text-sm font-bold truncate">{t('lp.editPage','Edit Page')}</p>
+              <p className="text-[11px] text-gray-500 truncate">{t('lp.editPageTip','Click any text to edit it. Click an image to replace it.')}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={()=>setHtmlEditor(false)} className="text-sm px-3 py-1.5 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200">{t('lp.cancel','Cancel')}</button>
+            <button onClick={saveHtmlEditor} disabled={saving} className="text-sm px-4 py-1.5 rounded-lg font-bold text-white bg-violet-600 hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-60"><Save size={14}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-gray-100 py-4">
+          <div className="max-w-[480px] mx-auto bg-white shadow-xl rounded-xl overflow-hidden lp-editor-frame">
+            <style>{`.lp-editor-frame [data-order]{cursor:text}.lp-editor-frame img{cursor:pointer;outline:1px dashed transparent}.lp-editor-frame img:hover{outline-color:#7C3AED}`}</style>
+            <div ref={htmlEditorRef} contentEditable suppressContentEditableWarning onClick={onEditorClick} dangerouslySetInnerHTML={{__html:form.ai_html}}/>
+          </div>
+        </div>
+      </div>
+    )}
   </DashboardLayout>);
 }

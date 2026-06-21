@@ -306,6 +306,8 @@ export const aiApi = {
   generateLandingHtml: (data) => api.post('/ai/generate-landing-html', data, { timeout: 180000 }),
   // GPT image generation (gpt-image-1 / DALL·E 3) — replaces any 3rd-party image AI.
   generateImage: (data) => api.post('/ai/generate-image', data, { timeout: 120000 }),
+  // Translate landing-page strings to a target language (AR/FR/EN).
+  translate: (data) => api.post('/ai/translate', data, { timeout: 60000 }),
   // Multi-language description
   generateDescriptionMulti: (data) => api.post('/ai/generate-description-multi', data),
   // WhatsApp QR (Baileys)

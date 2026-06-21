@@ -1,7 +1,7 @@
 import React,{useState,useEffect,useRef,useCallback}from'react';
 import{useParams,Link}from'react-router-dom';
 import{useTranslation}from'react-i18next';
-import{storeApi,paymentApi}from'../../utils/api';
+import{storeApi,paymentApi,aiApi}from'../../utils/api';
 import{useAuthStore}from'../../hooks/useStore';
 import toast from'react-hot-toast';
 import{ShoppingBag,Check,Star,Truck,Shield,ChevronDown,Plus,Minus,Phone,MapPin,User,Mail,CreditCard,Lock,Loader2,Package,Clock,Heart,Award,ArrowDown,Zap,Flame,Eye,ThumbsUp,Gift,Globe,Upload,Copy,ArrowRight,X,Tag,Smartphone}from'lucide-react';
@@ -456,6 +456,7 @@ export default function BuyerLandingPage(){
   const[variantsMap,setVariantsMap]=useState({}); // product_id -> variants[]
   const[variantSel,setVariantSel]=useState({}); // product_id -> { [type]: variantIndex }
   const[perUnitVariants,setPerUnitVariants]=useState({}); // product_id -> [ { [type]: variantIdx }, ... ] per unit
+  const[variantModalPid,setVariantModalPid]=useState(null); // product whose on-page variant picker is open
   const[form,setForm]=useState({customer_name:'',customer_phone:'',customer_email:'',shipping_wilaya:'',shipping_city:'',shipping_address:'',shipping_zip:'',shipping_type:'home',payment_method:'cod',notes:'',delivery_company_id:'',notification_preference:'whatsapp',coupon_code:''});
   const[wilayas,setWilayas]=useState([]);
   const[communes,setCommunes]=useState([]);
@@ -595,7 +596,29 @@ export default function BuyerLandingPage(){
   // Variant object sent to the backend (it applies price_diff / selections[].price_diff).
   const buildVariant=(pid)=>{const vs=productVariants(pid);const idxes=selectedVariantIdxes(pid);if(!idxes.length)return null;const parts=idxes.map(idx=>{const v=vs[idx];return{name:v.name,type:v.type,value:v.value,price_diff:parseFloat(v.price_adjustment)||0};});const label=idxes.map(idx=>vs[idx]?.name||vs[idx]?.value||'').filter(Boolean).join(' / ');return parts.length===1?parts[0]:{selections:parts,label};};
   // True if a product still has an unanswered variant group (every group needs a pick).
-  const variantIncomplete=(pid)=>{const groups=variantGroupsFor(pid);const sel=variantSel[pid]||{};return Object.keys(groups).some(t=>sel[t]==null);};
+  // A product is "complete" when EVERY variant group has a pick for EVERY unit.
+  // The on-page/checkout picker writes to perUnitVariants (not variantSel), so we
+  // must read that here — otherwise ordering is silently blocked even after the
+  // buyer chooses. (This was the "buy button does nothing" bug.)
+  const variantIncomplete=(pid)=>{
+    const groups=variantGroupsFor(pid);const types=Object.keys(groups);
+    if(!types.length)return false;
+    const qty=cart[pid]||1;const unitVars=perUnitVariants[pid]||[];
+    for(let u=0;u<qty;u++){const uv=unitVars[u]||{};if(types.some(t=>uv[t]==null))return true;}
+    return false;
+  };
+  // Pre-select the first option of each variant group for every unit, so a product
+  // is orderable by default (buyer can still change it in the picker).
+  const ensureVariantDefaults=(pid)=>{
+    const groups=variantGroupsFor(pid);const types=Object.keys(groups);
+    if(!types.length)return;
+    const qty=cart[pid]||1;
+    setPerUnitVariants(prev=>{
+      const arr=[...(prev[pid]||[])];
+      for(let u=0;u<qty;u++){const uv={...(arr[u]||{})};types.forEach(t=>{if(uv[t]==null)uv[t]=groups[t][0]._idx;});arr[u]=uv;}
+      return{...prev,[pid]:arr};
+    });
+  };
   // Variant selector shown under each cart line in the order summary.
   const isColorValue=(val)=>{if(!val)return false;if(/^#[0-9A-Fa-f]{3,8}$/.test(val))return true;if(/^(rgb|hsl)a?\(/.test(val))return true;return['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'].includes((val||'').toLowerCase());};
   const renderVariantPicker=(it)=>{
@@ -718,17 +741,63 @@ export default function BuyerLandingPage(){
       if(!btn||!root.contains(btn))return;
       e.preventDefault();
       const pid=btn.getAttribute('data-add-product');
-      if(pid&&allItems.some(it=>String(it.product_id)===String(pid))){
-        const key=allItems.find(it=>String(it.product_id)===String(pid)).product_id;
-        setCart(c=>({...c,[key]:(c[key]||0)+1}));
+      const match=pid&&allItems.find(it=>String(it.product_id)===String(pid));
+      const targetPid=match?match.product_id:(allItems[0]&&allItems[0].product_id);
+      if(targetPid==null)return;
+      // Ensure at least one unit is in the cart.
+      setCart(c=>({...c,[targetPid]:Math.max(1,c[targetPid]||0)}));
+      // If the product has variants, open the on-page picker so the buyer chooses
+      // a variant BEFORE going to checkout; otherwise go straight to checkout.
+      if(productVariants(targetPid).length>0){
+        ensureVariantDefaults(targetPid);
+        setVariantModalPid(targetPid);
       }else{
-        setCart(c=>{if(Object.values(c).some(q=>q>0))return c;const first=allItems[0];return first?{...c,[first.product_id]:1}:c;});
+        scrollToCheckout();
       }
-      scrollToCheckout();
     };
     root.addEventListener('click',onClick);
     return()=>root.removeEventListener('click',onClick);
   },[isAiCustom,aiHtml,allItems,scrollToCheckout]);
+
+  // ── Live translation of the AI landing page ──
+  // The page is generated in one language; when the buyer picks a different one
+  // we translate its visible text via GPT (once per language, then cached) and
+  // swap it in place. Switching back to the source language restores originals.
+  const lpOrigText=useRef(new WeakMap()); // textNode -> original string
+  const lpTranslating=useRef(false);
+  useEffect(()=>{
+    if(!isAiCustom)return;
+    const root=aiHtmlRef.current;if(!root)return;
+    const srcLang=page?.language||'ar';
+    const target=i18n.language||'en';
+    // Flip the AI wrapper direction to match the active language.
+    const wrap=root.querySelector('.ai-lp');if(wrap)wrap.setAttribute('dir',target==='ar'?'rtl':'ltr');
+    // Collect translatable text nodes (skip <style>/<script> and whitespace).
+    const nodes=[];
+    const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+      const p=n.parentNode;if(!p)return NodeFilter.FILTER_REJECT;
+      const tag=p.nodeName;if(tag==='STYLE'||tag==='SCRIPT')return NodeFilter.FILTER_REJECT;
+      if(!n.nodeValue||!n.nodeValue.trim())return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }});
+    let nd;while((nd=walk.nextNode()))nodes.push(nd);
+    // Record originals once.
+    nodes.forEach(n=>{if(!lpOrigText.current.has(n))lpOrigText.current.set(n,n.nodeValue);});
+    if(target===srcLang){nodes.forEach(n=>{n.nodeValue=lpOrigText.current.get(n);});return;}
+    const cacheKey=`lp_tr_${page?.slug||'x'}_${target}`;
+    let cache={};try{cache=JSON.parse(localStorage.getItem(cacheKey)||'{}');}catch{}
+    const apply=()=>nodes.forEach(n=>{const o=lpOrigText.current.get(n);const tr=cache[o.trim()];if(tr)n.nodeValue=o.replace(o.trim(),tr);});
+    const uniques=[...new Set(nodes.map(n=>lpOrigText.current.get(n).trim()).filter(Boolean))];
+    const missing=uniques.filter(u=>!(u in cache));
+    if(!missing.length){apply();return;}
+    if(lpTranslating.current)return;lpTranslating.current=true;
+    aiApi.translate({texts:missing,target}).then(({data})=>{
+      const tr=data?.translations||[];
+      missing.forEach((u,i)=>{if(tr[i])cache[u]=tr[i];});
+      try{localStorage.setItem(cacheKey,JSON.stringify(cache));}catch{}
+      apply();
+    }).catch(()=>{}).finally(()=>{lpTranslating.current=false;});
+  },[isAiCustom,aiHtml,i18n.language,page?.language,page?.slug]);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
 
@@ -1924,6 +1993,30 @@ export default function BuyerLandingPage(){
           </section>
         </>
       )}
+
+      {/* ── ON-PAGE VARIANT PICKER MODAL (opens from AI-page buy buttons) ── */}
+      {variantModalPid!=null&&(()=>{
+        const it=allItems.find(x=>String(x.product_id)===String(variantModalPid))||{product_id:variantModalPid};
+        const prodName=it.name_ar&&i18n.language==='ar'?it.name_ar:(it.name_fr&&i18n.language==='fr'?it.name_fr:(it.name||it.name_en||t('lp.product','Product')));
+        const incomplete=variantIncomplete(variantModalPid);
+        return(
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{backgroundColor:'rgba(15,18,30,0.55)'}} onClick={()=>setVariantModalPid(null)}>
+            <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 sm:p-6 max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-black" style={{color:'#1F2937'}}>{t('lp.chooseOptions','Choose your options')}</h3>
+                <button onClick={()=>setVariantModalPid(null)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"><X size={16}/></button>
+              </div>
+              <p className="text-sm font-bold mb-3" style={{color:pc}}>{prodName}</p>
+              {renderVariantPicker(it)}
+              <button onClick={()=>{setVariantModalPid(null);scrollToCheckout();}} disabled={incomplete}
+                className="mt-5 w-full py-3.5 rounded-2xl text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-40"
+                style={{backgroundColor:pc,boxShadow:`0 8px 24px ${pc}50`}}>
+                <ShoppingBag size={16}/>{t('lp.continueToOrder','Continue to order')}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {page.show_reviews!==false&&<LandingReviews slug={storeSlug} productSlug={slugMap[allItems[0]?.product_id]} accent={pc} textColor={page.text_color||'#1F2937'}/>}
       {renderAIImages('footer')}
