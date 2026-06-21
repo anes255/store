@@ -560,17 +560,15 @@ export default function BuyerLandingPage(){
   // an instant jump if nothing moved.
   const scrollToCheckout=useCallback(()=>{
     const el=checkoutRef.current;if(!el)return;
-    const go=()=>{try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch{el.scrollIntoView();}};
-    const start=window.scrollY;
-    go();
-    // Fallbacks: some pages no-op smooth scroll — force it after a beat.
-    setTimeout(()=>{
-      if(Math.abs(window.scrollY-start)<40){
-        try{el.scrollIntoView({block:'start'});}catch{}
-        const y=el.getBoundingClientRect().top+window.scrollY-8;
-        window.scrollTo(0,y);
-      }
-    },300);
+    // ROOT CAUSE of "buy button does nothing": the app sets html{scroll-behavior:smooth}
+    // globally, and smooth programmatic scroll no-ops on these long AI pages. Force
+    // instant scrolling for this jump, then restore.
+    const htmlEl=document.documentElement;
+    const prev=htmlEl.style.scrollBehavior;
+    htmlEl.style.scrollBehavior='auto';
+    const y=el.getBoundingClientRect().top+window.scrollY-8;
+    window.scrollTo(0,y);
+    requestAnimationFrame(()=>{window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-8);htmlEl.style.scrollBehavior=prev;});
   },[]);
 
   // Render AI images by placement
