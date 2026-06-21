@@ -560,10 +560,17 @@ export default function BuyerLandingPage(){
   // an instant jump if nothing moved.
   const scrollToCheckout=useCallback(()=>{
     const el=checkoutRef.current;if(!el)return;
-    const y=el.getBoundingClientRect().top+window.scrollY-8;
+    const go=()=>{try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch{el.scrollIntoView();}};
     const start=window.scrollY;
-    try{window.scrollTo({top:y,behavior:'smooth'});}catch{window.scrollTo(0,y);}
-    setTimeout(()=>{if(Math.abs(window.scrollY-start)<40)window.scrollTo(0,y);},350);
+    go();
+    // Fallbacks: some pages no-op smooth scroll — force it after a beat.
+    setTimeout(()=>{
+      if(Math.abs(window.scrollY-start)<40){
+        try{el.scrollIntoView({block:'start'});}catch{}
+        const y=el.getBoundingClientRect().top+window.scrollY-8;
+        window.scrollTo(0,y);
+      }
+    },300);
   },[]);
 
   // Render AI images by placement

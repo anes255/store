@@ -1073,26 +1073,30 @@ export default function LandingPageBuilder(){
 
     {/* ═══ VISUAL PAGE EDITOR — edit any text inline, click an image to replace ═══ */}
     {htmlEditor&&form?.ai_html&&(
-      <div className="fixed inset-0 z-[80] bg-black/40 flex flex-col">
+      <div className="fixed inset-0 z-[80] bg-gray-100 flex flex-col">
         <input ref={imgReplaceRef} type="file" accept="image/*" className="hidden" onChange={onImgReplace}/>
-        <div className="bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between gap-3">
+        {/* Header — mirrors the super-admin Page Builder */}
+        <div className="bg-white border-b shadow-sm px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <Type size={16} className="text-violet-500 shrink-0"/>
+            <Layers size={20} className="text-violet-500 shrink-0"/>
             <div className="min-w-0">
-              <p className="text-sm font-bold truncate">{t('lp.editPage','Edit Page')}</p>
-              <p className="text-[11px] text-gray-500 truncate">{t('lp.editPageTip','Click any text to edit it. Click an image to replace it.')}</p>
+              <h1 className="text-lg md:text-xl font-black text-gray-900 truncate">{t('lp.pageBuilder','Page Builder')}</h1>
+              <p className="text-[11px] text-gray-500 truncate hidden sm:block">{t('lp.editPageTip','Click any text to edit it. Click an image to replace it.')}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={()=>setHtmlEditor(false)} className="text-sm px-3 py-1.5 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200">{t('lp.cancel','Cancel')}</button>
-            <button onClick={saveHtmlEditor} disabled={saving} className="text-sm px-4 py-1.5 rounded-lg font-bold text-white bg-violet-600 hover:bg-violet-700 flex items-center gap-1.5 disabled:opacity-60"><Save size={14}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button onClick={()=>setHtmlEditor(false)} className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><X size={14}/>{t('lp.cancel','Cancel')}</button>
+            {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1"><Eye size={14}/>{t('lp.preview','Preview')}</a>}
+            <button onClick={saveHtmlEditor} disabled={saving} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-xs md:text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2" style={{backgroundColor:'#7C3AED'}}><Save size={16}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto bg-gray-100 py-4">
-          <div className="max-w-[480px] mx-auto bg-white shadow-xl rounded-xl overflow-hidden lp-editor-frame">
-            <style>{`.lp-editor-frame [data-order]{cursor:text}.lp-editor-frame img{cursor:pointer;outline:1px dashed transparent}.lp-editor-frame img:hover{outline-color:#7C3AED}`}</style>
+        {/* Canvas */}
+        <div className="flex-1 overflow-y-auto py-5 px-3">
+          <div className="max-w-[480px] mx-auto bg-white shadow-xl rounded-2xl overflow-hidden lp-editor-frame ring-1 ring-gray-200">
+            <style>{`.lp-editor-frame [data-order]{cursor:text}.lp-editor-frame img{cursor:pointer;outline:2px dashed transparent;outline-offset:2px}.lp-editor-frame img:hover{outline-color:#7C3AED}.lp-editor-frame [contenteditable]:focus{outline:2px solid #7C3AED55;border-radius:4px}`}</style>
             <div ref={htmlEditorRef} contentEditable suppressContentEditableWarning onClick={onEditorClick} dangerouslySetInnerHTML={{__html:form.ai_html}}/>
           </div>
+          <p className="text-center text-xs text-gray-400 mt-4">{t('lp.editPageHelp','Tip: select text and type to edit • click an image to swap it • use the toolbar to Save')}</p>
         </div>
       </div>
     )}
