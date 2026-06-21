@@ -301,8 +301,11 @@ export default function LandingPageBuilder(){
   const{currentStore,setCurrentStore}=useStoreManagement();
   const[products,setProducts]=useState([]);
   const[pages,setPages]=useState([]);
-  const[htmlEditor,setHtmlEditor]=useState(false); // visual edit mode for the AI page
-  const htmlEditorRef=useRef(null);
+  const[htmlEditor,setHtmlEditor]=useState(false); // block builder for the AI page
+  const[pbBlocks,setPbBlocks]=useState([]); // sections of the generated page as blocks
+  const pbWrapRef=useRef({className:'ai-lp',style:'',dir:'ltr'}); // .ai-lp wrapper attrs
+  const pbStyleRef=useRef(''); // the page's <style> CSS (base + theme + variants)
+  const blockRefs=useRef([]); // DOM refs to each editable block
   const imgReplaceRef=useRef(null); // <input type=file> for replacing an image
   const imgTargetRef=useRef(null); // the <img> currently being replaced
   const[editing,setEditing]=useState(null);
@@ -704,7 +707,43 @@ export default function LandingPageBuilder(){
     setGenerating(false);
   };
 
-  // ── Visual page editor (edit any text/image on the AI-generated page) ──
+  // ── Block-based page builder for the AI page ──
+  // The blocks ARE the sections the AI generated for THIS page, so the builder is
+  // customized per page. Each block can be edited inline, reordered and removed.
+  const blockName=(html)=>{
+    if(/class="[^"]*lp-hero/.test(html))return t('lp.blkHero','Hero');
+    if(/lp-ba\b/.test(html))return t('lp.blkBA','Before / After');
+    if(/lp-vs\b/.test(html))return t('lp.blkVs','Comparison');
+    if(/lp-specs/.test(html))return t('lp.blkSpecs','Specs');
+    if(/lp-cod/.test(html))return t('lp.blkCod','Delivery');
+    if(/lp-steps/.test(html))return t('lp.blkSteps','How to order');
+    if(/lp-faq/.test(html))return t('lp.blkFaq','FAQ');
+    if(/lp-final/.test(html))return t('lp.blkFinal','Final CTA');
+    if(/lp-var\b/.test(html))return t('lp.blkVar','Variants');
+    if(/lp-bens|lp-card/.test(html))return t('lp.blkBenefits','Benefits');
+    if(/lp-divider/.test(html))return t('lp.blkDivider','Divider');
+    if(/lp-feature/.test(html))return t('lp.blkFeature','Feature');
+    return t('lp.blkSection','Section');
+  };
+  const openPageBuilder=()=>{
+    try{
+      const tmp=document.createElement('div');tmp.innerHTML=form.ai_html||'';
+      const wrap=tmp.querySelector('.ai-lp')||tmp;
+      pbWrapRef.current={
+        className:(wrap.getAttribute&&wrap.getAttribute('class'))||'ai-lp',
+        style:(wrap.getAttribute&&wrap.getAttribute('style'))||'',
+        dir:(wrap.getAttribute&&wrap.getAttribute('dir'))||'ltr',
+      };
+      pbStyleRef.current=[...wrap.querySelectorAll(':scope > style')].map(s=>s.textContent).join('\n');
+      const blocks=[...wrap.children].filter(c=>c.tagName!=='STYLE').map((c,i)=>({id:'b'+i+'_'+Math.random().toString(36).slice(2,7),html:c.outerHTML}));
+      blockRefs.current=[];
+      setPbBlocks(blocks);
+      setHtmlEditor(true);
+    }catch(e){toast.error('Could not open the page builder');}
+  };
+  const pbSync=(arr)=>arr.map((b,i)=>blockRefs.current[i]?{...b,html:blockRefs.current[i].innerHTML}:b);
+  const pbMove=(from,to)=>setPbBlocks(bs=>{const s=pbSync(bs);if(to<0||to>=s.length)return s;const n=[...s];const[m]=n.splice(from,1);n.splice(to,0,m);return n;});
+  const pbDelete=(idx)=>setPbBlocks(bs=>pbSync(bs).filter((_,i)=>i!==idx));
   const onEditorClick=(e)=>{
     const img=e.target.closest('img');
     if(img){e.preventDefault();imgTargetRef.current=img;imgReplaceRef.current?.click();}
@@ -715,8 +754,10 @@ export default function LandingPageBuilder(){
     const r=new FileReader();r.onload=()=>{tgt.src=r.result;};r.readAsDataURL(f);
   };
   const saveHtmlEditor=async()=>{
-    const node=htmlEditorRef.current;if(node==null)return;
-    const html=node.innerHTML;
+    const synced=pbSync(pbBlocks);
+    const w=pbWrapRef.current;
+    const openTag=`<div class="${w.className}"${w.style?` style="${w.style.replace(/"/g,'&quot;')}"`:''}${w.dir?` dir="${w.dir}"`:''}>`;
+    const html=`${openTag}<style>${pbStyleRef.current}</style>${synced.map(b=>b.html).join('')}</div>`;
     const patched=pages.map((pg,i)=>i===editing?{...pg,ai_html:html,layout_style:'ai-custom',ai_generated:true}:pg);
     setPages(patched);setHtmlEditor(false);
     try{await save(patched);toast.success(t('lp.pageSaved','Page saved ✓'));}
@@ -821,7 +862,7 @@ export default function LandingPageBuilder(){
             {generating?<RefreshCw size={13} className="animate-spin"/>:<Wand2 size={13}/>}
             {generating?t('lp.generating','AI Generating...'):(form?.ai_html?t('lp.aiRegenerate','AI Regenerate'):t('lp.aiGenerate','AI Generate'))}
           </button>
-          {form?.ai_html&&<button onClick={()=>setHtmlEditor(true)} title={t('lp.editPageHint','Edit any text or image on the page')} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-violet-600 bg-violet-50 hover:bg-violet-100 active:scale-[0.97]"><Type size={13}/>{t('lp.editPage','Edit Page')}</button>}
+          {form?.ai_html&&<button onClick={openPageBuilder} title={t('lp.editPageHint','Edit, reorder and remove the page sections')} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all text-violet-600 bg-violet-50 hover:bg-violet-100 active:scale-[0.97]"><Layers size={13}/>{t('lp.editPage','Edit Page')}</button>}
           {form?.ai_html&&<button onClick={()=>updatePage(editing,{ai_html:'',layout_style:form.layout_style==='ai-custom'?'alternating':form.layout_style})} title={t('lp.fullAiClear','Clear the AI page')} className="text-xs flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all text-gray-500 bg-gray-100 hover:bg-gray-200 active:scale-[0.97]"><X size={13}/></button>}
           {form.enabled&&storeSlug&&<a href={`/s/${storeSlug}/lp/${form.slug}`} target="_blank" rel="noreferrer" className="btn-ghost text-xs flex items-center gap-1"><Eye size={12}/>{t('lp.preview','Preview')}</a>}
           <button onClick={()=>save(pages)} disabled={saving} className="btn-primary text-xs flex items-center gap-1.5"><Save size={12}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
@@ -1090,13 +1131,27 @@ export default function LandingPageBuilder(){
             <button onClick={saveHtmlEditor} disabled={saving} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-xs md:text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2" style={{backgroundColor:'#7C3AED'}}><Save size={16}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
           </div>
         </div>
-        {/* Canvas */}
+        {/* Canvas — one card per generated section (block) */}
         <div className="flex-1 overflow-y-auto py-5 px-3">
-          <div className="max-w-[480px] mx-auto bg-white shadow-xl rounded-2xl overflow-hidden lp-editor-frame ring-1 ring-gray-200">
-            <style>{`.lp-editor-frame [data-order]{cursor:text}.lp-editor-frame img{cursor:pointer;outline:2px dashed transparent;outline-offset:2px}.lp-editor-frame img:hover{outline-color:#7C3AED}.lp-editor-frame [contenteditable]:focus{outline:2px solid #7C3AED55;border-radius:4px}`}</style>
-            <div ref={htmlEditorRef} contentEditable suppressContentEditableWarning onClick={onEditorClick} dangerouslySetInnerHTML={{__html:form.ai_html}}/>
+          {/* Page CSS (base + theme + variants) + theme vars on every block wrapper + editor affordances */}
+          <style dangerouslySetInnerHTML={{__html:`${pbStyleRef.current}\n${pbWrapRef.current.style?`.lp-pb .ai-lp{${pbWrapRef.current.style}}`:''}\n.lp-pb .ai-lp .lp-section,.lp-pb .ai-lp .lp-card,.lp-pb .ai-lp .lp-feature{animation:none!important}\n.lp-pb [data-order]{cursor:text}\n.lp-pb img{cursor:pointer;outline:2px dashed transparent;outline-offset:2px}\n.lp-pb img:hover{outline-color:#7C3AED}\n.lp-pb [contenteditable]:focus{outline:none}`}}/>
+          <div className="lp-pb max-w-[520px] mx-auto space-y-3">
+            {pbBlocks.length===0&&<div className="bg-white rounded-2xl p-10 text-center ring-1 ring-gray-200"><Layers size={40} className="mx-auto text-gray-300 mb-3"/><p className="text-gray-500 font-bold">{t('lp.noBlocks','No sections found')}</p></div>}
+            {pbBlocks.map((b,i)=>(
+              <div key={b.id} className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-600"><span className="w-5 h-5 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center text-[10px]">{i+1}</span>{blockName(b.html)}</div>
+                  <div className="flex items-center gap-0.5">
+                    <button onClick={()=>pbMove(i,i-1)} disabled={i===0} title={t('lp.moveUp','Move up')} className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-25"><ChevronUp size={15}/></button>
+                    <button onClick={()=>pbMove(i,i+1)} disabled={i===pbBlocks.length-1} title={t('lp.moveDown','Move down')} className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-25"><ChevronDown size={15}/></button>
+                    <button onClick={()=>{if(confirm(t('lp.deleteBlockConfirm','Remove this section?')))pbDelete(i);}} title={t('lp.delete','Delete')} className="p-1.5 rounded-lg hover:bg-red-100 text-red-400"><Trash2 size={14}/></button>
+                  </div>
+                </div>
+                <div ref={el=>blockRefs.current[i]=el} className={pbWrapRef.current.className} dir={pbWrapRef.current.dir} contentEditable suppressContentEditableWarning onClick={onEditorClick} dangerouslySetInnerHTML={{__html:b.html}}/>
+              </div>
+            ))}
           </div>
-          <p className="text-center text-xs text-gray-400 mt-4">{t('lp.editPageHelp','Tip: select text and type to edit • click an image to swap it • use the toolbar to Save')}</p>
+          <p className="text-center text-xs text-gray-400 mt-4">{t('lp.editPageHelp','Each card is a section of your page • click text to edit • click an image to replace • reorder or delete with the buttons • Save when done')}</p>
         </div>
       </div>
     )}
