@@ -555,7 +555,16 @@ export default function BuyerLandingPage(){
     return parseFloat(type==='home'?w.home_delivery_price:w.desk_delivery_price)||0;
   },[form.shipping_wilaya,form.delivery_company_id,wilayas]);
 
-  const scrollToCheckout=useCallback(()=>{checkoutRef.current?.scrollIntoView({behavior:'smooth'});},[]);
+  // Scroll to the checkout. Some AI pages block smooth scrolling (CSS/overflow),
+  // which made the buy buttons appear dead — so we try smooth, then fall back to
+  // an instant jump if nothing moved.
+  const scrollToCheckout=useCallback(()=>{
+    const el=checkoutRef.current;if(!el)return;
+    const y=el.getBoundingClientRect().top+window.scrollY-8;
+    const start=window.scrollY;
+    try{window.scrollTo({top:y,behavior:'smooth'});}catch{window.scrollTo(0,y);}
+    setTimeout(()=>{if(Math.abs(window.scrollY-start)<40)window.scrollTo(0,y);},350);
+  },[]);
 
   // Render AI images by placement
   const renderAIImages=(placement)=>{
