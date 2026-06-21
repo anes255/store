@@ -317,11 +317,28 @@ export default function LandingPageBuilder(){
   const[themingInProgress,setThemingInProgress]=useState(false);
   const[showThemePicker,setShowThemePicker]=useState(false);
 
+  // Read landing_pages from a store object — they may be top-level (spread from
+  // config by the API) or nested in .config (object or JSON string).
+  const readLandingPages=(s)=>{
+    if(!s)return null;
+    let lp=s.landing_pages;
+    if(lp===undefined&&s.config){let c=s.config;if(typeof c==='string'){try{c=JSON.parse(c);}catch{c={};}}lp=c&&c.landing_pages;}
+    return Array.isArray(lp)?lp:null;
+  };
   useEffect(()=>{
     if(!currentStore?.id)return;
     productApi.getAll(currentStore.id,{}).then(r=>setProducts(r.data.products||[])).catch(()=>{});
-    const cfg=currentStore.config||currentStore;
-    setPages(Array.isArray(cfg.landing_pages)?cfg.landing_pages:[]);
+    const local=readLandingPages(currentStore);
+    if(local)setPages(local);
+    // Always refresh from the server — the cached currentStore is often stripped
+    // of its config/landing_pages, which made existing pages invisible here.
+    ownerApi.getStores().then(r=>{
+      const list=Array.isArray(r.data)?r.data:(r.data?.stores||[]);
+      const full=list.find(s=>String(s.id)===String(currentStore.id));
+      if(full)setCurrentStore({...currentStore,...full});
+      const lps=readLandingPages(full);
+      if(lps)setPages(lps); else if(!local)setPages([]);
+    }).catch(()=>{if(!local)setPages([]);});
   },[currentStore?.id]);
 
   const save=async(updatedPages)=>{
