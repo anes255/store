@@ -7,6 +7,23 @@ import toast from'react-hot-toast';
 import{Rocket,Plus,Trash2,ChevronDown,ChevronUp,Eye,Copy,Settings,Type,Palette,Save,ExternalLink,Package,Wand2,GripVertical,Image,Layout,Zap,ToggleLeft,ToggleRight,Timer,Star,Sparkles,Globe,MousePointer,Layers,RefreshCw,Pipette,Shield,Brain,X}from'lucide-react';
 import{aiApi}from'../../utils/api';
 
+/* ═══ BLOCK PALETTE — addable section blocks for the page builder (use the
+   injected .lp-* design system; text is inline-editable, images click-to-replace) */
+const _CK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const _TRUCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 3v4h-5"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+const _GRAD="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e9e9ef'/%3E%3Cstop offset='1' stop-color='%23d7d7e0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='16' height='12' fill='url(%23g)'/%3E%3C/svg%3E";
+const PB_PALETTE=[
+  {label:'Heading',icon:Type,make:()=>`<section class="lp-section"><div class="lp-wrap"><div class="lp-head"><span class="lp-eyebrow">قسم</span><h2 class="lp-h2">عنوان جديد</h2><p class="lp-sub">اكتب وصفاً هنا</p></div></div></section>`},
+  {label:'Benefits',icon:Sparkles,make:()=>`<section class="lp-section"><div class="lp-wrap"><div class="lp-head"><h2 class="lp-h2">المميزات</h2></div><div class="lp-bens">${[0,0,0,0].map(()=>`<div class="lp-ben"><div class="lp-icn">${_CK}</div><h3>ميزة:</h3><p>وصف الميزة</p></div>`).join('')}</div></div></section>`},
+  {label:'Checklist',icon:Layout,make:()=>`<section class="lp-section" style="background:#fff"><div class="lp-wrap"><div class="lp-feature"><div><h3 class="lp-h3">عنوان الميزة</h3><ul class="lp-checks"><li>نقطة أولى</li><li>نقطة ثانية</li><li>نقطة ثالثة</li></ul></div><div class="lp-feature-media"><div class="lp-pframe" style="aspect-ratio:4/3;box-shadow:none;border:0"><img src="${_GRAD}" alt=""></div></div></div></div></section>`},
+  {label:'Image band',icon:Image,make:()=>`<section class="lp-section"><div class="lp-wrap"><div class="lp-band"><img src="${_GRAD}" alt=""><div class="lp-band-in"><h2 class="lp-h2">عنوان</h2><p class="lp-lead" style="color:#fff;margin-inline:auto">نص تسويقي قصير</p></div></div></div></section>`},
+  {label:'Delivery',icon:Package,make:()=>`<section class="lp-section"><div class="lp-wrap"><div class="lp-cod"><div class="lp-cod-ic">${_TRUCK}</div><div><h3>الدفع عند الاستلام</h3><p>توصيل سريع لكل ولايات الجزائر.</p></div></div></div></section>`},
+  {label:'How to order',icon:Layers,make:()=>`<section class="lp-section" style="background:#fff"><div class="lp-wrap"><div class="lp-head"><h2 class="lp-h2">كيف تطلب</h2></div><div class="lp-steps"><div class="lp-step"><h3>اختر المنتج</h3><p>اختر المنتج والكمية</p></div><div class="lp-step"><h3>أدخل معلوماتك</h3><p>الاسم والهاتف والولاية</p></div><div class="lp-step"><h3>استلم وادفع</h3><p>تدفع عند الاستلام</p></div></div></div></section>`},
+  {label:'FAQ',icon:MousePointer,make:()=>`<section class="lp-section"><div class="lp-wrap"><div class="lp-head"><h2 class="lp-h2">أسئلة شائعة</h2></div><div class="lp-faq"><details open><summary>سؤالك هنا؟</summary><p>الجواب هنا.</p></details><details><summary>سؤال آخر؟</summary><p>الجواب هنا.</p></details></div></div></section>`},
+  {label:'CTA',icon:Zap,make:(pid)=>`<section class="lp-section"><div class="lp-wrap"><div class="lp-final"><h2 class="lp-h2">احصل عليه اليوم</h2><p>اطلب الآن وادفع عند الاستلام.</p><button class="lp-btn lp-btn-xl" data-order data-add-product="${pid}">اطلب الآن</button></div></div></section>`},
+  {label:'Divider',icon:Star,make:()=>`<section class="lp-section" style="padding:14px 0"><div class="lp-wrap"><div class="lp-divider"><span class="lp-chip">الدفع عند الاستلام</span><span class="lp-chip">توصيل سريع</span></div></div></section>`},
+];
+
 /* ═══════════════════════════════════════════════════════════════════════
    COLOR EXTRACTION + SMART THEME ENGINE
    Extracts dominant colors from product images, then generates a unique
@@ -761,6 +778,13 @@ export default function LandingPageBuilder(){
   const pbSync=(arr)=>arr.map((b,i)=>blockRefs.current[i]?{...b,html:blockRefs.current[i].innerHTML}:b);
   const pbMove=(from,to)=>setPbBlocks(bs=>{const s=pbSync(bs);if(to<0||to>=s.length)return s;const n=[...s];const[m]=n.splice(from,1);n.splice(to,0,m);return n;});
   const pbDelete=(idx)=>setPbBlocks(bs=>pbSync(bs).filter((_,i)=>i!==idx));
+  // Add a NEW block from the palette (like the super-admin builder). Appends to
+  // the end (then it can be moved up); inline-editable + image-replaceable.
+  const addPbBlock=(make)=>{
+    const pid=(pages[editing]?.items?.[0]?.product_id)||'';
+    setPbBlocks(bs=>[...pbSync(bs),{id:'b'+Date.now()+Math.random().toString(36).slice(2,5),html:make(pid)}]);
+    setTimeout(()=>{const el=document.querySelector('.lp-pb-canvas');if(el)el.scrollTop=el.scrollHeight;},80);
+  };
   const onEditorClick=(e)=>{
     const img=e.target.closest('img');
     if(img){e.preventDefault();imgTargetRef.current=img;imgReplaceRef.current?.click();}
@@ -1148,8 +1172,15 @@ export default function LandingPageBuilder(){
             <button onClick={saveHtmlEditor} disabled={saving} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-xs md:text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2" style={{backgroundColor:'#7C3AED'}}><Save size={16}/>{saving?t('lp.saving','Saving...'):t('lp.save','Save')}</button>
           </div>
         </div>
+        {/* Add-block palette — like the super-admin builder */}
+        <div className="bg-white border-b px-3 md:px-6 py-2 flex items-center gap-2 overflow-x-auto">
+          <span className="text-[11px] font-bold text-gray-400 shrink-0 flex items-center gap-1"><Plus size={12}/>{t('lp.addBlock','Add block')}:</span>
+          {PB_PALETTE.map(b=>{const Ic=b.icon||Layout;return(
+            <button key={b.label} onClick={()=>addPbBlock(b.make)} className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-violet-100 hover:text-violet-700 transition-colors"><Ic size={13}/>{t('lp.blk'+b.label.replace(/[^A-Za-z]/g,''),b.label)}</button>
+          );})}
+        </div>
         {/* Canvas — one card per generated section (block) */}
-        <div className="flex-1 overflow-y-auto py-5 px-3">
+        <div className="lp-pb-canvas flex-1 overflow-y-auto py-5 px-3">
           {/* Page CSS (base + theme + variants) + theme vars on every block wrapper + editor affordances */}
           <style dangerouslySetInnerHTML={{__html:`${pbStyleRef.current}\n${pbWrapRef.current.style?`.lp-pb .ai-lp{${pbWrapRef.current.style}}`:''}\n.lp-pb .ai-lp .lp-section,.lp-pb .ai-lp .lp-card,.lp-pb .ai-lp .lp-feature{animation:none!important}\n.lp-pb [data-order]{cursor:text}\n.lp-pb img{cursor:pointer;outline:2px dashed transparent;outline-offset:2px}\n.lp-pb img:hover{outline-color:#7C3AED}\n.lp-pb [contenteditable]:focus{outline:none}`}}/>
           <div className="lp-pb max-w-[520px] mx-auto space-y-3">
