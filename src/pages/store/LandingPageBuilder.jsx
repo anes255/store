@@ -358,12 +358,17 @@ export default function LandingPageBuilder(){
     }).catch(()=>{if(!local)setPages([]);});
   },[currentStore?.id]);
 
-  const save=async(updatedPages)=>{
+  const save=async(updatedPages,opts={})=>{
     setSaving(true);
     try{
-      const{data}=await ownerApi.updateStore(currentStore.id,{landing_pages:updatedPages});
+      const payload={landing_pages:updatedPages};
+      if(opts.deleteSlug)payload.delete_landing_slug=opts.deleteSlug; // explicit delete (backend upserts otherwise)
+      const{data}=await ownerApi.updateStore(currentStore.id,payload);
       setCurrentStore(data);
-      setPages(updatedPages);
+      // Re-sync pages from the authoritative server response so the list always
+      // reflects every saved page (backend merges by slug, never drops).
+      const merged=readLandingPages(data);
+      setPages(Array.isArray(merged)?merged:updatedPages);
       toast.success(t('lp.saved','Landing page saved'));
     }catch{toast.error(t('lp.saveFailed','Failed to save'));}
     setSaving(false);
@@ -384,11 +389,12 @@ export default function LandingPageBuilder(){
   };
 
   const removePage=(idx)=>{
+    const slug=pages[idx]?.slug;
     const n=pages.filter((_,i)=>i!==idx);
     setPages(n);
     if(editing===idx)setEditing(null);
     else if(editing>idx)setEditing(editing-1);
-    save(n);
+    save(n,{deleteSlug:slug}); // explicit delete so the backend (which upserts) removes it
   };
 
   const updatePage=(idx,patch)=>{
