@@ -760,6 +760,7 @@ export default function LandingPageBuilder(){
     return t('lp.blkSection','Section');
   };
   const openPageBuilder=()=>{
+    if(!form.ai_html){toast.error(form.too_large?t('lp.tooLargeRegen','This page is from an old heavy version — please AI Regenerate it first'):t('lp.regenFirst','Generate the page first (AI Generate)'));return;}
     try{
       const tmp=document.createElement('div');tmp.innerHTML=form.ai_html||'';
       const wrap=tmp.querySelector('.ai-lp')||tmp;
