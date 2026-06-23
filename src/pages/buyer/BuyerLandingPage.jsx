@@ -757,8 +757,9 @@ export default function BuyerLandingPage(){
       const pid=btn.getAttribute('data-add-product');
       const match=pid&&allItems.find(it=>String(it.product_id)===String(pid));
       const targetPid=match?match.product_id:(allItems[0]&&allItems[0].product_id);
-      if(targetPid==null)return;
-      // Ensure at least one unit is in the cart.
+      // Even if products haven't loaded yet, ALWAYS take the buyer to the order
+      // form — the button must never feel dead.
+      if(targetPid==null){scrollToCheckout();return;}
       setCart(c=>({...c,[targetPid]:Math.max(1,c[targetPid]||0)}));
       // If the product has variants, open the on-page picker so the buyer chooses
       // a variant BEFORE going to checkout; otherwise go straight to checkout.
@@ -778,12 +779,13 @@ export default function BuyerLandingPage(){
   // we translate its visible text via GPT (once per language, then cached) and
   // swap it in place. Switching back to the source language restores originals.
   const lpOrigText=useRef(new WeakMap()); // textNode -> original string
-  const lpTranslating=useRef(false);
+  const lpEpoch=useRef(0); // bumped on every language change to cancel stale async
   useEffect(()=>{
     if(!isAiCustom)return;
     const root=aiHtmlRef.current;if(!root)return;
     const srcLang=page?.language||'ar';
     const target=i18n.language||'en';
+    const myEpoch=++lpEpoch.current; // any older in-flight translation is now stale
     // Flip the AI wrapper direction to match the active language.
     const wrap=root.querySelector('.ai-lp');if(wrap)wrap.setAttribute('dir',target==='ar'?'rtl':'ltr');
     // Collect translatable text nodes (skip <style>/<script> and whitespace).
@@ -795,22 +797,25 @@ export default function BuyerLandingPage(){
       return NodeFilter.FILTER_ACCEPT;
     }});
     let nd;while((nd=walk.nextNode()))nodes.push(nd);
-    // Record originals once.
+    // Record originals once (always translate FROM the original, never re-translate).
     nodes.forEach(n=>{if(!lpOrigText.current.has(n))lpOrigText.current.set(n,n.nodeValue);});
+    // Back to the source language → restore originals.
     if(target===srcLang){nodes.forEach(n=>{n.nodeValue=lpOrigText.current.get(n);});return;}
     const cacheKey=`lp_tr_${page?.slug||'x'}_${target}`;
     let cache={};try{cache=JSON.parse(localStorage.getItem(cacheKey)||'{}');}catch{}
-    const apply=()=>nodes.forEach(n=>{const o=lpOrigText.current.get(n);const tr=cache[o.trim()];if(tr)n.nodeValue=o.replace(o.trim(),tr);});
+    // Only apply if this is still the latest language selection (prevents the race
+    // where a slow FR translation lands after the user already switched to AR).
+    const apply=()=>{if(lpEpoch.current!==myEpoch)return;nodes.forEach(n=>{const o=lpOrigText.current.get(n);const tr=cache[o.trim()];n.nodeValue=tr?o.replace(o.trim(),tr):o;});};
     const uniques=[...new Set(nodes.map(n=>lpOrigText.current.get(n).trim()).filter(Boolean))];
     const missing=uniques.filter(u=>!(u in cache));
     if(!missing.length){apply();return;}
-    if(lpTranslating.current)return;lpTranslating.current=true;
     aiApi.translate({texts:missing,target}).then(({data})=>{
+      if(lpEpoch.current!==myEpoch)return; // user switched language meanwhile — drop it
       const tr=data?.translations||[];
       missing.forEach((u,i)=>{if(tr[i])cache[u]=tr[i];});
       try{localStorage.setItem(cacheKey,JSON.stringify(cache));}catch{}
       apply();
-    }).catch(()=>{}).finally(()=>{lpTranslating.current=false;});
+    }).catch(()=>{});
   },[isAiCustom,aiHtml,i18n.language,page?.language,page?.slug]);
 
   const isValidPhone=(p)=>/^(0)(5|6|7)\d{8}$/.test((p||'').replace(/\s/g,''));
