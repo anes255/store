@@ -721,7 +721,10 @@ export default function LandingPageBuilder(){
         };
       });
       const storeInfo={name:currentStore?.store_name||currentStore?.name||'Store',currency:currentStore?.currency||'DZD'};
-      const{data}=await aiApi.generateLandingHtml({products:productData,store:storeInfo,language:aiLang});
+      // Each click is an explicit "(re)generate" — ask the backend for a fresh
+      // look (different template + palette) instead of the cached page, and pass
+      // a unique nonce so two clicks never return the identical layout.
+      const{data}=await aiApi.generateLandingHtml({products:productData,store:storeInfo,language:aiLang,regenerate:true,nonce:`${pageIdx}-${Date.now()}`});
       const len=data?.html?data.html.length:0;
       console.log('[AI page] generated html length:',len,'model:',data?.model,'image:',data?.imageModel);
       if(data?.html){
