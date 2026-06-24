@@ -730,7 +730,11 @@ export default function LandingPageBuilder(){
       if(data?.html){
         // Persist immediately so the live page reflects the new generation — no
         // risk of viewing a stale page because the user forgot to hit Save.
-        const patched=pages.map((pg,i)=>i===pageIdx?{...pg,ai_html:data.html,layout_style:'ai-custom',ai_generated:true}:pg);
+        // Also store the AI theme colours so the checkout/order form below the
+        // generated page matches the page instead of the default purple.
+        const th=data.theme||{};
+        const themeCols=th.primary?{accent_color:th.accent||th.primary,cta_bg:th.primary,cta_text_color:'#FFFFFF',bg_color:th.bg||'#FAFAFA',text_color:th.ink||'#1F2937'}:{};
+        const patched=pages.map((pg,i)=>i===pageIdx?{...pg,ai_html:data.html,layout_style:'ai-custom',ai_generated:true,...themeCols}:pg);
         setPages(patched);
         try{
           await save(patched);
