@@ -172,7 +172,11 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('checkout.savedInfo') || 'null');
-      if (saved && typeof saved === 'object') setForm(prev => ({ ...prev, ...saved }));
+      if (saved && typeof saved === 'object') {
+        // Legacy entries carry delivery_company_id; ignore it.
+        const { delivery_company_id, ...rest } = saved;
+        setForm(prev => ({ ...prev, ...rest }));
+      }
     } catch {}
   }, []);
   // Restore cart from recovery link (?recover=phone)
@@ -380,7 +384,15 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     // Receipt is uploaded in the second-step payment window (after Order Now), not on this page.
     if (saveInfo) {
       try {
-        const { coupon_code, notes, ...persist } = form;
+        // Only the buyer's own contact/address details — never store-level
+        // settings like the delivery company, which the owner controls and
+        // can change at any time.
+        const persist = {
+          customer_name: form.customer_name, customer_phone: form.customer_phone,
+          customer_email: form.customer_email, shipping_address: form.shipping_address,
+          shipping_city: form.shipping_city, shipping_wilaya: form.shipping_wilaya,
+          shipping_zip: form.shipping_zip, notification_preference: form.notification_preference,
+        };
         localStorage.setItem('checkout.savedInfo', JSON.stringify(persist));
         localStorage.setItem('checkout.saveInfo', '1');
       } catch {}

@@ -473,7 +473,7 @@ export default function BuyerLandingPage(){
   const aiHtmlRef=useRef(null);
   const set=useCallback(k=>e=>setForm(f=>({...f,[k]:e.target.value})),[]);
 
-  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s)setForm(f=>({...f,...s}));}catch{}},[]);
+  useEffect(()=>{try{const s=JSON.parse(localStorage.getItem('checkout.savedInfo'));if(s){const{delivery_company_id,...rest}=s;setForm(f=>({...f,...rest}));}}catch{}},[]);
 
   useEffect(()=>{
     if(!storeSlug)return;

@@ -285,7 +285,12 @@ export const storeApi = {
   restoreCart: (slug, phone) => api.get(`/store/${slug}/restore-cart?phone=${encodeURIComponent(phone)}`),
   // Shipping wilayas (public, for checkout)
   getShippingWilayas: (slug) => cachedGet(`sw:${slug}`, () => api.get(`/store/${slug}/shipping-wilayas`)),
-  getDeliveryCompanies: (slug) => cachedGet(`dc:${slug}`, () => api.get(`/store/${slug}/delivery-companies`)),
+  // Deliberately NOT cached: this is store configuration the owner changes from
+  // the dashboard (which carrier is the default), and a stale-while-revalidate
+  // hit would hand the buyer the previous list for a whole session — the
+  // component reads it once and never sees the refreshed copy. The payload is
+  // a handful of rows, so the extra request is cheaper than being wrong.
+  getDeliveryCompanies: (slug) => api.get(`/store/${slug}/delivery-companies`),
   // Domain lookup
   lookupDomain: (domain) => api.get(`/store/by-domain/${domain}`),
 };
