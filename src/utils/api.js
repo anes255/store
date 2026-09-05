@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://test-t2d4.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://test-dz47.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -38,35 +38,40 @@ wakeBackend();
 // Re-ping every 10 minutes to keep it alive from the frontend
 setInterval(wakeBackend, 10 * 60 * 1000);
 
+// Clearing one platform key is never enough: approving a payment changes the
+// owners list, the subscriptions list AND the dashboard counters. Drop the
+// whole `pf:` namespace after any platform mutation.
+const invalidatePlatform = () => invalidateCache('pf:');
+
 // Platform Admin
 export const platformApi = {
   login: (data) => api.post('/platform/login', data),
-  getSettings: () => api.get('/platform/settings'),
-  updateSettings: (data) => api.put('/platform/settings', data),
-  getDashboard: () => api.get('/platform/dashboard'),
-  getStoreOwners: (params) => api.get('/platform/store-owners', { params }),
-  toggleOwner: (id) => api.patch(`/platform/store-owners/${id}/toggle`),
-  deleteOwner: (id) => api.delete(`/platform/store-owners/${id}`),
-  getStores: () => api.get('/platform/stores'),
-  toggleStore: (id) => api.patch(`/platform/stores/${id}/toggle`),
-  deleteStore: (id) => api.delete(`/platform/stores/${id}`),
-  getOrders: (params) => api.get('/platform/orders', { params }),
-  getProducts: () => api.get('/platform/products'),
+  getSettings: () => cachedGet('pf:settings', () => api.get('/platform/settings')),
+  updateSettings: (data) => api.put('/platform/settings', data).then(r => { invalidateCache('pf:settings'); return r; }),
+  getDashboard: () => cachedGet('pf:dash', () => api.get('/platform/dashboard')),
+  getStoreOwners: (params) => cachedGet(`pf:owners:${JSON.stringify(params||{})}`, () => api.get('/platform/store-owners', { params })),
+  toggleOwner: (id) => api.patch(`/platform/store-owners/${id}/toggle`).then(r => { invalidatePlatform(); return r; }),
+  deleteOwner: (id) => api.delete(`/platform/store-owners/${id}`).then(r => { invalidatePlatform(); return r; }),
+  getStores: () => cachedGet('pf:stores', () => api.get('/platform/stores')),
+  toggleStore: (id) => api.patch(`/platform/stores/${id}/toggle`).then(r => { invalidatePlatform(); return r; }),
+  deleteStore: (id) => api.delete(`/platform/stores/${id}`).then(r => { invalidatePlatform(); return r; }),
+  getOrders: (params) => cachedGet(`pf:orders:${JSON.stringify(params||{})}`, () => api.get('/platform/orders', { params })),
+  getProducts: () => cachedGet('pf:products', () => api.get('/platform/products')),
   getSystem: () => api.get('/platform/system'),
   // Subscriptions
-  getSubscriptions: (params) => api.get('/platform/subscriptions', { params }),
-  approvePayment: (pid) => api.patch(`/platform/subscriptions/${pid}/approve`),
-  rejectPayment: (pid, data) => api.patch(`/platform/subscriptions/${pid}/reject`, data),
-  setOwnerSubscription: (ownerId, data) => api.patch(`/platform/store-owners/${ownerId}/subscription`, data),
+  getSubscriptions: (params) => cachedGet(`pf:subs:${JSON.stringify(params||{})}`, () => api.get('/platform/subscriptions', { params })),
+  approvePayment: (pid) => api.patch(`/platform/subscriptions/${pid}/approve`).then(r => { invalidatePlatform(); return r; }),
+  rejectPayment: (pid, data) => api.patch(`/platform/subscriptions/${pid}/reject`, data).then(r => { invalidatePlatform(); return r; }),
+  setOwnerSubscription: (ownerId, data) => api.patch(`/platform/store-owners/${ownerId}/subscription`, data).then(r => { invalidatePlatform(); return r; }),
   getExpiringSubscriptions: () => api.get('/platform/expiring-subscriptions'),
-  extendSubscription: (ownerId, data) => api.post(`/platform/store-owners/${ownerId}/extend-subscription`, data),
+  extendSubscription: (ownerId, data) => api.post(`/platform/store-owners/${ownerId}/extend-subscription`, data).then(r => { invalidatePlatform(); return r; }),
   // Admin notifications
   getNotifications: () => api.get('/platform/notifications'),
   markNotificationRead: (id) => api.patch(`/platform/notifications/${id}/read`),
   markAllNotificationsRead: () => api.patch('/platform/notifications/read-all'),
   deleteNotification: (id) => api.delete(`/platform/notifications/${id}`),
   clearNotifications: () => api.delete('/platform/notifications'),
-  updateBillingConfig: (data) => api.put('/platform/billing-config', data),
+  updateBillingConfig: (data) => api.put('/platform/billing-config', data).then(r => { invalidateCache('pf:'); return r; }),
   // Admin profile & co-admins
   getAdminProfile: () => api.get('/platform/profile'),
   updateAdminProfile: (data) => api.put('/platform/profile', data),
@@ -76,10 +81,10 @@ export const platformApi = {
   removeAdmin: (id) => api.delete(`/platform/admins/${id}`),
   toggleAdmin: (id) => api.patch(`/platform/admins/${id}/toggle`),
   // Subscription plans (super-admin CRUD)
-  getPlans: () => api.get('/platform/plans'),
-  createPlan: (data) => api.post('/platform/plans', data),
-  updatePlan: (id, data) => api.put(`/platform/plans/${id}`, data),
-  deletePlan: (id) => api.delete(`/platform/plans/${id}`),
+  getPlans: () => cachedGet('pf:plans', () => api.get('/platform/plans')),
+  createPlan: (data) => api.post('/platform/plans', data).then(r => { invalidateCache('pf:plans'); return r; }),
+  updatePlan: (id, data) => api.put(`/platform/plans/${id}`, data).then(r => { invalidateCache('pf:plans'); return r; }),
+  deletePlan: (id) => api.delete(`/platform/plans/${id}`).then(r => { invalidateCache('pf:plans'); return r; }),
   // Staff role templates (super-admin CRUD)
   getRoleTemplates: () => api.get('/platform/role-templates'),
   createRoleTemplate: (data) => api.post('/platform/role-templates', data),

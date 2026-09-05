@@ -204,7 +204,7 @@ export default function ShippingPartners(){
 
 
   const copyWebhookUrl=async(c)=>{
-    const base=import.meta.env.VITE_API_URL||'https://test-t2d4.onrender.com/api';
+    const base=import.meta.env.VITE_API_URL||'https://test-dz47.onrender.com/api';
     const url=`${base}/webhook/carrier/${currentStore.id}/${c.id}`;
     try{await navigator.clipboard.writeText(url);toast.success(t('storePage.copied','Copied!'));}catch{toast.error(t('storePage.failed','Failed'));}
   };
