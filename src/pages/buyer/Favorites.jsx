@@ -97,7 +97,9 @@ export default function Favorites() {
     const picks = items.filter(p => selected.includes(getKey(p)));
     if (!picks.length) return;
     picks.forEach(p => addItem(p, 1, p._selectedVariant || null));
-    toast.success(t('store.bulkAddedToCart', `${picks.length} item${picks.length > 1 ? 's' : ''} added to cart`));
+    toast.success(picks.length === 1
+      ? t('store.addedToCart', 'Added to cart')
+      : t('store.bulkAddedToCart', '{{n}} items added to cart', { n: picks.length }));
     setSelected([]);
   };
 
@@ -126,7 +128,7 @@ export default function Favorites() {
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
         <div className="text-center">
           <Package size={48} className="mx-auto text-white/20 mb-4"/>
-          <p className="text-white/60">Store not found</p>
+          <p className="text-white/60">{t('store.storeNotFound', 'Store not found')}</p>
         </div>
       </div>
     );
@@ -167,13 +169,15 @@ export default function Favorites() {
           </div>
           <div>
             <h1 className="text-3xl sm:text-5xl font-extrabold text-white italic" style={{ letterSpacing: '-0.03em' }}>
-              {t('store.yourFavorites', 'Your')} <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${pc}, #f472b6)` }}>Favorites</span>
+              {t('store.yourWord', 'Your')} <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${pc}, #f472b6)` }}>{t('store.favoritesWord', 'Favorites')}</span>
             </h1>
             <p className="text-sm text-gray-300/70 mt-2 font-light tracking-[0.2em] uppercase flex items-center gap-2">
               <Sparkles size={12} className="text-amber-400"/>
               {items.length === 0
                 ? t('store.noFavoritesYet', 'Start saving the products you love')
-                : t('store.savedProductsCount', `${items.length} saved product${items.length > 1 ? 's' : ''}`)}
+                : items.length === 1
+                  ? t('store.savedProductOne', '1 saved product')
+                  : t('store.savedProductsCount', '{{n}} saved products', { n: items.length })}
             </p>
           </div>
         </motion.div>
@@ -302,7 +306,7 @@ export default function Favorites() {
                     <button
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleRemove(pKey); }}
                       className="absolute top-3 right-3 z-20 w-7 h-7 rounded-lg flex items-center justify-center bg-black/50 backdrop-blur-md text-gray-300 hover:text-red-400 hover:bg-black/70 border border-white/10 transition-all touch-manipulation"
-                      aria-label="Remove from favorites"
+                      aria-label={t('store.removeFromFavorites', 'Remove from favorites')}
                     >
                       <X size={14}/>
                     </button>
@@ -314,7 +318,7 @@ export default function Favorites() {
                           ? <img src={thumb} alt={getName(product)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"/>
                           : <div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-white/20"/></div>}
                         {product.compare_at_price && (
-                          <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg shadow-md">SALE</span>
+                          <span className="absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-black rounded-lg shadow-md">{t('store.sale', 'SALE')}</span>
                         )}
                       </div>
                     </Link>
@@ -352,12 +356,12 @@ export default function Favorites() {
                           className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-black text-white shadow-md hover:shadow-lg transition-all"
                           style={{ background: `linear-gradient(135deg, ${pc}, ${pc}cc)` }}
                         >
-                          <ShoppingCart size={12}/> ADD
+                          <ShoppingCart size={12}/> {t('store.addShort', 'ADD')}
                         </button>
                         <Link
                           to={`/s/${storeSlug}/product/${product.slug}`}
                           className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10 transition-colors"
-                          aria-label="View product"
+                          aria-label={t('store.viewProduct', 'View product')}
                         >
                           <Eye size={12}/>
                         </Link>
@@ -396,23 +400,23 @@ export default function Favorites() {
                 {selected.length}
               </div>
               <span className="text-sm font-medium text-gray-200 flex-1 min-w-0 truncate">
-                {t('store.itemsSelected', `${selected.length} selected`)}
+                {t('store.itemsSelected', '{{n}} selected', { n: selected.length })}
               </span>
               <button
                 onClick={handleBulkAddToCart}
                 className="px-3 py-2 rounded-xl text-xs font-black text-white flex items-center gap-1 shadow-md"
                 style={{ background: `linear-gradient(135deg, ${pc}, ${pc}cc)` }}
               >
-                <ShoppingCart size={12}/> CART
+                <ShoppingCart size={12}/> {t('store.cartShort', 'CART')}
               </button>
               <button
                 onClick={handleBulkRemove}
                 className="p-2 rounded-xl bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors"
-                aria-label="Remove selected"
+                aria-label={t('store.removeSelected', 'Remove selected')}
               >
                 <Trash2 size={14}/>
               </button>
-              <button onClick={clearSelection} className="p-2 text-gray-400 hover:text-white transition-colors" aria-label="Clear selection">
+              <button onClick={clearSelection} className="p-2 text-gray-400 hover:text-white transition-colors" aria-label={t('store.clearSelection', 'Clear selection')}>
                 <X size={14}/>
               </button>
             </div>

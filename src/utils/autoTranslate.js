@@ -112,35 +112,98 @@ function walk(root, lang) {
   for (let c = root.firstChild; c; c = c.nextSibling) walk(c, lang);
 }
 
+// ---------------------------------------------------------------------------
+// Image hygiene.
+// The app renders long product grids; letting the browser defer off-screen
+// images (and decode them off the main thread) is the single cheapest win on
+// storefront / favorites / dashboard list pages. We do it here because we are
+// already visiting freshly-mounted subtrees — no second observer needed.
+// ---------------------------------------------------------------------------
+function enhanceImages(root) {
+  if (!root || root.nodeType !== Node.ELEMENT_NODE) return;
+  if (root.tagName === 'IMG') tuneImage(root);
+  const imgs = root.querySelectorAll ? root.querySelectorAll('img') : [];
+  for (let i = 0; i < imgs.length; i++) tuneImage(imgs[i]);
+}
+function tuneImage(img) {
+  if (img.__tuned) return;
+  img.__tuned = true;
+  if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy');
+  if (!img.hasAttribute('decoding')) img.setAttribute('decoding', 'async');
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling.
+// The first version walked the ENTIRE document body on every animation frame
+// in which anything changed. With framer-motion animating and tables
+// re-rendering that meant a full-DOM traversal many times per second, which
+// showed up as jank on big dashboard and storefront pages. We now walk only
+// the subtrees that actually changed, fall back to a full pass only when the
+// batch is large (or the language changed), and skip translation entirely
+// while the UI is in English (there is nothing to swap).
+// ---------------------------------------------------------------------------
 let scheduled = false;
+let fullPass = true;
+const pending = new Set();
+const MAX_ROOTS = 60; // beyond this a single full pass is cheaper
+
+function markRoot(node) {
+  if (!node) return;
+  if (fullPass) return;
+  if (pending.size >= MAX_ROOTS) { pending.clear(); fullPass = true; return; }
+  pending.add(node);
+}
+
+function applyLangAttrs(lang) {
+  document.documentElement.setAttribute('lang', lang);
+  // Keep LTR layout even for Arabic — user wants text translated without
+  // flipping the page direction.
+  document.documentElement.setAttribute('dir', 'ltr');
+}
+
 function schedule() {
   if (scheduled) return;
   scheduled = true;
   requestAnimationFrame(() => {
     scheduled = false;
     const lang = (i18n.language || 'en').slice(0, 2);
-    walk(document.body, lang);
-    document.documentElement.setAttribute('lang', lang);
-    // Keep LTR layout even for Arabic — user wants text translated without
-    // flipping the page direction.
-    document.documentElement.setAttribute('dir', 'ltr');
+    const roots = fullPass ? [document.body] : Array.from(pending);
+    fullPass = false;
+    pending.clear();
+    for (const r of roots) {
+      enhanceImages(r);
+      // In English the source text IS the rendered text, so walking would be
+      // pure overhead. Originals are recorded by the full pass that runs on
+      // every language change.
+      if (lang !== 'en') walk(r, lang);
+    }
+    applyLangAttrs(lang);
   });
+}
+
+function scheduleFull() {
+  fullPass = true;
+  pending.clear();
+  schedule();
 }
 
 export function startAutoTranslate() {
   if (typeof document === 'undefined') return;
   const run = () => {
-    schedule();
+    scheduleFull();
     const observer = new MutationObserver(muts => {
-      // Only schedule; the rAF callback walks the entire body which is fast
-      // enough for typical app sizes and avoids redundant per-mutation work.
+      let dirty = false;
       for (const m of muts) {
-        if (m.type === 'childList' && (m.addedNodes.length || m.removedNodes.length)) {
-          schedule();
-          return;
+        if (m.type === 'childList') {
+          for (let i = 0; i < m.addedNodes.length; i++) { markRoot(m.addedNodes[i]); dirty = true; }
+          // Removals need no work, but a node may have been moved rather than
+          // dropped — re-checking the parent is cheap insurance.
+          if (m.removedNodes.length && m.target) { markRoot(m.target); dirty = true; }
+        } else if (m.type === 'characterData') {
+          markRoot(m.target); dirty = true;
         }
-        if (m.type === 'characterData') { schedule(); return; }
       }
+      if (dirty) schedule();
     });
     observer.observe(document.body, {
       childList: true,
@@ -148,17 +211,15 @@ export function startAutoTranslate() {
       characterData: true,
     });
     i18n.on('languageChanged', () => {
-      // Run immediately AND on next frame so both synchronously-updated
-      // React nodes and those that re-render after the event are covered.
+      // Run immediately AND on the next frames so both synchronously-updated
+      // React nodes and those that re-render afterwards are covered. A
+      // language switch always needs the full document.
       const lang = (i18n.language || 'en').slice(0, 2);
       walk(document.body, lang);
-      document.documentElement.setAttribute('lang', lang);
-      document.documentElement.setAttribute('dir', 'ltr');
-      // Re-walk twice more to catch components that re-render on the next
-      // microtask / paint after i18next notifies subscribers.
-      schedule();
-      setTimeout(schedule, 50);
-      setTimeout(schedule, 200);
+      applyLangAttrs(lang);
+      scheduleFull();
+      setTimeout(scheduleFull, 50);
+      setTimeout(scheduleFull, 200);
     });
   };
   if (document.body) run();

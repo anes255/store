@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope,Star}from'lucide-react';
 import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -221,6 +221,26 @@ export default function ShippingPartners(){
     setDiagnosing(null);
   };
 
+  // ─── Default carrier ────────────────────────────────────────────────────
+  // Exactly one company can be the store default. It is pre-selected for the
+  // buyer at checkout; the buyer stays free to pick any other company.
+  const[settingDefault,setSettingDefault]=useState(null);
+  const setDefaultCompany=async(c)=>{
+    if(!currentStore?.id)return;
+    const turnOff=!!c.is_default;
+    setSettingDefault(c.id);
+    // Optimistic: flip locally so the star responds instantly.
+    setCompanies(prev=>prev.map(x=>({...x,is_default:!turnOff&&x.id===c.id})));
+    try{
+      await api.patch(`/manage/stores/${currentStore.id}/delivery-companies/${c.id}/default`,{default:!turnOff});
+      toast.success(turnOff?t('storePage.defaultCleared','Default company cleared'):t('storePage.defaultSet','Default delivery company set'));
+    }catch(e){
+      toast.error(e?.response?.data?.error||t('storePage.failed','Failed'));
+      load();
+    }
+    setSettingDefault(null);
+  };
+
   const addHeader=()=>setForm({...form,api_headers:{...form.api_headers,['']:''}});
   const removeHeader=(k)=>{const h={...form.api_headers};delete h[k];setForm({...form,api_headers:h});};
 
@@ -255,7 +275,10 @@ export default function ShippingPartners(){
           <div key={c.id} className="glass-card-solid p-4 sm:p-5 hover:shadow-lg transition-all flex flex-col">
             <div className="flex items-start justify-between mb-3 gap-2">
               <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0`}>{initialFor(c.name)}</div>
+              <div className="flex items-center gap-1 flex-wrap justify-end shrink-0">
+              {c.is_default&&<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1 shrink-0"><Star size={8} fill="currentColor"/>{t('storePage.defaultBadge','DEFAULT')}</span>}
               {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
+              </div>
             </div>
             <p className="font-bold text-gray-900 text-base sm:text-lg break-words">{c.name}</p>
             <div className="flex flex-wrap gap-2 mt-1 text-xs sm:text-sm text-gray-500 flex-1">
@@ -263,6 +286,7 @@ export default function ShippingPartners(){
               {c.phone&&<span className="break-all">{c.phone}</span>}
             </div>
             <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100 flex-wrap">
+              <button onClick={()=>setDefaultCompany(c)} disabled={settingDefault===c.id} className={`p-2 rounded-lg ${c.is_default?'text-amber-500 bg-amber-50':'text-gray-300 hover:text-amber-500 hover:bg-amber-50'}`} title={c.is_default?t('storePage.defaultOnHint','Default company — buyers get it pre-selected at checkout. Click to clear.'):t('storePage.defaultOffHint','Make this the default company at checkout')}>{settingDefault===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Star size={14} fill={c.is_default?'currentColor':'none'}/>}</button>
               {c.api_base_url&&<button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 hover:bg-amber-50 rounded-lg text-gray-400 hover:text-amber-600" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
               <button onClick={()=>openEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-brand-500"><Edit size={14}/></button>
@@ -305,6 +329,7 @@ export default function ShippingPartners(){
                 <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0`}>{initialFor(c.name)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2"><p className="font-bold text-gray-900 text-base sm:text-lg break-words min-w-0">{c.name}</p>
+                    {c.is_default&&<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1 shrink-0"><Star size={8} fill="currentColor"/>{t('storePage.defaultBadge','DEFAULT')}</span>}
                     {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-500">
@@ -318,6 +343,7 @@ export default function ShippingPartners(){
                   <button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 sm:p-2.5 hover:bg-amber-50 rounded-xl text-gray-400 hover:text-amber-600 shrink-0" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>
                   <button onClick={()=>copyWebhookUrl(c)} className="p-2 sm:p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500 shrink-0" title="Copy webhook URL"><Link2 size={14}/></button>
                 </>}
+                <button onClick={()=>setDefaultCompany(c)} disabled={settingDefault===c.id} className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${c.is_default?'text-amber-500 bg-amber-50':'text-gray-400 hover:text-amber-500 hover:bg-amber-50'}`} title={c.is_default?t('storePage.defaultOnHint','Default company — buyers get it pre-selected at checkout. Click to clear.'):t('storePage.defaultOffHint','Make this the default company at checkout')}>{settingDefault===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Star size={14} fill={c.is_default?'currentColor':'none'}/>}</button>
                 <button onClick={()=>openEdit(c)} className="p-2 sm:p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500 shrink-0"><Edit size={14}/></button>
                 <button onClick={()=>del(c.id)} className="p-2 sm:p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500 shrink-0"><Trash2 size={14}/></button>
                 <button onClick={()=>setExpandedPricing(expandedPricing===c.id?null:c.id)} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 ${expandedPricing===c.id?'bg-brand-100 text-brand-700':'bg-gray-100 text-gray-500'}`}><DollarSign size={10}/>{t('storePage.wilayaPrices','Prices')}{expandedPricing===c.id?<ChevronUp size={10}/>:<ChevronDown size={10}/>}</button>

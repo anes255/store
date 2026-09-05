@@ -364,3 +364,68 @@ html.admin-dark [class*="via-gray-900"], html.platform-dark [class*="via-gray-90
 html.admin-dark [class*="to-gray-800"], html.platform-dark [class*="to-gray-800"],
 html.admin-dark [class*="to-gray-900"], html.platform-dark [class*="to-gray-900"],
 html.admin-dark [class*="to-gray-950"], html.platform-dark [class*="to-gray-950"]{--tw-gradient-to:#000 !important;}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE — FORM CONTROLS (typing bars)
+   ---------------------------------------------------------------------------
+   Most inputs across the app are authored without `.input-field` and without
+   an explicit text colour, so they inherited the light-theme body colour
+   (#1F2937) and became invisible once the surface behind them turned black:
+   the value you typed, and any number, simply "disappeared".
+   These rules give every real text control a legible value colour, caret and
+   placeholder in all four dark contexts (admin dashboard, platform admin,
+   global .dark and the buyer storefront). Checkboxes, radios, ranges, colour
+   swatches and file pickers are excluded so they keep native rendering, and
+   the surface colour is only applied to controls that don't already declare
+   their own `bg-*` utility (so transparent / branded inputs stay untouched).
+   ═══════════════════════════════════════════════════════════════════════════ */
+html.admin-dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html.admin-dark textarea, html.admin-dark select,
+html.platform-dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html.platform-dark textarea, html.platform-dark select,
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html.dark textarea, html.dark select,
+.buyer-theme-dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+.buyer-theme-dark textarea, .buyer-theme-dark select{
+  color:#f3f4f6 !important;
+  -webkit-text-fill-color:#f3f4f6 !important;
+  caret-color:#f3f4f6;
+}
+html.admin-dark input::placeholder, html.admin-dark textarea::placeholder,
+html.platform-dark input::placeholder, html.platform-dark textarea::placeholder,
+html.dark input::placeholder, html.dark textarea::placeholder,
+.buyer-theme-dark input::placeholder, .buyer-theme-dark textarea::placeholder{
+  color:#8b95a5 !important;-webkit-text-fill-color:#8b95a5 !important;opacity:1;
+}
+/* Surface + border only for controls with no bg-* utility of their own. */
+html.admin-dark input:not([class*="bg-"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html.admin-dark textarea:not([class*="bg-"]), html.admin-dark select:not([class*="bg-"]),
+html.platform-dark input:not([class*="bg-"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html.platform-dark textarea:not([class*="bg-"]), html.platform-dark select:not([class*="bg-"]){
+  background-color:#0a0a0a;border-color:#262626;
+}
+html.dark input:not([class*="bg-"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html.dark textarea:not([class*="bg-"]), html.dark select:not([class*="bg-"]){
+  background-color:#111827;border-color:#374151;
+}
+.buyer-theme-dark input:not([class*="bg-"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+.buyer-theme-dark textarea:not([class*="bg-"]), .buyer-theme-dark select:not([class*="bg-"]){
+  background-color:#1a2140;border-color:#2d3566;
+}
+/* Native <select> dropdown lists are painted by the OS — they need their own
+   colours or the options render black-on-black. */
+html.admin-dark option, html.platform-dark option, html.dark option{background-color:#0a0a0a;color:#f3f4f6;}
+.buyer-theme-dark option{background-color:#1a2140;color:#f3f4f6;}
+/* Chrome autofill paints its own yellow/white background over the field. */
+html.admin-dark input:-webkit-autofill, html.platform-dark input:-webkit-autofill,
+html.dark input:-webkit-autofill, .buyer-theme-dark input:-webkit-autofill{
+  -webkit-text-fill-color:#f3f4f6 !important;
+  -webkit-box-shadow:0 0 0 1000px #0a0a0a inset !important;
+  caret-color:#f3f4f6;
+}
+/* Date/time pickers ship a dark-on-dark calendar glyph. */
+html.admin-dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.platform-dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.admin-dark input[type="time"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.7);}

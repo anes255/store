@@ -1935,6 +1935,12 @@ const D = {
   'Fade In': { fr: 'Fondu', ar: 'تلاشي' },
   'Slide Up': { fr: 'Glisser vers le haut', ar: 'انزلاق للأعلى' },
   'Zoom': { fr: 'Zoom', ar: 'تكبير' },
+  // ==== Default delivery company ====
+  'DEFAULT': { fr: 'PAR DÉFAUT', ar: 'افتراضي' },
+  'Default delivery company set': { fr: 'Société de livraison par défaut définie', ar: 'تم تعيين شركة التوصيل الافتراضية' },
+  'Default company cleared': { fr: 'Société par défaut effacée', ar: 'تم إلغاء الشركة الافتراضية' },
+  'Make this the default company at checkout': { fr: 'Définir comme société par défaut au paiement', ar: 'اجعلها الشركة الافتراضية عند الدفع' },
+  'Default company — buyers get it pre-selected at checkout. Click to clear.': { fr: 'Société par défaut — pré-sélectionnée pour les acheteurs. Cliquez pour effacer.', ar: 'الشركة الافتراضية — يتم اختيارها تلقائياً للمشتري. اضغط للإلغاء.' },
 };
 
 export default D;

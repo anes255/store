@@ -502,6 +502,17 @@ export default function BuyerLandingPage(){
     })();
   },[storeSlug,landingSlug]);
 
+  // Pre-select the store's default delivery company (or the first one) so the
+  // buyer only has to touch this field when they want another carrier.
+  useEffect(()=>{
+    if(!companies.length)return;
+    setForm(prev=>{
+      if(prev.delivery_company_id&&companies.some(dc=>dc.id===prev.delivery_company_id))return prev;
+      const pick=companies.find(dc=>dc.is_default)||companies[0];
+      return pick?{...prev,delivery_company_id:pick.id}:prev;
+    });
+  },[companies]);
+
   // Keep the browser tab title in sync so it never stays stuck on "Loading…"
   useEffect(()=>{
     const title=page?.title||page?.name||store?.name||store?.store_name;
