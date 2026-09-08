@@ -14,13 +14,27 @@
 // autoTranslateDict.js. No code changes required.
 
 import i18n from '../i18n';
-import DICT from './autoTranslateDict';
+
+// The dictionary is ~150 kB of source and is pure dead weight for an English
+// visitor, who never has a single string to swap. Load it on demand, the first
+// time the UI is actually in another language.
+let DICT = null;
+let dictPromise = null;
+function ensureDict() {
+  if (DICT) return null;
+  if (!dictPromise) {
+    dictPromise = import('./autoTranslateDict')
+      .then(m => { DICT = m.default; scheduleFull(); })
+      .catch(() => { dictPromise = null; });
+  }
+  return dictPromise;
+}
 
 const ORIGINAL = new WeakMap(); // node -> { type: 'text'|attr-name, value: original-en }
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
 
 function lookup(text, lang) {
-  if (!text) return null;
+  if (!DICT || !text) return null;
   const key = text.trim();
   if (!key) return null;
   const entry = DICT[key];
@@ -167,6 +181,7 @@ function schedule() {
   requestAnimationFrame(() => {
     scheduled = false;
     const lang = (i18n.language || 'en').slice(0, 2);
+    if (lang !== 'en') ensureDict();
     const roots = fullPass ? [document.body] : Array.from(pending);
     fullPass = false;
     pending.clear();

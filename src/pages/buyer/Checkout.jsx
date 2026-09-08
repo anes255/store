@@ -5,7 +5,7 @@ import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 import i18n from '../../i18n';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Algerian phone validator: accepts 0[567]xxxxxxxx or +213[567]xxxxxxxx
 export function isValidAlgerianPhone(p) {
@@ -130,6 +130,14 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     });
     return groups;
   };
+  // Human name for a variant group ("color", "size", ...). Buyers were shown a
+  // bare row of swatches with no indication of what they were choosing.
+  const variantTypeLabel = (type) => {
+    const key = (type || '').toLowerCase();
+    const known = { color: 'Color', size: 'Size', material: 'Material', model: 'Model', style: 'Style', flavor: 'Flavor', option: 'Option' };
+    if (known[key]) return t('store.' + key, known[key]);
+    return key.charAt(0).toUpperCase() + key.slice(1);
+  };
   const isColorValue = (val) => {
     if (!val) return false;
     if (/^#[0-9A-Fa-f]{3,8}$/.test(val)) return true;
@@ -158,6 +166,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [paymentStep, setPaymentStep] = useState(null); // null=checkout, 'ccp','baridimob','bank_transfer','chargily'
   const [receiptImage, setReceiptImage] = useState(null);
   const [receiptRef, setReceiptRef] = useState('');
+  // Order details on the thank-you screen start collapsed behind a button.
+  const [showSummary, setShowSummary] = useState(false);
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '', shipping_zip: '',
@@ -558,14 +568,43 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{store.success_title || store.success_message || t('store.orderSuccess')}</h2>
             {store?.success_subtitle && <p className="text-gray-600 mb-2 whitespace-pre-line">{store.success_subtitle}</p>}
             <p className="text-gray-500 mb-4">{t('checkout.orderNum','Order')} #{orderSuccess.order_number}</p>
-            {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
-              <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-1.5 max-h-48 overflow-y-auto">
-                {orderSuccess.items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm">
-                    <span className="text-gray-700 truncate mr-2">{it.product_name} × {it.quantity}</span>
-                    <span className="font-semibold text-gray-900 shrink-0">{parseFloat(it.total_price || (it.unit_price * it.quantity) || 0).toLocaleString()}</span>
+            <button type="button" onClick={() => setShowSummary(v => !v)}
+              className="mb-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all hover:bg-gray-50"
+              style={{ borderColor: pc, color: pc }}
+              aria-expanded={showSummary}>
+              {showSummary ? t('store.hideSummary', 'Hide summary') : t('store.showSummary', 'Show summary')}
+              {showSummary ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            </button>
+            {showSummary && (
+              <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-2 max-h-72 overflow-y-auto">
+                {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
+                  <div className="space-y-1.5">
+                    {orderSuccess.items.map((it, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-700 truncate mr-2">{it.product_name} × {it.quantity}</span>
+                        <span className="font-semibold text-gray-900 shrink-0">{parseFloat(it.total_price || (it.unit_price * it.quantity) || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                <div className="pt-2 border-t border-gray-200 space-y-1 text-sm">
+                  {orderSuccess.subtotal != null && (
+                    <div className="flex justify-between"><span className="text-gray-500">{t('store.subtotal', 'Subtotal')}</span><span className="font-semibold text-gray-800">{parseFloat(orderSuccess.subtotal).toLocaleString()} {store.currency || 'DZD'}</span></div>
+                  )}
+                  {orderSuccess.shipping_cost != null && (
+                    <div className="flex justify-between"><span className="text-gray-500">{t('store.shipping', 'Shipping')}</span><span className="font-semibold text-gray-800">{parseFloat(orderSuccess.shipping_cost).toLocaleString()} {store.currency || 'DZD'}</span></div>
+                  )}
+                  {parseFloat(orderSuccess.discount || 0) > 0 && (
+                    <div className="flex justify-between"><span className="text-gray-500">{t('store.discount', 'Discount')}</span><span className="font-semibold text-emerald-600">-{parseFloat(orderSuccess.discount).toLocaleString()} {store.currency || 'DZD'}</span></div>
+                  )}
+                </div>
+                {(orderSuccess.customer_name || orderSuccess.shipping_address) && (
+                  <div className="pt-2 border-t border-gray-200 space-y-1 text-sm">
+                    {orderSuccess.customer_name && <div className="flex justify-between gap-2"><span className="text-gray-500 shrink-0">{t('checkout.fullName', 'Full Name')}</span><span className="font-semibold text-gray-800 text-right">{orderSuccess.customer_name}</span></div>}
+                    {orderSuccess.customer_phone && <div className="flex justify-between gap-2"><span className="text-gray-500 shrink-0">{t('checkout.phone', 'Phone')}</span><span className="font-semibold text-gray-800 text-right" dir="ltr">{orderSuccess.customer_phone}</span></div>}
+                    {orderSuccess.shipping_address && <div className="flex justify-between gap-2"><span className="text-gray-500 shrink-0">{t('store.shippingAddress', 'Shipping Address')}</span><span className="font-semibold text-gray-800 text-right">{[orderSuccess.shipping_address, orderSuccess.shipping_city, orderSuccess.shipping_wilaya].filter(Boolean).join(', ')}</span></div>}
+                  </div>
+                )}
               </div>
             )}
             <p className="text-3xl font-extrabold mb-2" style={{ color: pc }}>{parseFloat(orderSuccess.total).toLocaleString()} {store.currency || 'DZD'}</p>
@@ -879,7 +918,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                       {itemQtyOffers(item).length > 0 && (
                         <div className="mt-2">
                           <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1.5" style={{ color: pc }}>🏷️ {t('store.buyMoreSaveMore', 'Buy more, save more')}</p>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))' }}>
                             {itemQtyOffers(item)
                               .filter(qo => parseInt(qo.quantity) > 0)
                               .sort((a, b) => parseInt(a.quantity) - parseInt(b.quantity))
@@ -888,10 +927,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                 const active = itemPackSize(item) === tierQty;
                                 return (
                                   <button key={qi} type="button" onClick={() => { updateItemField(i, { offer_qty: tierQty }); updateQuantity(i, tierQty); }}
-                                    className={`flex flex-col items-start gap-1 px-4 py-2.5 rounded-2xl border-2 text-left transition-all ${active ? 'border-transparent text-white shadow-lg scale-[1.03]' : 'border-gray-200 text-gray-800 bg-white hover:border-gray-400 hover:shadow-md'}`}
+                                    className={`w-full h-full min-h-[72px] flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-2xl border-2 text-center transition-all ${active ? 'border-transparent text-white shadow-lg' : 'border-gray-200 text-gray-800 bg-white hover:border-gray-400 hover:shadow-md'}`}
                                     style={active ? { backgroundColor: pc } : {}}>
-                                    <span className="flex items-center gap-1.5 text-sm font-extrabold">{active && <Check size={15} className="shrink-0" />}{t('store.buyQty', 'Buy')} {tierQty}</span>
-                                    {qo.label && <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold ${active ? 'bg-white/25 text-white' : 'text-white'}`} style={active ? {} : { backgroundColor: pc }}>{qo.label}</span>}
+                                    <span className="flex items-center justify-center gap-1.5 text-sm font-extrabold whitespace-nowrap">{active && <Check size={15} className="shrink-0" />}{t('store.buyQty', 'Buy')} {tierQty}</span>
+                                    {/* Rendered even when empty so tiles with and without a
+                                        label keep exactly the same height. */}
+                                    <span className={`px-2 py-0.5 rounded-lg text-[11px] font-bold leading-4 min-h-[20px] w-full truncate ${qo.label ? (active ? 'bg-white/25 text-white' : 'text-white') : 'opacity-0'}`} style={qo.label && !active ? { backgroundColor: pc } : {}}>{qo.label || ' '}</span>
                                   </button>
                                 );
                               })}
@@ -913,13 +954,15 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                               {unitCount > 1 ? t('store.customizeEachUnit', 'Customize each unit') : t('store.chooseOptions', 'Choose your options')}
                             </p>
                             {unitCount === 1 ? (
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-col gap-2">
                                 {groupTypes.map(type => {
                                   const group = groups[type];
                                   const uv = unitVars[0] || {};
                                   const sel = uv[type];
                                   return (
-                                    <div key={type} className="flex items-center gap-1.5">
+                                    <div key={type} className="flex flex-col gap-1">
+                                      <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">{variantTypeLabel(type)}</span>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
                                       {type === 'color' ? group.map(v => {
                                         const isSel = sel === v._idx;
                                         const colorVal = v.value || '#ccc';
@@ -944,22 +987,32 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                           </button>
                                         );
                                       })}
+                                      </div>
                                     </div>
                                   );
                                 })}
                               </div>
                             ) : (
-                              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(unitCount, 3)}, 1fr)` }}>
+                              // One row PER UNIT, stacked vertically. This used to be a
+                              // up-to-3-column grid, which squeezed the swatches side by
+                              // side and gave no room for the group names.
+                              <div className="flex flex-col gap-1.5">
                                 {Array.from({ length: unitCount }, (_, ui) => {
                                   const uv = unitVars[ui] || {};
                                   return (
-                                    <div key={ui} className="flex items-center gap-1.5 rounded-lg px-1.5 py-1" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                      <span className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: pc }}>{ui + 1}</span>
-                                      <div className="flex items-center gap-1 flex-wrap">
+                                    <div key={ui} className="flex flex-col gap-1 rounded-lg px-2 py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                      <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                                        <span className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: pc }}>{ui + 1}</span>
+                                        {t('store.unit', 'Unit')} {ui + 1}
+                                      </span>
                                         {groupTypes.map(type => {
                                           const group = groups[type];
                                           const sel = uv[type];
-                                          return type === 'color' ? group.map(v => {
+                                          return (
+                                            <div key={type} className="flex items-start gap-2">
+                                              <span className="text-[9px] font-bold uppercase tracking-wide text-gray-500 w-16 shrink-0 pt-1.5">{variantTypeLabel(type)}</span>
+                                              <div className="flex items-center gap-1 flex-wrap">
+                                          {type === 'color' ? group.map(v => {
                                             const isSel = sel === v._idx;
                                             const colorVal = v.value || '#ccc';
                                             const useColor = isColorValue(colorVal);
@@ -982,9 +1035,11 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                                 {v.name || v.value || t('store.variantOption', 'Option')}
                                               </button>
                                             );
-                                          });
+                                          })}
+                                              </div>
+                                            </div>
+                                          );
                                         })}
-                                      </div>
                                     </div>
                                   );
                                 })}

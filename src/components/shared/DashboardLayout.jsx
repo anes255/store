@@ -315,6 +315,9 @@ export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
   const{user,logout}=useAuthStore();const{currentStore,setCurrentStore,stores,setStores}=useStoreManagement();
   const[storeSwitchOpen,setStoreSwitchOpen]=useState(false);
+  // Separate from the sidebar's flag on purpose: sharing one state made
+  // clicking either switcher render both dropdowns at the same time.
+  const[headerStoreSwitchOpen,setHeaderStoreSwitchOpen]=useState(false);
   // Load owner's store list if empty (e.g. after page refresh).
   // Staff: skip the API call (they can't list owner stores) but seed `stores`
   // from the login response which already returned every store they were
@@ -572,17 +575,7 @@ export default function DashboardLayout({children}){
           </>)}
         </div>
       )}
-      {sidebarOpen&&<div className="px-3 pt-3 relative">
-        <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
-        <input
-          className={`w-full pl-7 pr-7 py-2 rounded-lg text-xs border focus:outline-none focus:ring-2 ${isDark?'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500':'bg-gray-50 border-gray-100 text-gray-700 placeholder-gray-400'}`}
-          style={{'--tw-ring-color':pc+'30'}}
-          placeholder={t('common.search','Search...')}
-          value={sideQuery}
-          onChange={e=>setSideQuery(e.target.value)}
-        />
-        {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
-      </div>}
+      {/* The sidebar search box was removed; the header search covers it. */}
       <nav className={`flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
         {sidebarOpen&&<div className="px-3 pt-2 pb-1 flex items-center justify-between">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>{t('sidebar.mainMenu','Main Menu')}</p>
@@ -639,13 +632,13 @@ export default function DashboardLayout({children}){
     </aside>
     <main className={`flex-1 min-w-0 transition-all duration-300 min-h-screen overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
       <header className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center gap-2 transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}
           <div className="hidden md:flex items-center gap-3"><div>{breadcrumb.sub?<><p className="text-[10px] text-gray-400">{breadcrumb.main}</p><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{breadcrumb.sub}</p></>:<p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{breadcrumb.main}</p>}</div></div>
-          <p className={`md:hidden font-bold text-sm truncate max-w-[140px] ${isDark?'text-gray-100':'text-gray-800'}`}>{breadcrumb.sub||breadcrumb.main}</p>
+          <p className={`md:hidden font-bold text-sm truncate max-w-[90px] xs:max-w-[120px] sm:max-w-[160px] ${isDark?'text-gray-100':'text-gray-800'}`}>{breadcrumb.sub||breadcrumb.main}</p>
         </div>
         <div className="flex-1 min-w-0 overflow-visible">
-        <div className="flex items-center justify-end gap-2 md:gap-3 ml-auto">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 ml-auto flex-nowrap shrink-0 overflow-x-auto no-scrollbar [&>*]:shrink-0">
           <div className="relative hidden md:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input
@@ -702,8 +695,8 @@ export default function DashboardLayout({children}){
                 </button>
               ):(
                 <HeaderStoreSwitcher
-                  open={storeSwitchOpen}
-                  setOpen={setStoreSwitchOpen}
+                  open={headerStoreSwitchOpen}
+                  setOpen={setHeaderStoreSwitchOpen}
                   stores={stores}
                   currentStore={currentStore}
                   setCurrentStore={setCurrentStore}
