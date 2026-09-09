@@ -31,8 +31,8 @@ export default function OrderTracking() {
     setS({
       tracking_enabled: currentStore.tracking_enabled !== false,
       tracking_search_method: currentStore.tracking_search_method || 'phone', // 'phone' | 'order_id' | 'both'
-      tracking_hero_title: currentStore.tracking_hero_title || t('orderTrack.heroDefault', 'Track Your Order'),
-      tracking_hero_sub: currentStore.tracking_hero_sub || t('orderTrack.subDefault', 'Enter your phone number or order ID to see the status of your orders.'),
+      tracking_hero_title: currentStore.tracking_hero_title || '',
+      tracking_hero_sub: currentStore.tracking_hero_sub || '',
       tracking_show_price: currentStore.tracking_show_price !== false,
       tracking_show_items: currentStore.tracking_show_items !== false,
       tracking_show_timeline: currentStore.tracking_show_timeline !== false,
@@ -81,11 +81,11 @@ export default function OrderTracking() {
           />
           <div>
             <label className="input-label text-xs">{t('orderTrack.heroTitle', 'Hero Title')}</label>
-            <input className="input-field" value={s.tracking_hero_title || ''} onChange={e => set('tracking_hero_title', e.target.value)}/>
+            <input className="input-field" value={s.tracking_hero_title || ''} placeholder={t('orderTrack.heroDefault', 'Track Your Order')} onChange={e => set('tracking_hero_title', e.target.value)}/>
           </div>
           <div>
             <label className="input-label text-xs">{t('orderTrack.subtitleField', 'Subtitle')}</label>
-            <input className="input-field" value={s.tracking_hero_sub || ''} onChange={e => set('tracking_hero_sub', e.target.value)}/>
+            <input className="input-field" value={s.tracking_hero_sub || ''} placeholder={t('orderTrack.subDefault', 'Enter your phone number or order ID to see the status of your orders.')} onChange={e => set('tracking_hero_sub', e.target.value)}/>
           </div>
         </div>
 

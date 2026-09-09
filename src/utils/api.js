@@ -279,7 +279,11 @@ export const storeApi = {
   // Public tracking
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
   trackByOrderId: (slug, orderId) => api.get(`/store/${slug}/track?order_id=${encodeURIComponent(orderId)}`),
-  getStatusTemplates: (storeId) => api.get(`/public/stores/${storeId}/status-templates`),
+  // The route is declared inside routes/orders.js, which the server mounts at
+  // /api/manage — so the public path is /manage/public/..., not /public/...
+  // Calling the short form 404'd on every tracking page load, which is why a
+  // store's custom status names and colours never reached its buyers.
+  getStatusTemplates: (storeId) => api.get(`/manage/public/stores/${storeId}/status-templates`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
   restoreCart: (slug, phone) => api.get(`/store/${slug}/restore-cart?phone=${encodeURIComponent(phone)}`),

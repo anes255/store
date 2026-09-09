@@ -51,6 +51,23 @@ const BUILTIN_STATUS_LABELS = {
   cancelled: ['Cancelled'],
   returned: ['Returned'],
 };
+// The dashboard's tracking settings form used to pre-fill the hero title and
+// subtitle with their English defaults, so merely opening and saving that page
+// persisted English into the store record — which then overrode the buyer's
+// language here for good. Stores already carrying those exact strings are
+// treated as "never customised" so the translation applies.
+const DEFAULT_HERO_TITLES = ['track your order'];
+const DEFAULT_HERO_SUBS = [
+  'enter your phone number or order id to see the status of your orders.',
+  'enter the info you used at checkout.',
+  'enter the info you used at checkout to see your delivery status and items.',
+];
+function merchantText(value, defaults) {
+  const v = String(value || '').trim().toLowerCase();
+  if (!v) return null;
+  return defaults.includes(v) ? null : String(value);
+}
+
 function isCustomStatusLabel(key, label) {
   if (!label || !String(label).trim()) return false;
   const defaults = BUILTIN_STATUS_LABELS[key];
@@ -238,7 +255,7 @@ export default function TrackOrder() {
             ? <img src={store.logo} alt="" className="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0" />
             : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
           <div className="min-w-0 flex-1">
-            <h1 className="text-base font-extrabold truncate">{store.tracking_hero_title || t('track.title', 'Track your order')}</h1>
+            <h1 className="text-base font-extrabold truncate">{merchantText(store.tracking_hero_title, DEFAULT_HERO_TITLES) || t('track.title', 'Track your order')}</h1>
             <p className="text-[11px] text-gray-400 truncate">{store.name}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -256,7 +273,7 @@ export default function TrackOrder() {
             </div>
             <div>
               <h2 className="text-xl font-extrabold">{t('track.findOrder', 'Find your order')}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{store.tracking_hero_sub || t('track.desc', 'Enter the info you used at checkout.')}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{merchantText(store.tracking_hero_sub, DEFAULT_HERO_SUBS) || t('track.desc', 'Enter the info you used at checkout.')}</p>
             </div>
           </div>
 
@@ -461,7 +478,7 @@ export default function TrackOrder() {
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4 border border-white/10 bg-white/5">
               <ShoppingBag size={30} style={{ color: pc }} />
             </div>
-            <p className="text-sm text-gray-400 max-w-sm">{store.tracking_hero_sub || t('track.hint', 'Enter the info you used at checkout to see your delivery status and items.')}</p>
+            <p className="text-sm text-gray-400 max-w-sm">{merchantText(store.tracking_hero_sub, DEFAULT_HERO_SUBS) || t('track.hint', 'Enter the info you used at checkout to see your delivery status and items.')}</p>
           </div>
         )}
       </div>
