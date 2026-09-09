@@ -32,6 +32,32 @@ const PIPELINE = [
   { key: 'delivered', icon: Home,    defaultLabel: 'Delivered', i18n: 'track.stepDelivered' },
 ];
 const FAIL = ['cancelled', 'returned', 'delivery_failed'];
+
+// Built-in English labels for the merchant-editable statuses (see
+// StatusManagement's BUILT_IN list). A store that has never renamed a status
+// still has this English text stored against it, and because a stored label
+// used to win unconditionally, every status chip and timeline step stayed in
+// English no matter which language the buyer picked. Treat a stored label as
+// the merchant's own wording only when it actually differs from the default.
+const BUILTIN_STATUS_LABELS = {
+  new_order: ['New', 'New Order'],
+  pending: ['Pending'],
+  confirmed: ['Confirmed'],
+  preparing: ['Preparing'],
+  under_preparation: ['Preparing', 'Under Preparation'],
+  ready: ['Ready'],
+  shipped: ['Shipped'],
+  delivered: ['Delivered'],
+  cancelled: ['Cancelled'],
+  returned: ['Returned'],
+};
+function isCustomStatusLabel(key, label) {
+  if (!label || !String(label).trim()) return false;
+  const defaults = BUILTIN_STATUS_LABELS[key];
+  if (!defaults) return true; // a status the merchant invented — always theirs
+  const v = String(label).trim().toLowerCase();
+  return !defaults.some(d => d.toLowerCase() === v);
+}
 function stepIndexFor(status) {
   const i = PIPELINE.findIndex(s => s.key === status);
   if (i >= 0) return i;
@@ -147,7 +173,7 @@ export default function TrackOrder() {
     failed_call_3: ['track.statusFailedCall3','Call failed (3)'],
   };
   const statusLabel = (s) => {
-    if (statusMap[s]?.label) return statusMap[s].label;
+    if (isCustomStatusLabel(s, statusMap[s]?.label)) return statusMap[s].label;
     const k = STATUS_I18N[s];
     if (k) return t(k[0], k[1]);
     return (s || '').replace(/_/g, ' ');
@@ -331,7 +357,7 @@ export default function TrackOrder() {
                           {failed ? (
                             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
                               <Ban size={24} className="mx-auto text-red-400 mb-2"/>
-                              <p className="text-sm font-bold text-red-300 capitalize">{statusMap[cur]?.label || cur.replace(/_/g,' ')}</p>
+                              <p className="text-sm font-bold text-red-300 capitalize">{statusLabel(cur)}</p>
                             </div>
                           ) : (
                             <div className="relative">
@@ -343,7 +369,7 @@ export default function TrackOrder() {
                                   const done = i < idx;
                                   const active = i === idx;
                                   const cfg = statusMap[step.key];
-                                  const label = cfg?.label || t(step.i18n, step.defaultLabel);
+                                  const label = isCustomStatusLabel(step.key, cfg?.label) ? cfg.label : t(step.i18n, step.defaultLabel);
                                   const color = active ? (cfg?.color || pc) : null;
                                   return (
                                     <div key={step.key} className="flex flex-col items-center flex-1 min-w-0">

@@ -694,6 +694,8 @@ export default function Storefront() {
   const [priceRange, setPriceRange] = useState([0, 0]); // [min, max] — 0 means no filter
   const [onlyOnSale, setOnlyOnSale] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  // On phones the header actions collapse into a single ☰ button.
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   // We only flip "ready" once the store, products and categories have all
   // resolved, so the page never appears half-rendered. Start true if we have
   // every piece in cache so returning visitors see the page instantly.
@@ -941,20 +943,56 @@ export default function Storefront() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0 overflow-visible">
+          {/* Desktop: the actions stay laid out across the bar. */}
+          <div className="hidden md:flex items-center gap-3 shrink-0 overflow-visible">
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full shrink-0"><User size={20}/></Link>
-            {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title="Track your order"><Truck size={20}/></Link>}
+            {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title={t('track.title','Track your order')}><Truck size={20}/></Link>}
             {/* Favourites sits right beside the cart in the header */}
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title="Favorites">
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title={t('store.favoritesWord','Favorites')}>
               <Heart size={20}/>
               {wishlist.length>0&&<span className="notif-badge">{wishlist.length}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative shrink-0">
+            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title={t('store.cart','Cart')}>
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="notif-badge">{getCount()}</span>}
             </button>
+          </div>
+          {/* Phones: account stays reachable in one tap, everything else folds
+              into the three-line menu so the bar never runs out of room. */}
+          <div className="md:hidden flex items-center gap-1 shrink-0 relative">
+            <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full shrink-0"><User size={20}/></Link>
+            <button onClick={()=>setHeaderMenuOpen(o=>!o)} aria-expanded={headerMenuOpen} aria-label={t('store.menu','Menu')}
+              className="p-2 hover:bg-white/20 rounded-full relative shrink-0">
+              <Menu size={22}/>
+              {(getCount()+wishlist.length)>0&&<span className="notif-badge">{getCount()+wishlist.length}</span>}
+            </button>
+            {headerMenuOpen&&(<>
+              <div className="fixed inset-0 z-40" onClick={()=>setHeaderMenuOpen(false)}/>
+              <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden z-50">
+                <button onClick={()=>{setHeaderMenuOpen(false);setCartOpen(true);}} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 border-b border-gray-100">
+                  <ShoppingCart size={18} style={{color:pc}}/>
+                  <span className="flex-1 text-left">{t('store.cart','Cart')}</span>
+                  {getCount()>0&&<span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white grid place-items-center" style={{backgroundColor:pc}}>{getCount()}</span>}
+                </button>
+                <Link to={`/s/${storeSlug}/favorites`} onClick={()=>setHeaderMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 border-b border-gray-100">
+                  <Heart size={18} style={{color:pc}}/>
+                  <span className="flex-1">{t('store.favoritesWord','Favorites')}</span>
+                  {wishlist.length>0&&<span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white grid place-items-center" style={{backgroundColor:pc}}>{wishlist.length}</span>}
+                </Link>
+                {store.tracking_enabled !== false && (
+                  <Link to={`/s/${storeSlug}/track`} onClick={()=>setHeaderMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 border-b border-gray-100">
+                    <Truck size={18} style={{color:pc}}/>
+                    <span className="flex-1">{t('track.title','Track your order')}</span>
+                  </Link>
+                )}
+                <div className="flex items-center justify-between gap-2 px-4 py-3">
+                  <LanguageSwitcher variant="header"/>
+                  <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
+                </div>
+              </div>
+            </>)}
           </div>
         </div>
         {/* Mobile-only search row */}
