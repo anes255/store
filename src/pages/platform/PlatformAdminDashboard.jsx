@@ -349,8 +349,8 @@ function StoreOwners(){
     <div className="relative max-w-md mb-6"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-3 ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'} rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20`} placeholder={t('admin.searchByNameEmailPhone','Search by name, email, phone...')} value={search} onChange={e=>setSearch(e.target.value)}/></div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile card list */}
+    <RowsPerPage p={pg} isDark={isDark}/>
     <div className="md:hidden space-y-3">
-      <RowsPerPage p={pg} isDark={isDark}/>
       {owners.length===0?<p className="text-center py-12 text-gray-400">{t('admin.noOwnersFound','No owners found')}</p>:pg.slice.map(o=>{
         const suspended=o.subscription_status==='suspended'||o.is_active===false;
         return(
@@ -496,8 +496,8 @@ function AllOrders(){
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile cards */}
+    <RowsPerPage p={pg} isDark={isDark}/>
     <div className="md:hidden space-y-3">
-      <RowsPerPage p={pg} isDark={isDark}/>
       {orders.length===0?<p className="text-center py-12 text-gray-400">No orders found</p>:pg.slice.map(o=>{const isOpen=expanded===o.id;return(
         <div key={o.id} className="bg-white rounded-2xl shadow-sm p-4">
           <div onClick={()=>setExpanded(isOpen?null:o.id)} className="flex items-start justify-between gap-2 cursor-pointer">
@@ -706,8 +706,8 @@ function Subscriptions({isDark}){
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile cards */}
+    <RowsPerPage p={pg} isDark={isDark}/>
     <div className="md:hidden space-y-3">
-      <RowsPerPage p={pg} isDark={isDark}/>
       {filteredPayments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}{searchQuery?` matching "${searchQuery}"`:''}</p>:pg.slice.map(p=>(
         <div key={p.id} className={`${card} rounded-2xl shadow-sm p-4`}>
           <div className="flex items-start justify-between gap-2">
