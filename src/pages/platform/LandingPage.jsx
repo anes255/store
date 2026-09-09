@@ -267,23 +267,14 @@ export default function LandingPage() {
   const lang = (i18n.language || 'en').slice(0, 2);
   const pick = (obj, fallback = '') => (obj && (obj[lang] || obj.en)) || fallback;
 
-  // ── Style preset (Regenerate button) ───────────────────────────
-  const [presetIdx, setPresetIdx] = useState(() => {
-    try { const saved = localStorage.getItem('landing_preset'); return saved ? parseInt(saved, 10) : 0; } catch { return 0; }
-  });
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const S = STYLE_PRESETS[presetIdx] || STYLE_PRESETS[0];
-
-  const regenerate = useCallback(() => {
-    setIsRegenerating(true);
-    let next;
-    do { next = Math.floor(Math.random() * STYLE_PRESETS.length); } while (next === presetIdx && STYLE_PRESETS.length > 1);
-    setTimeout(() => {
-      setPresetIdx(next);
-      try { localStorage.setItem('landing_preset', String(next)); } catch {}
-      setTimeout(() => setIsRegenerating(false), 600);
-    }, 300);
-  }, [presetIdx]);
+  // ── Style preset ───────────────────────────────────────────────
+  // Pinned to the original "Midnight Gold" look. The page used to pick a
+  // random preset from a Regenerate button and remember it in localStorage,
+  // so whichever style a visitor last shuffled to stuck permanently. That
+  // button is gone, so the stored value is cleared on load and everyone gets
+  // the site's real colours back.
+  useEffect(() => { try { localStorage.removeItem('landing_preset'); } catch {} }, []);
+  const S = STYLE_PRESETS[0];
 
   const defaultFeatures = [
     { icon: ShoppingBag, title: t('landing.f1Title','One-Click Store Setup'), desc: t('landing.f1Desc','Launch your store in under 5 minutes with beautiful templates and zero coding.') },
