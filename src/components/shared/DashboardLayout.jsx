@@ -150,6 +150,8 @@ function HeaderStoreSwitcher({ open, setOpen, stores, currentStore, setCurrentSt
 }
 
 function NotifBell(){
+  // t() is used in this component's confirm dialogs but was never bound.
+  const {t}=useTranslation();
   const[open,setOpen]=React.useState(false);
   const[notifs,setNotifs]=React.useState([]);
   const[unread,setUnread]=React.useState(0);

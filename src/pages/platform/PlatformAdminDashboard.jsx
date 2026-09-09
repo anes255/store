@@ -37,7 +37,7 @@ function usePaged(rows) {
 }
 function RowsPerPage({ p, isDark }) {
   const { t } = useTranslation();
-  if (!p.total) return null;
+  if (!p?.total) return null;
   const muted = isDark ? 'text-gray-400' : 'text-gray-500';
   const btn = `px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`;
   return (
@@ -473,6 +473,9 @@ function AllStores(){
 
 // ═══════ ALL ORDERS ═══════
 function AllOrders(){
+  // Needed by the shared RowsPerPage control, which every other list page
+  // already had in scope.
+  const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[orders,setOrders]=useState([]);const[total,setTotal]=useState(0);const[filter,setFilter]=useState('all');const[search,setSearch]=useState('');const[loading,setLoading]=useState(true);
   const[expanded,setExpanded]=useState(null);
   const[dateFrom,setDateFrom]=useState('');const[dateTo,setDateTo]=useState('');
@@ -547,6 +550,9 @@ function AllOrders(){
 
 // ═══════ SITE SETTINGS ═══════
 function SiteSettings(){
+  // t() was used in this component's handlers without ever being bound,
+  // so those paths threw "t is not defined" instead of showing their toast.
+  const {t}=useTranslation();
   const[s,setS]=useState({});const[loading,setLoading]=useState(false);const logoRef=useRef(null);const favRef=useRef(null);
   const theme=usePlatformTheme();const pc=theme.primaryColor;
   useEffect(()=>{platformApi.getSettings().then(r=>setS(r.data)).catch(()=>{});},[]);
@@ -605,6 +611,9 @@ function SiteSettings(){
 // ═══════ SYSTEM ═══════
 // ═══════ SUBSCRIPTIONS ═══════
 function Subscriptions({isDark}){
+  // t() was used in this component's handlers without ever being bound,
+  // so those paths threw "t is not defined" instead of showing their toast.
+  const {t}=useTranslation();
   const[data,setData]=useState({payments:[],stats:{}});const[loading,setLoading]=useState(true);const[filter,setFilter]=useState('all');
   const[rejectModal,setRejectModal]=useState(null);const[rejectNotes,setRejectNotes]=useState('');
   const[viewReceipt,setViewReceipt]=useState(null);
@@ -771,6 +780,9 @@ function Subscriptions({isDark}){
 
 // ═══════ BILLING CONFIG ═══════
 function BillingConfig(){
+  // t() was used in this component's handlers without ever being bound,
+  // so those paths threw "t is not defined" instead of showing their toast.
+  const {t}=useTranslation();
   const[config,setConfig]=useState({billing_ccp_account:'',billing_ccp_name:'',billing_baridimob_rip:'',billing_baridimob_qr:''});
   const[plans,setPlans]=useState([]);
   const[saving,setSaving]=useState(false);const fileRef=useRef(null);
@@ -881,6 +893,9 @@ function BillingConfig(){
 
 // ═══════ PAGE BUILDER ═══════
 function PageBuilder(){
+  // t() was used in this component's handlers without ever being bound,
+  // so those paths threw "t is not defined" instead of showing their toast.
+  const {t}=useTranslation();
   const BLOCK_TYPES=[
     {type:'hero',label:'Hero Banner',icon:Image,defaults:{title:'Welcome to Our Platform',subtitle:'Build your online store in minutes',btnText:'Get Started',btnLink:'/register',bgColor:'#7C3AED',textColor:'#FFFFFF',padding:'80',fontSize:'48'}},
     {type:'text',label:'Text Block',icon:Type,defaults:{title:'About Us',content:'We provide the best e-commerce platform.',align:'center',bgColor:'#FFFFFF',textColor:'#111827',padding:'64',fontSize:'30'}},
@@ -1106,6 +1121,8 @@ function MyProfile(){
 
 // ═══════ ADMIN MANAGEMENT ═══════
 function AdminManagement(){
+  // t() was used in this component's handlers without ever being bound.
+  const {t}=useTranslation();
   const{user}=useAuthStore();
   const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[admins,setAdmins]=useState([]);
