@@ -47,35 +47,58 @@ export default function CustomerAuth() {
   };
 
   const pc = store?.primary_color || '#7C3AED';
+  // Same values the storefront header uses, so the two bars match exactly.
+  const headerBg = pc;
+  const headerText = '#ffffff';
+  const headerFont = store?.header_font || 'Arial, sans-serif';
+  const bodyTextColor = store?.text_color || undefined;
 
-  if (storeLoading) return <div className={`min-h-screen flex items-center justify-center ${isDarkBuyer ? 'buyer-theme-dark bg-[#0b1020]' : 'bg-gray-50'}`}><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
+  if (storeLoading) return <div className={`min-h-screen flex items-center justify-center ${isDarkBuyer ? 'buyer-theme-dark bg-black' : 'bg-gray-50'}`}><div className="w-8 h-8 border-3 border-gray-200 rounded-full animate-spin" style={{borderTopColor:store?.primary_color||'#7C3AED'}}/></div>;
 
   return (
-    <div className={`min-h-screen flex flex-col relative overflow-hidden ${isDarkBuyer ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-gradient-to-br from-slate-50 via-white to-brand-50'}`}
-      style={!isDarkBuyer && store?.config?.store_bg_color ? { background: store.config.store_bg_color } : undefined}>
+    <div className={`customer-auth-scope min-h-screen flex flex-col relative overflow-hidden ${isDarkBuyer ? 'buyer-theme-dark text-gray-100' : ''}`}
+      style={{
+        fontFamily: headerFont,
+        // Exposed to CSS so .input-field focus rings pick up the store colour
+        // instead of the platform's gold.
+        '--store-pc': pc,
+        '--store-pc-ring': pc + '55',
+        // Dark mode follows the storefront's own dark background setting.
+        ...(isDarkBuyer
+          ? { background: store?.config?.store_dark_bg_color || '#000000' }
+          : { background: store?.config?.store_bg_color || `linear-gradient(135deg, #f8fafc 0%, #ffffff 45%, ${pc}1f 100%)` }),
+      }}>
       {/* Ambient blobs, tinted with the store's own colour so the sign-in
           screen belongs to the same storefront the buyer came from. */}
       <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '33' : '55') }}/>
       <div className="absolute top-1/3 -right-24 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '22' : '44') }}/>
       <div className="absolute -bottom-24 left-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '1a' : '33') }}/>
       {/* Store Header */}
-      <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-30 shadow-sm border-b border-white/50">
+      <header className="backdrop-blur-xl sticky top-0 z-30 shadow-md" style={{ backgroundColor: headerBg, color: headerText, fontFamily: headerFont }}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-            {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-full object-cover shrink-0" alt=""/> : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
-            <span className="text-lg font-extrabold text-gray-900">{store?.name||'Store'}</span>
+            {store?.logo ? <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 font-bold shrink-0" style={{color:headerText}}>{store?.name?.[0]||'S'}</div>}
+            <span data-store-name className="store-header-title text-lg sm:text-2xl font-extrabold" style={{ color: headerText, WebkitTextFillColor: headerText }}>{store?.name||'Store'}</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><Heart size={20}/></Link>
-            <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><ShoppingCart size={20}/></Link>
+            <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold hover:bg-white/20 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>
+            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full"><Heart size={20}/></Link>
+            <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-white/20 rounded-full"><ShoppingCart size={20}/></Link>
           </div>
         </div>
       </header>
 
       {/* Auth Form */}
       <div className="flex-1 flex items-center justify-center p-6 relative z-10">
-        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
+        {/* The card's surface is set explicitly rather than via `bg-white/80`:
+            that utility is not covered by the buyer dark-mode overrides, so in
+            dark mode it stayed light grey while the text inside turned white. */}
+        <div className="w-full max-w-md backdrop-blur-xl rounded-3xl shadow-2xl border p-8"
+          style={{
+            backgroundColor: isDarkBuyer ? 'rgba(12,12,12,0.88)' : 'rgba(255,255,255,0.85)',
+            borderColor: pc + (isDarkBuyer ? '55' : '33'),
+            ...(!isDarkBuyer && bodyTextColor ? { color: bodyTextColor } : {}),
+          }}>
           <div className="flex justify-center mb-6">
             {store?.logo ? <img src={store.logo} className="w-14 h-14 rounded-2xl object-cover shadow-lg" alt=""/> : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
           </div>

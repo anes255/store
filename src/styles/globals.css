@@ -480,3 +480,13 @@ input[type="date"],input[type="datetime-local"],input[type="month"],input[type="
   input[type="date"]::-webkit-date-and-time-value{margin:0;text-align:left;}
   input[type="date"]::-webkit-calendar-picker-indicator{margin-left:0;padding:0;}
 }
+
+/* ═══ Store sign-in screen ═══
+   .input-field focuses with the platform's gold ring, which looked foreign on
+   a storefront using its own colour. Inside the buyer auth screen the ring
+   follows the store's primary colour (exposed as --store-pc by the page). */
+.customer-auth-scope .input-field:focus{
+  border-color:var(--store-pc) !important;
+  box-shadow:0 0 0 2px var(--store-pc-ring) !important;
+  --tw-ring-color:transparent !important;
+}
