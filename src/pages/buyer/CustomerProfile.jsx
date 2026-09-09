@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { storeCanvas } from '../../utils/storeTheme';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -268,7 +269,7 @@ export default function CustomerProfile() {
 
   // -- Render -----------------------------------------------------------------
   return (
-    <div className="min-h-screen" style={{ fontFamily: 'Arial, sans-serif', background: store?.config?.profile_bg_color || 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+    <div className="min-h-screen" style={{ fontFamily: store?.header_font || 'Arial, sans-serif', background: storeCanvas(store, store?.primary_color)}}>
 
       {/* ==================== MOBILE TOP BAR ==================== */}
       <div className="lg:hidden sticky top-0 z-30 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">

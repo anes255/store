@@ -7,6 +7,7 @@ import { Heart, ArrowLeft, ShoppingCart, Eye, Trash2, CheckSquare, Square, X, Pa
 import { useCartStore, useWishlistStore } from '../../hooks/useStore';
 import { storeApi } from '../../utils/api';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
+import { storeCanvas } from '../../utils/storeTheme';
 
 // =============================================================================
 // FAVORITES PAGE
@@ -117,7 +118,7 @@ export default function Favorites() {
   const pcFallback = store?.primary_color || '#7C3AED';
   if (!storeReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: `linear-gradient(135deg, #050505 0%, ${pcFallback}22 45%, #000000 100%)` }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: storeCanvas(store, pcFallback) }}>
         <div className="w-10 h-10 border-4 border-gray-700 rounded-full animate-spin" style={{ borderTopColor: pcFallback }} />
       </div>
     );
@@ -125,7 +126,7 @@ export default function Favorites() {
 
   if (!store) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: `linear-gradient(135deg, #050505 0%, ${pcFallback}22 45%, #000000 100%)` }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: storeCanvas(store, pcFallback) }}>
         <div className="text-center">
           <Package size={48} className="mx-auto text-white/20 mb-4"/>
           <p className="text-white/60">{t('store.storeNotFound', 'Store not found')}</p>
@@ -139,9 +140,10 @@ export default function Favorites() {
   // Same derivation the storefront uses, so this page carries the store's own
   // colours instead of a fixed navy canvas and a grey bar.
   const headerFont = store.header_font || 'Arial, sans-serif';
-  const canvas = store?.config?.favorites_bg_color
-    || store?.config?.store_dark_bg_color
-    || `linear-gradient(135deg, #050505 0%, ${pc}22 45%, #000000 100%)`;
+  // Derived from the store's own colour, unconditionally. There used to be a
+  // separate favorites_bg_color picker whose stale value (a brown, on a purple
+  // store) overrode this; these pages follow the storefront now.
+  const canvas = storeCanvas(store, pc);
 
   return (
     <div className="min-h-screen" style={{ fontFamily: headerFont, background: canvas }}>

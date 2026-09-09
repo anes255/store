@@ -7,6 +7,7 @@ import { useBuyerTheme } from '../../hooks/useStore';
 import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
+import { darkenHex } from '../../utils/storeTheme';
 const DEFAULT_STATUS_COLORS = {
   new_order: 'bg-indigo-500/20 text-indigo-300',
   pending: 'bg-amber-500/20 text-amber-300',
@@ -127,7 +128,8 @@ export default function TrackOrder() {
         tracking_show_address: d.tracking_show_address !== false,
         tracking_show_payment: d.tracking_show_payment !== false,
         tracking_show_tracking_number: d.tracking_show_tracking_number !== false,
-        tracking_bg: d.config?.tracking_bg_color || '',
+        // tracking_bg_color is no longer read: this page follows the store's
+        // colours like every other buyer surface.
         dark_bg: d.config?.store_dark_bg_color || '',
         header_font: d.header_font || '',
       }));
@@ -246,7 +248,7 @@ export default function TrackOrder() {
   const showOrderInput = method === 'order_id' || (method === 'both' && mode === 'order_id');
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden" style={{ fontFamily: store.header_font || undefined, background: store.tracking_bg || store.dark_bg || `radial-gradient(circle at 20% 0%, ${pc}33 0%, #0a0a0a 50%, #000000 100%)` }}>
+    <div className="min-h-screen text-white relative overflow-hidden" style={{ fontFamily: store.header_font || undefined, background: store.dark_bg || `radial-gradient(circle at 20% 0%, ${darkenHex(pc, 0.35)} 0%, #0a0a0a 55%, #000000 100%)` }}>
       <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${pc}66 0%, transparent 70%)` }} />
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
 
