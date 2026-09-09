@@ -7,7 +7,7 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import toast from 'react-hot-toast';
 import {
-  Eye, DollarSign, ShoppingCart, TrendingUp, Package, Plus, ArrowUpRight,
+  Eye, DollarSign, ShoppingCart, TrendingUp, Package, Plus, ArrowUpRight, ArrowDownRight,
   Store as StoreIcon, Sparkles
 } from 'lucide-react';
 
@@ -141,11 +141,28 @@ export default function StoreDashboard() {
   const stats = dashboard?.stats || {};
   const salesData = dashboard?.salesData || [];
 
+  // Deltas are computed from the real last-30-days vs previous-30-days figures
+  // the API now returns. They used to be hard-coded strings ("+8.2%"), so a
+  // store with zero visitors still advertised growth.
+  const trend = dashboard?.trend || {};
+  const pctChange = (key) => {
+    const row = trend[key];
+    if (!row) return null;
+    const cur = Number(row.current) || 0;
+    const prev = Number(row.previous) || 0;
+    if (prev === 0) return cur === 0 ? null : { up: true, text: t('dashboard.newActivity', 'New') };
+    const pct = ((cur - prev) / prev) * 100;
+    if (!isFinite(pct) || Math.round(pct * 10) === 0) return null;
+    return { up: pct >= 0, text: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%` };
+  };
+
   const statCards = [
-    { icon: Eye, label: t('dashboard.storeVisits'), value: stats.storeVisits?.toLocaleString() || '0', color: 'from-blue-500 to-cyan-500', change: '+8.2%' },
-    { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${t('storePage.dzd','DZD')}`, color: 'from-emerald-500 to-teal-500', change: '+12.5%' },
-    { icon: ShoppingCart, label: t('dashboard.totalOrders'), value: stats.totalOrders || 0, color: 'from-purple-500 to-pink-500', change: '+8.2%' },
-    { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${t('storePage.dzd','DZD')}`, color: 'from-amber-500 to-orange-500', change: '+5.1%' },
+    // No visit history is stored yet, so this card carries no delta rather than
+    // an invented one.
+    { icon: Eye, label: t('dashboard.storeVisits'), value: stats.storeVisits?.toLocaleString() || '0', color: 'from-blue-500 to-cyan-500', change: null },
+    { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${t('storePage.dzd','DZD')}`, color: 'from-emerald-500 to-teal-500', change: pctChange('revenue') },
+    { icon: ShoppingCart, label: t('dashboard.totalOrders'), value: stats.totalOrders || 0, color: 'from-purple-500 to-pink-500', change: pctChange('orders') },
+    { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${t('storePage.dzd','DZD')}`, color: 'from-amber-500 to-orange-500', change: pctChange('avgOrderValue') },
   ];
 
   return (
@@ -218,9 +235,11 @@ export default function StoreDashboard() {
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md`}>
                   <Icon size={18} className="text-white" />
                 </div>
-                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                  <ArrowUpRight size={12} />{s.change}
-                </span>
+                {s.change && (
+                  <span className={`text-xs font-bold flex items-center gap-0.5 ${s.change.up ? 'text-emerald-600' : 'text-red-500'}`} title={t('dashboard.vs30d','Last 30 days vs the 30 before')}>
+                    {s.change.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{s.change.text}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{s.label}</p>
               <p className="text-xl font-extrabold text-gray-900 mt-1">{s.value}</p>

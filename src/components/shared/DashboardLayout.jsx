@@ -542,7 +542,7 @@ export default function DashboardLayout({children}){
   return(<div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/50'}`}>
     {/* Mobile overlay */}
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
-    <aside className={`flex flex-col fixed h-screen z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
+    <aside className={`flex flex-col fixed h-screen h-[100dvh] z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
         <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-full object-cover shrink-0"/>:<div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px] truncate" style={{color:pl[400]}}>{breadcrumb.main}{breadcrumb.sub?' › '+breadcrumb.sub:''}</p></div>}</Link>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
@@ -613,7 +613,7 @@ export default function DashboardLayout({children}){
           });
         })()}
       </nav>
-      <div className={`border-t ${sidebarOpen?'p-3':'p-2'} ${isDark?'border-gray-800':'border-gray-100'}`}>
+      <div className={`border-t shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sidebarOpen?'p-3':'p-2'} ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className={`flex items-center ${sidebarOpen?'gap-2 rounded-xl p-2.5':'justify-center rounded-lg p-2'} mb-2`} style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center ${sidebarOpen?'gap-3 px-4':'justify-center px-0'} py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
@@ -630,7 +630,7 @@ export default function DashboardLayout({children}){
         ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>
     </aside>
-    <main className={`flex-1 min-w-0 transition-all duration-300 min-h-screen overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
+    <main style={theme.backgroundColor?{background:theme.backgroundColor}:undefined} className={`flex-1 min-w-0 transition-all duration-300 min-h-screen overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
       <header className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center gap-2 transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
         <div className="flex items-center gap-3 min-w-0">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}
@@ -638,7 +638,7 @@ export default function DashboardLayout({children}){
           <p className={`md:hidden font-bold text-sm truncate max-w-[90px] xs:max-w-[120px] sm:max-w-[160px] ${isDark?'text-gray-100':'text-gray-800'}`}>{breadcrumb.sub||breadcrumb.main}</p>
         </div>
         <div className="flex-1 min-w-0 overflow-visible">
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 ml-auto flex-nowrap shrink-0 overflow-x-auto no-scrollbar [&>*]:shrink-0">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 ml-auto flex-nowrap min-w-0 overflow-x-auto overflow-y-visible no-scrollbar [&>*]:shrink-0">
           <div className="relative hidden md:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input
@@ -711,14 +711,14 @@ export default function DashboardLayout({children}){
           )}
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`hidden sm:inline-flex p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
-          <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor} buttonColor={theme.buttonColor} onButtonColorChange={theme.setButtonColor}/>
+          <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor} buttonColor={theme.buttonColor} onButtonColorChange={theme.setButtonColor} backgroundColor={theme.backgroundColor} onBackgroundColorChange={theme.setBackgroundColor}/>
           <LanguageSwitcher/>
           <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
           {currentStore?.is_live!==false&&<span className="md:hidden"><LiveBadge storeId={currentStore?.id}/></span>}
         </div>
         </div>
       </header>
-      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`}>
+      <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`} style={theme.backgroundColor?{background:theme.backgroundColor}:undefined}>
         {isStaffBlocked(location.pathname)?(
           <div className={`max-w-md mx-auto mt-16 p-8 rounded-3xl text-center ${isDark?'bg-gray-900 border border-gray-800':'bg-white border border-gray-100 shadow-md'}`}>
             <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{backgroundColor:pc+'15'}}><Lock size={24} style={{color:pc}}/></div>

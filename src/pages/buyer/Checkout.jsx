@@ -5,7 +5,7 @@ import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 import i18n from '../../i18n';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift, ChevronDown, ChevronUp, Package } from 'lucide-react';
 
 // Algerian phone validator: accepts 0[567]xxxxxxxx or +213[567]xxxxxxxx
 export function isValidAlgerianPhone(p) {
@@ -168,6 +168,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [receiptRef, setReceiptRef] = useState('');
   // Order details on the thank-you screen start collapsed behind a button.
   const [showSummary, setShowSummary] = useState(false);
+  // The cart is cleared the moment the order lands, so snapshot what the buyer
+  // actually bought — thumbnail and chosen variants included — for the summary.
+  const [orderItemsSnapshot, setOrderItemsSnapshot] = useState([]);
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     shipping_address: '', shipping_city: '', shipping_wilaya: '', shipping_zip: '',
@@ -415,6 +418,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       const authUser = useAuthStore.getState().user;
       const authRole = useAuthStore.getState().role;
       const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
+      const snapshot = [];
       const { data } = await storeApi.placeOrder(storeSlug, { ...form, shipping_type: form.shipping_type, customer_id, items: items.map((it, idx) => {
         const variants = parseVariants(it);
         const unitVars = perUnitVariants[idx] || [];
@@ -437,8 +441,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           const label = Object.entries(countMap).map(([k, c]) => c > 1 ? `${c}x ${k}` : k).join(', ');
           variant = { label, per_unit: perUnit.map(parts => parts.length === 1 ? parts[0] : { selections: parts, label: parts.map(p => p.name || p.value).filter(Boolean).join(' / ') }) };
         }
+        snapshot.push({
+          name: it.name || it.name_en || it.product_name || '',
+          image: it.image || (Array.isArray(it.images) ? (typeof it.images[0] === 'string' ? it.images[0] : null) : null) || null,
+          quantity: it.quantity,
+          unit_price: it.price,
+          variantLabel: variant?.label || (typeof it.variant === 'object' ? (it.variant?.label || it.variant?.name) : it.variant) || '',
+        });
         return { product_id: it.product_id, quantity: it.quantity, variant };
       }) });
+      setOrderItemsSnapshot(snapshot);
       setOrderSuccess(data);
       try { trackPurchase(store?.tracking_pixels, { ...data, items, customer_name: form.customer_name, customer_phone: form.customer_phone, customer_email: form.customer_email }); } catch {}
       clearItems();
@@ -577,16 +589,39 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </button>
             {showSummary && (
               <div className="mb-4 text-left bg-gray-50 rounded-xl p-3 space-y-2 max-h-72 overflow-y-auto">
-                {Array.isArray(orderSuccess.items) && orderSuccess.items.length > 0 && (
-                  <div className="space-y-1.5">
-                    {orderSuccess.items.map((it, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700 truncate mr-2">{it.product_name} × {it.quantity}</span>
-                        <span className="font-semibold text-gray-900 shrink-0">{parseFloat(it.total_price || (it.unit_price * it.quantity) || 0).toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  // Prefer the client snapshot (it has the thumbnail and the
+                  // exact variant the buyer picked); fall back to whatever the
+                  // API echoed back.
+                  const rows = orderItemsSnapshot.length
+                    ? orderItemsSnapshot.map(it => ({
+                        name: it.name, image: it.image, quantity: it.quantity,
+                        variantLabel: it.variantLabel,
+                        total: (parseFloat(it.unit_price) || 0) * (it.quantity || 1),
+                      }))
+                    : (Array.isArray(orderSuccess.items) ? orderSuccess.items.map(it => ({
+                        name: it.product_name, image: it.product_image, quantity: it.quantity,
+                        variantLabel: typeof it.variant === 'object' ? it.variant?.label : it.variant,
+                        total: parseFloat(it.total_price || (it.unit_price * it.quantity) || 0),
+                      })) : []);
+                  if (!rows.length) return null;
+                  return (
+                    <div className="space-y-2">
+                      {rows.map((it, idx) => (
+                        <div key={idx} className="flex items-center gap-2.5 text-sm">
+                          {it.image
+                            ? <img src={it.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" loading="lazy" decoding="async" />
+                            : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><Package size={15} className="text-gray-400" /></div>}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-700 truncate">{it.name} × {it.quantity}</p>
+                            {it.variantLabel && <p className="text-[11px] text-gray-400 truncate">{it.variantLabel}</p>}
+                          </div>
+                          <span className="font-semibold text-gray-900 shrink-0">{it.total.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
                 <div className="pt-2 border-t border-gray-200 space-y-1 text-sm">
                   {orderSuccess.subtotal != null && (
                     <div className="flex justify-between"><span className="text-gray-500">{t('store.subtotal', 'Subtotal')}</span><span className="font-semibold text-gray-800">{parseFloat(orderSuccess.subtotal).toLocaleString()} {store.currency || 'DZD'}</span></div>

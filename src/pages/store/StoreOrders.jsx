@@ -119,6 +119,9 @@ export default function StoreOrders() {
     else if (!isPreparingPage && !isArchivePage && (filter === 'preparing' || filter === 'archived')) setFilter('all');
   }, [isPreparingPage, isArchivePage, filter]);
   const [search, setSearch] = useState('');
+  // Receipts per printed page. Four is the ceiling — below that the tickets
+  // stop being readable at arm's length.
+  const [printPerPage, setPrintPerPage] = useState(() => { const v = parseInt(localStorage.getItem('orders.printPerPage')); return [1,2,3,4].includes(v) ? v : 2; });
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [pageSize, setPageSize] = useState(() => Number(localStorage.getItem('orders.pageSize') || 25));
@@ -408,8 +411,11 @@ export default function StoreOrders() {
   // after the document has rendered.
   // Each row may not have its line-items pre-loaded (the list endpoint omits
   // them), so we fetch the full detail for any missing order before rendering.
-  const printOrders = async (rows) => {
+  const printOrders = async (rows, perPage = printPerPage) => {
     if (!rows.length) return;
+    const per = [1, 2, 3, 4].includes(Number(perPage)) ? Number(perPage) : 2;
+    // Grid shape per choice, so the tickets always divide the sheet evenly.
+    const GRID = { 1: { cols: 1, rows: 1, font: 13 }, 2: { cols: 1, rows: 2, font: 11 }, 3: { cols: 1, rows: 3, font: 10 }, 4: { cols: 2, rows: 2, font: 9.5 } }[per];
     // Hydrate missing items by fetching the full order.
     const hydrated = await Promise.all(rows.map(async o => {
       let items = o.items;
@@ -510,10 +516,13 @@ export default function StoreOrders() {
         *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0;padding:0}
         body{margin:0;padding:4px 8px;background:#fff}
         h1.title{font-size:11px;font-weight:800;margin:0 0 4px;text-transform:uppercase;letter-spacing:1px;color:#555}
-        .page{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-        .ticket{border:1px solid #ccc;border-radius:4px;padding:5px 6px;page-break-inside:avoid;font-size:9px;line-height:1.3}
+        @page{size:A4;margin:6mm}
+        /* One sheet's worth of tickets, split into equal cells so N receipts
+           cover the whole page instead of clustering at the top. */
+        .page{display:grid;grid-template-columns:repeat(${GRID.cols},1fr);grid-template-rows:repeat(${GRID.rows},1fr);gap:4mm;height:285mm}
+        .ticket{border:1px solid #ccc;border-radius:4px;padding:6px 8px;page-break-inside:avoid;font-size:${GRID.font}px;line-height:1.35;overflow:hidden;display:flex;flex-direction:column}
         .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:3px;margin-bottom:3px}
-        .store{font-size:11px;font-weight:800}
+        .store{font-size:${(GRID.font + 2).toFixed(1)}px;font-weight:800}
         .meta{font-size:8px;color:#666;margin-top:1px}
         .status{font-size:8px;font-weight:800;background:#111;color:#fff;padding:1px 5px;border-radius:999px;letter-spacing:.3px}
         .lbl{font-size:7px;font-weight:800;text-transform:uppercase;color:#888;letter-spacing:.3px;margin:0 0 1px}
@@ -537,9 +546,9 @@ export default function StoreOrders() {
         ${(() => {
           const tickets = hydrated.map((o, i) => ticket(o, i, hydrated.length));
           const pages = [];
-          for (let i = 0; i < tickets.length; i += 8) {
-            const chunk = tickets.slice(i, i + 8);
-            const isLast = i + 8 >= tickets.length;
+          for (let i = 0; i < tickets.length; i += per) {
+            const chunk = tickets.slice(i, i + per);
+            const isLast = i + per >= tickets.length;
             pages.push('<div class="page">' + chunk.join('') + '</div>' + (isLast ? '' : '<div class="page-break"></div>'));
           }
           return pages.join('');
@@ -1097,7 +1106,18 @@ export default function StoreOrders() {
           </div>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
           </>)}
-          <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold shrink-0"><Printer size={12}/><span className="hidden sm:inline">{t('orders.print','Print')}</span></button>
+          <div className="flex items-center rounded-lg bg-blue-600 shrink-0 overflow-hidden">
+            <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 hover:bg-blue-500 text-xs font-bold"><Printer size={12}/><span className="hidden sm:inline">{t('orders.print','Print')}</span></button>
+            <select
+              value={printPerPage}
+              onChange={e => { const v = parseInt(e.target.value); setPrintPerPage(v); try { localStorage.setItem('orders.printPerPage', String(v)); } catch {} }}
+              onClick={e => e.stopPropagation()}
+              title={t('orders.receiptsPerPage','Receipts per page')}
+              className="bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold py-1.5 pl-1.5 pr-1 border-0 focus:outline-none cursor-pointer"
+            >
+              {[1,2,3,4].map(n => <option key={n} value={n} className="bg-white text-gray-800">{n}/{t('orders.perPageShort','page')}</option>)}
+            </select>
+          </div>
           {!isPreparingPage && (
           <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold shrink-0"><Trash2 size={12}/><span className="hidden sm:inline">{t('common.delete','Delete')}</span></button>
           )}

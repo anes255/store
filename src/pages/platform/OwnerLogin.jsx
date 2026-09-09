@@ -205,13 +205,13 @@ export default function OwnerLogin() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-brand-50">
-      {/* Landing-style animated blobs */}
-      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-gradient-to-br from-brand-400/30 to-purple-500/30 rounded-full blur-3xl animate-pulse"/>
-      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-purple-400/30 to-brand-500/30 rounded-full blur-3xl animate-pulse"/>
-      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-br from-pink-400/20 to-brand-400/20 rounded-full blur-3xl"/>
+    <div className="auth-dark min-h-screen relative overflow-hidden text-gray-100" style={{ backgroundColor: '#111111' }}>
+      {/* Landing-style animated blobs, dimmed for the dark ground */}
+      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-gradient-to-br from-brand-500/25 to-purple-600/25 rounded-full blur-3xl animate-pulse"/>
+      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-purple-600/25 to-brand-600/25 rounded-full blur-3xl animate-pulse"/>
+      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-br from-pink-600/15 to-brand-500/15 rounded-full blur-3xl"/>
       <div className="relative min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
+        <div className="w-full max-w-md rounded-3xl shadow-2xl border border-white/10 p-8" style={{ backgroundColor: 'rgba(24,24,24,0.85)', backdropFilter: 'blur(20px)' }}>
           <div className="flex items-center justify-between mb-8">
             <Link to="/" className="flex items-center gap-2">
               {brand.logo || brand.favicon ? (

@@ -347,6 +347,16 @@ function applyBrandToDOM(color) {
   root.style.setProperty('--brand', color);
 }
 
+// Paints the dashboard's page background. Driven by a CSS variable so the
+// dark-mode rules in globals.css can defer to it when the admin sets one.
+function applyAdminBackground(color) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (color) root.style.setProperty('--admin-bg', color);
+  else root.style.removeProperty('--admin-bg');
+  root.classList.toggle('admin-bg-custom', !!color);
+}
+
 // Store admin theme
 export const useAdminTheme = create((set, get) => ({
   mode: localStorage.getItem('admin_theme_mode') || 'light',
@@ -355,11 +365,15 @@ export const useAdminTheme = create((set, get) => ({
   // Color of the primary/"golden" action buttons in the dashboard. Defaults to
   // the original golden so existing stores look unchanged until customized.
   buttonColor: localStorage.getItem('admin_button_color') || '#C5A55A',
+  // Optional page background override for the dashboard. Empty means "use the
+  // theme's own default" (light gray, or true black in dark mode).
+  backgroundColor: localStorage.getItem('admin_bg_color') || '',
 
   init: () => {
     const state = get();
     applyThemeToDOM(state.mode, state.primaryColor, 'admin');
     applyBrandToDOM(state.buttonColor);
+    applyAdminBackground(state.backgroundColor);
   },
 
   setButtonColor: (color) => {
@@ -368,10 +382,18 @@ export const useAdminTheme = create((set, get) => ({
     set({ buttonColor: color });
   },
 
+  setBackgroundColor: (color) => {
+    const v = color || '';
+    if (v) localStorage.setItem('admin_bg_color', v); else localStorage.removeItem('admin_bg_color');
+    applyAdminBackground(v);
+    set({ backgroundColor: v });
+  },
+
   setMode: (mode) => {
     localStorage.setItem('admin_theme_mode', mode);
     const state = get();
     applyThemeToDOM(mode, state.primaryColor, 'admin');
+    applyAdminBackground(state.backgroundColor);
     set({ mode });
   },
 

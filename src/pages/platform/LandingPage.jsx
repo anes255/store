@@ -565,29 +565,9 @@ export default function LandingPage() {
 
   return (
     <div className={`min-h-screen overflow-hidden ${S.bodyText} transition-colors duration-500`} style={{ backgroundColor: S.bodyBg }}>
-      {/* ── REGENERATE FLOATING BUTTON ── */}
-      {!hasCustom && (
-        <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-2">
-          <AnimatePresence>
-            {isRegenerating && (
-              <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:10}} className="px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-xl text-xs font-bold text-white shadow-lg border border-white/20">
-                {S.name}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <motion.button
-            onClick={regenerate}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-2xl shadow-brand-500/40 flex items-center justify-center hover:shadow-brand-500/60 transition-shadow ${isRegenerating ? 'animate-spin' : ''}`}
-            title="Regenerate Style"
-            style={{ animationDuration: isRegenerating ? '0.6s' : undefined }}
-          >
-            <Wand2 size={22} />
-          </motion.button>
-        </div>
-      )}
-
+      {/* The floating "regenerate style" button was removed: it let any
+          visitor reshuffle the public site's look, which is an authoring tool,
+          not something the landing page should offer. */}
       <nav className={`fixed top-0 w-full z-50 ${S.navBg} backdrop-blur-2xl border-b ${S.navBorder}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">

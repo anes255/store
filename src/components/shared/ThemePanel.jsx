@@ -25,11 +25,12 @@ const PRESET_COLORS = [
  * @param {Function} props.onColorChange - (hex) => void
  * @param {boolean} [props.compact] - Render as a compact dropdown button
  */
-export default function ThemePanel({ mode, primaryColor, onModeChange, onColorChange, compact = false, modeOnly = false, buttonColor, onButtonColorChange }) {
+export default function ThemePanel({ mode, primaryColor, onModeChange, onColorChange, compact = false, modeOnly = false, buttonColor, onButtonColorChange, backgroundColor, onBackgroundColorChange }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [customColor, setCustomColor] = useState(primaryColor);
   const [customBtnColor, setCustomBtnColor] = useState(buttonColor || '#C5A55A');
+  const [customBgColor, setCustomBgColor] = useState(backgroundColor || (mode === 'dark' ? '#000000' : '#F9FAFB'));
   const isDark = mode === 'dark';
 
   const content = (
@@ -164,6 +165,22 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
         </div>
       </div>}
 
+      {/* Page background */}
+      {!modeOnly && onBackgroundColorChange && <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+          {t('theme.background', 'Page Background')}
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input type="color" value={customBgColor} onChange={e => { setCustomBgColor(e.target.value); onBackgroundColorChange(e.target.value); }} className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0" style={{ appearance: 'none' }} />
+          <input type="text" value={backgroundColor || ''} onChange={e => { const v = e.target.value; setCustomBgColor(v || '#F9FAFB'); if (!v || /^#[0-9A-Fa-f]{6}$/.test(v)) onBackgroundColorChange(v); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'} w-24 focus:outline-none`} placeholder={isDark ? '#000000' : '#F9FAFB'} />
+          <button onClick={() => { onBackgroundColorChange(''); setCustomBgColor(isDark ? '#000000' : '#F9FAFB'); }}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border ${isDark ? 'border-gray-700 text-gray-400 hover:bg-gray-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+            {t('theme.reset', 'Default')}
+          </button>
+        </div>
+      </div>}
+
       {/* Preview */}
       {!modeOnly && <div className={`p-3 rounded-xl border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
         <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
@@ -225,10 +242,17 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           <>
             <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
             <div
-              className={`fixed rounded-2xl shadow-2xl border z-[101] p-4 max-h-[80vh] overflow-y-auto ${
+              className={`fixed rounded-2xl shadow-2xl border z-[101] p-4 overflow-y-auto ${
                 isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
               }`}
-              style={{ top: anchor.top, right: anchor.right, width: Math.min(320, window.innerWidth - 16) }}
+              style={{
+                top: anchor.top,
+                right: anchor.right,
+                width: Math.min(320, window.innerWidth - 16),
+                // Height left between the button and the bottom of the screen —
+                // a flat 80vh overflowed whenever the anchor sat low.
+                maxHeight: Math.max(220, window.innerHeight - anchor.top - 12),
+              }}
             >
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>

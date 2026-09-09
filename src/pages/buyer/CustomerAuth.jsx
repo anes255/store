@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
-import { useAuthStore } from '../../hooks/useStore';
+import { useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { User, Phone, Lock, Mail, MapPin, ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBag, Heart, ShoppingCart } from 'lucide-react';
@@ -11,6 +11,9 @@ export default function CustomerAuth() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { setAuth } = useAuthStore();
+  // This screen ignored the storefront theme entirely and was always light.
+  const buyerTheme = useBuyerTheme();
+  const isDarkBuyer = buyerTheme.mode === 'dark';
   const [store, setStore] = useState(null);
   const [storeLoading, setStoreLoading] = useState(true);
   const [mode, setMode] = useState('login');
@@ -45,13 +48,16 @@ export default function CustomerAuth() {
 
   const pc = store?.primary_color || '#7C3AED';
 
-  if (storeLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
+  if (storeLoading) return <div className={`min-h-screen flex items-center justify-center ${isDarkBuyer ? 'buyer-theme-dark bg-[#0b1020]' : 'bg-gray-50'}`}><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-brand-50 relative overflow-hidden">
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl pointer-events-none"/>
-      <div className="absolute top-1/3 -right-24 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl pointer-events-none"/>
-      <div className="absolute -bottom-24 left-1/3 w-96 h-96 bg-pink-200/30 rounded-full blur-3xl pointer-events-none"/>
+    <div className={`min-h-screen flex flex-col relative overflow-hidden ${isDarkBuyer ? 'buyer-theme-dark bg-[#0b1020] text-gray-100' : 'bg-gradient-to-br from-slate-50 via-white to-brand-50'}`}
+      style={!isDarkBuyer && store?.config?.store_bg_color ? { background: store.config.store_bg_color } : undefined}>
+      {/* Ambient blobs, tinted with the store's own colour so the sign-in
+          screen belongs to the same storefront the buyer came from. */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '33' : '55') }}/>
+      <div className="absolute top-1/3 -right-24 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '22' : '44') }}/>
+      <div className="absolute -bottom-24 left-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '1a' : '33') }}/>
       {/* Store Header */}
       <header className="bg-white/70 backdrop-blur-xl sticky top-0 z-30 shadow-sm border-b border-white/50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">

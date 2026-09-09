@@ -16,6 +16,51 @@ import {LayoutDashboard,Users,Store,Settings,LogOut,Shield,ShoppingCart,DollarSi
 // Hook: track a button's bounding rect so a portal-rendered popover
 // positions itself relative to the viewport (escapes header's
 // `backdrop-blur` containing block, so outside-clicks land on the backdrop).
+// ── Rows-per-page, shared by every super-admin list ──────────────────────
+// None of these pages paginated, so a busy platform rendered every owner,
+// store, order and payment in one DOM. The choice is remembered across pages
+// and sessions.
+const ROWS_OPTIONS = [10, 25, 50, 100, 'all'];
+function usePaged(rows) {
+  const all = Array.isArray(rows) ? rows : [];
+  const [perPage, setPerPage] = useState(() => {
+    try { const v = localStorage.getItem('admin.rowsPerPage'); if (v === 'all') return 'all'; const n = parseInt(v); return ROWS_OPTIONS.includes(n) ? n : 25; } catch { return 25; }
+  });
+  const [page, setPage] = useState(1);
+  const total = all.length;
+  const size = perPage === 'all' ? (total || 1) : perPage;
+  const pageCount = Math.max(1, Math.ceil(total / size));
+  useEffect(() => { if (page > pageCount) setPage(1); }, [pageCount, page]);
+  const slice = perPage === 'all' ? all : all.slice((page - 1) * size, page * size);
+  const choose = (v) => { setPerPage(v); setPage(1); try { localStorage.setItem('admin.rowsPerPage', String(v)); } catch {} };
+  return { slice, total, page, setPage, pageCount, perPage, choose };
+}
+function RowsPerPage({ p, isDark }) {
+  const { t } = useTranslation();
+  if (!p.total) return null;
+  const muted = isDark ? 'text-gray-400' : 'text-gray-500';
+  const btn = `px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+      <div className="flex items-center gap-2">
+        <span className={`text-xs font-semibold ${muted}`}>{t('admin.rowsPerPage', 'Rows per page')}</span>
+        <select value={String(p.perPage)} onChange={e => p.choose(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+          className={`px-2 py-1.5 rounded-lg text-xs font-bold border focus:outline-none ${isDark ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'}`}>
+          {ROWS_OPTIONS.map(o => <option key={String(o)} value={String(o)}>{o === 'all' ? t('common.all', 'All') : o}</option>)}
+        </select>
+        <span className={`text-xs ${muted}`}>{t('admin.ofTotal', '{{n}} total', { n: p.total })}</span>
+      </div>
+      {p.pageCount > 1 && (
+        <div className="flex items-center gap-1.5">
+          <button className={btn} disabled={p.page <= 1} onClick={() => p.setPage(p.page - 1)}>{t('common.back', 'Back')}</button>
+          <span className={`text-xs font-bold ${muted}`}>{p.page} / {p.pageCount}</span>
+          <button className={btn} disabled={p.page >= p.pageCount} onClick={() => p.setPage(p.page + 1)}>{t('common.next', 'Next')}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function useAnchorRect(open){
   const ref=useRef(null);
   const[anchor,setAnchor]=useState(null);
@@ -278,6 +323,7 @@ function StoreOwners(){
   const[pwModal,setPwModal]=useState(null);const[pwNew,setPwNew]=useState('');const[pwSaving,setPwSaving]=useState(false);
   const changeOwnerPw=async()=>{if(!pwNew||pwNew.length<6){toast.error(t('admin.passwordMin6','Password must be at least 6 characters'));return;}setPwSaving(true);try{await api.put(`/platform/store-owners/${pwModal.id}/password`,{new_password:pwNew});toast.success(t('admin.passwordChanged','Password changed'));setPwModal(null);setPwNew('');}catch(e){toast.error(e.response?.data?.error||t('common.failed','Failed'));}setPwSaving(false);};
   const load=()=>{platformApi.getStoreOwners({search}).then(r=>setOwners(r.data.owners||[])).catch(()=>{}).finally(()=>setLoading(false));};
+  const pg=usePaged(owners);
   useEffect(()=>{load();},[search]);
   const toggle=async(id)=>{try{await platformApi.toggleOwner(id);toast.success(t('common.updated','Updated'));load();}catch{toast.error(t('common.failed','Failed'));}};
   const del=async(id)=>{
@@ -300,7 +346,7 @@ function StoreOwners(){
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile card list */}
     <div className="md:hidden space-y-3">
-      {owners.length===0?<p className="text-center py-12 text-gray-400">{t('admin.noOwnersFound','No owners found')}</p>:owners.map(o=>{
+      {owners.length===0?<p className="text-center py-12 text-gray-400">{t('admin.noOwnersFound','No owners found')}</p>:pg.slice.map(o=>{
         const suspended=o.subscription_status==='suspended'||o.is_active===false;
         return(
           <div key={o.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm p-4`}>
@@ -330,7 +376,7 @@ function StoreOwners(){
       })}
     </div>
     <div className={`hidden md:block ${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm overflow-x-auto`}><table className="w-full text-sm min-w-[720px]"><thead><tr className={`${isDark?'bg-gray-900':'bg-gray-50'} text-left text-xs text-gray-400 uppercase`}><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Stores</th><th className="px-5 py-3">Revenue</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
-    <tbody>{owners.map(o=>(
+    <tbody>{pg.slice.map(o=>(
       <tr key={o.id} className={`border-t ${isDark?'border-gray-700 hover:bg-gray-700':'border-gray-100 hover:bg-gray-50'}`}>
         <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">{o.full_name?.[0]||'U'}</div><div><p className={`font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{o.full_name||o.name}</p><p className="text-[10px] text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p></div></div></td>
         <td className="px-5 py-4"><p className={`${isDark?'text-gray-300':'text-gray-700'}`}>{o.email}</p><p className="text-xs text-gray-400">{o.phone}</p></td>
@@ -357,6 +403,7 @@ function StoreOwners(){
         <button onClick={changeOwnerPw} disabled={pwSaving} className="btn-primary px-4 py-2 text-sm">{pwSaving?'Saving...':'Change Password'}</button>
       </div>
     </div></div>)}
+        <RowsPerPage p={pg} isDark={isDark}/>
     </>}
   </div>);
 }
@@ -379,6 +426,7 @@ function AllStores(){
     const q=storeSearch.toLowerCase();
     return(s.name||s.store_name||'').toLowerCase().includes(q)||(s.owner_name||'').toLowerCase().includes(q)||(s.owner_email||'').toLowerCase().includes(q)||(s.slug||'').toLowerCase().includes(q);
   });
+  const pg=usePaged(filteredStores);
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-xs md:text-sm text-gray-400">{filteredStores.length}/{stores.length} {t('admin.total','total')}</span></div>
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
@@ -386,7 +434,7 @@ function AllStores(){
       <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-2 rounded-xl border text-sm focus:outline-none ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'}`} placeholder="Search stores, owners..." value={storeSearch} onChange={e=>setStoreSearch(e.target.value)}/></div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
-    <div className="grid gap-4">{filteredStores.map(s=>(
+    <div className="grid gap-4">{pg.slice.map(s=>(
       <div key={s.id} className={`${isDark?'bg-gray-800':'bg-white'} rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden`}>
         <div className="p-4 md:p-5 flex flex-wrap items-center gap-3 md:gap-4">
           {s.logo_url||s.logo?<img src={s.logo_url||s.logo} alt="" className="w-11 h-11 md:w-12 md:h-12 rounded-full object-cover bg-gray-100 shrink-0 border border-gray-200"/>:<div className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">{(s.name||s.store_name||'S')[0]}</div>}
@@ -426,6 +474,7 @@ function AllOrders(){
   const load=()=>{api.get('/platform/orders',{params:{status:filter,search,date_from:dateFrom||undefined,date_to:dateTo||undefined}}).then(r=>{setOrders(r.data.orders||[]);setTotal(r.data.total||0);}).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[filter,search,dateFrom,dateTo]);
   const variantLabel=(v)=>{try{const vv=typeof v==='string'?JSON.parse(v):v;if(!vv)return'';return vv.label||vv.name||(Array.isArray(vv.selections)?vv.selections.map(s=>s.name).filter(Boolean).join(' / '):'');}catch{return'';}};
+  const pg=usePaged(orders);
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">All Orders</h1><span className="text-xs md:text-sm text-gray-400">{total} total</span></div>
     <div className="flex flex-col gap-3 mb-6">
@@ -440,7 +489,7 @@ function AllOrders(){
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile cards */}
     <div className="md:hidden space-y-3">
-      {orders.length===0?<p className="text-center py-12 text-gray-400">No orders found</p>:orders.map(o=>{const isOpen=expanded===o.id;return(
+      {orders.length===0?<p className="text-center py-12 text-gray-400">No orders found</p>:pg.slice.map(o=>{const isOpen=expanded===o.id;return(
         <div key={o.id} className="bg-white rounded-2xl shadow-sm p-4">
           <div onClick={()=>setExpanded(isOpen?null:o.id)} className="flex items-start justify-between gap-2 cursor-pointer">
             <div className="min-w-0">
@@ -466,7 +515,7 @@ function AllOrders(){
       );})}
     </div>
     <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-x-auto"><table className="w-full text-sm min-w-[820px]"><thead><tr className="bg-gray-50 text-left text-xs text-gray-400 uppercase"><th className="px-5 py-3 w-8"></th><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Store</th><th className="px-5 py-3">Items</th><th className="px-5 py-3">Total</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Date</th></tr></thead>
-    <tbody>{orders.map(o=>{const isOpen=expanded===o.id;return(<React.Fragment key={o.id}>
+    <tbody>{pg.slice.map(o=>{const isOpen=expanded===o.id;return(<React.Fragment key={o.id}>
       <tr onClick={()=>setExpanded(isOpen?null:o.id)} className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer">
         <td className="px-5 py-3 text-gray-400"><ChevronRight size={16} className={`transition-transform ${isOpen?'rotate-90':''}`}/></td>
         <td className="px-5 py-3 font-mono font-bold text-xs text-brand-600">{o.order_number}</td>
@@ -485,7 +534,9 @@ function AllOrders(){
             <p className="text-sm font-bold text-gray-900 shrink-0">{parseFloat(it.total_price||(it.price*it.quantity)||0).toLocaleString()} DZD</p>
           </div>);})}
       </div></td></tr>)}
-    </React.Fragment>);})}</tbody></table>{orders.length===0&&<p className="text-center py-12 text-gray-400">No orders found</p>}</div></>}
+    </React.Fragment>);})}</tbody></table>{orders.length===0&&<p className="text-center py-12 text-gray-400">No orders found</p>}</div>    <RowsPerPage p={pg} isDark={isDark}/>
+        <RowsPerPage p={pg} isDark={isDark}/>
+    </>}
   </div>);
 }
 
@@ -566,6 +617,7 @@ function Subscriptions({isDark}){
     try{await platformApi.extendSubscription(grantModal.id,{days:d});toast.success(t('platform.grantedDays','Granted {{d}} free day(s) to {{name}}',{d,name:grantModal.name||grantModal.full_name}));setGrantModal(null);setGrantDays(7);load();}catch{toast.error(t('store.failed','Failed'));}};
   const stats=data.stats||{};
   const toggleSelect=(id)=>setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  const pg=usePaged(filteredPayments);
   const toggleSelectAll=()=>{const visible=filteredPayments.map(p=>p.id);setSelectedIds(prev=>prev.length===visible.length?[]:visible);};
   const filteredPayments=(data.payments||[]).filter(p=>{
     if(filter==='expiring'){const ex=expiring.map(o=>o.id);return ex.includes(p.owner_id);}
@@ -641,7 +693,7 @@ function Subscriptions({isDark}){
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:<>
     {/* Mobile cards */}
     <div className="md:hidden space-y-3">
-      {filteredPayments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}{searchQuery?` matching "${searchQuery}"`:''}</p>:filteredPayments.map(p=>(
+      {filteredPayments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}{searchQuery?` matching "${searchQuery}"`:''}</p>:pg.slice.map(p=>(
         <div key={p.id} className={`${card} rounded-2xl shadow-sm p-4`}>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -669,7 +721,7 @@ function Subscriptions({isDark}){
     <div className={`hidden md:block ${card} rounded-2xl shadow-sm overflow-x-auto`}>
       {filteredPayments.length===0?<p className={`text-center py-12 ${mutedC}`}>No subscription payments {filter!=='all'?`with status "${filter}"`:''}{searchQuery?` matching "${searchQuery}"`:''}</p>:
       <table className="w-full text-sm min-w-[780px]"><thead><tr className={`${theadBg} text-left text-xs uppercase ${mutedC}`}><th className="px-5 py-3 w-8"><input type="checkbox" checked={selectedIds.length===filteredPayments.length&&filteredPayments.length>0} onChange={toggleSelectAll} className="rounded"/></th><th className="px-5 py-3">Owner</th><th className="px-5 py-3">Plan</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Method</th><th className="px-5 py-3">Receipt</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead>
-      <tbody>{filteredPayments.map(p=>(
+      <tbody>{pg.slice.map(p=>(
         <tr key={p.id} className={`border-t ${rowBorder} ${rowHover}`}>
           <td className="px-5 py-4 w-8"><input type="checkbox" checked={selectedIds.includes(p.id)} onChange={()=>toggleSelect(p.id)} className="rounded"/></td>
           <td className="px-5 py-4"><div><p className={`font-bold ${textC}`}>{p.owner_name||'N/A'}</p><p className={`text-[10px] ${mutedC}`}>{p.owner_phone}</p></div></td>
@@ -679,7 +731,8 @@ function Subscriptions({isDark}){
           <td className="px-5 py-4">{p.receipt_image?<button onClick={()=>setViewReceipt(p)} className="text-brand-600 text-xs font-bold hover:underline flex items-center gap-1"><Eye size={12}/>View</button>:'-'}</td>
           <td className="px-5 py-4"><span className={`px-2 py-1 rounded-full text-[10px] font-bold ${p.status==='approved'?'bg-emerald-100 text-emerald-700':p.status==='rejected'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{p.status?.toUpperCase()}</span></td>
           <td className="px-5 py-4"><div className="flex gap-1 flex-wrap">
-            {p.status==='pending'&&<><button onClick={()=>approve(p.id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600">Reject</button></>}
+            {p.status==='pending'&&<><button onClick={()=>approve(p.id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600">Approve</button><button onClick={()=>{setRejectModal(p.id);setRejectNotes('');}} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600">Reject</button>    <RowsPerPage p={pg} isDark={isDark}/>
+    </>}
             {p.status==='approved'&&<button onClick={()=>suspend(p.owner_id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Suspend</button>}
             {p.owner_id&&<button onClick={()=>{setGrantModal({id:p.owner_id,name:p.owner_name});setGrantDays(7);}} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-100 flex items-center gap-1" title="Grant extra free days"><Gift size={12}/>Grant days</button>}
           </div></td>

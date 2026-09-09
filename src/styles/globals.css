@@ -229,17 +229,19 @@ html.admin-dark .page-header,.admin-dark .page-header{color:#f3f4f6 !important;}
 html.admin-dark .sticky.bg-gray-50\/95{background-color:rgba(15,23,42,0.95) !important;border-color:#1f2937 !important;}
 .gradient-text{@apply bg-gradient-to-r from-brand-500 via-brand-600 to-brand-400 bg-clip-text text-transparent;}
 }
-/* ═══ Buyer storefront dark mode overrides ═══ */
-.buyer-theme-dark .bg-white{background-color:#1a2140 !important;}
-.buyer-theme-dark .bg-gray-50,.buyer-theme-dark .bg-gray-100{background-color:#141a33 !important;}
-.buyer-theme-dark .bg-gray-200{background-color:#242b4a !important;}
+/* ═══ Buyer storefront dark mode overrides ═══
+   Near-black surfaces, matching the admin dashboard's true-black dark mode.
+   These were a navy palette (#1a2140 / #141a33), which read as dark blue. */
+.buyer-theme-dark .bg-white{background-color:#0a0a0a !important;}
+.buyer-theme-dark .bg-gray-50,.buyer-theme-dark .bg-gray-100{background-color:#050505 !important;}
+.buyer-theme-dark .bg-gray-200{background-color:#1a1a1a !important;}
 .buyer-theme-dark .text-gray-900,.buyer-theme-dark .text-gray-800,.buyer-theme-dark .text-gray-700{color:#f3f4f6 !important;}
 .buyer-theme-dark .text-gray-600,.buyer-theme-dark .text-gray-500{color:#cbd5e1 !important;}
 .buyer-theme-dark .text-gray-400{color:#94a3b8 !important;}
-.buyer-theme-dark .border-gray-100,.buyer-theme-dark .border-gray-200,.buyer-theme-dark .border-gray-300{border-color:#2d3566 !important;}
-.buyer-theme-dark .divide-gray-100>*,.buyer-theme-dark .divide-gray-200>*{border-color:#2d3566 !important;}
-.buyer-theme-dark input,.buyer-theme-dark textarea,.buyer-theme-dark select{background-color:#1a2140;color:#f3f4f6;border-color:#2d3566;}
-.buyer-theme-dark .bg-white\/95{background-color:rgba(26,33,64,0.95) !important;}
+.buyer-theme-dark .border-gray-100,.buyer-theme-dark .border-gray-200,.buyer-theme-dark .border-gray-300{border-color:#1f1f1f !important;}
+.buyer-theme-dark .divide-gray-100>*,.buyer-theme-dark .divide-gray-200>*{border-color:#1f1f1f !important;}
+.buyer-theme-dark input,.buyer-theme-dark textarea,.buyer-theme-dark select{background-color:#0a0a0a;color:#f3f4f6;border-color:#1f1f1f;}
+.buyer-theme-dark .bg-white\/95{background-color:rgba(10,10,10,0.95) !important;}
 .buyer-theme-dark .shadow-md,.buyer-theme-dark .shadow-lg,.buyer-theme-dark .shadow-xl{box-shadow:0 10px 30px rgba(0,0,0,0.5) !important;}
 /* Storefront header has its own inline bg/text color (uses primary_color); the
    global dark-mode text overrides above were stomping on the white title.
@@ -410,12 +412,12 @@ html.dark textarea:not([class*="bg-"]), html.dark select:not([class*="bg-"]){
 }
 .buyer-theme-dark input:not([class*="bg-"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
 .buyer-theme-dark textarea:not([class*="bg-"]), .buyer-theme-dark select:not([class*="bg-"]){
-  background-color:#1a2140;border-color:#2d3566;
+  background-color:#0a0a0a;border-color:#1f1f1f;
 }
 /* Native <select> dropdown lists are painted by the OS — they need their own
    colours or the options render black-on-black. */
 html.admin-dark option, html.platform-dark option, html.dark option{background-color:#0a0a0a;color:#f3f4f6;}
-.buyer-theme-dark option{background-color:#1a2140;color:#f3f4f6;}
+.buyer-theme-dark option{background-color:#0a0a0a;color:#f3f4f6;}
 /* Chrome autofill paints its own yellow/white background over the field. */
 html.admin-dark input:-webkit-autofill, html.platform-dark input:-webkit-autofill,
 html.dark input:-webkit-autofill, .buyer-theme-dark input:-webkit-autofill{
@@ -429,3 +431,52 @@ html.platform-dark input[type="date"]::-webkit-calendar-picker-indicator,
 html.dark input[type="date"]::-webkit-calendar-picker-indicator,
 html.admin-dark input[type="time"]::-webkit-calendar-picker-indicator,
 html.dark input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.7);}
+
+/* ═══ Dark auth screens (owner / admin login and register) ═══
+   The login card was authored with the light palette's gray utilities. Rather
+   than rewrite every one of them, remap them inside `.auth-dark` the same way
+   the `html.dark` safety net does for the rest of the app. */
+.auth-dark .text-gray-900{color:#f3f4f6 !important;}
+.auth-dark .text-gray-800{color:#e5e7eb !important;}
+.auth-dark .text-gray-700{color:#d1d5db !important;}
+.auth-dark .text-gray-600{color:#cbd5e1 !important;}
+.auth-dark .text-gray-500{color:#9ca3af !important;}
+.auth-dark .text-gray-400{color:#8b95a5 !important;}
+.auth-dark .bg-white{background-color:#181818 !important;}
+.auth-dark .bg-gray-50{background-color:#0f0f0f !important;}
+.auth-dark .bg-gray-100{background-color:#1f1f1f !important;}
+.auth-dark .border-gray-100,
+.auth-dark .border-gray-200,
+.auth-dark .border-gray-300{border-color:#2a2a2a !important;}
+.auth-dark .input-field{background-color:#0f0f0f !important;border-color:#2a2a2a !important;color:#f3f4f6 !important;}
+.auth-dark .input-field::placeholder{color:#6b7280 !important;}
+.auth-dark .input-label{color:#cbd5e1 !important;}
+.auth-dark .hover\:bg-gray-50:hover,
+.auth-dark .hover\:bg-gray-100:hover{background-color:#1f1f1f !important;}
+.auth-dark .divide-gray-100>*,
+.auth-dark .divide-gray-200>*{border-color:#2a2a2a !important;}
+
+/* ═══ Admin-chosen dashboard background ═══
+   Set from the theme panel; wins over both the light default and the
+   true-black dark palette so the choice holds in either mode. */
+html.admin-bg-custom body,
+html.admin-bg-custom.admin-dark,
+html.admin-bg-custom.admin-dark body{background:var(--admin-bg) !important;}
+html.admin-bg-custom .bg-gray-50,
+html.admin-bg-custom.admin-dark .bg-gray-50,
+html.admin-bg-custom.admin-dark .bg-gray-950{background:var(--admin-bg) !important;}
+
+/* ═══ Date inputs on narrow screens ═══
+   WebKit gives input[type=date] an intrinsic minimum width for its native
+   spinner, which ignores `w-full` and pushed the orders page's date filters
+   off the right edge of the phone. Strip the native chrome sizing so the field
+   can shrink with its column. */
+input[type="date"],input[type="datetime-local"],input[type="month"],input[type="time"]{
+  min-width:0 !important;max-width:100%;
+  -webkit-appearance:none;appearance:none;
+}
+@media (max-width: 639px){
+  input[type="date"],input[type="datetime-local"]{padding-left:.6rem;padding-right:.4rem;font-size:.8rem;}
+  input[type="date"]::-webkit-date-and-time-value{margin:0;text-align:left;}
+  input[type="date"]::-webkit-calendar-picker-indicator{margin-left:0;padding:0;}
+}
