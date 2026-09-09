@@ -248,15 +248,15 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
         <button
           ref={btnRef}
           onClick={handleClick}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
             isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           aria-label={modeOnly?(isDark?'Switch to light mode':'Switch to dark mode'):'Theme'}
           title={modeOnly?(isDark?'Switch to light':'Switch to dark'):'Theme'}
         >
           {modeOnly?(isDark?<Sun size={14}/>:<Moon size={14}/>):(<><div className="w-3.5 h-3.5 rounded-full border border-white/30" style={{ backgroundColor: primaryColor }} />
-          <Palette size={13} />
-          <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} /></>)}
+          <Palette size={13} className="hidden sm:block" />
+          <ChevronDown size={11} className={`hidden sm:block transition-transform ${open ? 'rotate-180' : ''}`} /></>)}
         </button>
         {!modeOnly && open && anchor && createPortal(
           <>

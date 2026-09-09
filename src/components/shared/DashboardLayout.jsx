@@ -65,12 +65,12 @@ function LiveBadge({storeId}){
     return ()=>{ mounted = false; clearInterval(id); };
   },[storeId]);
   return (
-    <span className="badge badge-success text-[10px] flex items-center gap-1.5" title={count!=null?`${count} buyer${count===1?'':'s'} browsing now`:''}>
+    <span className="badge badge-success text-[10px] flex items-center gap-1 sm:gap-1.5 !px-1.5 sm:!px-2.5" title={count!=null?`${count} buyer${count===1?'':'s'} browsing now`:''}>
       <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"/>
         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"/>
       </span>
-      {t('sidebar.live','Live')}
+      <span className="hidden sm:inline">{t('sidebar.live','Live')}</span>
       {count!=null&&count>0&&<span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/30 text-[9px] font-extrabold">{count}</span>}
       {count===0&&<span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-[9px] font-extrabold">0</span>}
     </span>
@@ -259,7 +259,10 @@ function NotifBell(){
   };
 
   return(<div ref={wrapRef} className="relative flex items-center gap-1">
-    {!pushOk&&<button onClick={enablePush} className="px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔 Enable</button>}
+    {/* On phones this shrinks to the bell alone — with the word it was 102px
+        of a 240px action row, which is what pushed the other icons out of
+        view on every page whose title is longer than "Dashboard". */}
+    {!pushOk&&<button onClick={enablePush} title={t('notifications.enable','Enable notifications')} className="px-1.5 sm:px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse whitespace-nowrap" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔<span className="hidden sm:inline"> Enable</span></button>}
     <button ref={btnRef} onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="notif-badge">{unread>9?'9+':unread}</span>}</button>
     {open&&anchor&&createPortal(<>
       <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
@@ -634,13 +637,13 @@ export default function DashboardLayout({children}){
     </aside>
     <main style={theme.backgroundColor?{background:theme.backgroundColor}:undefined} className={`flex-1 min-w-0 transition-all duration-300 min-h-screen overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
       <header className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center gap-2 transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}
           <div className="hidden md:flex items-center gap-3"><div>{breadcrumb.sub?<><p className="text-[10px] text-gray-400">{breadcrumb.main}</p><p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{breadcrumb.sub}</p></>:<p className={`font-bold text-sm ${isDark?'text-gray-100':'text-gray-900'}`}>{breadcrumb.main}</p>}</div></div>
-          <p className={`md:hidden font-bold text-sm truncate max-w-[90px] xs:max-w-[120px] sm:max-w-[160px] ${isDark?'text-gray-100':'text-gray-800'}`}>{breadcrumb.sub||breadcrumb.main}</p>
+          <p className={`md:hidden font-bold text-sm truncate min-w-0 ${isDark?'text-gray-100':'text-gray-800'}`}>{breadcrumb.sub||breadcrumb.main}</p>
         </div>
-        <div className="flex-1 min-w-0 overflow-visible">
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 ml-auto flex-nowrap min-w-0 overflow-x-auto overflow-y-visible no-scrollbar [&>*]:shrink-0">
+        <div className="shrink-0 overflow-visible">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 ml-auto flex-nowrap shrink-0 [&>*]:shrink-0">
           <div className="relative hidden md:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
             <input

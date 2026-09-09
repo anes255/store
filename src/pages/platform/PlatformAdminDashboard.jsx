@@ -238,7 +238,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
   ];
   return(<>
     {open&&<div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose}/>}
-    <aside className={`fixed top-0 left-0 z-50 w-56 border-r h-screen flex flex-col transition-transform duration-300 lg:translate-x-0 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${open?'translate-x-0':'-translate-x-full'}`}>
+    <aside className={`fixed top-0 left-0 z-50 w-56 border-r h-screen h-[100dvh] flex flex-col transition-transform duration-300 lg:translate-x-0 ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${open?'translate-x-0':'-translate-x-full'}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{backgroundColor:pc}}><Shield size={16} className="text-white"/></div>
@@ -261,7 +261,7 @@ function Sidebar({open,onClose,isDark,pc,pl}){
           </Link>
         );})}
       </nav>
-      <div className={`p-3 border-t ${isDark?'border-gray-800':'border-gray-100'}`}>
+      <div className={`p-3 border-t shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${isDark?'border-gray-800':'border-gray-100'}`}>
         <div className="flex items-center gap-2 rounded-xl p-2.5 mb-2" style={{backgroundColor:pc+'15'}}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div>
           <div><p className={`text-xs font-bold ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('admin.admin','Admin')}</p><p className="text-[10px] text-gray-400">{t('admin.superAdmin','Super Admin')}</p></div>

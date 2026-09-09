@@ -595,7 +595,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
       style={{ background: inCart ? (isLight ? '#fef9c3' : 'linear-gradient(145deg, #713f12 0%, #422006 60%, #1c1917 100%)') : (isLight ? '#ffffff' : 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)'), border: isLight && !inCart ? '1px solid #e5e7eb' : 'none' }}>
       {/* Product Image */}
       <div className="relative cursor-pointer" onClick={() => openDetail(product)}>
-        <div className="aspect-square bg-white/5 relative overflow-hidden m-1.5 sm:m-2.5 rounded-xl">
+        <div className="aspect-square bg-white/5 relative overflow-hidden m-1 sm:m-2.5 rounded-xl">
           {thumb
             ? <img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
             : <div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-white/15" /></div>}
@@ -603,19 +603,19 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
 
         {/* Favourite on LEFT top. SALE badge at BOTTOM-LEFT. Cart on top-RIGHT. */}
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleWishlist(product); }}
-          className={`absolute top-2.5 left-2.5 sm:top-4 sm:left-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 touch-manipulation ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
+          className={`absolute top-1 left-1 sm:top-4 sm:left-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 touch-manipulation ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
-        {onSale && discountPct > 0 && <span className="sm:hidden absolute top-3 right-3 px-2 py-0.5 bg-red-500 text-white text-[11px] font-black rounded-md shadow-lg">-{discountPct}%</span>}
+        {onSale && discountPct > 0 && <span className="sm:hidden absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-md shadow-lg">-{discountPct}%</span>}
         {onSale && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || 'SALE'}</span>}
         <button onClick={(e) => { e.stopPropagation(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
-          className={`absolute bottom-2.5 right-2.5 sm:bottom-auto sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
+          className={`absolute bottom-1 right-1 sm:bottom-auto sm:top-4 sm:right-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
           aria-label={inCart ? "Remove from cart" : "Add to cart"}>{inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
       </div>
 
       {/* Product Info */}
-      <div className="px-2 sm:px-3.5 pb-2.5 sm:pb-3 pt-1">
+      <div className="px-1.5 sm:px-3.5 pb-2 sm:pb-3 pt-0.5 sm:pt-1">
         <div className="cursor-pointer" onClick={() => openDetail(product)}>
-          <h3 className={`font-semibold text-[11px] leading-tight sm:text-sm text-center sm:text-left line-clamp-2 sm:line-clamp-none sm:truncate min-h-[2rem] sm:min-h-0 transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
+          <h3 className={`font-semibold text-[10px] leading-[1.25] sm:text-sm text-center sm:text-left line-clamp-2 sm:line-clamp-none sm:truncate min-h-[1.6rem] sm:min-h-0 transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
         </div>
 
         {/* Offer timer */}
@@ -624,7 +624,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         {/* Stock badge */}
         <div className="mt-1.5 flex justify-center sm:justify-start">
           {stockCount > 0
-            ? <span className="inline-flex items-center gap-1 text-emerald-400 text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />In Stock</span>
+            ? <span className="inline-flex items-center gap-1 text-emerald-400 text-[9px] sm:text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />In Stock</span>
             : product.allow_oversell
               ? <span className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />Available</span>
               : <span className="text-red-400 text-[10px] font-bold">Out of Stock</span>}
@@ -632,15 +632,15 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
 
         {/* Price */}
         <div className="flex items-baseline justify-center sm:justify-start flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
-          <span className="text-sm sm:text-lg font-extrabold" style={{ color: pc }}>{price.toLocaleString()}</span>
-          <span className={`text-[10px] sm:text-xs ${isLight ? 'text-gray-500' : 'text-white/30'}`}>{currency}</span>
-          {onSale && <span className={`text-[10px] sm:text-xs line-through ${isLight ? 'text-gray-400' : 'text-white/25'}`}>{comparePrice.toLocaleString()}</span>}
+          <span className="text-[13px] sm:text-lg font-extrabold" style={{ color: pc }}>{price.toLocaleString()}</span>
+          <span className={`text-[9px] sm:text-xs ${isLight ? 'text-gray-500' : 'text-white/30'}`}>{currency}</span>
+          {onSale && <span className={`text-[9px] sm:text-xs line-through ${isLight ? 'text-gray-400' : 'text-white/25'}`}>{comparePrice.toLocaleString()}</span>}
         </div>
 
         {/* Buy Now button */}
         <button
           onClick={(e) => { e.stopPropagation(); onBuyNow(product); }}
-          className="w-full mt-2 sm:mt-2.5 py-2 sm:py-2.5 rounded-xl text-white text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 shadow-lg transition-all"
+          className="w-full mt-1.5 sm:mt-2.5 py-1.5 sm:py-2.5 rounded-xl text-white text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 hover:opacity-90 shadow-lg transition-all"
           style={{ backgroundColor: pc }}
         >
           <Zap size={13} /> ORDER NOW
@@ -1155,7 +1155,7 @@ export default function Storefront() {
             )}
           </div>
         ):(
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
             {filtered.map(product=>(
               <DarkProductCard key={product.id} product={product} storeSlug={storeSlug} pc={pc}
                 currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
