@@ -560,10 +560,10 @@ export default function LandingPage() {
           visitor reshuffle the public site's look, which is an authoring tool,
           not something the landing page should offer. */}
       <nav className={`fixed top-0 w-full z-50 ${S.navBg} backdrop-blur-2xl border-b ${S.navBorder}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            {info.site_logo ? <img src={info.site_logo} className="w-10 h-10 rounded-2xl object-cover aspect-square" alt="" /> : <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>}
-            {info.site_name && <span className={`text-sm sm:text-base font-extrabold ${S.navText}`}>{info.site_name}</span>}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {info.site_logo ? <img src={info.site_logo} className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl object-cover aspect-square shrink-0" alt="" /> : <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30 shrink-0"><ShoppingBag size={20} className="text-white" /></div>}
+            {info.site_name && <span className={`text-sm sm:text-base font-extrabold truncate ${S.navText}`}>{info.site_name}</span>}
           </Link>
           <div className="hidden md:flex items-center gap-8">
             {!hasCustom && <><a href="#features" className="text-sm font-semibold text-gray-400 hover:text-brand-400">{t('nav.features')}</a><a href="#pricing" className="text-sm font-semibold text-gray-400 hover:text-brand-400">{t('nav.pricing')}</a></>}
@@ -571,7 +571,7 @@ export default function LandingPage() {
             <Link to="/login" className="text-sm font-semibold text-gray-300 hover:text-brand-400">{t('nav.login')}</Link>
             <Link to="/register" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold py-2.5 px-5 rounded-xl transition-all">{t('nav.signup')}</Link>
           </div>
-          <div className="md:hidden flex items-center gap-2"><LanguageSwitcher /><Link to="/login" className="text-xs font-semibold text-gray-300 hover:text-brand-400 px-2">{t('nav.login')}</Link><Link to="/register" className="bg-brand-500 text-white text-xs font-bold py-2 px-4 rounded-xl">{t('nav.signup')}</Link></div>
+          <div className="md:hidden flex items-center gap-1.5 shrink-0 [&>*]:shrink-0"><LanguageSwitcher /><Link to="/login" className="text-xs font-semibold text-gray-300 hover:text-brand-400 px-1.5 whitespace-nowrap">{t('nav.login')}</Link><Link to="/register" className="bg-brand-500 text-white text-xs font-bold py-2 px-3 rounded-xl whitespace-nowrap">{t('nav.signup')}</Link></div>
         </div>
       </nav>
 

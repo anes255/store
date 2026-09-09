@@ -207,7 +207,27 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
   const [anchor, setAnchor] = useState(null);
   useLayoutEffect(() => {
     if (!open || !btnRef.current) return;
-    const update = () => { const r = btnRef.current?.getBoundingClientRect(); if (r) setAnchor({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) }); };
+    const update = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const width = Math.min(320, vw - 16);
+      // Right-align under the button when there is room, but clamp so NEITHER
+      // edge leaves the screen. Anchoring by `right` alone pushed the panel's
+      // left edge off a phone screen, which is why half the card was cut off.
+      const left = Math.min(Math.max(8, r.right - width), Math.max(8, vw - width - 8));
+      // Sit under the button normally; flip above it if that leaves more space.
+      const below = vh - r.bottom - 16;
+      const above = r.top - 16;
+      const flip = below < 240 && above > below;
+      setAnchor({
+        top: flip ? Math.max(8, r.top - Math.min(above, vh * 0.8) - 8) : r.bottom + 8,
+        left,
+        width,
+        maxHeight: Math.max(200, flip ? above : below),
+      });
+    };
     update();
     window.addEventListener('resize', update); window.addEventListener('scroll', update, true);
     return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
@@ -245,14 +265,7 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
               className={`fixed rounded-2xl shadow-2xl border z-[101] p-4 overflow-y-auto ${
                 isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
               }`}
-              style={{
-                top: anchor.top,
-                right: anchor.right,
-                width: Math.min(320, window.innerWidth - 16),
-                // Height left between the button and the bottom of the screen —
-                // a flat 80vh overflowed whenever the anchor sat low.
-                maxHeight: Math.max(220, window.innerHeight - anchor.top - 12),
-              }}
+              style={{ top: anchor.top, left: anchor.left, width: anchor.width, maxHeight: anchor.maxHeight }}
             >
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
