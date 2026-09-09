@@ -631,7 +631,6 @@ function Subscriptions({isDark}){
     try{await platformApi.extendSubscription(grantModal.id,{days:d});toast.success(t('platform.grantedDays','Granted {{d}} free day(s) to {{name}}',{d,name:grantModal.name||grantModal.full_name}));setGrantModal(null);setGrantDays(7);load();}catch{toast.error(t('store.failed','Failed'));}};
   const stats=data.stats||{};
   const toggleSelect=(id)=>setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
-  const pg=usePaged(filteredPayments);
   const toggleSelectAll=()=>{const visible=filteredPayments.map(p=>p.id);setSelectedIds(prev=>prev.length===visible.length?[]:visible);};
   const filteredPayments=(data.payments||[]).filter(p=>{
     if(filter==='expiring'){const ex=expiring.map(o=>o.id);return ex.includes(p.owner_id);}
@@ -643,6 +642,9 @@ function Subscriptions({isDark}){
     const q=searchQuery.toLowerCase();
     return(p.owner_name||'').toLowerCase().includes(q)||(p.owner_phone||'').toLowerCase().includes(q)||(p.plan||'').toLowerCase().includes(q)||(p.payment_method||'').toLowerCase().includes(q);
   });
+  // Declared AFTER filteredPayments on purpose: reading it any earlier is a
+  // temporal-dead-zone error, which crashed the whole page at render.
+  const pg=usePaged(filteredPayments);
   const card=isDark?'bg-gray-900 border border-gray-800':'bg-white';
   const cardSoft=isDark?'bg-gray-800/50 border border-gray-700':'bg-gray-50';
   const titleC=isDark?'text-gray-100':'text-gray-900';
