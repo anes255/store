@@ -117,7 +117,7 @@ export default function Favorites() {
   const pcFallback = store?.primary_color || '#7C3AED';
   if (!storeReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: `linear-gradient(135deg, #050505 0%, ${pcFallback}22 45%, #000000 100%)` }}>
         <div className="w-10 h-10 border-4 border-gray-700 rounded-full animate-spin" style={{ borderTopColor: pcFallback }} />
       </div>
     );
@@ -125,7 +125,7 @@ export default function Favorites() {
 
   if (!store) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: `linear-gradient(135deg, #050505 0%, ${pcFallback}22 45%, #000000 100%)` }}>
         <div className="text-center">
           <Package size={48} className="mx-auto text-white/20 mb-4"/>
           <p className="text-white/60">{t('store.storeNotFound', 'Store not found')}</p>
@@ -136,12 +136,18 @@ export default function Favorites() {
 
   const pc = store.primary_color || '#7C3AED';
   const currency = store.currency || 'DZD';
+  // Same derivation the storefront uses, so this page carries the store's own
+  // colours instead of a fixed navy canvas and a grey bar.
+  const headerFont = store.header_font || 'Arial, sans-serif';
+  const canvas = store?.config?.favorites_bg_color
+    || store?.config?.store_dark_bg_color
+    || `linear-gradient(135deg, #050505 0%, ${pc}22 45%, #000000 100%)`;
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: 'Arial, sans-serif', background: store?.config?.favorites_bg_color || 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+    <div className="min-h-screen" style={{ fontFamily: headerFont, background: canvas }}>
 
       {/* ==================== TOP BAR ==================== */}
-      <div className="sticky top-0 z-30 bg-gray-900/70 backdrop-blur-xl border-b border-white/10">
+      <div className="sticky top-0 z-30 backdrop-blur-xl border-b border-white/10 shadow-md" style={{ backgroundColor: pc }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-3 text-white min-w-0">
             <button className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors shrink-0"><ArrowLeft size={18}/></button>

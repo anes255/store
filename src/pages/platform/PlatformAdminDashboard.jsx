@@ -434,7 +434,7 @@ function AllStores(){
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.allStores','All Stores')}</h1><span className="text-xs md:text-sm text-gray-400">{filteredStores.length}/{stores.length} {t('admin.total','total')}</span></div>
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','live','offline','suspended'].map(f=><button key={f} onClick={()=>setStoreFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${storeFilter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f[0].toUpperCase()+f.slice(1)}</button>)}</div>
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto flex-nowrap no-scrollbar [&>*]:shrink-0">{['all','live','offline','suspended'].map(f=><button key={f} onClick={()=>setStoreFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${storeFilter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f[0].toUpperCase()+f.slice(1)}</button>)}</div>
       <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className={`w-full pl-10 pr-4 py-2 rounded-xl border text-sm focus:outline-none ${isDark?'bg-gray-800 border-gray-700 text-gray-100':'bg-white border-gray-200'}`} placeholder="Search stores, owners..." value={storeSearch} onChange={e=>setStoreSearch(e.target.value)}/></div>
     </div>
     {loading?<div className="py-20 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin mx-auto"/></div>:
@@ -486,11 +486,13 @@ function AllOrders(){
   return(<div>
     <div className="flex flex-wrap items-center justify-between gap-2 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">All Orders</h1><span className="text-xs md:text-sm text-gray-400">{total} total</span></div>
     <div className="flex flex-col gap-3 mb-6">
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">{['all','new_order','pending','failed_call_1','failed_call_2','failed_call_3','confirmed','preparing','ready','shipped','delivered','cancelled','returned','archived'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f==='new_order'?'New':f.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</button>)}</div>
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-        <input type="date" className="px-3 py-2 bg-white rounded-xl border border-gray-200 text-xs" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} placeholder="From"/>
-        <input type="date" className="px-3 py-2 bg-white rounded-xl border border-gray-200 text-xs" value={dateTo} onChange={e=>setDateTo(e.target.value)} placeholder="To"/>
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto flex-nowrap no-scrollbar [&>*]:shrink-0">{['all','new_order','pending','failed_call_1','failed_call_2','failed_call_3','confirmed','preparing','ready','shipped','delivered','cancelled','returned','archived'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${filter===f?'bg-white shadow-sm text-gray-900':'text-gray-500'}`}>{f==='all'?'All':f==='new_order'?'New':f.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</button>)}</div>
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
+        <div className="relative w-full sm:flex-1 sm:max-w-xs"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="w-full pl-10 pr-4 py-2 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none" placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <div className="flex items-center gap-2 sm:contents">
+        <input type="date" className="min-w-0 flex-1 sm:flex-none px-2 sm:px-3 py-2 bg-white rounded-xl border border-gray-200 text-xs" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} placeholder="From"/>
+        <input type="date" className="min-w-0 flex-1 sm:flex-none px-2 sm:px-3 py-2 bg-white rounded-xl border border-gray-200 text-xs" value={dateTo} onChange={e=>setDateTo(e.target.value)} placeholder="To"/>
+        </div>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom('');setDateTo('');}} className="text-xs text-red-500 font-bold">Clear dates</button>}
       </div>
     </div>
@@ -700,7 +702,7 @@ function Subscriptions({isDark}){
         <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${mutedC}`}/>
         <input className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm ${inputCls}`} placeholder="Search by name, phone, plan..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
       </div>
-      <div className={`flex items-center gap-1 p-1 rounded-lg overflow-x-auto ${isDark?'bg-gray-800':'bg-gray-100'}`}>
+      <div className={`flex items-center gap-1 p-1 rounded-lg overflow-x-auto flex-nowrap no-scrollbar [&>*]:shrink-0 ${isDark?'bg-gray-800':'bg-gray-100'}`}>
         {[{k:'all',l:'All'},{k:'pending',l:'Pending'},{k:'approved',l:'Active'},{k:'deactivated',l:'Deactivated'},{k:'expiring',l:'Expiring'},{k:'new',l:'New'},{k:'rejected',l:'Rejected'}].map(f=>(
           <button key={f.k} onClick={()=>setFilter(f.k)} className={`px-3 py-1.5 rounded-md text-[11px] font-bold whitespace-nowrap transition-all ${filter===f.k?(isDark?'bg-gray-900 text-brand-400 shadow-sm':'bg-white text-brand-600 shadow-sm'):mutedC}`}>{f.l}</button>
         ))}

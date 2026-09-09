@@ -563,7 +563,7 @@ function ProductOfferTimer({ product }) {
   const ss = Math.floor((diff % 60000) / 1000);
   const pad = n => String(n).padStart(2, '0');
   return (
-    <div className="flex items-center justify-center sm:justify-start flex-wrap gap-1 sm:gap-1.5 text-[9px] sm:text-xs font-bold text-red-400 mt-1">
+    <div className="flex items-center justify-center sm:justify-start flex-wrap gap-1 sm:gap-1.5 text-[9px] sm:text-xs font-bold text-red-400 mt-0.5 sm:mt-1">
       <Tag size={10} className="sm:hidden" /><Tag size={12} className="hidden sm:block" />
       <span className="truncate max-w-full">{product.offer_title || 'Offer'}</span>
       <span className="font-mono bg-red-500/20 px-1.5 sm:px-2 py-0.5 rounded-md text-red-300 text-[9px] sm:text-[11px]">{pad(hh)}:{pad(mm)}:{pad(ss)}</span>
@@ -613,16 +613,16 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
       </div>
 
       {/* Product Info */}
-      <div className="px-1.5 sm:px-3.5 pb-2 sm:pb-3 pt-0.5 sm:pt-1">
+      <div className="px-1.5 sm:px-3.5 pb-1.5 sm:pb-3 pt-0 sm:pt-1">
         <div className="cursor-pointer" onClick={() => openDetail(product)}>
-          <h3 className={`font-semibold text-[10px] leading-[1.25] sm:text-sm text-center sm:text-left line-clamp-2 sm:line-clamp-none sm:truncate min-h-[1.6rem] sm:min-h-0 transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
+          <h3 className={`font-semibold text-[10px] leading-[1.2] sm:text-sm text-center sm:text-left line-clamp-2 sm:line-clamp-none sm:truncate transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
         </div>
 
         {/* Offer timer */}
         <ProductOfferTimer product={product} />
 
         {/* Stock badge */}
-        <div className="mt-1.5 flex justify-center sm:justify-start">
+        <div className="mt-0.5 sm:mt-1.5 flex justify-center sm:justify-start">
           {stockCount > 0
             ? <span className="inline-flex items-center gap-1 text-emerald-400 text-[9px] sm:text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />In Stock</span>
             : product.allow_oversell
@@ -631,7 +631,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         </div>
 
         {/* Price */}
-        <div className="flex items-baseline justify-center sm:justify-start flex-wrap gap-x-2 gap-y-0.5 mt-1.5">
+        <div className="flex items-baseline justify-center sm:justify-start flex-wrap gap-x-1.5 sm:gap-x-2 gap-y-0 mt-0.5 sm:mt-1.5">
           <span className="text-[13px] sm:text-lg font-extrabold" style={{ color: pc }}>{price.toLocaleString()}</span>
           <span className={`text-[9px] sm:text-xs ${isLight ? 'text-gray-500' : 'text-white/30'}`}>{currency}</span>
           {onSale && <span className={`text-[9px] sm:text-xs line-through ${isLight ? 'text-gray-400' : 'text-white/25'}`}>{comparePrice.toLocaleString()}</span>}
@@ -640,7 +640,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         {/* Buy Now button */}
         <button
           onClick={(e) => { e.stopPropagation(); onBuyNow(product); }}
-          className="w-full mt-1.5 sm:mt-2.5 py-1.5 sm:py-2.5 rounded-xl text-white text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 hover:opacity-90 shadow-lg transition-all"
+          className="w-full mt-1 sm:mt-2.5 py-1.5 sm:py-2.5 rounded-xl text-white text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 hover:opacity-90 shadow-lg transition-all"
           style={{ backgroundColor: pc }}
         >
           <Zap size={13} /> ORDER NOW
