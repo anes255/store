@@ -8,6 +8,7 @@ import { ShoppingCart, Heart, Minus, Plus, ArrowLeft, ArrowRight, Star, Truck, S
 const Checkout = lazy(() => import('./Checkout'));
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
+import { useStoreFont } from '../../utils/storeFont';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Full-screen image lightbox with zoom controls. Supports:
@@ -23,6 +24,26 @@ function LightboxImage({ images, index, onClose, onChange }) {
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const pinchStart = useRef(null);
+  const stageRef = useRef(null);
+  // The page itself must not zoom or scroll while the lightbox is open. React's
+  // touch handlers are passive, so the browser's own pinch-zoom still ran and
+  // scaled the whole page; a native non-passive listener can stop it.
+  useEffect(() => {
+    const el = stageRef.current;
+    const blockPinch = (e) => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
+    const blockGesture = (e) => e.preventDefault(); // iOS Safari
+    if (el) el.addEventListener('touchmove', blockPinch, { passive: false });
+    document.addEventListener('gesturestart', blockGesture, { passive: false });
+    document.addEventListener('gesturechange', blockGesture, { passive: false });
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      if (el) el.removeEventListener('touchmove', blockPinch);
+      document.removeEventListener('gesturestart', blockGesture);
+      document.removeEventListener('gesturechange', blockGesture);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   useEffect(() => { setScale(1); setOrigin({ x: 0, y: 0 }); }, [index]);
 
@@ -117,7 +138,8 @@ function LightboxImage({ images, index, onClose, onChange }) {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onDoubleClick={toggleZoom}
-        style={{ cursor: scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'zoom-in', touchAction: scale > 1 ? 'none' : 'auto' }}
+        ref={stageRef}
+        style={{ cursor: scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'zoom-in', touchAction: 'none', overscrollBehavior: 'contain' }}
       >
         <img
           src={images[index]}
@@ -201,6 +223,7 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   // Lightbox: when set, an overlay shows that image full-screen.
   const [lightboxIdx, setLightboxIdx] = useState(null);
+  useStoreFont(store);
   // Track selected variants per type so buyers can pick one from each group
   // e.g. { color: 2, size: 0 }
   const [selectedVariants, setSelectedVariants] = useState({});
@@ -374,7 +397,7 @@ export default function ProductDetail() {
   const headerFont = store.header_font || tplStyle.fontFamily || 'Arial, sans-serif';
 
   return (
-    <div className={`min-h-screen w-full max-w-full overflow-x-hidden ${buyerTheme.mode==='dark'?'buyer-theme-dark text-gray-100':'bg-[#f5f5f5] text-gray-900'}`} style={buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:undefined)}>
+    <div className={`min-h-screen w-full max-w-full overflow-x-hidden pb-28 ${buyerTheme.mode==='dark'?'buyer-theme-dark text-gray-100':'bg-[#f5f5f5] text-gray-900'}`} style={{...(store?.header_font?{fontFamily:store.header_font}:{}),...(buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:{}))}}>
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
@@ -382,7 +405,7 @@ export default function ProductDetail() {
             <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
           </Link>
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+            <div className="store-search flex items-center bg-white rounded-full shadow-md w-full">
               <Search size={20} className="ml-5 text-gray-400"/>
               <input
                 className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none text-gray-800"
@@ -400,7 +423,7 @@ export default function ProductDetail() {
               <Heart size={18} className="sm:w-5 sm:h-5"/>
               {wishlistStore.count()>0&&<span className="notif-badge">{wishlistStore.count()}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
+            <button onClick={()=>{ if(getCount()===0){ toast(t('store.cartEmpty','Your cart is empty'),{icon:'🛒'}); return; } setCartOpen(true); }} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <ShoppingCart size={18} className="sm:w-5 sm:h-5"/>
               {getCount()>0&&<span className="notif-badge">{getCount()}</span>}
             </button>
@@ -408,7 +431,7 @@ export default function ProductDetail() {
         </div>
         {/* Mobile search */}
         <form onSubmit={handleSearch} className="md:hidden px-3 pb-3">
-          <div className="flex items-center bg-white/95 rounded-full shadow-md w-full">
+          <div className="store-search flex items-center bg-white rounded-full shadow-md w-full">
             <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
             <input
               className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800"
@@ -468,33 +491,6 @@ export default function ProductDetail() {
             </div>
             {/* Offer timer */}
             <ProductOfferCountdown product={product} />
-
-            {/* Selected variant label */}
-            {variantLabel && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-gray-500">Selected:</span>
-                <span className="text-sm font-bold text-gray-800 px-2.5 py-1 bg-gray-100 rounded-lg">{variantLabel}</span>
-              </div>
-            )}
-
-            {/* Description */}
-            {getDesc() && <p className="mt-4 text-gray-600 leading-relaxed">{getDesc()}</p>}
-            {sv?.description && <p className="mt-2 text-sm text-gray-500 italic border-l-2 border-gray-200 pl-3">{sv.description}</p>}
-
-            {/* Stock */}
-            <div className="mt-3">
-              {stockCount > 0
-                ? <span className="inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full"/>
-                    {store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}
-                  </span>
-                : product.allow_oversell
-                  ? <span className="inline-flex items-center gap-1.5 text-amber-600 text-sm font-semibold">
-                      <span className="w-2 h-2 bg-amber-500 rounded-full"/>
-                      Available for order
-                    </span>
-                  : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
-            </div>
 
             {/* ═══ VARIANT SELECTORS ═══ */}
             {groupTypes.length > 0 && (
@@ -573,38 +569,70 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* ═══ ADD TO CART + BUY NOW + WISHLIST ═══ */}
-            <div className="mt-6 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center bg-gray-100 rounded-xl">
-                  <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-3 hover:bg-gray-200 rounded-l-xl"><Minus size={16}/></button>
-                  <span className="w-12 text-center font-bold">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity+1)} className="p-3 hover:bg-gray-200 rounded-r-xl"><Plus size={16}/></button>
+
+            {/* Selected variant label */}
+            {variantLabel && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-sm text-gray-500">Selected:</span>
+                <span className="text-sm font-bold text-gray-800 px-2.5 py-1 bg-gray-100 rounded-lg">{variantLabel}</span>
+              </div>
+            )}
+
+            {/* Description */}
+            {getDesc() && <p className="mt-4 text-gray-600 leading-relaxed">{getDesc()}</p>}
+            {sv?.description && <p className="mt-2 text-sm text-gray-500 italic border-l-2 border-gray-200 pl-3">{sv.description}</p>}
+
+            {/* Stock */}
+            <div className="mt-3">
+              {stockCount > 0
+                ? <span className="inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full"/>
+                    {store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}
+                  </span>
+                : product.allow_oversell
+                  ? <span className="inline-flex items-center gap-1.5 text-amber-600 text-sm font-semibold">
+                      <span className="w-2 h-2 bg-amber-500 rounded-full"/>
+                      Available for order
+                    </span>
+                  : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
+              {product.is_fragile && (
+                <span className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-red-300 text-red-600 text-xs font-bold align-middle">⚠ {t('store.fragile','Fragile — handle with care')}</span>
+              )}
+            </div>
+
+            {/* ADD TO CART + BUY NOW - fixed to the bottom so they stay in view
+                however far the buyer scrolls. */}
+            <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+              <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center gap-2">
+                <div className="flex items-center bg-gray-100 rounded-xl shrink-0">
+                  <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-2.5 hover:bg-gray-200 rounded-l-xl" aria-label="minus"><Minus size={14}/></button>
+                  <span className="w-8 text-center font-bold text-sm">{quantity}</span>
+                  <button onClick={() => setQuantity(quantity+1)} className="p-2.5 hover:bg-gray-200 rounded-r-xl" aria-label="plus"><Plus size={14}/></button>
                 </div>
                 <button
                   onClick={handleAddToCart}
                   disabled={stockCount <= 0 && !product.allow_oversell}
-                  className="flex-1 py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
+                  className="flex-1 min-w-0 py-3 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-1.5 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
                   style={{backgroundColor:pc}}
                 >
-                  <ShoppingCart size={18}/>{store.btn_add_cart || 'Add to Cart'}
+                  <ShoppingCart size={16} className="shrink-0"/><span className="truncate">{store.btn_add_cart || t('store.addToCart','Add to Cart')}</span>
+                </button>
+                <button
+                  onClick={handleBuyNow}
+                  disabled={stockCount <= 0 && !product.allow_oversell}
+                  className="flex-1 min-w-0 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 border-2 hover:opacity-90 disabled:opacity-50 transition-all"
+                  style={{borderColor:pc, color:pc, backgroundColor: pc + '10'}}
+                >
+                  <Zap size={16} className="shrink-0"/><span className="truncate">{store.btn_buy_now || t('store.buyNow','Buy Now')}</span>
                 </button>
                 <button
                   onClick={handleToggleWishlist}
-                  className={`p-3.5 rounded-xl border-2 transition-all ${inWishlist ? 'border-red-300 bg-red-50 text-red-500' : 'border-gray-200 hover:border-red-200 hover:bg-red-50 text-gray-400 hover:text-red-500'}`}
+                  aria-label="wishlist"
+                  className={`p-3 rounded-xl border-2 shrink-0 transition-all ${inWishlist ? 'border-red-300 bg-red-50 text-red-500' : 'border-gray-200 hover:border-red-200 hover:bg-red-50 text-gray-400 hover:text-red-400'}`}
                 >
-                  <Heart size={18} fill={inWishlist ? 'currentColor' : 'none'}/>
+                  <Heart size={16} fill={inWishlist ? 'currentColor' : 'none'}/>
                 </button>
               </div>
-              {/* Buy Now — goes straight to checkout */}
-              <button
-                onClick={handleBuyNow}
-                disabled={stockCount <= 0 && !product.allow_oversell}
-                className="w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 border-2 hover:opacity-90 shadow-sm disabled:opacity-50 transition-all"
-                style={{borderColor:pc, color:pc, backgroundColor: pc + '08'}}
-              >
-                <Zap size={18}/>{store.btn_buy_now || 'Buy Now'}
-              </button>
             </div>
 
             {/* Trust badges */}
@@ -656,6 +684,9 @@ export default function ProductDetail() {
 }
 
 function ReviewsSection({storeSlug,productSlug,pc}){
+  // t() is used when a review is submitted; it was never bound here, so the
+  // review saved but the page threw "t is not defined" right after.
+  const { t } = useTranslation();
   const[reviews,setReviews]=React.useState([]);const[stats,setStats]=React.useState({});
   const[showForm,setShowForm]=React.useState(false);const[submitting,setSubmitting]=React.useState(false);
   const[form,setForm]=React.useState({customer_name:'',customer_phone:'',rating:5,title:'',content:''});

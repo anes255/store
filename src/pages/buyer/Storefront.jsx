@@ -86,7 +86,7 @@ function AIChatbot({ store, slug }) {
   const botColor = store?.config?.chatbot_color || store?.primary_color || '#7C3AED';
   const botAccent = store?.config?.chatbot_color_2 || botColor;
   const botGradient = `linear-gradient(135deg, ${botColor}, ${botAccent})`;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -120,7 +120,10 @@ function AIChatbot({ store, slug }) {
     setInput('');
     setLoading(true);
     try {
-      const{data}=await aiApi.chat(slug,{message:text,history:messages,language:msgLang});
+      // Reply in the store's current UI language; Arabic script always wins.
+      const uiLang=(i18n.language||'en').slice(0,2);
+      const replyLang=/[؀-ۿ]/.test(text)?'ar':(['ar','fr','en'].includes(uiLang)?uiLang:msgLang);
+      const{data}=await aiApi.chat(slug,{message:text,history:messages,language:replyLang});
       setMessages(prev=>[...prev,{role:'bot',text:data.response}]);
     } catch(e) { setMessages(prev=>[...prev,{role:'bot',text:e.response?.data?.error || t('store.chatbotError',"Sorry, I'm having trouble. Please try again!")}]); }
     setLoading(false);
@@ -572,7 +575,8 @@ function ProductOfferTimer({ product }) {
 }
 
 // ============ DARK PRODUCT CARD ============
-function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart }) {
+function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, onView, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart }) {
+  const href = `/s/${storeSlug}/product/${product.slug || product.id}`;
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
   const cartItems = useCartStore(s => s.items);
@@ -594,7 +598,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
     <div className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group relative ${inCart ? 'ring-2 ring-yellow-400' : ''}`}
       style={{ background: inCart ? (isLight ? '#fef9c3' : 'linear-gradient(145deg, #713f12 0%, #422006 60%, #1c1917 100%)') : (isLight ? '#ffffff' : 'linear-gradient(145deg, #1e293b 0%, #1e1b4b 60%, #0f172a 100%)'), border: isLight && !inCart ? '1px solid #e5e7eb' : 'none' }}>
       {/* Product Image */}
-      <div className="relative cursor-pointer" onClick={() => openDetail(product)}>
+      <Link to={href} className="relative block cursor-pointer" onClick={() => onView?.(product)}>
         <div className="aspect-square bg-white/5 relative overflow-hidden m-1 sm:m-2.5 rounded-xl">
           {thumb
             ? <img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
@@ -607,16 +611,16 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
         {onSale && discountPct > 0 && <span className="sm:hidden absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-md shadow-lg">-{discountPct}%</span>}
         {onSale && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || 'SALE'}</span>}
-        <button onClick={(e) => { e.stopPropagation(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
+        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
           className={`absolute bottom-1 right-1 sm:bottom-auto sm:top-4 sm:right-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
           aria-label={inCart ? "Remove from cart" : "Add to cart"}>{inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
-      </div>
+      </Link>
 
       {/* Product Info */}
       <div className="px-1.5 sm:px-3.5 pb-1.5 sm:pb-3 pt-0 sm:pt-1">
-        <div className="cursor-pointer" onClick={() => openDetail(product)}>
+        <Link to={href} className="block cursor-pointer" onClick={() => onView?.(product)}>
           <h3 className={`font-semibold text-[10px] leading-[1.2] sm:text-sm text-center sm:text-left line-clamp-2 sm:line-clamp-none sm:truncate transition-colors ${isLight ? 'text-gray-800 hover:text-gray-900' : 'text-white/90 hover:text-white'}`}>{getName(product)}</h3>
-        </div>
+        </Link>
 
         {/* Offer timer */}
         <ProductOfferTimer product={product} />
@@ -710,6 +714,7 @@ export default function Storefront() {
   const [loading, setLoading] = useState(!cachedStore);
   const [contentReady, setContentReady] = useState(hasCachedData);
   const [cartOpen, setCartOpen] = useState(false);
+  const openCart = () => { if (getCount() === 0) { toast(t('store.cartEmpty', 'Your cart is empty'), { icon: '🛒' }); return; } setCartOpen(true); };
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [favAddProduct, setFavAddProduct] = useState(null);
   const [detailProduct, setDetailProduct] = useState(null);
@@ -923,7 +928,7 @@ export default function Storefront() {
   ` : '';
 
   return (
-    <div className={`storefront-scope min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={{...(bodyTextColor?{color:bodyTextColor}:{}),...(buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:{}))}}>
+    <div className={`storefront-scope min-h-screen pb-20 md:pb-0 ${buyerTheme.mode === 'dark' ? 'buyer-theme-dark text-gray-100' : 'bg-[#f5f5f5] text-gray-900'}`} style={{...(store.header_font?{fontFamily:store.header_font}:{}),...(bodyTextColor?{color:bodyTextColor}:{}),...(buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:{}))}}>
       {fontHref && <link rel="stylesheet" href={fontHref}/>}
       {sbCss && <style>{sbCss}</style>}
       {/* ============ OFFER BANNER ============ */}
@@ -938,7 +943,7 @@ export default function Storefront() {
             </Link>
           </div>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="flex items-center bg-white/95 rounded-full shadow-md w-full overflow-hidden">
+            <div className="store-search flex items-center bg-white rounded-full shadow-md w-full overflow-hidden">
               <Search size={20} className="ml-5 text-gray-400 shrink-0"/>
               <input
                 className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none rounded-full"
@@ -959,7 +964,7 @@ export default function Storefront() {
               <Heart size={20}/>
               {wishlist.length>0&&<span className="notif-badge">{wishlist.length}</span>}
             </Link>
-            <button onClick={()=>setCartOpen(true)} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title={t('store.cart','Cart')}>
+            <button onClick={openCart} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title={t('store.cart','Cart')}>
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="notif-badge">{getCount()}</span>}
             </button>
@@ -978,7 +983,7 @@ export default function Storefront() {
             {headerMenuOpen&&(<>
               <div className="fixed inset-0 z-40" onClick={()=>setHeaderMenuOpen(false)}/>
               <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden z-50">
-                <button onClick={()=>{setHeaderMenuOpen(false);setCartOpen(true);}} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 border-b border-gray-100">
+                <button onClick={()=>{setHeaderMenuOpen(false);openCart();}} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 border-b border-gray-100">
                   <ShoppingCart size={18} style={{color:pc}}/>
                   <span className="flex-1 text-left">{t('store.cart','Cart')}</span>
                   {getCount()>0&&<span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold text-white grid place-items-center" style={{backgroundColor:pc}}>{getCount()}</span>}
@@ -1000,7 +1005,7 @@ export default function Storefront() {
         </div>
         {/* Mobile-only search row */}
         <div className="md:hidden px-3 pb-3">
-          <div className="flex items-center bg-white/95 rounded-full shadow-md w-full overflow-hidden">
+          <div className="store-search flex items-center bg-white rounded-full shadow-md w-full overflow-hidden">
             <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
             <input
               className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800 rounded-full"
@@ -1159,7 +1164,7 @@ export default function Storefront() {
             {filtered.map(product=>(
               <DarkProductCard key={product.id} product={product} storeSlug={storeSlug} pc={pc}
                 currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
-                openQuickAdd={openQuickAdd} openDetail={openDetail}
+                openQuickAdd={openQuickAdd} openDetail={openDetail} onView={(p) => { try { trackViewContent(store?.tracking_pixels, p); } catch {} }}
                 wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow} themeMode={buyerTheme.mode} addToCart={addItem}/>
             ))}
           </div>
@@ -1266,7 +1271,7 @@ export default function Storefront() {
           <span className="text-[10px] font-bold">{t('store.favorites','Favs')}</span>
         </Link>
         {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><Truck size={20}/><span className="text-[10px] font-bold">{t('store.track','Track')}</span></Link>}
-        <button onClick={()=>setCartOpen(true)} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
+        <button onClick={openCart} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
           <ShoppingCart size={20}/>
           {getCount()>0&&<span className="notif-badge" style={{right:'25%'}}>{getCount()}</span>}
           <span className="text-[10px] font-bold">{t('store.cart','Cart')}</span>

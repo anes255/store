@@ -964,6 +964,7 @@ export default function StoreSettings(){
 <div className="glass-card-solid p-4 sm:p-6 space-y-4"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center"><Globe size={20} className="text-cyan-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.regionalSettings','Regional Settings')}</h3><p className="text-xs text-gray-400">{t('storePage.currencyLanguage','CURRENCY & LANGUAGE')}</p></div></div><div><label className="input-label text-xs uppercase tracking-wider">{t('storePage.storeCurrency','Store Currency')}</label><select className="input-field" value={s.currency||'DZD'} onChange={set('currency')}><option value="DZD">{t('storePage.currencyDzd','DZD - Algerian Dinar')}</option><option value="EUR">{t('storePage.currencyEur','EUR - Euro')}</option><option value="USD">{t('storePage.currencyUsd','USD - Dollar')}</option></select></div><div><label className="input-label text-xs uppercase tracking-wider">{t('storePage.defaultLanguage','Default Language')}</label><div className="grid grid-cols-3 gap-2 sm:gap-3 mt-2">{[{c:'ar',l:'العربية',f:'🇩🇿'},{c:'fr',l:'Français',f:'🇫🇷'},{c:'en',l:'English',f:'🇬🇧'}].map(x=>(<button key={x.c} onClick={()=>setV('default_language',x.c)} className={`p-3 rounded-xl border-2 text-center transition-all ${(s.default_language||'en')===x.c?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300'}`}><span className="text-2xl block mb-1">{x.f}</span><span className="text-xs font-semibold">{x.l}</span>{(s.default_language||'en')===x.c&&<Check size={14} className="text-brand-500 mx-auto mt-1"/>}</button>))}</div></div></div>
 </div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center"><BarChart3 size={20} className="text-purple-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.seo','SEO')}</h3><p className="text-xs text-gray-400">{t('storePage.seoDesc','IMPROVE VISIBILITY ON GOOGLE')}</p></div></div><div><label className="input-label text-xs">{t('storePage.homepageTitle','Homepage Title')}</label><input className="input-field" value={s.meta_title||''} onChange={set('meta_title')}/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.charsMax70','70 chars max')}</p></div><div><label className="input-label text-xs">{t('storePage.metaDescription','Meta Description')}</label><textarea className="input-field" rows={3} value={s.meta_description||''} onChange={set('meta_description')}/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.charsMax160','160 chars max')}</p></div></div>
+<DeleteStoreCard store={currentStore} t={t}/>
 </>}
 
 {sec==='customization'&&<><div className="glass-card-solid p-4 sm:p-6"><div className="flex items-center gap-3 mb-4"><Palette size={20} className="text-brand-500"/><div><h3 className="font-bold text-gray-900">{t('storePage.designStudio','Design Studio')}</h3><p className="text-xs text-gray-400">{t('storePage.designStudioDesc','Choose a starting point or craft your unique style.')}</p></div></div><div className="grid grid-cols-2 lg:grid-cols-3 gap-3">{themes.map(th=>(<button key={th.id} onClick={()=>setS({...s,theme:th.id,primary_color:th.c})} className={`p-4 rounded-xl border-2 text-left transition-all ${s.theme===th.id?'border-brand-500 bg-brand-50 ring-2 ring-brand-200':'border-gray-200 hover:border-gray-300'}`}><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg" style={{backgroundColor:th.c}}/><div><p className="font-bold text-sm">{th.name}</p><p className="text-[10px] text-gray-400 uppercase">{th.desc}</p></div></div>{s.theme===th.id&&<Check size={14} className="text-brand-500 mt-2"/>}</button>))}</div></div>
@@ -979,11 +980,7 @@ export default function StoreSettings(){
   <div className="flex items-center gap-2"><span className="text-[11px] font-semibold text-gray-500 w-16 shrink-0">{t('storePage.chatbotColorAccent','Gradient')}</span><input type="color" value={c2||c1||s.primary_color||'#9333EA'} onChange={e=>setS({...s,config:{...(s.config||{}),chatbot_color_2:e.target.value}})} className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer shrink-0"/><input className="input-field text-sm" placeholder="#9333EA" value={c2} onChange={e=>setS({...s,config:{...(s.config||{}),chatbot_color_2:e.target.value}})}/></div>
   <div className="flex items-center gap-2 pt-1"><span className="text-[11px] text-gray-400">{t('storePage.preview','Preview')}</span><div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow" style={{background:`linear-gradient(135deg, ${c1||s.primary_color||'#7C3AED'}, ${c2||c1||s.primary_color||'#9333EA'})`}}><Bot size={18}/></div>{(c1||c2)&&<button type="button" onClick={()=>setS({...s,config:{...(s.config||{}),chatbot_color:'',chatbot_color_2:''}})} className="text-[10px] text-gray-400 hover:text-gray-600">{t('storePage.reset','Reset')}</button>}</div>
 </div>);})()}</div>
-{/* The per-page background pickers (Track Order / Favorites / Profile) were
-    removed: their saved values overrode the store's own colours on those
-    pages, which is not what a store owner expects after theming the shop.
-    Those three surfaces now follow the storefront palette. Any previously
-    saved value is simply ignored, not deleted. */}
+<div className="p-5 bg-gray-50 rounded-xl space-y-3"><div className="flex items-center gap-2"><Palette size={16}/><h4 className="font-bold text-sm">{t('storePage.customerPagesBg','Customer Pages Background')}</h4></div><p className="text-[11px] text-gray-400">{t('storePage.customerPagesBgDesc2','Background colour for the Track Order, Favorites and Profile pages. Leave empty (Reset) to follow your store colours.')}</p><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{[{key:'tracking_bg_color',label:t('storePage.trackingPage','Tracking Page')},{key:'favorites_bg_color',label:t('storePage.favoritesPage','Favorites Page')},{key:'profile_bg_color',label:t('storePage.profilePage','Profile Page')}].map(f=>{const val=s.config?.[f.key]||'';return(<div key={f.key}><label className="input-label text-xs">{f.label}</label><div className="flex items-center gap-2"><input type="color" value={val||'#1a1a1a'} onChange={e=>setS({...s,config:{...(s.config||{}),[f.key]:e.target.value}})} className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer shrink-0"/><input className="input-field text-sm" placeholder={t('storePage.followStore','Store colours')} value={val} onChange={e=>setS({...s,config:{...(s.config||{}),[f.key]:e.target.value}})}/>{val&&<button type="button" onClick={()=>setS({...s,config:{...(s.config||{}),[f.key]:''}})} className="text-[10px] text-gray-400 hover:text-gray-600 shrink-0">{t('storePage.reset','Reset')}</button>}</div></div>);})}</div></div>
 <ScrollbarStudio s={s} setS={setS} setV={setV} t={t}/>
 </div></>}
 
@@ -1583,4 +1580,51 @@ export default function StoreSettings(){
       </div>
     )}
   </DashboardLayout>);
+}
+
+// ── Danger zone: delete this store ─────────────────────────────────────────
+// Requires typing the exact store name; the server re-checks it.
+function DeleteStoreCard({ store, t }) {
+  const [open, setOpen] = React.useState(false);
+  const [typed, setTyped] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  if (!store?.id) return null;
+  const name = String(store.name || store.store_name || '').trim();
+  const ok = typed.trim() === name && name.length > 0;
+  const doDelete = async () => {
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await ownerApi.deleteStore(store.id, typed.trim());
+      ['currentStore', 'currentStoreId', 'currentStoreSlug'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+      toast.success(t('storePage.storeDeleted', 'Store deleted'));
+      window.location.href = '/dashboard';
+    } catch (e) {
+      toast.error(e?.response?.data?.error || t('storePage.failed', 'Failed'));
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="glass-card-solid p-4 sm:p-6 mt-6 border border-red-200">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0"><Trash2 size={20} className="text-red-500"/></div>
+        <div>
+          <h3 className="font-bold text-red-600">{t('storePage.deleteStore', 'Delete this store')}</h3>
+          <p className="text-xs text-gray-500">{t('storePage.deleteStoreDesc', 'Permanently removes the store with all its products, orders, customers and settings. This cannot be undone.')}</p>
+        </div>
+      </div>
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} className="mt-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100">{t('storePage.deleteStore', 'Delete this store')}</button>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <label className="input-label text-xs">{t('storePage.typeStoreName', 'Type the store name to confirm')}: <b className="text-gray-900">{name}</b></label>
+          <input className="input-field" value={typed} onChange={e => setTyped(e.target.value)} placeholder={name} autoComplete="off"/>
+          <div className="flex gap-2">
+            <button type="button" disabled={!ok || busy} onClick={doDelete} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold disabled:opacity-40">{busy ? '…' : t('storePage.deleteForever', 'Delete forever')}</button>
+            <button type="button" onClick={() => { setOpen(false); setTyped(''); }} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold">{t('common.cancel', 'Cancel')}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

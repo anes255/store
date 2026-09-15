@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
-import { useAuthStore, useBuyerTheme } from '../../hooks/useStore';
+import { useAuthStore, useBuyerTheme, useCartStore } from '../../hooks/useStore';
+import { useStoreFont } from '../../utils/storeFont';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { User, Phone, Lock, Mail, MapPin, ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBag, Heart, ShoppingCart } from 'lucide-react';
@@ -14,8 +15,10 @@ export default function CustomerAuth() {
   // This screen ignored the storefront theme entirely and was always light.
   const buyerTheme = useBuyerTheme();
   const isDarkBuyer = buyerTheme.mode === 'dark';
+  const cartCount = useCartStore(st => (st.items || []).length);
   const [store, setStore] = useState(null);
   const [storeLoading, setStoreLoading] = useState(true);
+  useStoreFont(store);
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
@@ -83,7 +86,7 @@ export default function CustomerAuth() {
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold hover:bg-white/20 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full"><Heart size={20}/></Link>
-            <Link to={`/s/${storeSlug}/checkout`} className="p-2 hover:bg-white/20 rounded-full"><ShoppingCart size={20}/></Link>
+            <button type="button" onClick={() => { if (!cartCount) { toast(t('store.cartEmpty','Your cart is empty'), { icon: '🛒' }); return; } navigate(`/s/${storeSlug}/checkout`); }} className="p-2 hover:bg-white/20 rounded-full"><ShoppingCart size={20}/></button>
           </div>
         </div>
       </header>

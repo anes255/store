@@ -415,7 +415,8 @@ export default function StoreOrders() {
     if (!rows.length) return;
     const per = [1, 2, 3, 4].includes(Number(perPage)) ? Number(perPage) : 2;
     // Grid shape per choice, so the tickets always divide the sheet evenly.
-    const GRID = { 1: { cols: 1, rows: 1, font: 13 }, 2: { cols: 1, rows: 2, font: 11 }, 3: { cols: 1, rows: 3, font: 10 }, 4: { cols: 2, rows: 2, font: 9.5 } }[per];
+    const GRIDS = { 1: { cols: 1, rows: 1, font: 14 }, 2: { cols: 1, rows: 2, font: 11.5 }, 3: { cols: 1, rows: 3, font: 10 }, 4: { cols: 2, rows: 2, font: 9.5 } };
+    const GRID = GRIDS[per];
     // Hydrate missing items by fetching the full order.
     const hydrated = await Promise.all(rows.map(async o => {
       let items = o.items;
@@ -464,7 +465,7 @@ export default function StoreOrders() {
         const qty = parseInt(i.quantity) || 1;
         const unit = parseFloat(i.unit_price ?? i.price) || 0;
         return `<tr>
-          <td><div class="pname">${esc(i.product_name || i.name || '')}</div>${vt ? `<div class="pvar">${esc(vt)}</div>` : ''}${i.sku ? `<div class="psku">SKU: ${esc(i.sku)}</div>` : ''}</td>
+          <td><div class="pname">${esc(i.product_name || i.name || '')}${i.is_fragile ? '<span class="fragile">FRAGILE</span>' : ''}</div>${vt ? `<div class="pvar">${esc(vt)}</div>` : ''}${i.sku ? `<div class="psku">SKU: ${esc(i.sku)}</div>` : ''}</td>
           <td style="text-align:center">${qty}</td>
           <td style="text-align:right">${fmtMoney(unit, o.currency)}</td>
           <td style="text-align:right"><b>${fmtMoney(unit * qty, o.currency)}</b></td>
@@ -514,12 +515,19 @@ export default function StoreOrders() {
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Orders — Print (${hydrated.length})</title>
       <style>
         *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0;padding:0}
-        body{margin:0;padding:4px 8px;background:#fff}
+        body{margin:0;padding:0;background:#fff}
         h1.title{font-size:11px;font-weight:800;margin:0 0 4px;text-transform:uppercase;letter-spacing:1px;color:#555}
-        @page{size:A4;margin:6mm}
+        @page{size:A4;margin:0}
         /* One sheet's worth of tickets, split into equal cells so N receipts
            cover the whole page instead of clustering at the top. */
-        .page{display:grid;grid-template-columns:repeat(${GRID.cols},1fr);grid-template-rows:repeat(${GRID.rows},1fr);gap:4mm;height:285mm}
+        .page{display:grid;gap:4mm;height:297mm;padding:7mm;box-sizing:border-box;page-break-after:always}
+        .page:last-child{page-break-after:auto}
+        .g1{grid-template-columns:1fr;grid-template-rows:1fr}
+        .g2{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+        .g3{grid-template-columns:1fr;grid-template-rows:1fr 1fr 1fr}
+        .g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+        .f1 .ticket{font-size:${GRIDS[1].font}px}.f2 .ticket{font-size:${GRIDS[2].font}px}.f3 .ticket{font-size:${GRIDS[3].font}px}.f4 .ticket{font-size:${GRIDS[4].font}px}
+        .fragile{display:inline-block;margin-left:6px;padding:1px 6px;border:1.5px solid #b91c1c;color:#b91c1c;border-radius:4px;font-weight:800;font-size:.8em;letter-spacing:.5px}
         .ticket{border:1px solid #ccc;border-radius:4px;padding:6px 8px;page-break-inside:avoid;font-size:${GRID.font}px;line-height:1.35;overflow:hidden;display:flex;flex-direction:column}
         .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:3px;margin-bottom:3px}
         .store{font-size:${(GRID.font + 2).toFixed(1)}px;font-weight:800}
@@ -539,7 +547,7 @@ export default function StoreOrders() {
         .totals .total{font-size:10px;font-weight:800;border-top:1px solid #111;margin-top:1px;padding-top:2px}
         .track{margin-top:2px;font-size:8px;color:#444}
         .notes{margin-top:2px;font-size:8px;color:#666;font-style:italic}
-        @media print{body{padding:2mm 3mm}.ticket{border:1px solid #999}h1.title{display:none}.page-break{page-break-after:always}}
+        @media print{body{padding:0}.ticket{border:1px solid #999}h1.title{display:none}}
       </style>
       </head><body>
         <h1 class="title">${hydrated.length} order${hydrated.length === 1 ? '' : 's'} · ${esc(currentStore?.name || '')} · ${esc(new Date().toLocaleString())}</h1>
@@ -548,8 +556,8 @@ export default function StoreOrders() {
           const pages = [];
           for (let i = 0; i < tickets.length; i += per) {
             const chunk = tickets.slice(i, i + per);
-            const isLast = i + per >= tickets.length;
-            pages.push('<div class="page">' + chunk.join('') + '</div>' + (isLast ? '' : '<div class="page-break"></div>'));
+            const n = chunk.length; // 1..per — lay out by what is really on this sheet
+            pages.push(`<div class="page g${n} f${n}">` + chunk.join('') + '</div>');
           }
           return pages.join('');
         })()}

@@ -52,6 +52,14 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const isBuyNow = !!directItems;
   const [buyNowItems, setBuyNowItems] = useState(directItems || []);
   const items = isBuyNow ? buyNowItems : cartStore.items;
+  // The line's trash button: when an offer tier is selected it first undoes
+  // that selection (back to a single unit, no offer) instead of deleting the
+  // product from the order; a second tap then removes the line.
+  const trashItem = (idx, item) => {
+    const hasOffer = !item.offer_none && parseInt(item.offer_qty) > 0;
+    if (hasOffer) { updateItemField(idx, { offer_qty: 0, offer_none: true }); updateQuantity(idx, 1); return; }
+    removeItem(idx);
+  };
   const removeItem = (idx) => { if (isBuyNow) setBuyNowItems(prev => prev.filter((_,i)=>i!==idx)); else cartStore.removeItem(idx); };
   const updateQuantity = (idx, qty) => { if (isBuyNow) setBuyNowItems(prev => { const n=[...prev]; n[idx]={...n[idx],quantity:Math.max(1,qty)}; return n; }); else cartStore.updateQuantity(idx, qty); };
   const clearItems = () => { if (isBuyNow) setBuyNowItems([]); else cartStore.clearCart(); };
@@ -92,6 +100,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   // offer tier. The quantity counter then counts PACKS (offers), and the real
   // unit quantity sent with the order = packs × packSize.
   const itemPackSize = (item) => {
+    // The buyer backed out of every offer: sell plain units again.
+    if (item.offer_none) return 0;
     if (parseInt(item.offer_qty) > 0) return parseInt(item.offer_qty);
     const o = itemQtyOffers(item).map(q => parseInt(q.quantity)).filter(n => n > 0);
     return o.length ? Math.min(...o) : 0;
@@ -961,7 +971,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                 const tierQty = parseInt(qo.quantity) || 1;
                                 const active = itemPackSize(item) === tierQty;
                                 return (
-                                  <button key={qi} type="button" onClick={() => { updateItemField(i, { offer_qty: tierQty }); updateQuantity(i, tierQty); }}
+                                  <button key={qi} type="button" onClick={() => { updateItemField(i, { offer_qty: tierQty, offer_none: false }); updateQuantity(i, tierQty); }}
                                     className={`w-full h-full min-h-[72px] flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-2xl border-2 text-center transition-all ${active ? 'border-transparent text-white shadow-lg' : 'border-gray-200 text-gray-800 bg-white hover:border-gray-400 hover:shadow-md'}`}
                                     style={active ? { backgroundColor: pc } : {}}>
                                     <span className="flex items-center justify-center gap-1.5 text-sm font-extrabold whitespace-nowrap">{active && <Check size={15} className="shrink-0" />}{t('store.buyQty', 'Buy')} {tierQty}</span>
@@ -1035,7 +1045,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                 {Array.from({ length: unitCount }, (_, ui) => {
                                   const uv = unitVars[ui] || {};
                                   return (
-                                    <div key={ui} className="flex flex-col gap-1 rounded-lg px-2 py-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                    <div key={ui} className="flex flex-col gap-2 rounded-xl p-2 bg-gray-50 border border-gray-100">
                                       <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">
                                         <span className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center shrink-0" style={{ backgroundColor: pc }}>{ui + 1}</span>
                                         {t('store.unit', 'Unit')} {ui + 1}
@@ -1044,9 +1054,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                           const group = groups[type];
                                           const sel = uv[type];
                                           return (
-                                            <div key={type} className="flex items-start gap-2">
-                                              <span className="text-[9px] font-bold uppercase tracking-wide text-gray-500 w-16 shrink-0 pt-1.5">{variantTypeLabel(type)}</span>
-                                              <div className="flex items-center gap-1 flex-wrap">
+                                            <div key={type} className="flex flex-col gap-1">
+                                              <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">{variantTypeLabel(type)}</span>
+                                              <div className="flex items-center gap-1.5 flex-wrap">
                                           {type === 'color' ? group.map(v => {
                                             const isSel = sel === v._idx;
                                             const colorVal = v.value || '#ccc';
@@ -1054,10 +1064,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                             const hasImg = v.images && v.images.length > 0;
                                             return (
                                               <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)} title={v.name}>
-                                                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110' : 'border-gray-400 hover:border-gray-300'}`}
+                                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${isSel ? 'scale-110 shadow' : 'border-gray-300 hover:border-gray-400'}`}
                                                   style={{ ...(useColor && !hasImg ? { backgroundColor: colorVal } : {}), ...(isSel ? { borderColor: pc, boxShadow: `0 0 0 2px ${pc}40` } : {}) }}>
-                                                  {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[6px] font-bold text-gray-400">{(v.name||'?').slice(0,2)}</span> : null}
-                                                  {isSel && <Check size={9} className="absolute text-white drop-shadow-md"/>}
+                                                  {hasImg ? <img src={v.images[0]} className="w-full h-full object-cover" alt={v.name}/> : !useColor ? <span className="text-[7px] font-bold text-gray-500">{(v.name||'?').slice(0,3)}</span> : null}
+                                                  {isSel && <Check size={10} className="absolute text-white drop-shadow-md"/>}
                                                 </div>
                                               </button>
                                             );
@@ -1065,7 +1075,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                                             const isSel = sel === v._idx;
                                             return (
                                               <button key={v._idx} onClick={() => setUnitVariant(i, ui, type, v._idx)}
-                                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all ${isSel ? 'text-white' : 'border-gray-500 text-gray-400 hover:border-gray-300'}`}
+                                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${isSel ? 'text-white' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}
                                                 style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
                                                 {v.name || v.value || t('store.variantOption', 'Option')}
                                               </button>
@@ -1106,7 +1116,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         );
                       })()}
                     </div>
-                    <div className="text-right"><p className="font-bold text-sm text-gray-900">{(getItemPrice(item) * item.quantity).toLocaleString()}</p><button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
+                    <div className="text-right"><p className="font-bold text-sm text-gray-900">{(getItemPrice(item) * item.quantity).toLocaleString()}</p><button onClick={() => trashItem(i, item)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>
                   );
                 })}

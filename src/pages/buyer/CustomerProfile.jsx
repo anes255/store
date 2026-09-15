@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { storeCanvas } from '../../utils/storeTheme';
+import { useStoreFont } from '../../utils/storeFont';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -132,6 +133,7 @@ export default function CustomerProfile() {
   const [store, setStore] = useState(() => {
     try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; }
   });
+  useStoreFont(store);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -269,7 +271,7 @@ export default function CustomerProfile() {
 
   // -- Render -----------------------------------------------------------------
   return (
-    <div className="min-h-screen" style={{ fontFamily: store?.header_font || 'Arial, sans-serif', background: storeCanvas(store, store?.primary_color)}}>
+    <div className="min-h-screen" style={{ fontFamily: store?.header_font || 'Arial, sans-serif', background: store?.config?.profile_bg_color || storeCanvas(store, store?.primary_color)}}>
 
       {/* ==================== MOBILE TOP BAR ==================== */}
       <div className="lg:hidden sticky top-0 z-30 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">

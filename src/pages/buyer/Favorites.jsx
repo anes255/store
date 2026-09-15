@@ -8,6 +8,7 @@ import { useCartStore, useWishlistStore } from '../../hooks/useStore';
 import { storeApi } from '../../utils/api';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
 import { storeCanvas } from '../../utils/storeTheme';
+import { useStoreFont } from '../../utils/storeFont';
 
 // =============================================================================
 // FAVORITES PAGE
@@ -44,6 +45,7 @@ export default function Favorites() {
     return () => { cancelled = true; };
   }, [storeSlug]);
 
+  useStoreFont(store);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
   const [quickAddProduct, setQuickAddProduct] = useState(null);
@@ -143,7 +145,8 @@ export default function Favorites() {
   // Derived from the store's own colour, unconditionally. There used to be a
   // separate favorites_bg_color picker whose stale value (a brown, on a purple
   // store) overrode this; these pages follow the storefront now.
-  const canvas = storeCanvas(store, pc);
+  // A colour picked for this page in Settings wins; otherwise follow the store.
+  const canvas = store?.config?.favorites_bg_color || storeCanvas(store, pc);
 
   return (
     <div className="min-h-screen" style={{ fontFamily: headerFont, background: canvas }}>

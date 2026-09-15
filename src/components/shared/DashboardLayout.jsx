@@ -1,4 +1,5 @@
 import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import toast from'react-hot-toast';
 
 // Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
 // include the key the sidebar item renders with a lock icon + muted styling,
@@ -282,7 +283,9 @@ function NotifBell(){
         <div className="max-h-80 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,30).map(n=>(
           <div key={n.id} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer flex items-start gap-2 ${!n.is_read?'bg-brand-50/30':''}`} onClick={()=>{if(selectMode){toggleSelected(n.id);return;}openNotif(n);}}>
             {selectMode && <input type="checkbox" checked={selected.has(n.id)} onChange={()=>toggleSelected(n.id)} onClick={e=>e.stopPropagation()} className="mt-1 w-4 h-4 rounded border-gray-300 text-brand-500"/>}
-            <span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span>
+            {n.image
+              ? <img src={n.image} alt="" loading="lazy" className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0"/>
+              : <span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span>}
             <div className="flex-1 min-w-0"><p className="text-sm text-gray-800 font-medium truncate">{n.title}</p>{n.message&&<p className="text-xs text-gray-400 truncate">{n.message}</p>}<p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(n.created_at)}</p></div>
             {!n.is_read&&<span className="w-2 h-2 bg-brand-500 rounded-full mt-1.5 shrink-0"/>}
             {!selectMode && <button onClick={(e)=>{e.stopPropagation();removeOne(n.id);}} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 shrink-0" title="Remove"><X size={14}/></button>}
@@ -465,17 +468,16 @@ export default function DashboardLayout({children}){
     return !planCtx.hasFeature(key);
   };
   const handleGated=(e,label)=>{e.preventDefault();
-    const toast=require('react-hot-toast').default;
     toast.error(`"${label}" is locked on your current plan. Upgrade to unlock it.`);};
 
   const SLink=({to,icon:Icon,label,gated})=>{
     if(isStaffBlocked(to))return null;
-    if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pl[300]:pl[400]}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
+    if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pc:pc}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
     const active=isActive(to);
     return(<Link to={to} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
-      style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:isDark?pl[300]:pl[600]}}
-      onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':pl[50];e.currentTarget.style.color=isDark?pl[200]:pl[700];}}}
-      onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pl[300]:pl[600];}}}
+      style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:isDark?pc:pc}}
+      onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');e.currentTarget.style.color=isDark?pc:pc;}}}
+      onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pc:pc;}}}
     ><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
   };
   const SubLink=({to,label})=>{
@@ -483,12 +485,12 @@ export default function DashboardLayout({children}){
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
     const segment=to.split('/').pop();
     const gated=isGated(segment);
-    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pl[400]+'80':pl[300]}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
+    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pc+'80':pc}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
     const active=isActive(to);
     return(<Link to={to} className={`pl-12 py-1.5 block text-sm transition-all ${active?'font-semibold':''}`}
-      style={active?{color:pc}:{color:isDark?pl[400]:pl[300]}}
-      onMouseEnter={e=>{if(!active){e.currentTarget.style.color=isDark?pl[200]:pl[600];}}}
-      onMouseLeave={e=>{if(!active){e.currentTarget.style.color=isDark?pl[400]:pl[300];}}}
+      style={active?{color:pc}:{color:isDark?pc:pc}}
+      onMouseEnter={e=>{if(!active){e.currentTarget.style.color=isDark?pc:pc;}}}
+      onMouseLeave={e=>{if(!active){e.currentTarget.style.color=isDark?pc:pc;}}}
     >{lbl}</Link>);
   };
 
@@ -529,9 +531,9 @@ export default function DashboardLayout({children}){
             <div className="flex items-center">
               {sidebarOpen&&<div className="opacity-0 group-hover:opacity-40 px-0.5"><GripVertical size={12} className="text-gray-400"/></div>}
               <button onClick={()=>toggle(item.id)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all"
-                style={{color:isDark?pl[300]:pl[600]}}
-                onMouseEnter={e=>{e.currentTarget.style.backgroundColor=isDark?pc+'15':pl[50];e.currentTarget.style.color=isDark?pl[200]:pl[700];}}
-                onMouseLeave={e=>{e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pl[300]:pl[600];}}
+                style={{color:isDark?pc:pc}}
+                onMouseEnter={e=>{e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');e.currentTarget.style.color=isDark?pc:pc;}}
+                onMouseLeave={e=>{e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pc:pc;}}
               >
                 <div className="flex items-center gap-3"><Icon size={18}/>{sidebarOpen&&<span>{lbl}</span>}</div>
                 {sidebarOpen&&<ChevronDown size={14} className={`transition-transform ${openMenus[item.id]?'rotate-180':''}`}/>}
@@ -549,7 +551,7 @@ export default function DashboardLayout({children}){
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen h-[100dvh] z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
       <div className={`p-4 border-b flex items-center justify-between ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-full object-cover shrink-0"/>:<div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px] truncate" style={{color:pl[400]}}>{breadcrumb.main}{breadcrumb.sub?' › '+breadcrumb.sub:''}</p></div>}</Link>
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity" title={t('sidebar.dashboard','Dashboard')}>{currentStore?.logo?<img src={currentStore.logo} className="w-8 h-8 rounded-full object-cover shrink-0"/>:<div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" style={{backgroundColor:pc}}>{(currentStore?.name||'K')[0]}</div>}{sidebarOpen&&<div><p className={`font-bold text-sm truncate ${isDark?'text-gray-100':'text-gray-800'}`}>{currentStore?.name||'MyMarket'}</p><p className="text-[10px] truncate" style={{color:pc}}>{breadcrumb.main}{breadcrumb.sub?' › '+breadcrumb.sub:''}</p></div>}</Link>
         {isMobile&&<button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 lg:hidden"><X size={18}/></button>}
       </div>
       {/* Store switcher — only shows when owner has multiple stores */}
@@ -580,10 +582,20 @@ export default function DashboardLayout({children}){
           </>)}
         </div>
       )}
-      {/* The sidebar search box was removed; the header search covers it. */}
+      {sidebarOpen&&<div className="px-3 pt-3 relative">
+        <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+        <input
+          className={`w-full pl-7 pr-7 py-2 rounded-lg text-xs border focus:outline-none focus:ring-2 ${isDark?'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500':'bg-gray-50 border-gray-100 text-gray-700 placeholder-gray-400'}`}
+          style={{'--tw-ring-color':pc+'30'}}
+          placeholder={t('common.search','Search...')}
+          value={sideQuery}
+          onChange={e=>setSideQuery(e.target.value)}
+        />
+        {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
+      </div>}
       <nav className={`flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
         {sidebarOpen&&<div className="px-3 pt-2 pb-1 flex items-center justify-between">
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{color:pl[400]}}>{t('sidebar.mainMenu','Main Menu')}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{color:pc}}>{t('sidebar.mainMenu','Main Menu')}</p>
           {(()=>{const groupIds=items.filter(it=>it.type!=='link'&&it.children).map(it=>it.id);const allOpen=groupIds.length>0&&groupIds.every(id=>openMenus[id]);return(
             <button type="button" onClick={()=>{const next={};groupIds.forEach(id=>{next[id]=!allOpen;});setOpenMenus({...openMenus,...next});}} className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded transition-all ${isDark?'text-gray-400 hover:text-gray-200 hover:bg-white/5':'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title={allOpen?t('sidebar.hideAll','Hide all'):t('sidebar.showAll','Show all')}>
               {allOpen?t('sidebar.hideAll','Hide all'):t('sidebar.showAll','Show all')}
@@ -687,33 +699,7 @@ export default function DashboardLayout({children}){
             })()}
           </div>
           {currentStore?.is_live!==false&&<span className="hidden md:inline-flex"><LiveBadge storeId={currentStore?.id}/></span>}
-          {/* Header store switcher: shows a "+" when the owner has only one
-              store (quick way to create a second), and a dropdown when 2+.
-              Staff don't get the "+" (they can't create stores), but if they
-              were assigned to multiple stores by their admin they DO get the
-              dropdown so they can switch between assigned stores. */}
-          {Array.isArray(stores)&&(user?.is_staff?stores.length>1:true)&&(
-            <div className="relative">
-              {stores.length<=1?(
-                <button onClick={()=>navigate('/dashboard?new_store=1')} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${isDark?'bg-gray-800 text-gray-300 hover:bg-gray-700':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title={t('sidebar.createStore','Create a store')}>
-                  <Plus size={13}/><span className="hidden sm:inline">{t('sidebar.newStore','New store')}</span>
-                </button>
-              ):(
-                <HeaderStoreSwitcher
-                  open={headerStoreSwitchOpen}
-                  setOpen={setHeaderStoreSwitchOpen}
-                  stores={stores}
-                  currentStore={currentStore}
-                  setCurrentStore={setCurrentStore}
-                  user={user}
-                  navigate={navigate}
-                  isDark={isDark}
-                  pc={pc}
-                  t={t}
-                />
-              )}
-            </div>
-          )}
+          {/* Store switcher removed from the header — the sidebar one remains. */}
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className={`hidden sm:inline-flex p-2 rounded-lg ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-500'}`}><Eye size={18}/></Link>
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor} buttonColor={theme.buttonColor} onButtonColorChange={theme.setButtonColor} backgroundColor={theme.backgroundColor} onBackgroundColorChange={theme.setBackgroundColor}/>

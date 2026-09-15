@@ -37,7 +37,7 @@ export default function StoreProducts() {
   const toggleAll = () => setSelectedItems(prev => prev.size === products.length ? new Set() : new Set(products.map(p => p.id)));
   const clearSelection = () => setSelectedItems(new Set());
 
-  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',weight:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false,is_on_sale:false,sale_badge_text:'',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:'',quantity_offers:[]};
+  const empty = {name_en:'',name_fr:'',name_ar:'',description_en:'',price:'',cost_price:'',compare_at_price:'',stock_quantity:'',weight:'',sku:'',category_id:'',images:[],is_featured:false,allow_oversell:false,is_fragile:false,variants:[],coupon_code:'',coupon_discount_percent:'',coupon_active:false,is_on_sale:false,sale_badge_text:'',offer_title:'',offer_discount:'',offer_hours:'',offer_minutes:'',quantity_offers:[]};
   const [form, setForm] = useState({...empty});
 
   const loadProducts = async () => {
@@ -127,7 +127,7 @@ export default function StoreProducts() {
     let qOffers = p.quantity_offers || [];
     if (typeof qOffers === 'string') { try { qOffers = JSON.parse(qOffers); } catch { qOffers = []; } }
     if (!Array.isArray(qOffers)) qOffers = [];
-    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,weight:p.weight||'',sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active,is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'',offer_title:p.offer_title||'',offer_discount:p.offer_discount||'',offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||'',quantity_offers:qOffers});
+    setForm({name_en:p.name_en||p.name||'',name_fr:p.name_fr||'',name_ar:p.name_ar||'',description_en:p.description_en||p.description||'',price:p.price,cost_price:p.cost_price||'',compare_at_price:p.compare_at_price||p.compare_price||'',stock_quantity:p.stock_quantity,weight:p.weight||'',sku:p.sku||'',category_id:p.category_id||'',images:Array.isArray(p.images)?p.images:[],is_featured:p.is_featured,allow_oversell:!!p.allow_oversell,is_fragile:!!p.is_fragile,variants:vars,coupon_code:p.coupon_code||'',coupon_discount_percent:p.coupon_discount_percent||'',coupon_active:!!p.coupon_active,is_on_sale:!!p.is_on_sale,sale_badge_text:p.sale_badge_text||'',offer_title:p.offer_title||'',offer_discount:p.offer_discount||'',offer_hours:p.offer_hours||'',offer_minutes:p.offer_minutes||'',quantity_offers:qOffers});
     setShowModal(true);
   };
 
@@ -279,6 +279,16 @@ export default function StoreProducts() {
                 <div>
                   <p className="text-sm font-bold text-amber-800">{t('products.allowOversell','Allow selling when out of stock')}</p>
                   <p className="text-[11px] text-amber-600">{t('products.allowOversellDesc','Customers can still buy this product even if stock reaches 0')}</p>
+                </div>
+              </label>
+
+              {/* Fragile product — shown on the product page, the receipt, and
+                  sent to the delivery company with the parcel. */}
+              <label className="flex items-center gap-3 p-3 bg-rose-50 rounded-xl cursor-pointer hover:bg-rose-100 transition-colors">
+                <input type="checkbox" checked={!!form.is_fragile} onChange={e=>setForm({...form,is_fragile:e.target.checked})} className="w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"/>
+                <div>
+                  <p className="text-sm font-bold text-rose-800">{t('products.fragile','Fragile product')}</p>
+                  <p className="text-[11px] text-rose-600">{t('products.fragileDesc','Marked on the product page and receipt, and sent to the delivery company')}</p>
                 </div>
               </label>
 

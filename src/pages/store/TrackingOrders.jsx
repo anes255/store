@@ -146,6 +146,7 @@ export default function TrackingOrders(){
       tracking_show_address:currentStore.tracking_show_address!==false,
       tracking_show_payment:currentStore.tracking_show_payment!==false,
       tracking_show_tracking_number:currentStore.tracking_show_tracking_number!==false,
+      tracking_hide_delivered_days:parseInt(currentStore.tracking_hide_delivered_days)||0,
     });
   },[currentStore?.id]);
   const setK=(k,v)=>setS(p=>({...p,[k]:v}));
@@ -460,6 +461,17 @@ export default function TrackingOrders(){
           <Toggle label={t('orderTrack.showAddress','Show Address')} desc={t('orderTrack.showAddressDesc','Display the shipping address')} checked={s.tracking_show_address} onChange={e=>setK('tracking_show_address',e.target.checked)}/>
           <Toggle label={t('orderTrack.showPayment','Show Payment')} desc={t('orderTrack.showPaymentDesc','Display chosen payment method')} checked={s.tracking_show_payment} onChange={e=>setK('tracking_show_payment',e.target.checked)}/>
           <Toggle label={t('orderTrack.showTN','Show Tracking Number')} desc={t('orderTrack.showTNDesc','Display the courier tracking number (if set)')} checked={s.tracking_show_tracking_number} onChange={e=>setK('tracking_show_tracking_number',e.target.checked)}/>
+        </div>
+        {/* Old delivered orders can be hidden from the public tracking page. */}
+        <div className="mt-3 p-3 rounded-xl bg-gray-50 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-800">{t('orderTrack.hideDelivered','Hide old delivered orders')}</p>
+            <p className="text-[11px] text-gray-500">{t('orderTrack.hideDeliveredDesc','Delivered orders older than this no longer appear on the store tracking page.')}</p>
+          </div>
+          <select className="input-field !py-2 text-sm sm:!w-48" value={s.tracking_hide_delivered_days||0} onChange={e=>setK('tracking_hide_delivered_days',parseInt(e.target.value)||0)}>
+            <option value={0}>{t('orderTrack.showAll','Always show')}</option>
+            {[3,7,14,30,60,90].map(d=><option key={d} value={d}>{t('orderTrack.afterDays','After {{d}} days',{d})}</option>)}
+          </select>
         </div>
       </div>
     </div>
