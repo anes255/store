@@ -67,6 +67,8 @@ export const platformApi = {
   extendSubscription: (ownerId, data) => api.post(`/platform/store-owners/${ownerId}/extend-subscription`, data).then(r => { invalidatePlatform(); return r; }),
   // Admin notifications
   getNotifications: () => api.get('/platform/notifications'),
+  subscribePush: (data) => api.post('/platform/push/subscribe', data),
+  testPush: () => api.post('/platform/push/test'),
   markNotificationRead: (id) => api.patch(`/platform/notifications/${id}/read`),
   markAllNotificationsRead: () => api.patch('/platform/notifications/read-all'),
   deleteNotification: (id) => api.delete(`/platform/notifications/${id}`),

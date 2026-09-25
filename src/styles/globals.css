@@ -500,3 +500,24 @@ input[type="date"],input[type="datetime-local"],input[type="month"],input[type="
 .store-search input{background-color:transparent !important;color:#111827 !important;-webkit-text-fill-color:#111827 !important;caret-color:#111827 !important;}
 .store-search input::placeholder{color:#6b7280 !important;-webkit-text-fill-color:#6b7280 !important;opacity:1;}
 .store-search svg{color:#6b7280 !important;}
+
+/* ═══ Browser autofill ═══
+   When a buyer picks a saved password or phone, Chrome paints the field with
+   its own yellow/blue autofill colour — on the store sign-up and sign-in forms
+   that turned the whole password box yellow. Keep each field's own surface. */
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus,
+textarea:-webkit-autofill,select:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 1000px #f9fafb inset !important;
+  box-shadow:0 0 0 1000px #f9fafb inset !important;
+  -webkit-text-fill-color:#1f2937 !important;
+  caret-color:#1f2937;
+  transition:background-color 99999s ease-in-out 0s;
+}
+.buyer-theme-dark input:-webkit-autofill,.buyer-theme-dark input:-webkit-autofill:hover,.buyer-theme-dark input:-webkit-autofill:focus,
+html.admin-dark input:-webkit-autofill,html.platform-dark input:-webkit-autofill,html.dark input:-webkit-autofill,
+.auth-dark input:-webkit-autofill,.auth-dark input:-webkit-autofill:hover,.auth-dark input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #0a0a0a inset !important;
+  box-shadow:0 0 0 1000px #0a0a0a inset !important;
+  -webkit-text-fill-color:#f3f4f6 !important;
+  caret-color:#f3f4f6;
+}

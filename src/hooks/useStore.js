@@ -75,8 +75,30 @@ export const useStoreManagement = create((set) => ({
   setStores: (stores) => set({ stores }),
 }));
 
+// Persist the cart without ever letting storage errors break the UI. Product
+// photos are often inline base64 (600 KB+ each), so a few lines could exceed
+// the ~5 MB localStorage quota on phones; setItem then threw BEFORE the state
+// update, and "Add to cart" silently did nothing. On quota errors a slim copy
+// (large inline images dropped) is saved instead — the in-memory cart keeps
+// everything.
+const isBigInline = (x) => typeof x === 'string' && x.startsWith('data:') && x.length > 20000;
+function saveCart(items) {
+  try { localStorage.setItem('cart', JSON.stringify(items)); return; } catch {}
+  try {
+    const slim = items.map(i => ({
+      ...i,
+      image: isBigInline(i.image) ? null : i.image,
+      variants: Array.isArray(i.variants) ? i.variants.map(v => ({ ...v, images: Array.isArray(v?.images) ? v.images.filter(x => !isBigInline(x)) : v?.images })) : i.variants,
+    }));
+    localStorage.setItem('cart', JSON.stringify(slim));
+  } catch {}
+}
+function loadCart() {
+  try { const v = JSON.parse(localStorage.getItem('cart') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+
 export const useCartStore = create((set, get) => ({
-  items: JSON.parse(localStorage.getItem('cart') || '[]'),
+  items: loadCart(),
   storeSlug: localStorage.getItem('cartStoreSlug') || null,
 
   addItem: (product, quantity = 1, variant = null) => {
@@ -111,38 +133,38 @@ export const useCartStore = create((set, get) => ({
         quantity_offers: product.quantity_offers || [],
       }];
     }
-    localStorage.setItem('cart', JSON.stringify(newItems));
     set({ items: newItems });
+    saveCart(newItems);
   },
 
   removeItem: (index) => {
     const newItems = get().items.filter((_, i) => i !== index);
-    localStorage.setItem('cart', JSON.stringify(newItems));
     set({ items: newItems });
+    saveCart(newItems);
   },
 
   updateQuantity: (index, quantity) => {
     const newItems = [...get().items];
     newItems[index].quantity = Math.max(1, quantity);
-    localStorage.setItem('cart', JSON.stringify(newItems));
     set({ items: newItems });
+    saveCart(newItems);
   },
 
   // Patch arbitrary fields on a cart line (e.g. the selected quantity-offer pack).
   updateItem: (index, patch) => {
     const newItems = [...get().items];
     newItems[index] = { ...newItems[index], ...patch };
-    localStorage.setItem('cart', JSON.stringify(newItems));
     set({ items: newItems });
+    saveCart(newItems);
   },
 
   clearCart: () => {
-    localStorage.removeItem('cart');
+    try { localStorage.removeItem('cart'); } catch {}
     set({ items: [] });
   },
 
   setStoreSlug: (slug) => {
-    localStorage.setItem('cartStoreSlug', slug);
+    try { localStorage.setItem('cartStoreSlug', slug); } catch {}
     set({ storeSlug: slug });
   },
 
@@ -322,7 +344,7 @@ function applyThemeToDOM(mode, color, context) {
 
   // Apply dark mode class per-context
   if (context === 'admin') {
-    const adminMode = localStorage.getItem('admin_theme_mode') || 'light';
+    const adminMode = readAdminTheme('admin_theme_mode', 'light');
     if (adminMode === 'dark') root.classList.add('admin-dark');
     else root.classList.remove('admin-dark');
   }
@@ -347,6 +369,30 @@ function applyBrandToDOM(color) {
   root.style.setProperty('--brand', color);
 }
 
+// Admin theme settings are kept PER STORE. They used to live under single
+// global keys, so changing the colour in one store recoloured every other store
+// the owner manages. Reads fall back to the old global key so nobody loses
+// their current theme on upgrade.
+function adminThemeKey(base) {
+  let sid = '';
+  try { sid = localStorage.getItem('currentStoreId') || ''; } catch {}
+  return sid ? `${base}:${sid}` : base;
+}
+function readAdminTheme(base, fallback) {
+  try {
+    const v = localStorage.getItem(adminThemeKey(base));
+    if (v != null) return v;
+    const legacy = localStorage.getItem(base);
+    return legacy != null ? legacy : fallback;
+  } catch { return fallback; }
+}
+function writeAdminTheme(base, value) {
+  try {
+    if (value === '' || value == null) localStorage.removeItem(adminThemeKey(base));
+    else localStorage.setItem(adminThemeKey(base), value);
+  } catch {}
+}
+
 // Paints the dashboard's page background. Driven by a CSS variable so the
 // dark-mode rules in globals.css can defer to it when the admin sets one.
 function applyAdminBackground(color) {
@@ -359,38 +405,46 @@ function applyAdminBackground(color) {
 
 // Store admin theme
 export const useAdminTheme = create((set, get) => ({
-  mode: localStorage.getItem('admin_theme_mode') || 'light',
-  primaryColor: localStorage.getItem('admin_theme_color') || '#7C3AED',
-  palette: generatePalette(localStorage.getItem('admin_theme_color') || '#7C3AED'),
+  mode: readAdminTheme('admin_theme_mode', 'light'),
+  primaryColor: readAdminTheme('admin_theme_color', '#7C3AED'),
+  palette: generatePalette(readAdminTheme('admin_theme_color', '#7C3AED')),
   // Color of the primary/"golden" action buttons in the dashboard. Defaults to
   // the original golden so existing stores look unchanged until customized.
-  buttonColor: localStorage.getItem('admin_button_color') || '#C5A55A',
+  buttonColor: readAdminTheme('admin_button_color', '#C5A55A'),
   // Optional page background override for the dashboard. Empty means "use the
   // theme's own default" (light gray, or true black in dark mode).
-  backgroundColor: localStorage.getItem('admin_bg_color') || '',
+  backgroundColor: readAdminTheme('admin_bg_color', ''),
 
   init: () => {
-    const state = get();
-    applyThemeToDOM(state.mode, state.primaryColor, 'admin');
-    applyBrandToDOM(state.buttonColor);
-    applyAdminBackground(state.backgroundColor);
+    // Pick up the CURRENT store's saved theme (the store id may have been set
+    // after this module first loaded, e.g. right after login).
+    const fresh = {
+      mode: readAdminTheme('admin_theme_mode', 'light'),
+      primaryColor: readAdminTheme('admin_theme_color', '#7C3AED'),
+      buttonColor: readAdminTheme('admin_button_color', '#C5A55A'),
+      backgroundColor: readAdminTheme('admin_bg_color', ''),
+    };
+    set({ ...fresh, palette: generatePalette(fresh.primaryColor) });
+    applyThemeToDOM(fresh.mode, fresh.primaryColor, 'admin');
+    applyBrandToDOM(fresh.buttonColor);
+    applyAdminBackground(fresh.backgroundColor);
   },
 
   setButtonColor: (color) => {
-    localStorage.setItem('admin_button_color', color);
+    writeAdminTheme('admin_button_color', color);
     applyBrandToDOM(color);
     set({ buttonColor: color });
   },
 
   setBackgroundColor: (color) => {
     const v = color || '';
-    if (v) localStorage.setItem('admin_bg_color', v); else localStorage.removeItem('admin_bg_color');
+    writeAdminTheme('admin_bg_color', v);
     applyAdminBackground(v);
     set({ backgroundColor: v });
   },
 
   setMode: (mode) => {
-    localStorage.setItem('admin_theme_mode', mode);
+    writeAdminTheme('admin_theme_mode', mode);
     const state = get();
     applyThemeToDOM(mode, state.primaryColor, 'admin');
     applyAdminBackground(state.backgroundColor);
@@ -398,7 +452,7 @@ export const useAdminTheme = create((set, get) => ({
   },
 
   setPrimaryColor: (color) => {
-    localStorage.setItem('admin_theme_color', color);
+    writeAdminTheme('admin_theme_color', color);
     const palette = generatePalette(color);
     const state = get();
     applyThemeToDOM(state.mode, color, 'admin');

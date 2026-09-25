@@ -219,6 +219,23 @@ export default function CustomerProfile() {
       const { data } = await storeApi.updateCustomerProfile(storeSlug, payload);
       setProfile(p => ({ ...p, ...data }));
       if (setAuth && token) setAuth({ ...user, ...data }, token, 'customer');
+      // Keep the remembered checkout details in step with the new profile so
+      // items already in the cart check out with the updated info.
+      try {
+        const saved = JSON.parse(localStorage.getItem('checkout.savedInfo') || 'null');
+        if (saved && typeof saved === 'object') {
+          const next = { ...data, ...form };
+          localStorage.setItem('checkout.savedInfo', JSON.stringify({
+            ...saved,
+            customer_name: next.name || saved.customer_name,
+            customer_phone: next.phone || saved.customer_phone,
+            customer_email: next.email || saved.customer_email,
+            shipping_address: next.address || saved.shipping_address,
+            shipping_city: next.city || saved.shipping_city,
+            shipping_wilaya: next.wilaya || saved.shipping_wilaya,
+          }));
+        }
+      } catch {}
       toast.success(t('store.profileUpdated', 'Profile updated'));
       setEditing(false);
       setAvatarBase64(null);

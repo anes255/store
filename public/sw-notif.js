@@ -22,7 +22,12 @@ self.addEventListener('notificationclick', (event) => {
   const url = event.notification.data?.url || '/dashboard';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) { if ('focus' in client) return client.focus(); }
+      // Prefer a tab already on the target page (store dashboard vs super
+      // admin share this worker), otherwise open the page the push points to.
+      const target = new URL(url, self.location.origin).pathname;
+      for (const client of clients) {
+        if (new URL(client.url).pathname.startsWith(target) && 'focus' in client) return client.focus();
+      }
       return self.clients.openWindow(url);
     })
   );

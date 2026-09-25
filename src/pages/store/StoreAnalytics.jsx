@@ -1,8 +1,10 @@
-import React,{useState,useEffect,useMemo} from'react';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import{BarChart3,TrendingUp,ShoppingCart,DollarSign,Users,RefreshCw,ArrowUpRight,ArrowDownRight}from'lucide-react';
+import React,{useState,useEffect,useMemo,useRef} from'react';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import{BarChart3,TrendingUp,ShoppingCart,DollarSign,Users,RefreshCw,ArrowUpRight,ArrowDownRight}from'lucide-react';
 import{AreaChart,Area,BarChart,Bar,PieChart,Pie,Cell,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Legend}from'recharts';
 import { useTranslation } from 'react-i18next';
 
-const STATUS_COLORS={pending:'#f59e0b',confirmed:'#3b82f6',preparing:'#8b5cf6',shipped:'#06b6d4',delivered:'#10b981',cancelled:'#ef4444',refunded:'#6b7280'};
+const STATUS_COLORS={pending:'#f59e0b',new_order:'#f59e0b',pending_payment:'#eab308',confirmed:'#3b82f6',preparing:'#8b5cf6',shipped:'#06b6d4',in_transit:'#0ea5e9',delivered:'#10b981',cancelled:'#ef4444',canceled:'#ef4444',returned:'#f97316',refunded:'#6b7280'};
+// Stores can define their own statuses; give those distinct colours too.
+const FALLBACK_COLORS=['#6366f1','#ec4899','#14b8a6','#f97316','#84cc16','#a855f7','#0ea5e9','#64748b'];
 
 export default function StoreAnalytics(){
   const { t } = useTranslation();
@@ -11,64 +13,32 @@ export default function StoreAnalytics(){
   const[loading,setLoading]=useState(true);
   const[dateRange,setDateRange]=useState('30d');
 
-  const load=()=>{if(!currentStore?.id)return;setLoading(true);api.get(`/owner/stores/${currentStore.id}/dashboard`).then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));};
-  useEffect(()=>{load();},[currentStore?.id]);
+  // Everything on this page comes from /analytics, computed server-side over
+  // ALL orders in the selected range (not the dashboard's 10 latest orders).
+  const[error,setError]=useState(false);
+  // Only the latest request may update the page — switching the range quickly
+  // (or React's double effect in dev) otherwise let an older reply win.
+  const reqId=useRef(0);
+  const load=()=>{if(!currentStore?.id)return;const id=++reqId.current;setLoading(true);setError(false);
+    api.get(`/owner/stores/${currentStore.id}/analytics`,{params:{range:dateRange},timeout:45000})
+      .then(r=>{if(id===reqId.current)setData(r.data);})
+      .catch(()=>{if(id===reqId.current){setData(null);setError(true);}})
+      .finally(()=>{if(id===reqId.current)setLoading(false);});};
+  useEffect(()=>{load();},[currentStore?.id,dateRange]);
 
-  const s=data?.stats||{};
-  const rawSales=data?.salesData||[];
-  const salesData=useMemo(()=>{
-    if(rawSales.length>=2)return rawSales.map(d=>({...d,revenue:parseFloat(d.revenue||d.total||0),orders:parseInt(d.orders||d.count||0)}));
-    return Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return{date:d.toISOString().split('T')[0],revenue:0,orders:0};});
-  },[rawSales]);
+  const tot=data?.totals||{};
+  const unit=data?.unit||'day';
+  const filteredSales=useMemo(()=>(data?.series||[]).map(d=>({date:d.date,revenue:Number(d.revenue)||0,orders:Number(d.orders)||0})),[data]);
+  const filteredOrders=data?.recentOrders||[];
+  const filteredStats={totalRevenue:tot.revenue||0,totalOrders:tot.orders||0};
+  const s={totalCustomers:tot.customers||0,storeVisits:tot.visits||0,totalProducts:tot.products||0};
+  const avgOV=tot.avgOrder||0;
+  const convRate=tot.conversion||0;
+  const statusBreakdown=useMemo(()=>(data?.status||[]).map((r,i)=>({name:String(r.name).replace(/_/g,' '),value:r.value,fill:STATUS_COLORS[r.name]||FALLBACK_COLORS[i%FALLBACK_COLORS.length]})),[data]);
+  const topProducts=useMemo(()=>(data?.topProducts||[]).map(p=>({name:p.name.length>18?p.name.slice(0,18)+'…':p.name,qty:p.qty})),[data]);
 
-  const dateCutoff=useMemo(()=>{
-    if(dateRange==='all')return null;
-    const now=new Date();
-    if(dateRange==='7d')now.setDate(now.getDate()-7);
-    else if(dateRange==='30d')now.setDate(now.getDate()-30);
-    else if(dateRange==='3m')now.setMonth(now.getMonth()-3);
-    else if(dateRange==='6m')now.setMonth(now.getMonth()-6);
-    else if(dateRange==='1y')now.setFullYear(now.getFullYear()-1);
-    return now.toISOString().split('T')[0];
-  },[dateRange]);
-
-  const filteredSales=useMemo(()=>{
-    if(!dateCutoff)return salesData;
-    return salesData.filter(d=>d.date>=dateCutoff);
-  },[salesData,dateCutoff]);
-
-  const filteredOrders=useMemo(()=>{
-    const orders=data?.recentOrders||[];
-    if(!dateCutoff)return orders;
-    return orders.filter(o=>{const d=(o.created_at||o.date||'').split('T')[0];return d>=dateCutoff;});
-  },[data?.recentOrders,dateCutoff]);
-
-  const filteredStats=useMemo(()=>{
-    const rev=filteredSales.reduce((sum,d)=>sum+(parseFloat(d.revenue)||0),0);
-    const ord=filteredSales.reduce((sum,d)=>sum+(parseInt(d.orders)||0),0);
-    return{totalRevenue:rev,totalOrders:ord};
-  },[filteredSales]);
-
-  const avgOV=filteredStats.totalOrders>0?Math.round(filteredStats.totalRevenue/filteredStats.totalOrders):0;
-  const convRate=s.storeVisits>0?((s.totalOrders/s.storeVisits)*100).toFixed(1):0;
-
-  // Order status breakdown for pie/bar
-  const statusBreakdown=useMemo(()=>{
-    const counts={};
-    filteredOrders.forEach(o=>{const st=(o.status||'pending').toLowerCase();counts[st]=(counts[st]||0)+1;});
-    return Object.entries(counts).map(([name,value])=>({name,value,fill:STATUS_COLORS[name]||'#9ca3af'}));
-  },[filteredOrders]);
-
-  // Top products by frequency in orders
-  const topProducts=useMemo(()=>{
-    const freq={};
-    filteredOrders.forEach(o=>{
-      (o.items||[]).forEach(it=>{const n=it.name||it.product_name||'Unknown';freq[n]=(freq[n]||0)+(parseInt(it.quantity)||1);});
-    });
-    return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([name,qty])=>({name:name.length>18?name.slice(0,18)+'…':name,qty}));
-  },[filteredOrders]);
-
-  const fmtDate=(v)=>{try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}};
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDate=(v)=>{const p=String(v||'').split('-');if(p.length<3)return v;return unit==='month'?`${MONTHS[+p[1]-1]} ${p[0].slice(2)}`:`${p[2]}/${p[1]}`;};
   const currency=currentStore?.currency||'DZD';
 
   return(<DashboardLayout>
@@ -87,7 +57,7 @@ export default function StoreAnalytics(){
       </div>
     </div>
 
-    {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>:<>
+    {loading?<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>:error?<div className="glass-card-solid p-8 text-center"><p className="text-sm text-gray-500 mb-3">{t('storePage.analyticsLoadFailed','Could not load analytics.')}</p><button onClick={load} className="btn-primary text-xs">{t('storePage.retry','Retry')}</button></div>:<>
 
     {/* Stat cards */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -137,10 +107,13 @@ export default function StoreAnalytics(){
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
           <XAxis dataKey="date" tickFormatter={fmtDate} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false}/>
-          <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false}/>
-          <Tooltip contentStyle={{borderRadius:12,border:'none',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',fontSize:12}} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${currency}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]}/>
-          <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2.5} fill="url(#aRevenue)"/>
-          <Area type="monotone" dataKey="orders" stroke="#8B5CF6" strokeWidth={2} fill="url(#aOrders)"/>
+          {/* Revenue (thousands of DZD) and order counts on separate axes — on one
+              shared axis the orders line was pinned flat at zero. */}
+          <YAxis yAxisId="rev" stroke="#10B981" fontSize={11} tickLine={false} axisLine={false} width={56} tickFormatter={v=>v>=1000?`${Math.round(v/1000)}k`:v}/>
+          <YAxis yAxisId="ord" orientation="right" stroke="#8B5CF6" fontSize={11} tickLine={false} axisLine={false} width={32} allowDecimals={false}/>
+          <Tooltip labelFormatter={fmtDate} contentStyle={{borderRadius:12,border:'none',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',fontSize:12}} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${currency}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]}/>
+          <Area yAxisId="rev" type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2.5} fill="url(#aRevenue)"/>
+          <Area yAxisId="ord" type="monotone" dataKey="orders" stroke="#8B5CF6" strokeWidth={2} fill="url(#aOrders)"/>
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -161,8 +134,8 @@ export default function StoreAnalytics(){
             <div className="flex-1 space-y-2">
               {statusBreakdown.map(s=>(
                 <div key={s.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor:s.fill}}/><span className="text-sm capitalize text-gray-700">{s.name}</span></div>
-                  <span className="text-sm font-bold text-gray-900">{s.value}</span>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full shrink-0" style={{backgroundColor:s.fill}}/><span className="text-sm capitalize text-gray-700">{s.name}</span></div>
+                  <span className="text-sm font-bold text-gray-900 shrink-0 ml-3 whitespace-nowrap tabular-nums">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -199,7 +172,7 @@ export default function StoreAnalytics(){
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold">{parseFloat(o.total).toLocaleString()} {currency}</p>
-                <span className="text-[10px] font-bold capitalize" style={{color:STATUS_COLORS[(o.status||'').toLowerCase()]||'#9ca3af'}}>{o.status}</span>
+                <span className="text-[10px] font-bold capitalize" style={{color:STATUS_COLORS[(o.status||'').toLowerCase()]||'#9ca3af'}}>{String(o.status||'').replace(/_/g,' ')}</span>
               </div>
             </div>
           ))}

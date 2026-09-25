@@ -102,8 +102,49 @@ function NotificationsBell({isDark,pc}){
     return{I:Bell,c:'text-gray-500',bg:'bg-gray-100'};
   };
   const click=(n)=>{if(!n.is_read)markRead(n.id);if(n.link){setOpen(false);nav(n.link);}};
+  // Browser push for the super admin (same flow as the store dashboard's
+  // "🔔 Enable"). The browser shares one push subscription per site, so a
+  // subscription alone doesn't mean it is registered for the super admin —
+  // a local flag records that, and the subscription is re-sent on load so
+  // the server copy stays fresh.
+  const PUSH_FLAG='platform_push_enabled';
+  const[pushOk,setPushOk]=useState(false);
+  useEffect(()=>{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+    let flag=false;try{flag=localStorage.getItem(PUSH_FLAG)==='1';}catch{}
+    if(!flag||typeof Notification==='undefined'||Notification.permission!=='granted')return;
+    navigator.serviceWorker.getRegistration('/sw-notif.js').then(reg=>reg&&reg.pushManager.getSubscription()).then(sub=>{
+      if(!sub)return;
+      setPushOk(true);
+      platformApi.subscribePush({subscription:sub.toJSON()}).catch(()=>{});
+    }).catch(()=>{});
+  },[]);
+  const enablePush=async()=>{
+    try{
+      if(!('serviceWorker' in navigator)||!('PushManager' in window))return toast.error(t('notifications.unsupported','Push notifications are not supported on this browser'));
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted')return toast.error(t('notifications.blocked','Notifications are blocked. Allow them in the browser site settings.'));
+      const reg=await navigator.serviceWorker.register('/sw-notif.js');
+      await navigator.serviceWorker.ready;
+      const{ownerApi}=await import('../../utils/api');
+      const{data}=await ownerApi.getVapidKey();
+      if(!data?.publicKey)return toast.error(t('notifications.notConfigured','Push is not configured on the server'));
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub){
+        const raw=atob(data.publicKey.replace(/-/g,'+').replace(/_/g,'/'));
+        const key=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)key[i]=raw.charCodeAt(i);
+        sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      }
+      await platformApi.subscribePush({subscription:sub.toJSON()});
+      try{localStorage.setItem(PUSH_FLAG,'1');}catch{}
+      setPushOk(true);
+      platformApi.testPush().catch(()=>{});
+      toast.success(t('notifications.enabledAdmin','Notifications enabled — you will be alerted about payments, new stores and subscriptions.'));
+    }catch(e){toast.error(t('notifications.setupFailed','Push setup failed')+': '+e.message);}
+  };
   return(
-    <div className="relative">
+    <div className="relative flex items-center gap-1">
+      {!pushOk&&<button onClick={enablePush} title={t('notifications.enable','Enable notifications')} className="px-1.5 sm:px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse whitespace-nowrap shrink-0" style={{backgroundColor:pc||'#7C3AED'}}>🔔<span className="hidden sm:inline"> {t('notifications.enableShort','Enable')}</span></button>}
       <button ref={btnRef} onClick={()=>setOpen(o=>!o)} className={`relative p-2 rounded-xl ${isDark?'hover:bg-white/10 text-gray-300':'hover:bg-gray-100 text-gray-700'}`} title={t('admin.notifications','Notifications')}>
         <Bell size={18}/>
         {unread>0&&<span className="notif-badge">{unread>99?'99+':unread}</span>}

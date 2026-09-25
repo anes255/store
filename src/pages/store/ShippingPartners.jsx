@@ -1,5 +1,6 @@
 import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope,Star}from'lucide-react';
 import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
+import CarrierLogo,{isLogoImage}from'../../components/shared/CarrierLogo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Verified carrier presets. Endpoints below have been cross-checked against
@@ -274,7 +275,7 @@ export default function ShippingPartners(){
         {filtered.map(c=>(
           <div key={c.id} className="glass-card-solid p-4 sm:p-5 hover:shadow-lg transition-all flex flex-col">
             <div className="flex items-start justify-between mb-3 gap-2">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0`}>{initialFor(c.name)}</div>
+              <CarrierLogo name={c.name} logo={c.logo} className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-lg sm:text-xl"/>
               <div className="flex items-center gap-1 flex-wrap justify-end shrink-0">
               {c.is_default&&<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1 shrink-0"><Star size={8} fill="currentColor"/>{t('storePage.defaultBadge','DEFAULT')}</span>}
               {c.api_base_url?<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1 shrink-0"><Wifi size={8}/>{t('storePage.liveTracking','LIVE')}</span>:<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 shrink-0">{t('storePage.manual','MANUAL')}</span>}
@@ -326,7 +327,7 @@ export default function ShippingPartners(){
           <div key={c.id} className="glass-card-solid p-3 sm:p-5 hover:shadow-lg transition-all">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${gradientForCompany(c.name)} flex items-center justify-center text-white font-bold text-lg sm:text-xl shrink-0`}>{initialFor(c.name)}</div>
+                <CarrierLogo name={c.name} logo={c.logo} className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-lg sm:text-xl"/>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2"><p className="font-bold text-gray-900 text-base sm:text-lg break-words min-w-0">{c.name}</p>
                     {c.is_default&&<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1 shrink-0"><Star size={8} fill="currentColor"/>{t('storePage.defaultBadge','DEFAULT')}</span>}
@@ -416,6 +417,37 @@ export default function ShippingPartners(){
         {PRESETS.filter(p=>p.name===form.name).map(p=>(<div key={p.name} className="p-3 bg-blue-50 border border-blue-200 rounded-xl mb-4 flex items-start gap-2"><HelpCircle size={14} className="text-blue-500 shrink-0 mt-0.5"/><p className="text-xs text-blue-700">{p.help}</p></div>))}
 
         <div className="space-y-4">
+          {/* Company logo: shown on the partner cards and in the checkout
+              delivery picker instead of the coloured initial. */}
+          <div className="flex items-center gap-3">
+            <CarrierLogo name={form.name} logo={form.logo} className="w-14 h-14 rounded-2xl text-xl"/>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="btn-secondary text-xs px-3 py-2 cursor-pointer">
+                {isLogoImage(form.logo)?t('storePage.changeLogo','Change logo'):t('storePage.uploadLogo','Upload logo')}
+                <input type="file" accept="image/*" className="hidden" onChange={e=>{
+                  const f=e.target.files?.[0]; e.target.value='';
+                  if(!f) return;
+                  if(!f.type.startsWith('image/')) return toast.error(t('storePage.imageOnly','Please choose an image'));
+                  const rd=new FileReader();
+                  rd.onload=()=>{
+                    const img=new Image();
+                    img.onload=()=>{
+                      // Downscale to a small square-ish PNG so the logo stays light.
+                      const max=160, k=Math.min(1,max/Math.max(img.width,img.height));
+                      const cv=document.createElement('canvas');
+                      cv.width=Math.max(1,Math.round(img.width*k)); cv.height=Math.max(1,Math.round(img.height*k));
+                      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+                      setForm(fm=>({...fm,logo:cv.toDataURL('image/png')}));
+                    };
+                    img.onerror=()=>toast.error(t('storePage.imageLoadFailed','Could not read that image'));
+                    img.src=rd.result;
+                  };
+                  rd.readAsDataURL(f);
+                }}/>
+              </label>
+              {isLogoImage(form.logo)&&<button type="button" onClick={()=>setForm(fm=>({...fm,logo:''}))} className="text-xs text-red-500 hover:underline">{t('storePage.removeLogo','Remove')}</button>}
+            </div>
+          </div>
           <div><label className="input-label">{t('storePage.companyNameRequired2','Company Name *')}</label><input className="input-field" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder={t('storePage.anyCompanyName','Any company name')}/></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="input-label">{t('storePage.baseRateDzd','Base Rate (DZD)')}</label><input type="number" className="input-field" value={form.base_rate} onChange={e=>setForm({...form,base_rate:e.target.value})} placeholder="400"/></div>

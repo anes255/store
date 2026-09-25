@@ -356,7 +356,8 @@ export default function DashboardLayout({children}){
   const pc = theme.primaryColor;
   const pl = theme.palette;
   // Initialize theme CSS vars on mount
-  useEffect(() => { theme.init(); }, []); // eslint-disable-line
+  // Re-run on store switch: each store keeps its own dashboard theme.
+  useEffect(() => { theme.init(); }, [currentStore?.id]); // eslint-disable-line
   // Breadcrumb for the current route: main page (group/link) + sub page (child).
   // Replaces the old "STORE DASHBOARD" label so each page shows where you are.
   const breadcrumb = (() => {

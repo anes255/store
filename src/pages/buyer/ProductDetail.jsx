@@ -299,7 +299,15 @@ export default function ProductDetail() {
   // Quantity offers (tiered "buy N, save") are presented at checkout, not here,
   // so the product price reflects only the sale + variant adjustments.
   const finalPrice = basePrice + priceAdj;
-  const stockCount = sv ? (sv.stock ?? product.stock_quantity) : product.stock_quantity;
+  // New variants are created with stock 0, so most owners never fill it in.
+  // Treating that 0 as "sold out" disabled Add to Cart the moment a buyer
+  // picked a variant. Per-variant stock only counts when the owner actually
+  // tracks it (at least one variant has a positive stock); otherwise the
+  // product's own stock applies.
+  const tracksVariantStock = variants.some(v => Number(v?.stock) > 0);
+  const stockCount = (sv && tracksVariantStock && sv.stock !== '' && sv.stock != null)
+    ? Number(sv.stock) || 0
+    : product.stock_quantity;
 
   // Build a variant label for display
   const variantLabel = selectedIdxes.map(idx => {
@@ -595,9 +603,6 @@ export default function ProductDetail() {
                       Available for order
                     </span>
                   : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
-              {product.is_fragile && (
-                <span className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-red-300 text-red-600 text-xs font-bold align-middle">⚠ {t('store.fragile','Fragile — handle with care')}</span>
-              )}
             </div>
 
             {/* ADD TO CART + BUY NOW - fixed to the bottom so they stay in view

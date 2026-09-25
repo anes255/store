@@ -404,7 +404,7 @@ export default function Favorites() {
             animate={{y: 0, opacity: 1}}
             exit={{y: 80, opacity: 0}}
             transition={{type: 'spring', stiffness: 260, damping: 22}}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md pb-[env(safe-area-inset-bottom)]"
+            className="fixed bottom-4 inset-x-0 mx-auto z-40 w-[calc(100%-2rem)] max-w-md pb-[env(safe-area-inset-bottom)]"
           >
             <div className="bg-gray-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 px-4 py-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm" style={{backgroundColor: pc}}>

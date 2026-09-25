@@ -120,7 +120,7 @@ export default function StoreCustomers(){
             {o.items.map((it,i)=>(
             <div key={i} className="flex items-center gap-2">
               {it.image?<img src={it.image} alt="" className="w-8 h-8 rounded-lg object-cover bg-white border border-gray-200"/>:<div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center"><ShoppingBag size={13} className="text-gray-400"/></div>}
-              <div className="flex-1 min-w-0"><p className="text-xs font-semibold text-gray-700 truncate">{it.product_name||t('storePage.product','Product')}</p>{it.variant_info&&<p className="text-[10px] text-gray-400 truncate">{typeof it.variant_info==='string'?it.variant_info:Object.values(it.variant_info||{}).join(' / ')}</p>}</div>
+              <div className="flex-1 min-w-0"><p className="text-xs font-semibold text-gray-700 truncate">{it.product_name||t('storePage.product','Product')}</p>{it.variant_info&&<p className="text-[10px] text-gray-400 truncate">{variantText(it.variant_info)}</p>}</div>
               <span className="text-xs text-gray-500 whitespace-nowrap">×{it.quantity||1}</span>
             </div>))}
           </div>)}
@@ -156,3 +156,21 @@ export default function StoreCustomers(){
 </div></div>)}
 
 </DashboardLayout>);}
+
+// Readable variant text for an order line. variant_info arrives as a JSON
+// string or object in several shapes ({label, per_unit}, {selections}, a single
+// {name,type,value}, or a plain map) — it was printed raw, e.g.
+// {"label":"3x xl","per_unit":[...]}.
+function variantText(v) {
+  if (v == null || v === '') return '';
+  let o = v;
+  if (typeof o === 'string') { try { o = JSON.parse(o); } catch { return o; } }
+  if (typeof o !== 'object') return String(o);
+  if (o.label) return String(o.label);
+  const one = (x) => (x && typeof x === 'object') ? (x.label || x.name || x.value || '') : (x == null ? '' : String(x));
+  if (Array.isArray(o.per_unit)) return o.per_unit.map(u => Array.isArray(u?.selections) ? u.selections.map(one).filter(Boolean).join(' / ') : one(u)).filter(Boolean).join(', ');
+  if (Array.isArray(o.selections)) return o.selections.map(one).filter(Boolean).join(' / ');
+  if (Array.isArray(o)) return o.map(one).filter(Boolean).join(' / ');
+  if (o.name || o.value) return one(o);
+  return Object.entries(o).map(([k, val]) => `${k}: ${one(val)}`).join(' / ');
+}

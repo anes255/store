@@ -17,6 +17,7 @@ import WILAYA_CITIES from '../../data/wilayaCities';
 import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
 import { gradientForCompany, initialFor } from '../../utils/carrierGradient';
+import CarrierLogo from '../../components/shared/CarrierLogo';
 
 // Stable wrapper component defined at module level so it doesn't unmount on every parent re-render.
 function ShellWrapper({ isModal, onClose, children }) {
@@ -237,13 +238,15 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (auth.role === 'customer' && auth.user) {
       setForm(prev => ({
         ...prev,
-        customer_name: prev.customer_name || auth.user.name || '',
-        customer_phone: prev.customer_phone || auth.user.phone || '',
-        customer_email: prev.customer_email || auth.user.email || '',
-        shipping_address: prev.shipping_address || auth.user.address || '',
-        shipping_wilaya: prev.shipping_wilaya || auth.user.wilaya || '',
-        shipping_city: prev.shipping_city || auth.user.city || '',
-        shipping_zip: prev.shipping_zip || auth.user.zip || auth.user.zip_code || auth.user.postal_code || '',
+        // The signed-in buyer's profile wins over details remembered from an
+        // earlier checkout, so editing the profile updates the checkout form.
+        customer_name: auth.user.name || prev.customer_name || '',
+        customer_phone: auth.user.phone || prev.customer_phone || '',
+        customer_email: auth.user.email || prev.customer_email || '',
+        shipping_address: auth.user.address || prev.shipping_address || '',
+        shipping_wilaya: auth.user.wilaya || prev.shipping_wilaya || '',
+        shipping_city: auth.user.city || prev.shipping_city || '',
+        shipping_zip: auth.user.zip || auth.user.zip_code || auth.user.postal_code || prev.shipping_zip || '',
       }));
     }
   }, []);
@@ -257,7 +260,20 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   // Load shipping wilayas for real pricing
   useEffect(() => {
     if (!storeSlug) return;
-    storeApi.getShippingWilayas(storeSlug).then(r => { if (Array.isArray(r.data)) setShippingWilayas(r.data); }).catch(() => {});
+    storeApi.getShippingWilayas(storeSlug).then(r => {
+      if (!Array.isArray(r.data)) return;
+      setShippingWilayas(r.data);
+      // The profile stores the wilaya under its own spelling (e.g. "Alger"),
+      // which may differ in case/accents from the store's list — snap it to
+      // the matching option so the select isn't left blank.
+      const key = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^\d+\s*-\s*/, '').toLowerCase().trim();
+      setForm(prev => {
+        if (!prev.shipping_wilaya || r.data.some(w => w.wilaya_name === prev.shipping_wilaya)) return prev;
+        const k = key(prev.shipping_wilaya);
+        const hit = r.data.find(w => key(w.wilaya_name) === k || String(w.wilaya_code) === String(prev.shipping_wilaya) || key(w.wilaya_name).split(/\s*[\/|]\s*/).includes(k));
+        return hit ? { ...prev, shipping_wilaya: hit.wilaya_name } : prev;
+      });
+    }).catch(() => {});
     if (storeApi.getDeliveryCompanies) storeApi.getDeliveryCompanies(storeSlug).then(r => { if (Array.isArray(r.data)) setDeliveryCompanies(r.data); setCompaniesLoaded(true); }).catch(() => { setCompaniesLoaded(true); });
   }, [storeSlug]);
   // Pre-select the store's default delivery company (falls back to the first
@@ -786,7 +802,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                           <button key={dc.id} type="button" onClick={() => setForm(prev => ({ ...prev, delivery_company_id: dc.id }))}
                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${sel ? 'shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
                             style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
-                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientForCompany(dc.name)} flex items-center justify-center text-white font-bold text-lg shrink-0`}>{initialFor(dc.name)}</div>
+                            <CarrierLogo name={dc.name} logo={dc.logo} className="w-12 h-12 rounded-xl text-lg"/>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-gray-900">{dc.name}</p>
                               {dcShipPrice != null && <p className="text-xs text-gray-500 mt-0.5">{dcShipPrice.toLocaleString()} {store?.currency || 'DZD'}</p>}
