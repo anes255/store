@@ -155,6 +155,58 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (/^(rgb|hsl)a?\(/.test(val)) return true;
     return ['red','blue','green','black','white','yellow','orange','purple','pink','brown','gray','grey','navy','teal','cyan','magenta','beige','cream','gold','silver','maroon','olive','coral','salmon','turquoise','indigo','violet','lime','aqua','tan','khaki'].includes((val||'').toLowerCase());
   };
+  // Pre-select each unit's options from the variant the buyer already chose
+  // when adding to cart (product page or quick-add popup). Checkout used to
+  // start every unit blank, so buyers had to pick their size/colour again.
+  // Handles a single {name,type,value}, {selections:[...]} and {per_unit:[...]}.
+  const variantToUnitSel = (item) => {
+    const variants = parseVariants(item);
+    if (!variants.length) return null;
+    let v = item?.variant;
+    if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return null; } }
+    if (!v || typeof v !== 'object') return null;
+    const norm = (x) => String(x ?? '').trim().toLowerCase();
+    const toSel = (parts) => {
+      const sel = {};
+      (parts || []).forEach(pt => {
+        if (!pt || typeof pt !== 'object') return;
+        const tp = norm(pt.type || 'option');
+        let idx = variants.findIndex(x => norm(x.type || 'option') === tp && norm(x.name) === norm(pt.name) && norm(x.value) === norm(pt.value));
+        if (idx < 0) idx = variants.findIndex(x => norm(x.type || 'option') === tp && norm(x.name) === norm(pt.name));
+        if (idx >= 0) sel[tp] = idx;
+      });
+      return sel;
+    };
+    const units = item.quantity || 1;
+    if (Array.isArray(v.per_unit) && v.per_unit.length) {
+      return Array.from({ length: units }, (_, i) => {
+        const u = v.per_unit[Math.min(i, v.per_unit.length - 1)];
+        return toSel(Array.isArray(u?.selections) ? u.selections : [u]);
+      });
+    }
+    const sel = toSel(Array.isArray(v.selections) ? v.selections : [v]);
+    if (!Object.keys(sel).length) return null;
+    return Array.from({ length: units }, () => ({ ...sel }));
+  };
+  useEffect(() => {
+    setPerUnitVariants(prev => {
+      let changed = false;
+      const next = { ...prev };
+      items.forEach((it, i) => {
+        const seed = variantToUnitSel(it);
+        if (!seed) return;
+        const arr = [...(next[i] || [])];
+        for (let u = 0; u < (it.quantity || 1); u++) {
+          const cur = arr[u];
+          // Only fill units the buyer hasn't touched yet.
+          if (!cur || !Object.values(cur).some(x => x != null)) { arr[u] = { ...(seed[u] || seed[0]) }; changed = true; }
+        }
+        next[i] = arr;
+      });
+      return changed ? next : prev;
+    });
+  }, [items]); // eslint-disable-line
+
   // A line is "incomplete" when it has variant groups but some unit hasn't
   // picked an option for every group — used to block ordering until chosen.
   const variantIncomplete = (item, idx) => {

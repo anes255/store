@@ -183,7 +183,7 @@ function NotifBell(){
     if(t==='order')return r?`/dashboard/orders?highlight=${r}`:'/dashboard/orders';
     if(t==='stock')return r?`/dashboard/stock?highlight=${r}`:'/dashboard/stock';
     if(t==='customer')return r?`/dashboard/customers?highlight=${r}`:'/dashboard/customers';
-    return n.url||'/dashboard';
+    return n.link||n.url||'/dashboard';
   };
   const openNotif=(n)=>{if(!n.is_read)markRead(n.id);setOpen(false);navigate(routeFor(n));};
 
@@ -236,7 +236,7 @@ function NotifBell(){
   };
   
   const timeAgo=(d)=>{const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';};
-  const typeIcon={order:'🛒',stock:'📦',info:'ℹ️',customer:'👤'};
+  const typeIcon={order:'🛒',status:'🚚',stock:'📦',info:'ℹ️',customer:'👤',review:'⭐',payment:'💳'};
   const[selected,setSelected]=React.useState(new Set());
   const[selectMode,setSelectMode]=React.useState(false);
   const toggleSelected=(id)=>setSelected(p=>{const n=new Set(p);if(n.has(id))n.delete(id);else n.add(id);return n;});

@@ -520,33 +520,37 @@ export default function StoreOrders() {
         @page{size:A4;margin:0}
         /* One sheet's worth of tickets, split into equal cells so N receipts
            cover the whole page instead of clustering at the top. */
-        .page{display:grid;gap:4mm;height:297mm;padding:7mm;box-sizing:border-box;page-break-after:always}
+        .page{display:grid;gap:4mm;width:210mm;height:297mm;margin:0 auto;padding:7mm;box-sizing:border-box;page-break-after:always;overflow:hidden}
         .page:last-child{page-break-after:auto}
         .g1{grid-template-columns:1fr;grid-template-rows:1fr}
         .g2{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
         .g3{grid-template-columns:1fr;grid-template-rows:1fr 1fr 1fr}
         .g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
         .f1 .ticket{font-size:${GRIDS[1].font}px}.f2 .ticket{font-size:${GRIDS[2].font}px}.f3 .ticket{font-size:${GRIDS[3].font}px}.f4 .ticket{font-size:${GRIDS[4].font}px}
-        .fragile{display:inline-block;margin-left:6px;padding:1px 6px;border:1.5px solid #b91c1c;color:#b91c1c;border-radius:4px;font-weight:800;font-size:.8em;letter-spacing:.5px}
-        .ticket{border:1px solid #ccc;border-radius:4px;padding:6px 8px;page-break-inside:avoid;font-size:${GRID.font}px;line-height:1.35;overflow:hidden;display:flex;flex-direction:column}
-        .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #ccc;padding-bottom:3px;margin-bottom:3px}
-        .store{font-size:${(GRID.font + 2).toFixed(1)}px;font-weight:800}
-        .meta{font-size:8px;color:#666;margin-top:1px}
-        .status{font-size:8px;font-weight:800;background:#111;color:#fff;padding:1px 5px;border-radius:999px;letter-spacing:.3px}
-        .lbl{font-size:7px;font-weight:800;text-transform:uppercase;color:#888;letter-spacing:.3px;margin:0 0 1px}
-        .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px;line-height:1.25;margin-bottom:3px}
-        .cust b,.ship b{font-size:9.5px}
-        table.items{width:100%;border-collapse:collapse;font-size:8px;margin-bottom:3px}
-        table.items th{background:#f5f5f5;text-align:left;padding:2px 3px;border-bottom:1px solid #ddd;font-size:7px;text-transform:uppercase;color:#555}
-        table.items td{padding:2px 3px;border-bottom:1px solid #f0f0f0;vertical-align:top}
-        .pname{font-weight:600;font-size:8px}
-        .pvar{font-size:7.5px;color:#666;margin-top:0}
-        .psku{font-size:7px;color:#999;font-family:monospace}
-        .totals{font-size:8.5px;border-top:1px dashed #ccc;padding-top:2px}
-        .totals div{display:flex;justify-content:space-between;padding:0}
-        .totals .total{font-size:10px;font-weight:800;border-top:1px solid #111;margin-top:1px;padding-top:2px}
-        .track{margin-top:2px;font-size:8px;color:#444}
-        .notes{margin-top:2px;font-size:8px;color:#666;font-style:italic}
+        .fragile{display:inline-block;margin-left:.5em;padding:0 .45em;border:1.5px solid #b91c1c;color:#b91c1c;border-radius:4px;font-weight:800;font-size:.8em;letter-spacing:.5px}
+        /* Every size below is relative (em) to the ticket's font-size, which
+           the fit script grows until the receipt fills its share of the page.
+           They used to be fixed 7-9px values, so receipts printed tiny even
+           at one per page. */
+        .ticket{border:1px solid #ccc;border-radius:6px;padding:.7em .9em;page-break-inside:avoid;line-height:1.35;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+        .hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:.6em;border-bottom:1px dashed #ccc;padding-bottom:.35em;margin-bottom:.45em}
+        .store{font-size:1.35em;font-weight:800}
+        .meta{font-size:.82em;color:#555;margin-top:.1em}
+        .status{font-size:.8em;font-weight:800;background:#111;color:#fff;padding:.15em .6em;border-radius:999px;letter-spacing:.3px;white-space:nowrap}
+        .lbl{font-size:.72em;font-weight:800;text-transform:uppercase;color:#777;letter-spacing:.4px;margin:0 0 .15em}
+        .cols{display:grid;grid-template-columns:1fr 1fr;gap:.8em;line-height:1.3;margin-bottom:.5em}
+        .cust b,.ship b{font-size:1.08em}
+        table.items{width:100%;border-collapse:collapse;margin-bottom:.45em}
+        table.items th{background:#f3f3f3;text-align:left;padding:.25em .4em;border-bottom:1px solid #ddd;font-size:.75em;text-transform:uppercase;color:#555}
+        table.items td{padding:.3em .4em;border-bottom:1px solid #eee;vertical-align:top}
+        .pname{font-weight:700}
+        .pvar{font-size:.88em;color:#555}
+        .psku{font-size:.78em;color:#888;font-family:monospace}
+        .totals{border-top:1px dashed #ccc;padding-top:.3em;margin-top:auto}
+        .totals div{display:flex;justify-content:space-between}
+        .totals .total{font-size:1.3em;font-weight:800;border-top:1.5px solid #111;margin-top:.2em;padding-top:.2em}
+        .track{margin-top:.3em;font-size:.9em;color:#333}
+        .notes{margin-top:.3em;font-size:.9em;color:#555;font-style:italic}
         @media print{body{padding:0}.ticket{border:1px solid #999}h1.title{display:none}}
       </style>
       </head><body>
@@ -561,7 +565,22 @@ export default function StoreOrders() {
           }
           return pages.join('');
         })()}
-        <script>window.onload=function(){setTimeout(function(){window.print();},500);window.onafterprint=function(){/* keep window open */};};</script>
+        <script>
+          // Grow each receipt's text until it fills its cell, then step back
+          // one notch so nothing is cut off. Long orders stay at a size that
+          // still fits; short ones become large and readable.
+          function fit(){
+            document.querySelectorAll('.ticket').forEach(function(t){
+              var lo=8, hi=30;
+              for(var k=0;k<14;k++){
+                var mid=(lo+hi)/2; t.style.fontSize=mid+'px';
+                if(t.scrollHeight<=t.clientHeight+1 && t.scrollWidth<=t.clientWidth+1) lo=mid; else hi=mid;
+              }
+              t.style.fontSize=Math.max(8,lo-0.25)+'px';
+            });
+          }
+          window.onload=function(){fit();setTimeout(function(){window.print();},400);window.onafterprint=function(){/* keep window open */};};
+        </script>
       </body></html>`;
     const w = window.open('about:blank', '_blank');
     if (!w) { toast.error(t('orders.allowPopups','Allow pop-ups to print orders')); return; }

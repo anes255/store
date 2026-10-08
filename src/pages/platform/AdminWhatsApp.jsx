@@ -50,6 +50,9 @@ export default function AdminWhatsApp() {
 
   const connected = status.connected;
   const qr = status.qr;
+  // The saved login survives restarts: while the server re-opens it the
+  // session is "connecting"/"reconnecting", which is not a logout.
+  const recovering = !connected && !qr && (status.status === 'connecting' || status.status === 'reconnecting' || status.has_saved_login);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -70,6 +73,8 @@ export default function AdminWhatsApp() {
               <><CheckCircle2 size={22} className="text-emerald-600"/><span className="font-semibold text-emerald-700">Connected</span></>
             ) : status.status === 'qr' || qr ? (
               <><Smartphone size={22} className="text-amber-600"/><span className="font-semibold text-amber-700">Waiting for scan</span></>
+            ) : recovering ? (
+              <><RefreshCw size={20} className="text-blue-500 animate-spin"/><span className="font-semibold text-blue-700">Reconnecting… (still logged in)</span></>
             ) : (
               <><XCircle size={22} className="text-gray-400"/><span className="font-semibold text-gray-600">Not connected</span></>
             )}
@@ -89,6 +94,8 @@ export default function AdminWhatsApp() {
             </div>
             <p className="text-sm text-gray-600 text-center max-w-sm">Open WhatsApp on your phone → Settings → Linked Devices → Link a Device, then scan this code.</p>
           </div>
+        ) : recovering ? (
+          <p className="text-sm text-gray-600">The saved WhatsApp login is being restored — no need to scan again. This usually takes a few seconds after the server restarts.</p>
         ) : (
           <button onClick={handleConnect} disabled={loading} className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-green-500/30 disabled:opacity-60">
             {loading ? <RefreshCw size={16} className="animate-spin"/> : <MessageCircle size={16}/>}
@@ -96,7 +103,7 @@ export default function AdminWhatsApp() {
           </button>
         )}
 
-        {status.error && <p className="mt-3 text-sm text-red-600">{status.error}</p>}
+        {status.error && !recovering && <p className="mt-3 text-sm text-red-600">{status.error}</p>}
       </div>
 
       {connected && (

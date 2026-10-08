@@ -9,6 +9,7 @@ import { isValidAlgerianPhone } from './Checkout';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { darkenHex } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
+import ScrollToTopButton from '../../components/shared/ScrollToTopButton';
 const DEFAULT_STATUS_COLORS = {
   new_order: 'bg-indigo-500/20 text-indigo-300',
   pending: 'bg-amber-500/20 text-amber-300',
@@ -488,6 +489,7 @@ export default function TrackOrder() {
           </div>
         )}
       </div>
+      <ScrollToTopButton color={pc} label={t('track.backToTop', 'Back to top')} />
     </div>
   );
 }
