@@ -3,9 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { X, Package, Check, Zap, ChevronRight, Tag, Truck, Shield, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function DirectCheckoutModal({ product, store, pc, currency, getName, getThumb, onClose, onProceedToCheckout }) {
+// The early "no product" return lives in this wrapper so the modal body's
+// hooks run in the same order on every render (React error #310 otherwise).
+export default function DirectCheckoutModal(props) {
+  if (!props.product) return null;
+  return <DirectCheckoutModalBody {...props} />;
+}
+
+function DirectCheckoutModalBody({ product, store, pc, currency, getName, getThumb, onClose, onProceedToCheckout }) {
   const { t } = useTranslation();
-  if (!product) return null;
 
   const pColor = pc || '#7C3AED';
 

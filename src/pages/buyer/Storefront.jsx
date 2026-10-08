@@ -550,6 +550,11 @@ function ProductOfferTimer({ product }) {
   const h = parseInt(product.offer_hours) || 0;
   const m = parseInt(product.offer_minutes) || 0;
   if (!product.is_on_sale || (!h && !m)) return null;
+  // Keyed so a changed offer starts a fresh timer; hooks live in the child so
+  // they never sit behind the early return above.
+  return <ProductOfferTimerBody key={`${product.id}_${h}_${m}`} product={product} h={h} m={m} />;
+}
+function ProductOfferTimerBody({ product, h, m }) {
   const key = `poffer_${product.id}_${h}_${m}`;
   const [deadline] = useState(() => {
     try { const c = parseInt(localStorage.getItem(key)); if (c && c > Date.now()) return c; } catch {}
@@ -675,7 +680,7 @@ export default function Storefront() {
     const k='visited_'+storeSlug;
     if(sessionStorage.getItem(k))return;
     sessionStorage.setItem(k,'1');
-    import('../../utils/api').then(({default:api})=>{api.post(`/storefront/${storeSlug}/visit`).catch(()=>{});});
+    import('../../utils/api').then(({default:api})=>{api.post(`/store/${storeSlug}/visit`).catch(()=>{});});
   },[storeSlug]);
 
   // Live-visitor heartbeat — pings the backend every 15s while the storefront

@@ -318,6 +318,10 @@ function Overview(){
   const theme=usePlatformTheme();const isDark=theme.mode==='dark';
   const[data,setData]=useState(null);const[loading,setLoading]=useState(true);
   useEffect(()=>{platformApi.getDashboard().then(r=>setData(r.data)).catch(()=>{}).finally(()=>setLoading(false));},[]);
+  // Hooks must run on every render, so these sit above the loading return
+  // (below it they crashed the page with React error #310 once data arrived).
+  const pgOrders=usePaged(data?.recentOrders||[]);
+  const pgStores=usePaged(data?.recentStores||[]);
   if(loading)return<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-3 border-gray-200 border-t-red-500 rounded-full animate-spin"/></div>;
   const s=data?.stats||{};
   const cards=[
@@ -328,8 +332,6 @@ function Overview(){
     {label:t('admin.products','Products'),value:s.totalProducts,icon:Package,color:'from-cyan-500 to-cyan-600',sub:t('admin.acrossStores','Across all stores'),to:'/admin/stores'},
     {label:t('admin.customers','Customers'),value:s.totalCustomers,icon:Users,color:'from-pink-500 to-rose-500',sub:t('admin.registeredBuyers','Registered buyers'),to:'/admin/store-owners'},
   ];
-  const pgOrders=usePaged(data?.recentOrders||[]);
-  const pgStores=usePaged(data?.recentStores||[]);
   return(<div>
     <div className="flex flex-wrap items-start justify-between gap-3 mb-6"><div className="min-w-0"><h1 className={`text-xl md:text-2xl font-black ${isDark?'text-gray-100':'text-gray-900'}`}>{t('admin.platformOverview','Platform Overview')}</h1><p className="text-xs md:text-sm text-gray-400 mt-1">{new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p></div><button onClick={()=>window.location.reload()} className={`px-3 md:px-4 py-2 ${isDark?'bg-gray-800 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200'} rounded-xl text-xs md:text-sm font-medium flex items-center gap-2 shrink-0`}><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button></div>
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 md:gap-4 mb-8">{cards.map((c,i)=>{const I=c.icon;return(
