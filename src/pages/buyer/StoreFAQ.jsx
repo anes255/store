@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -48,6 +49,7 @@ export default function StoreFAQ() {
               <p className="text-xs text-white/70">{store?.name}</p>
             </div>
           </div>
+          <StoreHeaderIcons storeSlug={storeSlug} store={store} className="ml-auto text-white"/>
         </div>
       </header>
 
@@ -99,6 +101,8 @@ export default function StoreFAQ() {
           </Link>
         </div>
       </div>
+      <div className="h-20 md:hidden"/>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={isDark}/>
     </div>
   );
 }

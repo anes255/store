@@ -695,6 +695,10 @@ function ReviewsSection({storeSlug,productSlug,pc}){
   const[reviews,setReviews]=React.useState([]);const[stats,setStats]=React.useState({});
   const[showForm,setShowForm]=React.useState(false);const[submitting,setSubmitting]=React.useState(false);
   const[form,setForm]=React.useState({customer_name:'',customer_phone:'',rating:5,title:'',content:''});
+  // Reviews are limited to verified buyers, identified by the phone used on
+  // the order — prefill it for signed-in customers.
+  const authUser=useAuthStore(s=>s.role==='customer'?s.user:null);
+  React.useEffect(()=>{if(showForm&&authUser)setForm(f=>({...f,customer_name:f.customer_name||authUser.name||authUser.full_name||'',customer_phone:f.customer_phone||authUser.phone||''}));},[showForm]); // eslint-disable-line
 
   React.useEffect(()=>{
     storeApi.getProductReviews(storeSlug,productSlug).then(r=>{setReviews(r.data.reviews||[]);setStats(r.data.stats||{});}).catch(()=>{});
@@ -702,6 +706,7 @@ function ReviewsSection({storeSlug,productSlug,pc}){
 
   const submit=async()=>{
     if(!form.customer_name)return;
+    if(String(form.customer_phone||'').replace(/\D/g,'').length<9){toast.error(t('store.reviewPhoneNeeded','Enter the phone number you used to order this product'));return;}
     setSubmitting(true);
     try{
       await storeApi.submitReview(storeSlug,productSlug,form);
@@ -737,13 +742,14 @@ function ReviewsSection({storeSlug,productSlug,pc}){
           </div>
           <div className="grid grid-cols-2 gap-3">
             <input className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Your name *" value={form.customer_name} onChange={e=>setForm({...form,customer_name:e.target.value})}/>
-            <input className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Phone (optional)" value={form.customer_phone} onChange={e=>setForm({...form,customer_phone:e.target.value})}/>
+            <input type="tel" className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder={t('store.reviewPhone','Phone used for your order *')} value={form.customer_phone} onChange={e=>setForm({...form,customer_phone:e.target.value})}/>
           </div>
+          <p className="text-[11px] text-gray-500">{t('store.reviewVerifiedOnly','Only customers who bought this product can leave a review.')}</p>
           <input className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Review title (optional)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
           <textarea className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" rows={3} placeholder="Write your review..." value={form.content} onChange={e=>setForm({...form,content:e.target.value})}/>
           <div className="flex gap-2">
             <button onClick={()=>setShowForm(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm bg-gray-200 text-gray-700">Cancel</button>
-            <button onClick={submit} disabled={submitting||!form.customer_name} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50" style={{backgroundColor:pc}}>
+            <button onClick={submit} disabled={submitting||!form.customer_name||!form.customer_phone} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50" style={{backgroundColor:pc}}>
               {submitting?'Submitting...':'Submit Review'}
             </button>
           </div>

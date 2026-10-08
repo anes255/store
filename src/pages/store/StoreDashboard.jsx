@@ -285,9 +285,22 @@ export default function StoreDashboard() {
         <div className="glass-card-solid p-6">
           <h3 className="font-bold text-gray-900 mb-4">{t('dashboard.orderStatus')}</h3>
           <div className="space-y-3">
-            {['pending', 'confirmed', 'preparing', 'shipped', 'delivered'].map((status, i) => {
-              const count = dashboard?.recentOrders?.filter(o => o.status === status).length || 0;
-              const colors = { pending: 'bg-amber-500', confirmed: 'bg-blue-500', preparing: 'bg-purple-500', shipped: 'bg-cyan-500', delivered: 'bg-emerald-500' };
+            {(() => {
+              // Counts over ALL the store's orders (the server groups them);
+              // "new_order"/"pending" and the two preparing statuses are merged.
+              const sc = dashboard?.statusCounts || {};
+              const n = (...keys) => keys.reduce((sum, k) => sum + (sc[k] || 0), 0);
+              const rows = [
+                { status: 'pending', count: n('new_order', 'pending') },
+                { status: 'confirmed', count: n('confirmed') },
+                { status: 'preparing', count: n('preparing', 'under_preparation', 'ready') },
+                { status: 'shipped', count: n('shipped', 'in_transit', 'out_for_delivery') },
+                { status: 'delivered', count: n('delivered') },
+                { status: 'cancelled', count: n('cancelled', 'canceled', 'returned', 'refunded', 'delivery_failed') },
+              ];
+              return rows;
+            })().map(({ status, count }) => {
+              const colors = { pending: 'bg-amber-500', confirmed: 'bg-blue-500', preparing: 'bg-purple-500', shipped: 'bg-cyan-500', delivered: 'bg-emerald-500', cancelled: 'bg-red-500' };
               return (
                 <div key={status} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-3">

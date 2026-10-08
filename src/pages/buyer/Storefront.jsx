@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
@@ -1268,21 +1269,7 @@ export default function Storefront() {
       <AIChatbot store={store} slug={storeSlug}/>
 
       {/* ============ MOBILE BOTTOM NAV ============ */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-30 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-stretch justify-around gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] ${buyerTheme.mode==='dark'?'bg-gray-900 border-t border-white/10':'bg-white border-t border-gray-100'}`}>
-        <Link to={`/s/${storeSlug}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl active:bg-gray-100 dark:active:bg-white/10" style={{color:pc}}><Package size={20}/><span className="text-[10px] font-bold">{t('store.shop','Shop')}</span></Link>
-        <Link to={`/s/${storeSlug}/favorites`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
-          <Heart size={20}/>
-          {wishlist.length>0&&<span className="notif-badge" style={{right:'25%'}}>{wishlist.length}</span>}
-          <span className="text-[10px] font-bold">{t('store.favorites','Favs')}</span>
-        </Link>
-        {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><Truck size={20}/><span className="text-[10px] font-bold">{t('store.track','Track')}</span></Link>}
-        <button onClick={openCart} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10 relative">
-          <ShoppingCart size={20}/>
-          {getCount()>0&&<span className="notif-badge" style={{right:'25%'}}>{getCount()}</span>}
-          <span className="text-[10px] font-bold">{t('store.cart','Cart')}</span>
-        </button>
-        <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-white/10"><User size={20}/><span className="text-[10px] font-bold">{t('store.account','Account')}</span></Link>
-      </div>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={buyerTheme.mode==='dark'} onCart={openCart}/>
 
       {/* ============ PRODUCT DETAIL MODAL ============ */}
       {detailProduct && (

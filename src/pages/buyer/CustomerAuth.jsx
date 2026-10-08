@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import PasswordStrength from '../../components/shared/PasswordStrength';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
 import { useAuthStore, useBuyerTheme, useCartStore } from '../../hooks/useStore';
@@ -85,8 +87,7 @@ export default function CustomerAuth() {
           </Link>
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold hover:bg-white/20 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>
-            <Link to={`/s/${storeSlug}/favorites`} className="p-2 hover:bg-white/20 rounded-full"><Heart size={20}/></Link>
-            <button type="button" onClick={() => { if (!cartCount) { toast(t('store.cartEmpty','Your cart is empty'), { icon: '🛒' }); return; } navigate(`/s/${storeSlug}/checkout`); }} className="p-2 hover:bg-white/20 rounded-full"><ShoppingCart size={20}/></button>
+            <StoreHeaderIcons storeSlug={storeSlug} store={store}/>
           </div>
         </div>
       </header>
@@ -135,6 +136,7 @@ export default function CustomerAuth() {
                   <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
                   <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showPw ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
                 </div>
+                {mode !== 'login' && <PasswordStrength password={form.password}/>}
               </div>
 
 
@@ -166,6 +168,7 @@ export default function CustomerAuth() {
             </p>
         </div>
       </div>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={isDarkBuyer}/>
     </div>
   );
 }

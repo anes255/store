@@ -119,6 +119,13 @@ export default function StoreOrders() {
     else if (!isPreparingPage && !isArchivePage && (filter === 'preparing' || filter === 'archived')) setFilter('all');
   }, [isPreparingPage, isArchivePage, filter]);
   const [search, setSearch] = useState('');
+  const [bulkMenu, setBulkMenu] = useState(null); // which bulk-action menu is open: status | payment | carrier
+  // The server is asked only once typing pauses, and only the newest reply is
+  // kept — every keystroke used to fire a request and an older, slower reply
+  // could overwrite the results for what was actually typed.
+  const [searchQ, setSearchQ] = useState('');
+  useEffect(() => { const h = setTimeout(() => setSearchQ(search.trim()), 300); return () => clearTimeout(h); }, [search]);
+  const ordersReq = useRef(0);
   // Receipts per printed page. Four is the ceiling — below that the tickets
   // stop being readable at arm's length.
   const [printPerPage, setPrintPerPage] = useState(() => { const v = parseInt(localStorage.getItem('orders.printPerPage')); return [1,2,3,4].includes(v) ? v : 2; });
@@ -239,23 +246,37 @@ export default function StoreOrders() {
     });
   };
   const clearSelection = () => setSelectedItems(new Set());
+  // The dispatch endpoint answers 200 with {ok:false,error} when the courier
+  // rejects an order. Bulk sends used to count those as sent and flip them to
+  // "shipped" on screen, so nothing reached the courier and a reload put them
+  // back to their real status. Report what the courier actually said.
+  const reportDispatch = (sent, total, fails, label) => {
+    if (sent) toast.success(`${sent}/${total} ${label}`);
+    if (fails.length) {
+      const lines = fails.slice(0, 3).map(f => `#${f.num}: ${String(f.err || 'rejected').slice(0, 140)}`).join('\n');
+      const more = fails.length > 3 ? `\n+${fails.length - 3}…` : '';
+      toast.error(`${fails.length} ${t('orders.notSent','not sent')}:\n${lines}${more}`, { duration: 12000, style: { whiteSpace: 'pre-line', maxWidth: 520 } });
+    }
+  };
 
   const loadOrders = async (overrideFilter) => {
     if (!currentStore?.id) return;
     const effectiveFilter = overrideFilter || filter;
+    const reqId = ++ordersReq.current;
     try {
       const wantPreparingBucket = effectiveFilter === 'preparing';
       const wantArchive = effectiveFilter === 'archived';
-      const params = { search };
+      const params = searchQ ? { search: searchQ } : {};
       if (wantArchive) { params.archived = 'only'; }
       else if (!wantPreparingBucket && effectiveFilter !== 'all') { params.status = effectiveFilter; }
       const { data } = await orderApi.getAll(currentStore.id, params);
+      if (reqId !== ordersReq.current) return;
       let rows = data.orders || [];
       if (wantPreparingBucket) {
         rows = rows.filter(o => ['confirmed','preparing','under_preparation'].includes(o.status));
       }
       setOrders(rows); setTotal(wantPreparingBucket || wantArchive ? rows.length : data.total);
-    } catch {} finally { setLoading(false); }
+    } catch {} finally { if (reqId === ordersReq.current) setLoading(false); }
   };
 
   useEffect(() => {
@@ -263,7 +284,7 @@ export default function StoreOrders() {
     if (pathFilter && filter !== pathFilter) { setFilter(pathFilter); setLoading(true); loadOrders(pathFilter); }
     else if (!pathFilter && (filter === 'preparing' || filter === 'archived')) { setFilter('all'); setLoading(true); loadOrders('all'); }
     else { setLoading(true); loadOrders(); }
-  }, [currentStore?.id, filter, search, location.pathname]);
+  }, [currentStore?.id, filter, searchQ, location.pathname]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
   const [shippingWilayas, setShippingWilayas] = useState([]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r => { const d = r.data; setShippingWilayas(Array.isArray(d) ? d : Array.isArray(d?.wilayas) ? d.wilayas : []); }).catch(() => {}); }, [currentStore?.id]);
@@ -1085,51 +1106,24 @@ export default function StoreOrders() {
 
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap max-w-[96vw]" style={{scrollbarWidth:'none'}}>
+        <div className="fixed bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap sm:max-w-[96vw] overflow-x-auto overscroll-x-contain" style={{scrollbarWidth:'thin',WebkitOverflowScrolling:'touch'}}>
           <span className="text-xs sm:text-sm font-bold shrink-0">{selectedItems.size} sel.</span>
           <div className="w-px h-5 bg-gray-600 shrink-0"/>
           {/* Bulk status change */}
-          <div className="relative group shrink-0">
-            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
-              {(isPreparingPage?['ready','cancelled']:allStatuses.filter(s=>s!=='archived')).map(s=>{const sc2=statusConfig[s];return(
-                <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
-                  <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.label}
-                </button>
-              );})}
-            </div></div>
+          <div className="shrink-0">
+            <button type="button" onClick={()=>setBulkMenu(m=>m==='status'?null:'status')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
           </div>
           {/* On the Preparing page only Status + Print are allowed */}
           {!isPreparingPage && (<>
           {/* Bulk financial status change */}
-          <div className="relative group shrink-0">
-            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">Payment</span> <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[160px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
-              {['pending','paid','refunded','failed'].map(ps=>{
-                const dot=ps==='paid'?'bg-emerald-500':ps==='refunded'?'bg-orange-500':ps==='failed'?'bg-red-500':'bg-amber-500';
-                const label=ps.charAt(0).toUpperCase()+ps.slice(1);
-                return(
-                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${label}`);clearSelection();await loadOrders();}}
-                  className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
-                  <span className={`w-2.5 h-2.5 rounded-full ${dot}`}/>{label}
-                </button>
-              );})}
-            </div></div>
+          <div className="shrink-0">
+            <button type="button" onClick={()=>setBulkMenu(m=>m==='payment'?null:'payment')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">Payment</span> <ChevronDown size={10}/></button>
           </div>
           {/* Auto transfer – uses each order's preferred delivery company */}
-          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];for(const o of eligible){try{await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch{}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);if(alreadyTransferred.length>0){toast.success(`${ok}/${eligible.length} auto-transferred (${alreadyTransferred.length} already transferred, skipped)`);}else{toast.success(`${ok}/${eligible.length} auto-transferred`);}clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
+          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
           {/* Bulk transfer to delivery company */}
-          <div className="relative group shrink-0">
-            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
-            <div className="absolute bottom-full left-0 pb-3 hidden group-hover:block min-w-[180px] z-50"><div className="bg-white rounded-xl shadow-2xl border p-2 max-h-64 overflow-y-auto">
-              {companies.length?companies.map(c=>(
-                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;const done=[];for(const id of ids){try{await orderApi.dispatch(currentStore.id,id,{delivery_company_id:c.id});ok++;done.push(id);}catch{}}if(done.length)setOrders(prev=>prev.map(x=>done.includes(x.id)?{...x,status:'shipped',delivery_company_id:c.id,delivery_company_name:c.name}:x));toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${c.name}`);clearSelection();await loadOrders();}}
-                  className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
-                  <Truck size={10} className="text-emerald-500"/>{c.name}
-                </button>
-              )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
-            </div></div>
+          <div className="shrink-0">
+            <button type="button" onClick={()=>setBulkMenu(m=>m==='carrier'?null:'carrier')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
           </div>
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
           </>)}
@@ -1152,6 +1146,41 @@ export default function StoreOrders() {
         </div>
       )}
 
+
+      {selectedItems.size > 0 && bulkMenu && (<>
+        <div className="fixed inset-0 z-[49]" onClick={()=>setBulkMenu(null)}/>
+        <div className="fixed bottom-[76px] left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-72 z-[51]" onClick={()=>setBulkMenu(null)}>
+          <div className="bg-white rounded-xl shadow-2xl border p-2 max-h-[50vh] overflow-y-auto">
+            {bulkMenu==='status'&&(<>
+              {(isPreparingPage?['ready','cancelled']:allStatuses.filter(s=>s!=='archived')).map(s=>{const sc2=statusConfig[s];return(
+                <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
+                  <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.label}
+                </button>
+              );})}
+            </>)}
+            {bulkMenu==='payment'&&(<>
+              {['pending','paid','refunded','failed'].map(ps=>{
+                const dot=ps==='paid'?'bg-emerald-500':ps==='refunded'?'bg-orange-500':ps==='failed'?'bg-red-500':'bg-amber-500';
+                const label=ps.charAt(0).toUpperCase()+ps.slice(1);
+                return(
+                <button key={ps} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating payment...`);let ok=0;for(const id of ids){try{await api.patch(`/manage/stores/${currentStore.id}/orders/${id}`,{payment_status:ps});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${label}`);clearSelection();await loadOrders();}}
+                  className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
+                  <span className={`w-2.5 h-2.5 rounded-full ${dot}`}/>{label}
+                </button>
+              );})}
+            </>)}
+            {bulkMenu==='carrier'&&(<>
+              {companies.length?companies.map(c=>(
+                <button key={c.id} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Transferring ${ids.length} order(s) to ${c.name}...`);let ok=0;const done=[];const fails=[];for(const id of ids){const num=orders.find(o=>o.id===id)?.order_number||id;try{const r=await orderApi.dispatch(currentStore.id,id,{delivery_company_id:c.id});if(r?.data?.ok===false){fails.push({num,err:r.data.error});continue;}ok++;done.push(id);}catch(e){fails.push({num,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>done.includes(x.id)?{...x,status:'shipped',delivery_company_id:c.id,delivery_company_name:c.name}:x));toast.dismiss(tid);reportDispatch(ok,ids.length,fails,`→ ${c.name}`);clearSelection();await loadOrders();}}
+                  className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
+                  <Truck size={10} className="text-emerald-500"/>{c.name}
+                </button>
+              )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
+            </>)}
+          </div>
+        </div>
+      </>)}
       {/* Archive-before-delete confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setDeleteConfirm(null)}>

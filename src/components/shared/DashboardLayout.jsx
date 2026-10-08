@@ -442,6 +442,8 @@ export default function DashboardLayout({children}){
 
   const toggle=(k)=>setOpenMenus({...openMenus,[k]:!openMenus[k]});
   const isActive=(p)=>location.pathname===p;
+  // Open the group that holds the current page so its highlighted entry is visible.
+  useEffect(()=>{const g=items.find(it=>Array.isArray(it.children)&&it.children.some(c=>c.to===location.pathname));if(g&&!openMenus[g.id])setOpenMenus(m=>({...m,[g.id]:true}));},[location.pathname]); // eslint-disable-line
 
   // ===== Staff permission gating =====
   // When the logged-in user is a team member (is_staff=true), restrict sidebar
@@ -488,10 +490,12 @@ export default function DashboardLayout({children}){
     const gated=isGated(segment);
     if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pc+'80':pc}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
     const active=isActive(to);
-    return(<Link to={to} className={`pl-12 py-1.5 block text-sm transition-all ${active?'font-semibold':''}`}
-      style={active?{color:pc}:{color:isDark?pc:pc}}
-      onMouseEnter={e=>{if(!active){e.currentTarget.style.color=isDark?pc:pc;}}}
-      onMouseLeave={e=>{if(!active){e.currentTarget.style.color=isDark?pc:pc;}}}
+    // The current sub-page gets the same filled highlight as a selected main
+    // page (it used to be only a colour change, easy to miss).
+    return(<Link to={to} className={`ml-3 mr-1 my-0.5 pl-9 pr-3 py-1.5 block text-sm rounded-xl transition-all ${active?'font-semibold text-white shadow-md':''}`}
+      style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:pc}}
+      onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');}}}
+      onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';}}}
     >{lbl}</Link>);
   };
 
@@ -531,14 +535,15 @@ export default function DashboardLayout({children}){
           <div className="group">
             <div className="flex items-center">
               {sidebarOpen&&<div className="opacity-0 group-hover:opacity-40 px-0.5"><GripVertical size={12} className="text-gray-400"/></div>}
-              <button onClick={()=>toggle(item.id)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all"
-                style={{color:isDark?pc:pc}}
-                onMouseEnter={e=>{e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');e.currentTarget.style.color=isDark?pc:pc;}}
-                onMouseLeave={e=>{e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pc:pc;}}
+              {(()=>{const childActive=item.children.some(c=>isActive(c.to));const base=childActive?(isDark?pc+'22':pc+'14'):'';return(
+              <button onClick={()=>toggle(item.id)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all ${childActive?'font-semibold':''}`}
+                style={{color:pc,backgroundColor:base}}
+                onMouseEnter={e=>{e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');}}
+                onMouseLeave={e=>{e.currentTarget.style.backgroundColor=base;}}
               >
                 <div className="flex items-center gap-3"><Icon size={18}/>{sidebarOpen&&<span>{lbl}</span>}</div>
                 {sidebarOpen&&<ChevronDown size={14} className={`transition-transform ${openMenus[item.id]?'rotate-180':''}`}/>}
-              </button>
+              </button>);})()}
             </div>
             {openMenus[item.id]&&sidebarOpen&&<div className="pb-1">{item.children.map(c=><SubLink key={c.to} to={c.to} label={c.label}/>)}</div>}
           </div>

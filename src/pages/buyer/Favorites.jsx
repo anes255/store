@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -161,9 +162,7 @@ export default function Favorites() {
               : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/10 shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
             <span className="font-bold text-sm truncate">{store.name}</span>
           </Link>
-          <Link to={`/s/${storeSlug}/profile`} className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-xs font-semibold text-white/80 hidden sm:flex items-center gap-2">
-            {t('store.backToProfile', 'Profile')}
-          </Link>
+          <StoreHeaderIcons storeSlug={storeSlug} store={store} className="text-white"/>
         </div>
       </div>
 
@@ -404,7 +403,7 @@ export default function Favorites() {
             animate={{y: 0, opacity: 1}}
             exit={{y: 80, opacity: 0}}
             transition={{type: 'spring', stiffness: 260, damping: 22}}
-            className="fixed bottom-4 inset-x-0 mx-auto z-40 w-[calc(100%-2rem)] max-w-md pb-[env(safe-area-inset-bottom)]"
+            className="fixed bottom-24 md:bottom-4 inset-x-0 mx-auto z-40 w-[calc(100%-2rem)] max-w-md pb-[env(safe-area-inset-bottom)]"
           >
             <div className="bg-gray-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 px-4 py-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm" style={{backgroundColor: pc}}>
@@ -443,6 +442,7 @@ export default function Favorites() {
         currency={currency}
         onAddToCart={({product:p,selectedVariant,quantity})=>{addItem(p,quantity,selectedVariant);toast.success(t('store.addedToCart','Added to cart'));setQuickAddProduct(null);}}
       />
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/>
     </div>
   );
 }

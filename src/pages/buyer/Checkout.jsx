@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
@@ -243,6 +244,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     notification_preference: 'whatsapp',
   });
   const [saveInfo, setSaveInfo] = useState(() => localStorage.getItem('checkout.saveInfo') === '1');
+  // The store's default delivery method is pre-selected until the buyer picks one.
+  const shipTypeTouched = useRef(false);
 
   // Auto-load saved info on first mount
   useEffect(() => {
@@ -302,6 +305,10 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       }));
     }
   }, []);
+  useEffect(() => {
+    const def = store?.default_shipping_type;
+    if ((def === 'home' || def === 'desk') && !shipTypeTouched.current) setForm(prev => (prev.shipping_type === def ? prev : { ...prev, shipping_type: def }));
+  }, [store?.default_shipping_type]);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [shippingWilayas, setShippingWilayas] = useState([]); // per-wilaya rates from admin
   const [selectedWilayaData, setSelectedWilayaData] = useState(null); // current wilaya's rate row
@@ -388,7 +395,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
 
   const subtotal = getTotal();
   // Use per-wilaya shipping price (desk vs home), preferring per-company override.
-  const shipping = (() => {
+  const baseShipping = (() => {
     if (!selectedWilayaData) return store ? parseFloat(store.shipping_default_price || 0) : 0;
     const cp = selectedWilayaData.company_prices;
     let parsed = cp;
@@ -399,6 +406,16 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     }
     return parseFloat(form.shipping_type === 'home' ? selectedWilayaData.home_delivery_price : selectedWilayaData.desk_delivery_price) || 0;
   })();
+  // Free shipping from a quantity offer on any line, or from the store's
+  // "free above X" setting once the products total reaches it.
+  const offerFreeShipping = items.some(it => {
+    const m = itemQtyOffers(it).filter(qo => parseInt(qo.quantity) > 0 && (it.quantity || 1) >= parseInt(qo.quantity)).sort((a, b) => parseInt(b.quantity) - parseInt(a.quantity))[0];
+    return !!m?.free_shipping;
+  });
+  const freeShipThreshold = store?.free_shipping_enabled ? Number(store.free_shipping_threshold || 0) : 0;
+  const freeShipping = offerFreeShipping || (freeShipThreshold > 0 && subtotal >= freeShipThreshold);
+  const shipping = freeShipping ? 0 : baseShipping;
+  const freeShipRemaining = !freeShipping && freeShipThreshold > 0 ? Math.max(0, freeShipThreshold - subtotal) : 0;
   const isNonCodPayment = ['ccp','baridimob','bank_transfer'].includes(form.payment_method);
   const total = subtotal + shipping - couponDiscount;
   const pc = store?.primary_color || '#7C3AED';
@@ -757,6 +774,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
             </Link>
           )}
           <div className="flex items-center gap-2">
+            {!isModal && <StoreHeaderIcons storeSlug={storeSlug} store={store} className="text-gray-700 [&_a:hover]:bg-gray-100 [&_button:hover]:bg-gray-100"/>}
             {/* Language switcher (visible on the checkout page) */}
             <div className="flex items-center bg-gray-100 rounded-full p-0.5 mr-1">
               <Globe size={14} className="text-gray-500 ml-2" />
@@ -897,7 +915,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         const sel = form.shipping_type === dt.key;
                         return (
                           <label key={dt.key} className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all min-w-0 ${sel ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'}`} style={sel ? { borderColor: pc, backgroundColor: pc + '08' } : {}}>
-                            <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => setForm(prev => ({ ...prev, shipping_type: dt.key }))} className="sr-only"/>
+                            <input type="radio" name="shipping_type" value={dt.key} checked={sel} onChange={() => { shipTypeTouched.current = true; setForm(prev => ({ ...prev, shipping_type: dt.key })); }} className="sr-only"/>
                             <span className="text-lg sm:text-xl shrink-0 leading-none">{dt.icon}</span>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-[13px] sm:text-sm text-gray-800 leading-tight">{dt.label}</p>
@@ -1192,7 +1210,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="flex gap-2 mb-4"><input className="input-field text-sm flex-1" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code} onChange={set('coupon_code')}/><button onClick={validateCoupon} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200">{t('checkout.apply','Apply')}</button></div>
               <div className="space-y-2 border-t border-gray-200 pt-4">
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.subtotal','Subtotal')}</span><span className="font-semibold text-gray-900">{subtotal.toLocaleString()} {store.currency||'DZD'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500 flex items-center gap-1"><Truck size={14}/> {t('checkout.shipping','Shipping')}</span><span className="font-semibold text-gray-900">{shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500 flex items-center gap-1"><Truck size={14}/> {t('checkout.shipping','Shipping')}</span><span className="font-semibold text-gray-900">{freeShipping ? <span className="text-emerald-600 font-bold">{baseShipping > 0 && <s className="text-gray-400 font-normal mr-1.5">{baseShipping.toLocaleString()}</s>}{t('checkout.freeShipping','Free')}</span> : shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
+                {freeShipRemaining > 0 && <div className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5">🚚 {t('checkout.freeShipHint','Add {{amount}} more for free shipping',{amount:`${freeShipRemaining.toLocaleString()} ${store.currency||'DZD'}`})}</div>}
                 {couponDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.discount','Discount')}</span><span className="text-emerald-600 font-semibold">-{couponDiscount.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200"><span className="text-gray-900">{t('checkout.total','Total')}</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">{t('checkout.youSaved','You saved')} {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
@@ -1213,6 +1232,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           </div>
         </div>
       </div>
+      {!isModal && <><div className="h-20 md:hidden"/><StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/></>}
     </Shell>
   );
 }

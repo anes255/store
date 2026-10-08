@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import PasswordInput from '../../components/shared/PasswordInput';
 import { createPortal } from 'react-dom';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -445,7 +446,7 @@ function StoreOwners(){
     {pwModal&&(<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={()=>setPwModal(null)}><div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e=>e.stopPropagation()}>
       <h2 className="text-lg font-bold mb-1">Change Password</h2>
       <p className="text-sm text-gray-500 mb-4">Set a new password for <strong>{pwModal.full_name||pwModal.name}</strong></p>
-      <input type="password" className="input-field mb-3" placeholder="New password (min 6 chars)" value={pwNew} onChange={e=>setPwNew(e.target.value)} onKeyDown={e=>e.key==='Enter'&&changeOwnerPw()}/>
+      <PasswordInput className="input-field mb-3" placeholder="New password (min 6 chars)" value={pwNew} onChange={e=>setPwNew(e.target.value)} onKeyDown={e=>e.key==='Enter'&&changeOwnerPw()}/>
       <div className="flex gap-2 justify-end">
         <button onClick={()=>setPwModal(null)} className="btn-ghost px-4 py-2 text-sm">Cancel</button>
         <button onClick={changeOwnerPw} disabled={pwSaving} className="btn-primary px-4 py-2 text-sm">{pwSaving?'Saving...':'Change Password'}</button>
@@ -1156,9 +1157,9 @@ function MyProfile(){
       <div className="bg-white rounded-2xl p-6 shadow-sm">
         <h2 className="font-bold text-gray-900 mb-4">Change Password</h2>
         <div className="space-y-4">
-          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Current Password</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.current_password} onChange={e=>setPwForm({...pwForm,current_password:e.target.value})}/></div>
-          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">New Password</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.new_password} onChange={e=>setPwForm({...pwForm,new_password:e.target.value})}/></div>
-          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Confirm New Password</label><input type="password" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.confirm_password} onChange={e=>setPwForm({...pwForm,confirm_password:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Current Password</label><PasswordInput className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.current_password} onChange={e=>setPwForm({...pwForm,current_password:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">New Password</label><PasswordInput className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.new_password} onChange={e=>setPwForm({...pwForm,new_password:e.target.value})}/></div>
+          <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Confirm New Password</label><PasswordInput className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400" value={pwForm.confirm_password} onChange={e=>setPwForm({...pwForm,confirm_password:e.target.value})}/></div>
         </div>
         <button onClick={changePassword} disabled={changingPw} className="mt-4 w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"><Shield size={14}/>{changingPw?'Changing...':'Change Password'}</button>
       </div>
@@ -1247,7 +1248,7 @@ function AdminManagement(){
             <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Name *</label><input className={`w-full px-4 py-3 rounded-xl border text-sm ${isDark?'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500':'bg-white border-gray-200 text-gray-900'}`} value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
             <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Email *</label><input type="email" className={`w-full px-4 py-3 rounded-xl border text-sm ${isDark?'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500':'bg-white border-gray-200 text-gray-900'}`} value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
             <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Phone</label><input className={`w-full px-4 py-3 rounded-xl border text-sm ${isDark?'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500':'bg-white border-gray-200 text-gray-900'}`} value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="+213..."/></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Password *</label><input type="password" className={`w-full px-4 py-3 rounded-xl border text-sm ${isDark?'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500':'bg-white border-gray-200 text-gray-900'}`} value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Password *</label><PasswordInput className={`w-full px-4 py-3 rounded-xl border text-sm ${isDark?'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500':'bg-white border-gray-200 text-gray-900'}`} value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></div>
           </div>
           <div className="flex gap-3 mt-6">
             <button onClick={()=>setShowAdd(false)} className={`flex-1 py-3 rounded-xl border font-bold text-sm ${isDark?'border-gray-700 text-gray-300 hover:bg-gray-800':'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Cancel</button>

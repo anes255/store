@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { storeCanvas } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -419,7 +420,12 @@ export default function CustomerProfile() {
         </aside>
 
         {/* ==================== RIGHT CONTENT AREA ==================== */}
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-28 md:pb-8">
+          <div className="hidden md:flex justify-end mb-4">
+            <div className="rounded-full px-1 text-white shadow-md" style={{ backgroundColor: pc }}>
+              <StoreHeaderIcons storeSlug={storeSlug} store={store}/>
+            </div>
+          </div>
 
           {/* ==================== PROFILE SECTION ==================== */}
           {activeTab === 'profile' && (
@@ -1043,6 +1049,7 @@ export default function CustomerProfile() {
       </div>
 
       {trackOrder && <TrackingModal order={trackOrder} onClose={() => setTrackOrder(null)} pc={pc} />}
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark/>
     </div>
   );
 }

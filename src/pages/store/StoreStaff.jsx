@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PasswordInput from '../../components/shared/PasswordInput';
 import { useTranslation } from 'react-i18next';
 import { ownerApi, publicRoleTemplatesApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
@@ -381,14 +382,14 @@ export default function StoreStaff() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className="input-label">{t('storePage.phone','Phone')}</label><input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-                <div><label className="input-label">{editing ? t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)') : t('storePage.passwordRequired','Password *')}</label><input type="password" className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+                <div><label className="input-label">{editing ? t('storePage.newPasswordLeaveEmpty','New Password (leave empty to keep)') : t('storePage.passwordRequired','Password *')}</label><PasswordInput className="input-field" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
               </div>
 
               {/* Confirm password — must match the password above. */}
               {(form.password || !editing) && (
                 <div>
                   <label className="input-label">{t('storePage.confirmPassword','Confirm Password')}</label>
-                  <input type="password" className="input-field" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} />
+                  <PasswordInput className="input-field" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} />
                   {form.confirmPassword && form.password !== form.confirmPassword && (
                     <p className="mt-1 text-xs text-red-500">{t('storePage.passwordsDontMatch','Passwords do not match')}</p>
                   )}

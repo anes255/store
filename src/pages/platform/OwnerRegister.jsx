@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PasswordStrength from '../../components/shared/PasswordStrength';
 import { getPlatformInfo } from '../../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -142,6 +143,7 @@ export default function OwnerRegister() {
                   {showPw ? <EyeOff size={18}/> : <Eye size={18}/>}
                 </button>
               </div>
+              <PasswordStrength password={form.password}/>
             </div>
             <div>
               <label className="input-label">{t('auth.confirmPassword','Confirm password')} *</label>

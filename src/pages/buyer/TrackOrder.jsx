@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -251,7 +252,7 @@ export default function TrackOrder() {
   const showOrderInput = method === 'order_id' || (method === 'both' && mode === 'order_id');
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden" style={{ fontFamily: store.header_font || undefined, background: store.tracking_bg || store.dark_bg || `radial-gradient(circle at 20% 0%, ${darkenHex(pc, 0.35)} 0%, #0a0a0a 55%, #000000 100%)` }}>
+    <div className="min-h-screen text-white relative overflow-hidden pb-24 md:pb-0" style={{ fontFamily: store.header_font || undefined, background: store.tracking_bg || store.dark_bg || `radial-gradient(circle at 20% 0%, ${darkenHex(pc, 0.35)} 0%, #0a0a0a 55%, #000000 100%)` }}>
       <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${pc}66 0%, transparent 70%)` }} />
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
 
@@ -267,6 +268,7 @@ export default function TrackOrder() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <LanguageSwitcher variant="header"/>
+            <StoreHeaderIcons storeSlug={storeSlug} store={store} className="text-white"/>
           </div>
         </div>
       </header>
@@ -489,7 +491,8 @@ export default function TrackOrder() {
           </div>
         )}
       </div>
-      <ScrollToTopButton color={pc} label={t('track.backToTop', 'Back to top')} />
+      <ScrollToTopButton color={pc} label={t('track.backToTop', 'Back to top')} aboveBottomNav />
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark/>
     </div>
   );
 }

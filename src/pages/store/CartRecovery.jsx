@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { orderApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { RefreshCw, ShoppingCart, CheckCircle, TrendingUp, DollarSign, Clock, Zap, Send, Sparkles, MessageCircle, Phone, X, Calendar, Edit3, Languages, MapPin } from 'lucide-react';
+import { RefreshCw, ShoppingCart, CheckCircle, TrendingUp, DollarSign, Clock, Zap, Send, Sparkles, MessageCircle, Phone, X, Calendar, Edit3, Languages, MapPin, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CartRecovery() {
   const { t } = useTranslation();
@@ -19,6 +19,13 @@ export default function CartRecovery() {
   const [msgLang, setMsgLang] = useState('en');
   const [scheduleMode, setScheduleMode] = useState('now'); // 'now' | 'in_30m' | 'in_6h' | 'in_24h' | 'custom'
   const [scheduleAt, setScheduleAt] = useState('');
+  // List filters — the same ones as the Orders page (minus the status chips).
+  const [view, setView] = useState('all'); // all | pending | sent | recovered | lost | checkout
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [search, setSearch] = useState('');
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(1);
 
   const load = () => {
     if (!currentStore?.id) return;
@@ -78,58 +85,146 @@ export default function CartRecovery() {
 
   const stats = data.stats || {};
 
+  const cartItems = (cart) => {
+    let it = cart.items;
+    if (typeof it === 'string') { try { it = JSON.parse(it); } catch { it = []; } }
+    return Array.isArray(it) ? it : [];
+  };
+  const filtered = useMemo(() => {
+    let rows = data.carts || [];
+    if (view === 'recovered') rows = rows.filter(c => c.is_recovered);
+    else if (view === 'lost') rows = rows.filter(c => !c.is_recovered);
+    else if (view === 'pending') rows = rows.filter(c => !c.is_recovered && !c.recovery_sent_at);
+    else if (view === 'sent') rows = rows.filter(c => !c.is_recovered && c.recovery_sent_at);
+    else if (view === 'checkout') rows = rows.filter(c => c.checkout_started);
+    if (dateFrom) { const f = new Date(dateFrom).getTime(); rows = rows.filter(c => new Date(c.created_at).getTime() >= f); }
+    if (dateTo) { const e = new Date(dateTo).getTime() + 864e5; rows = rows.filter(c => new Date(c.created_at).getTime() < e); }
+    const q = search.trim().toLowerCase();
+    if (q) rows = rows.filter(c => [c.customer_name, c.customer_phone, c.customer_email, c.shipping_wilaya, ...cartItems(c).map(i => i.product_name || i.name)]
+      .some(v => String(v || '').toLowerCase().includes(q)));
+    return rows;
+  }, [data.carts, view, dateFrom, dateTo, search]);
+  useEffect(() => { setPage(1); }, [view, dateFrom, dateTo, search, pageSize]);
+  const pages = pageSize ? Math.max(1, Math.ceil(filtered.length / pageSize)) : 1;
+  const shown = pageSize ? filtered.slice((page - 1) * pageSize, page * pageSize) : filtered;
+
+  // Stat cards double as quick filters.
+  const StatCard = ({ k, icon: Icon, color, label, value }) => (
+    <button type="button" onClick={() => setView(view === k ? 'all' : k)}
+      className={`glass-card-solid p-4 sm:p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg min-w-0 ${view === k ? 'ring-2 ring-brand-500' : ''}`}>
+      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${color} flex items-center justify-center mb-3`}><Icon size={18} className="text-white"/></div>
+      <p className="text-[10px] sm:text-xs text-gray-400 uppercase leading-tight">{label}</p>
+      <p className="text-lg sm:text-xl font-black mt-1 break-words">{value}</p>
+    </button>
+  );
+
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold flex items-center gap-2">{t('recovery.title','Cart Recovery')} <span className="text-brand-500 text-lg font-bold">AI</span></h1><p className="text-gray-400 text-sm mt-1">{t('recovery.subtitle','Recover abandoned carts with AI-powered messages')}</p></div>
-        <button onClick={load} className="btn-ghost text-sm flex items-center gap-2"><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div className="min-w-0"><h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">{t('recovery.title','Cart Recovery')} <span className="text-brand-500 text-lg font-bold">AI</span></h1><p className="text-gray-400 text-sm mt-1">{t('recovery.subtitle','Recover abandoned carts with AI-powered messages')}</p></div>
+        <button onClick={load} className="btn-ghost text-sm flex items-center gap-2 shrink-0"><RefreshCw size={14}/>{t('common.refresh','Refresh')}</button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center mb-3"><ShoppingCart size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">{t('recovery.totalCarts','Abandoned Carts')}</p><p className="text-xl font-black mt-1">{stats.total_carts || 0}</p></div>
-        <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center mb-3"><CheckCircle size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">{t('recovery.recovered','Recovered')}</p><p className="text-xl font-black mt-1">{stats.recovered || 0}</p></div>
-        <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center mb-3"><TrendingUp size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">{t('recovery.recoveredRevenue','Recovered Revenue')}</p><p className="text-xl font-black mt-1">{parseFloat(stats.recovered_revenue || 0).toLocaleString()} DZD</p></div>
-        <div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center mb-3"><DollarSign size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">{t('recovery.lostRevenue','Lost Revenue')}</p><p className="text-xl font-black mt-1">{parseFloat(stats.lost_revenue || 0).toLocaleString()} DZD</p></div>
-        {(stats.checkout_abandoned>0)&&<div className="glass-card-solid p-5"><div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center mb-3"><MapPin size={18} className="text-white"/></div><p className="text-xs text-gray-400 uppercase">{t('recovery.checkoutAbandoned','Checkout Abandoned')}</p><p className="text-xl font-black mt-1">{stats.checkout_abandoned}</p></div>}
+      {/* Stats — tap one to filter the list below */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <StatCard k="all" icon={ShoppingCart} color="bg-orange-500" label={t('recovery.totalCarts','Abandoned Carts')} value={stats.total_carts || 0}/>
+        <StatCard k="recovered" icon={CheckCircle} color="bg-emerald-500" label={t('recovery.recovered','Recovered')} value={stats.recovered || 0}/>
+        <StatCard k="recovered" icon={TrendingUp} color="bg-blue-500" label={t('recovery.recoveredRevenue','Recovered Revenue')} value={`${parseFloat(stats.recovered_revenue || 0).toLocaleString()} DZD`}/>
+        <StatCard k="lost" icon={DollarSign} color="bg-red-500" label={t('recovery.lostRevenue','Lost Revenue')} value={`${parseFloat(stats.lost_revenue || 0).toLocaleString()} DZD`}/>
+        {(stats.checkout_abandoned>0)&&<StatCard k="checkout" icon={MapPin} color="bg-amber-500" label={t('recovery.checkoutAbandoned','Checkout Abandoned')} value={stats.checkout_abandoned}/>}
       </div>
 
       {/* Automated sequences — admin-editable timing */}
       <CartRecoveryConfig store={currentStore} onSaved={()=>load()} />
 
+      {/* Filters — same set as the Orders page */}
+      <div className="glass-card-solid p-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.status','Status')}</label>
+            <select value={view} onChange={e => setView(e.target.value)} className="input-field !py-2 text-sm w-full">
+              <option value="all">{t('recovery.allCarts','All carts')}</option>
+              <option value="pending">{t('recovery.pendingTag','Pending')}</option>
+              <option value="sent">{t('recovery.sentTag','Sent')}</option>
+              <option value="recovered">{t('recovery.recovered','Recovered')}</option>
+              <option value="lost">{t('recovery.notRecovered','Not recovered')}</option>
+              <option value="checkout">{t('recovery.checkoutAbandoned','Checkout Abandoned')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateOldest','Date: Oldest')}</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0"/>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateNewest','Date: Newest')}</label>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0"/>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('common.search','Search')}</label>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+              <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder={t('recovery.searchCarts','Name, phone, product…')} value={search} onChange={e => setSearch(e.target.value)}/>
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.rowsPerPage','Rows per page')}</label>
+            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="input-field !py-2 text-sm w-full">
+              {[10,20,25,50,100].map(n => <option key={n} value={n}>{n} results</option>)}
+              <option value={0}>All</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Abandoned carts list */}
-      <div className="glass-card-solid p-6">
-        <h3 className="font-bold text-gray-900 mb-4">{t('recovery.abandonedCartsCount','Abandoned Carts')} ({data.carts?.length || 0})</h3>
+      <div className="glass-card-solid p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h3 className="font-bold text-gray-900">{t('recovery.abandonedCartsCount','Abandoned Carts')} ({filtered.length})</h3>
+          {pages > 1 && (
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30"><ChevronLeft size={14}/></button>
+              <span>{page} / {pages}</span>
+              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page >= pages} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30"><ChevronRight size={14}/></button>
+            </div>
+          )}
+        </div>
         {loading ? (
           <div className="py-12 text-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin mx-auto"/></div>
-        ) : !data.carts?.length ? (
-          <div className="py-12 text-center"><ShoppingCart size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">{t('recovery.noCarts','No abandoned carts found')}</p><p className="text-sm text-gray-400 mt-1">{t('recovery.noCartsDesc','When customers leave items in their cart, they\'ll appear here')}</p></div>
+        ) : !shown.length ? (
+          <div className="py-12 text-center"><ShoppingCart size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500">{t('recovery.noCarts','No abandoned carts found')}</p>{!(data.carts||[]).length && <p className="text-sm text-gray-400 mt-1">{t('recovery.noCartsDesc','When customers leave items in their cart, they\'ll appear here')}</p>}</div>
         ) : (
           <div className="space-y-3">
-            {data.carts.map(cart => (
-              <div key={cart.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                <div className={`w-10 h-10 rounded-full ${cart.checkout_started?'bg-amber-100':'bg-orange-100'} flex items-center justify-center shrink-0`}>{cart.checkout_started?<MapPin size={16} className="text-amber-600"/>:<ShoppingCart size={16} className="text-orange-600"/>}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-gray-800">{cart.customer_name || t('recovery.anonymous','Anonymous')}{cart.checkout_started&&<span className="ml-2 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">{t('recovery.checkoutTag','CHECKOUT')}</span>}</p>
-                  <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-                    {cart.customer_phone && <span className="flex items-center gap-1"><Phone size={10}/>{cart.customer_phone}</span>}
-                    {cart.shipping_wilaya && <span className="flex items-center gap-1"><MapPin size={10}/>{cart.shipping_wilaya}</span>}
-                    <span>{new Date(cart.created_at).toLocaleDateString()}</span>
+            {shown.map(cart => {
+              const products = cartItems(cart).map(i => `${i.product_name || i.name || ''}${(i.quantity||1) > 1 ? ' ×' + i.quantity : ''}`).filter(x => x.trim()).join(', ');
+              return (
+              <div key={cart.id} className="p-3 sm:p-4 bg-gray-50 rounded-xl flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                {/* who + what */}
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className={`w-10 h-10 rounded-full ${cart.checkout_started?'bg-amber-100':'bg-orange-100'} flex items-center justify-center shrink-0`}>{cart.checkout_started?<MapPin size={16} className="text-amber-600"/>:<ShoppingCart size={16} className="text-orange-600"/>}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-gray-800 break-words">{cart.customer_name || t('recovery.anonymous','Anonymous')}{cart.checkout_started&&<span className="ml-2 inline-block text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full align-middle">{t('recovery.checkoutTag','CHECKOUT')}</span>}</p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400 mt-0.5">
+                      {cart.customer_phone && <span className="flex items-center gap-1 shrink-0"><Phone size={10}/>{cart.customer_phone}</span>}
+                      {cart.shipping_wilaya && <span className="flex items-center gap-1 shrink-0"><MapPin size={10}/>{cart.shipping_wilaya}</span>}
+                      <span className="shrink-0">{new Date(cart.created_at).toLocaleDateString()}</span>
+                    </div>
+                    {products && <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 break-words">{products}</p>}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-black text-gray-900">{parseFloat(cart.total || 0).toLocaleString()} DZD</p>
-                  {cart.is_recovered ? <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">{t('recovery.recoveredTag','RECOVERED')}</span>
-                    : cart.recovery_sent_at ? <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">{t('recovery.sentTag','SENT')} {new Date(cart.recovery_sent_at).toLocaleDateString()}</span>
-                    : <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full">{t('recovery.pendingTag','PENDING')}</span>}
-                </div>
-                <div className="flex gap-2 shrink-0">
+                {/* amount + state + action */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-[3.25rem] sm:pl-0">
+                  <div className="sm:text-right">
+                    <p className="font-black text-gray-900 whitespace-nowrap">{parseFloat(cart.total || 0).toLocaleString()} DZD</p>
+                    {cart.is_recovered ? <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">{t('recovery.recoveredTag','RECOVERED')}</span>
+                      : cart.recovery_sent_at ? <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">{t('recovery.sentTag','SENT')} {new Date(cart.recovery_sent_at).toLocaleDateString()}</span>
+                      : <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">{t('recovery.pendingTag','PENDING')}</span>}
+                  </div>
                   {!cart.is_recovered && cart.customer_phone && (
-                    <button onClick={() => { setShowCompose(cart); setCustomMsg(''); setMsgMode('ai'); setMsgLang('en'); setScheduleMode('now'); setScheduleAt(''); }} className="px-3 py-2 bg-brand-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-brand-600"><Send size={12}/>{cart.recovery_sent_at ? t('recovery.resend','Resend') : t('recovery.send','Send')}</button>
+                    <button onClick={() => { setShowCompose(cart); setCustomMsg(''); setMsgMode('ai'); setMsgLang('en'); setScheduleMode('now'); setScheduleAt(''); }} className="px-3 py-2 bg-brand-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-brand-600 shrink-0 whitespace-nowrap"><Send size={12}/>{cart.recovery_sent_at ? t('recovery.resend','Resend') : t('recovery.send','Send')}</button>
                   )}
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )}
       </div>
@@ -276,12 +371,12 @@ function CartRecoveryConfig({ store, onSaved }) {
     setSaving(false);
   };
   return (
-    <div className="glass-card-solid p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+    <div className="glass-card-solid p-4 sm:p-6 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 min-w-0">
           <Zap size={16} className="text-brand-500"/>{t('storePage.automatedSequences','Automated Sequences')}
         </h3>
-        <button onClick={()=>setOpen(true)} className="btn-primary text-xs flex items-center gap-1.5">
+        <button onClick={()=>setOpen(true)} className="btn-primary text-xs flex items-center gap-1.5 shrink-0">
           <Edit3 size={12}/>{t('storePage.configureTimings','Configure Timings')}
         </button>
       </div>

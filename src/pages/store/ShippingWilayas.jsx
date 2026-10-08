@@ -17,6 +17,8 @@ export default function ShippingWilayas(){
 
   const[shippingMode,setShippingMode]=useState('both');
   const[freeShippingEnabled,setFreeShippingEnabled]=useState(false);
+  // Delivery method pre-selected for buyers at checkout (they can still switch).
+  const[defaultShipType,setDefaultShipType]=useState('desk');
   const[freeShippingThreshold,setFreeShippingThreshold]=useState('');
 
   useEffect(()=>{load();},[currentStore?.id]);
@@ -35,6 +37,7 @@ export default function ShippingWilayas(){
         if(data.shipping_mode)setShippingMode(data.shipping_mode);
         if(data.free_shipping_enabled!==undefined)setFreeShippingEnabled(!!data.free_shipping_enabled);
         if(data.free_shipping_threshold)setFreeShippingThreshold(data.free_shipping_threshold);
+        if(data.default_shipping_type)setDefaultShipType(data.default_shipping_type);
       }else setWilayas([]);
       try{
         const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
@@ -88,7 +91,7 @@ export default function ShippingWilayas(){
     let ok=false;
     try{await api.put(`/manage/stores/${currentStore.id}/shipping-wilayas`,payload);ok=true;}catch{}
     if(!ok){
-      try{await api.put(`/owner/stores/${currentStore.id}`,{shipping_mode:shippingMode,free_shipping_enabled:freeShippingEnabled,free_shipping_threshold:payload.free_shipping_threshold});}catch{}
+      try{await api.put(`/owner/stores/${currentStore.id}`,{shipping_mode:shippingMode,free_shipping_enabled:freeShippingEnabled,free_shipping_threshold:payload.free_shipping_threshold,default_shipping_type:defaultShipType});}catch{}
       const results=await Promise.allSettled(wilayas.filter(w=>!String(w.id).startsWith('local-')).map(w=>api.put(`/manage/stores/${currentStore.id}/shipping-wilayas/${w.id}`,{home_delivery_price:w.home_delivery_price,desk_delivery_price:w.desk_delivery_price,is_active:w.is_active,home_enabled:w.home_enabled!==false,desk_enabled:w.desk_enabled!==false,company_prices:w.company_prices||{}})));
       ok=results.some(r=>r.status==='fulfilled');
     }
@@ -163,6 +166,20 @@ export default function ShippingWilayas(){
               </label>);
             })}
           </div>
+        </div>
+
+        <div className="glass-card-solid p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-1"><Truck size={18} className="text-brand-500"/><h3 className="font-bold text-gray-900 text-sm">{t('storePage.defaultDeliveryMethod','Default delivery method')}</h3></div>
+          <p className="text-xs text-gray-400 mb-3">{t('storePage.defaultDeliveryMethodDesc','Pre-selected for buyers at checkout. They can still choose the other one when it is available for their wilaya.')}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[{k:'desk',icon:'🏢',l:t('checkout.deskDelivery','Desk / Relay Point')},{k:'home',icon:'🏠',l:t('checkout.homeDelivery','Home Delivery')}].map(o=>(
+              <button key={o.k} type="button" onClick={()=>setDefaultShipType(o.k)} className={`p-3 rounded-xl border-2 text-left transition-all ${defaultShipType===o.k?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300'}`}>
+                <span className="text-lg">{o.icon}</span>
+                <p className={`text-xs font-bold mt-1 ${defaultShipType===o.k?'text-brand-600':'text-gray-700'}`}>{o.l}</p>
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-2">{t('storePage.saveToApply','Click Save to apply.')}</p>
         </div>
 
         <div className="glass-card-solid p-4 sm:p-5">
