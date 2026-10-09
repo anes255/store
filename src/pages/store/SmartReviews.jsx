@@ -1,4 +1,5 @@
 import React,{useState,useEffect} from'react';
+import useHighlight from'../../utils/useHighlight';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from'../../components/shared/DashboardLayout';
 import{useStoreManagement}from'../../hooks/useStore';
@@ -12,6 +13,7 @@ export default function SmartReviews(){
   const { t } = useTranslation();
   const{currentStore}=useStoreManagement();
   const[reviews,setReviews]=useState([]);const[stats,setStats]=useState({});
+  useHighlight(reviews);
   const[loading,setLoading]=useState(true);const[filter,setFilter]=useState('pending');
 
   const load=()=>{if(!currentStore?.id)return;
@@ -110,7 +112,7 @@ export default function SmartReviews(){
     ):(
       <div className="space-y-3">
         {reviews.map(r=>(
-          <div key={r.id} className={`glass-card-solid p-5 ${r.is_approved?'ring-1 ring-emerald-200':r.is_rejected?'ring-1 ring-red-200 opacity-60':''}`}>
+          <div key={r.id} data-hl-id={r.id} className={`glass-card-solid p-5 ${r.is_approved?'ring-1 ring-emerald-200':r.is_rejected?'ring-1 ring-red-200 opacity-60':''}`}>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shrink-0">{(r.customer_name||'?')[0].toUpperCase()}</div>
               <div className="flex-1 min-w-0">

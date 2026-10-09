@@ -6,7 +6,7 @@ import { storeApi } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useBuyerTheme } from '../../hooks/useStore';
 import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
-import { isValidAlgerianPhone } from './Checkout';
+import { isValidAlgerianPhone } from '../../utils/phone';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { darkenHex } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';

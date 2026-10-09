@@ -25,6 +25,11 @@ function LightboxImage({ images, index, onClose, onChange }) {
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const pinchStart = useRef(null);
   const stageRef = useRef(null);
+  // Swipe / horizontal scroll moves between images (when not zoomed in).
+  const swipe = useRef(null);
+  const [swipeDx, setSwipeDx] = useState(0);
+  const lastWheelNav = useRef(0);
+  const go = (dir) => { if (images.length > 1) onChange((index + dir + images.length) % images.length); };
   // The page itself must not zoom or scroll while the lightbox is open. React's
   // touch handlers are passive, so the browser's own pinch-zoom still ran and
   // scaled the whole page; a native non-passive listener can stop it.
@@ -62,32 +67,54 @@ function LightboxImage({ images, index, onClose, onChange }) {
 
   const onWheel = (e) => {
     e.preventDefault();
+    // Sideways scroll (trackpad / tilt wheel / shift+wheel) flips images.
+    const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+    if (dx && scale <= 1) {
+      const now = Date.now();
+      if (Math.abs(dx) > 8 && now - lastWheelNav.current > 450) { lastWheelNav.current = now; go(dx > 0 ? 1 : -1); }
+      return;
+    }
     const delta = e.deltaY > 0 ? -0.25 : 0.25;
     setScale(s => Math.max(1, Math.min(5, +(s + delta).toFixed(2))));
   };
 
   const onPointerDown = (e) => {
-    if (scale <= 1) return;
+    if (scale <= 1) {
+      // Mouse drag at normal size = swipe to the next/previous image.
+      if (e.pointerType === 'mouse') swipe.current = { x: e.clientX, y: e.clientY };
+      return;
+    }
     setDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY, ox: origin.x, oy: origin.y };
   };
   const onPointerMove = (e) => {
+    if (swipe.current && e.pointerType === 'mouse' && scale <= 1) { setSwipeDx(e.clientX - swipe.current.x); return; }
     if (!dragging) return;
     setOrigin({
       x: dragStart.current.ox + (e.clientX - dragStart.current.x),
       y: dragStart.current.oy + (e.clientY - dragStart.current.y),
     });
   };
-  const onPointerUp = () => setDragging(false);
+  const endSwipe = (dx, dy) => {
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+    swipe.current = null; setSwipeDx(0);
+  };
+  const onPointerUp = (e) => {
+    setDragging(false);
+    if (swipe.current && e && e.pointerType === 'mouse') endSwipe(e.clientX - swipe.current.x, e.clientY - swipe.current.y);
+  };
 
   const onTouchStart = (e) => {
+    if (e.touches.length === 1 && scale <= 1) swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     if (e.touches.length === 2) {
+      swipe.current = null; setSwipeDx(0);
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       pinchStart.current = { dist: Math.hypot(dx, dy), scale };
     }
   };
   const onTouchMove = (e) => {
+    if (e.touches.length === 1 && swipe.current) { setSwipeDx(e.touches[0].clientX - swipe.current.x); return; }
     if (e.touches.length === 2 && pinchStart.current) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -96,7 +123,13 @@ function LightboxImage({ images, index, onClose, onChange }) {
       setScale(+next.toFixed(2));
     }
   };
-  const onTouchEnd = () => { pinchStart.current = null; };
+  const onTouchEnd = (e) => {
+    pinchStart.current = null;
+    if (swipe.current) {
+      const t0 = e.changedTouches && e.changedTouches[0];
+      endSwipe(t0 ? t0.clientX - swipe.current.x : swipeDx, t0 ? t0.clientY - swipe.current.y : 0);
+    }
+  };
 
   const toggleZoom = () => {
     if (scale > 1) { setScale(1); setOrigin({ x: 0, y: 0 }); }
@@ -149,9 +182,9 @@ function LightboxImage({ images, index, onClose, onChange }) {
           draggable={false}
           className="max-w-[95vw] max-h-[90vh] rounded-2xl shadow-2xl"
           style={{
-            transform: `translate(${origin.x}px, ${origin.y}px) scale(${scale})`,
+            transform: `translate(${origin.x + swipeDx}px, ${origin.y}px) scale(${scale})`,
             transformOrigin: 'center center',
-            transition: dragging ? 'none' : 'transform 0.2s ease',
+            transition: dragging || swipeDx ? 'none' : 'transform 0.2s ease',
             imageRendering: 'auto',
             objectFit: 'contain',
           }}
@@ -167,7 +200,7 @@ function LightboxImage({ images, index, onClose, onChange }) {
       )}
 
       <p className="hidden sm:block absolute bottom-16 left-1/2 -translate-x-1/2 text-[10px] text-white/50 font-mono">
-        Scroll / +/- to zoom · drag to pan · double-click to toggle · Esc to close
+        Swipe or scroll sideways for the next image · scroll / +/- to zoom · double-click to toggle · Esc to close
       </p>
     </div>
   );
@@ -252,7 +285,7 @@ export default function ProductDetail() {
   }, [storeSlug, productSlug]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="w-10 h-10 border-[3px] border-gray-200 border-t-[#7C3AED] rounded-full animate-spin"/></div>;
-  if (!product || !store) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Product not found</p></div>;
+  if (!product || !store) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">{t('store.productNotFound','Product not found')}</p></div>;
 
   const getName = (item) => lang==='ar'?(item.name_ar||item.name_en||item.name):lang==='fr'?(item.name_fr||item.name_en||item.name):item.name_en||item.name;
   const getDesc = () => lang==='ar'?(product.description_ar||product.description_en||product.description):lang==='fr'?(product.description_fr||product.description_en||product.description):product.description_en||product.description;
@@ -347,7 +380,7 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!requireSelections()) return;
     addItem({ ...product, price: finalPrice, quantity_offers: product.quantity_offers || [] }, quantity, buildVariantObj());
-    toast.success(variantLabel ? `Added "${variantLabel}" to cart` : 'Added to cart');
+    toast.success(variantLabel ? t('store.addedVariantToCart','Added "{{label}}" to cart',{label:variantLabel}) : t('store.addedToCart','Added to cart'));
   };
 
   const handleBuyNow = () => {
@@ -486,6 +519,12 @@ export default function ProductDetail() {
 
           {/* ═══ DETAILS ═══ */}
           <div className="px-4 sm:px-0">
+            {/* Category chip: opens the store filtered to this product's category. */}
+            {product.category_id && product.category_name && (
+              <Link to={`/s/${storeSlug}?category=${encodeURIComponent(product.category_id)}`} className="inline-flex items-center gap-1.5 mb-2 px-3 py-1 rounded-full text-xs font-bold border transition-colors hover:opacity-80" style={{ color: pc, borderColor: pc + '55', backgroundColor: pc + '12' }}>
+                <Tag size={12} />{product.category_name}
+              </Link>
+            )}
             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">{getName(product)}</h1>
 
             {/* Price */}
@@ -581,7 +620,7 @@ export default function ProductDetail() {
             {/* Selected variant label */}
             {variantLabel && (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-gray-500">Selected:</span>
+                <span className="text-sm text-gray-500">{t('store.selected','Selected:')}</span>
                 <span className="text-sm font-bold text-gray-800 px-2.5 py-1 bg-gray-100 rounded-lg">{variantLabel}</span>
               </div>
             )}
@@ -595,14 +634,14 @@ export default function ProductDetail() {
               {stockCount > 0
                 ? <span className="inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full"/>
-                    {store.show_stock_storefront ? `${stockCount} in stock` : 'In stock'}
+                    {store.show_stock_storefront ? `${stockCount} ${t('store.inStockCount','in stock')}` : t('store.inStock','In stock')}
                   </span>
                 : product.allow_oversell
                   ? <span className="inline-flex items-center gap-1.5 text-amber-600 text-sm font-semibold">
                       <span className="w-2 h-2 bg-amber-500 rounded-full"/>
-                      Available for order
+                      {t('store.availableForOrder','Available for order')}
                     </span>
-                  : <span className="text-red-500 text-sm font-semibold">Out of stock</span>}
+                  : <span className="text-red-500 text-sm font-semibold">{t('store.outOfStock','Out of stock')}</span>}
             </div>
 
             {/* ADD TO CART + BUY NOW - fixed to the bottom so they stay in view
@@ -724,40 +763,40 @@ function ReviewsSection({storeSlug,productSlug,pc}){
     <div className="mt-12 border-t pt-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-extrabold text-gray-900">Customer Reviews</h2>
+          <h2 className="text-xl font-extrabold text-gray-900">{t('store.customerReviews','Customer Reviews')}</h2>
           {total>0&&<div className="flex items-center gap-2 mt-1">
             <div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} size={16} className={i<=Math.round(avgRating)?'text-amber-400 fill-amber-400':'text-gray-300'}/>)}</div>
             <span className="text-sm font-bold text-gray-700">{avgRating}</span>
-            <span className="text-sm text-gray-400">({total} review{total!==1?'s':''})</span>
+            <span className="text-sm text-gray-400">({total} {total!==1?t('store.reviewsWord','reviews'):t('store.reviewWord','review')})</span>
           </div>}
         </div>
-        <button onClick={()=>setShowForm(!showForm)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white" style={{backgroundColor:pc}}>Write a Review</button>
+        <button onClick={()=>setShowForm(!showForm)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white" style={{backgroundColor:pc}}>{t('store.writeReview','Write a Review')}</button>
       </div>
 
       {showForm&&(
         <div className="p-5 bg-gray-50 rounded-2xl mb-6 space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-gray-600">Your Rating:</span>
+            <span className="text-sm font-bold text-gray-600">{t('store.yourRating','Your Rating:')}</span>
             <div className="flex gap-1">{[1,2,3,4,5].map(i=><button key={i} onClick={()=>setForm({...form,rating:i})}><Star size={24} className={i<=form.rating?'text-amber-400 fill-amber-400':'text-gray-300 hover:text-amber-300'}/></button>)}</div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <input className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Your name *" value={form.customer_name} onChange={e=>setForm({...form,customer_name:e.target.value})}/>
+            <input className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder={t('store.yourNameReq','Your name *')} value={form.customer_name} onChange={e=>setForm({...form,customer_name:e.target.value})}/>
             <input type="tel" className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder={t('store.reviewPhone','Phone used for your order *')} value={form.customer_phone} onChange={e=>setForm({...form,customer_phone:e.target.value})}/>
           </div>
           <p className="text-[11px] text-gray-500">{t('store.reviewVerifiedOnly','Only customers who bought this product can leave a review.')}</p>
-          <input className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder="Review title (optional)" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
-          <textarea className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" rows={3} placeholder="Write your review..." value={form.content} onChange={e=>setForm({...form,content:e.target.value})}/>
+          <input className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" placeholder={t('store.reviewTitleOpt','Review title (optional)')} value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
+          <textarea className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm" rows={3} placeholder={t('store.writeYourReview','Write your review...')} value={form.content} onChange={e=>setForm({...form,content:e.target.value})}/>
           <div className="flex gap-2">
-            <button onClick={()=>setShowForm(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm bg-gray-200 text-gray-700">Cancel</button>
+            <button onClick={()=>setShowForm(false)} className="px-5 py-2.5 rounded-xl font-bold text-sm bg-gray-200 text-gray-700">{t('store.cancel','Cancel')}</button>
             <button onClick={submit} disabled={submitting||!form.customer_name||!form.customer_phone} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50" style={{backgroundColor:pc}}>
-              {submitting?'Submitting...':'Submit Review'}
+              {submitting?t('store.submitting','Submitting...'):t('store.submitReview','Submit Review')}
             </button>
           </div>
         </div>
       )}
 
       {reviews.length===0?(
-        <div className="text-center py-8"><p className="text-gray-400 text-sm">No reviews yet. Be the first to review this product!</p></div>
+        <div className="text-center py-8"><p className="text-gray-400 text-sm">{t('store.noReviewsYet','No reviews yet. Be the first to review this product!')}</p></div>
       ):(
         <div className="space-y-4">
           {reviews.map(r=>(

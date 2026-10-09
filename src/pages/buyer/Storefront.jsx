@@ -536,7 +536,7 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
           </div>
         </div>
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex gap-2">
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{t('store.cancel','Cancel')}</button>
           <button onClick={onConfirm} className="flex-[1.4] py-3 rounded-xl text-white text-sm font-extrabold shadow-lg flex items-center justify-center gap-2" style={{ backgroundColor: pc }}>
             <Check size={14}/> Continue to Checkout
           </button>
@@ -582,6 +582,7 @@ function ProductOfferTimerBody({ product, h, m }) {
 
 // ============ DARK PRODUCT CARD ============
 function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, onView, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart }) {
+  const { t } = useTranslation();
   const href = `/s/${storeSlug}/product/${product.slug || product.id}`;
   const thumb = getThumb(product);
   const inWishlist = wishlist.includes(product.id);
@@ -634,10 +635,10 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         {/* Stock badge */}
         <div className="mt-0.5 sm:mt-1.5 flex justify-center sm:justify-start">
           {stockCount > 0
-            ? <span className="inline-flex items-center gap-1 text-emerald-400 text-[9px] sm:text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />In Stock</span>
+            ? <span className="inline-flex items-center gap-1 text-emerald-400 text-[9px] sm:text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />{t('store.inStock','In Stock')}</span>
             : product.allow_oversell
-              ? <span className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />Available</span>
-              : <span className="text-red-400 text-[10px] font-bold">Out of Stock</span>}
+              ? <span className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold"><span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />{t('store.available','Available')}</span>
+              : <span className="text-red-400 text-[10px] font-bold">{t('store.outOfStock','Out of Stock')}</span>}
         </div>
 
         {/* Price */}
@@ -704,7 +705,10 @@ export default function Storefront() {
   const [products, setProducts] = useState(() => { try { const c = sessionStorage.getItem('prodsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [categories, setCategories] = useState(() => { try { const c = sessionStorage.getItem('catsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(() => { try { return new URLSearchParams(window.location.search).get('category') || null; } catch { return null; } });
+  // The category list stays folded behind the "All" button until it is tapped
+  // (or a category was opened from a product page link).
+  const [showCategories, setShowCategories] = useState(() => { try { return !!new URLSearchParams(window.location.search).get('category'); } catch { return false; } });
   const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, name_asc, name_desc, price_asc, price_desc
   const [priceRange, setPriceRange] = useState([0, 0]); // [min, max] — 0 means no filter
   const [onlyOnSale, setOnlyOnSale] = useState(false);
@@ -908,8 +912,8 @@ export default function Storefront() {
   // This is the "don't appear half-loaded" guarantee — the spinner stays until
   // every dependency is ready, then the real layout slides in.
   if (loading && !store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-brand-500 animate-spin"/></div>;
-  if (suspended) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center max-w-md"><div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Package size={32} className="text-red-500"/></div><h1 className="text-2xl font-bold text-gray-900 mb-2">Store Temporarily Unavailable</h1><p className="text-gray-500">This store is currently suspended. Please check back later or contact the store owner.</p></div></div>;
-  if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">Store not found</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">Go to homepage</Link></div></div>;
+  if (suspended) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center max-w-md"><div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><Package size={32} className="text-red-500"/></div><h1 className="text-2xl font-bold text-gray-900 mb-2">{t('store.unavailableTitle','Store Temporarily Unavailable')}</h1><p className="text-gray-500">{t('store.unavailableDesc','This store is currently suspended. Please check back later or contact the store owner.')}</p></div></div>;
+  if (!store) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><Package size={48} className="mx-auto text-gray-300 mb-4"/><p className="text-gray-500 text-lg font-medium">{t('store.storeNotFound','Store not found')}</p><Link to="/" className="text-brand-500 text-sm font-semibold hover:underline mt-2 inline-block">{t('store.goHome','Go to homepage')}</Link></div></div>;
 
   // Templates removed: theme picker fully drives the storefront palette.
   // Admin's customization primary_color takes precedence over the buyer theme
@@ -1042,8 +1046,8 @@ export default function Storefront() {
       {/* ============ CATEGORY TABS ============ */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <button onClick={()=>setSelectedCategory(null)} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${!selectedCategory?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={!selectedCategory?{backgroundColor:pc}:{}}>All</button>
-          {categories.map(cat=>(
+          <button onClick={()=>{ if(selectedCategory){ setSelectedCategory(null); setShowCategories(true); } else setShowCategories(v=>!v); }} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${!selectedCategory?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={!selectedCategory?{backgroundColor:pc}:{}}><span className="inline-flex items-center gap-1.5">{t('store.allCategories','All')}{categories.length>0&&<ChevronDown size={14} className={`transition-transform ${showCategories?'rotate-180':''}`}/>}</span></button>
+          {(showCategories||selectedCategory) && categories.map(cat=>(
             <button key={cat.id} onClick={()=>setSelectedCategory(cat.id)} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${selectedCategory===cat.id?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={selectedCategory===cat.id?{backgroundColor:pc}:{}}>{getName(cat)}</button>
           ))}
         </div>
@@ -1214,7 +1218,7 @@ export default function Storefront() {
             </div>
           )}
           <p className="text-sm text-gray-400">{store.footer_text || `© ${new Date().getFullYear()} ${store.name}. All rights reserved.`}</p>
-          <p className="text-xs text-gray-300 mt-1">Powered by MakretDZ</p>
+          <p className="text-xs text-gray-300 mt-1">{t('store.poweredBy','Powered by')} MakretDZ</p>
           {(() => { const fb = store.facebook_url || store.social_facebook; const ig = store.instagram_url || store.social_instagram; const tw = store.twitter_url || store.social_twitter || store.twitter; const tk = store.tiktok_url || store.social_tiktok; const yt = store.youtube_url || store.youtube; const li = store.linkedin_url || store.social_linkedin || store.linkedin; const sn = store.snapchat || store.social_snapchat; const pin = store.pinterest || store.social_pinterest; return (fb||ig||tw||tk||yt||li||sn||pin) ? (
             <div className="flex items-center justify-center gap-4 mt-4">
               {fb && <a href={fb} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>}
@@ -1337,7 +1341,7 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
       return(
         <section key={sec.id} style={wrap}><div style={inner}>
           {c.title&&<h2 style={{fontSize:`${c.titleSize||28}px`,fontWeight:800,textAlign:'center',marginBottom:24}}>{c.title}</h2>}
-          {shown.length===0?<p style={{textAlign:'center',color:'#9ca3af',padding:40}}>No products found</p>:
+          {shown.length===0?<p style={{textAlign:'center',color:'#9ca3af',padding:40}}>{t('store.noProducts','No products found')}</p>:
           <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:20}}>
             {shown.map(product=>{const thumb=getThumb(product);const inW=wishlist.includes(product.id);return(
               <div key={product.id} className={`bg-white rounded-2xl overflow-hidden ${cardClass} group relative transition-all`}>

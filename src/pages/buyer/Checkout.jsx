@@ -8,12 +8,9 @@ import i18n from '../../i18n';
 import toast from 'react-hot-toast';
 import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift, ChevronDown, ChevronUp, Package } from 'lucide-react';
 
-// Algerian phone validator: accepts 0[567]xxxxxxxx or +213[567]xxxxxxxx
-export function isValidAlgerianPhone(p) {
-  if (!p) return false;
-  const cleaned = String(p).replace(/[\s.-]/g, '');
-  return /^(0[567]\d{8}|\+?213[567]\d{8})$/.test(cleaned);
-}
+// Algerian phone validator lives in utils/phone; re-exported for older imports.
+import { isValidAlgerianPhone } from '../../utils/phone';
+export { isValidAlgerianPhone };
 import WILAYA_CITIES from '../../data/wilayaCities';
 import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
@@ -434,18 +431,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       }
     }
     if (total > 0) { setCouponDiscount(Math.round(total)); toast.success(`-${Math.round(total).toLocaleString()} ${store?.currency||'DZD'}`); return; }
-    // Store-wide coupon configured in Checkout settings — applies to the
-    // whole subtotal when the buyer enters the matching code.
-    if (store?.store_coupon_active && (store?.store_coupon_code || '').toString().trim().toUpperCase() === code) {
-      const pct = parseFloat(store.store_coupon_discount_percent) || 0;
-      if (pct > 0) {
-        const off = Math.round(subtotal * (pct / 100));
-        setCouponDiscount(off);
-        toast.success(`-${off.toLocaleString()} ${store?.currency||'DZD'}`);
-        return;
-      }
-    }
-    // Fall back to legacy store-wide coupon endpoint if it exists.
+    // Store-wide coupons (percentage or fixed amount) are priced by the
+    // server, which is also what the order total uses.
     try { const { data } = await storeApi.validateCoupon(storeSlug, { code, subtotal }); setCouponDiscount(data.discount); toast.success(`-${data.discount.toLocaleString()} ${store?.currency||'DZD'}`); }
     catch { toast.error(t('checkout.invalidCoupon','Invalid coupon')); setCouponDiscount(0); }
   };

@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import PasswordInput from '../../components/shared/PasswordInput';
+import PasswordStrength from '../../components/shared/PasswordStrength';
+import { isValidAlgerianPhone } from '../../utils/phone';
 import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { storeCanvas } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
@@ -20,12 +23,13 @@ import {
 // ---------------------------------------------------------------------------
 const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered'];
 const statusLabelKeys = {
-  pending: 'track.statusPending', confirmed: 'track.statusConfirmed', preparing: 'track.statusPreparing',
-  shipped: 'track.statusShipped', delivered: 'track.statusDelivered', cancelled: 'track.statusCancelled',
+  pending: 'track.statusPending', new_order: 'track.statusPending', confirmed: 'track.statusConfirmed', preparing: 'track.statusPreparing',
+  under_preparation: 'track.statusPreparing', ready: 'track.statusReady', shipped: 'track.statusShipped', delivered: 'track.statusDelivered',
+  cancelled: 'track.statusCancelled', returned: 'track.statusReturned',
 };
 const statusLabelsFallback = {
-  pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing',
-  shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
+  pending: 'Pending', new_order: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing', under_preparation: 'Preparing', ready: 'Ready',
+  shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled', returned: 'Returned',
 };
 const statusColors = {
   pending: 'bg-amber-400/20 text-amber-300', confirmed: 'bg-blue-400/20 text-blue-300',
@@ -211,8 +215,28 @@ export default function CustomerProfile() {
     reader.readAsDataURL(file);
   };
 
+  // Password change (inline panel under the profile details).
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const changePassword = async () => {
+    if (!pw.current || !pw.next) return toast.error(t('store.pwFillAll', 'Fill in your current and new password'));
+    if (pw.next.length < 6) return toast.error(t('auth.minChars', 'Min 6 characters'));
+    if (pw.next !== pw.confirm) return toast.error(t('auth.passwordsDontMatch', 'Passwords do not match'));
+    setPwSaving(true);
+    try {
+      await storeApi.changeCustomerPassword(storeSlug, { current_password: pw.current, new_password: pw.next });
+      toast.success(t('store.pwChanged', 'Password changed'));
+      setPw({ current: '', next: '', confirm: '' }); setPwOpen(false);
+    } catch (e) {
+      toast.error(e.response?.data?.code === 'wrong_password' ? t('store.pwWrongCurrent', 'Current password is incorrect') : (e.response?.data?.error || t('store.updateFailed', 'Failed to update')));
+    }
+    setPwSaving(false);
+  };
+
   const saveProfile = async () => {
     if (!form.name || !form.phone) return toast.error(t('store.nameAndPhoneRequired', 'Name and phone are required'));
+    if (!isValidAlgerianPhone(form.phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
     setSaving(true);
     try {
       const payload = { ...form };
@@ -362,7 +386,7 @@ export default function CustomerProfile() {
                 onChange={handleAvatarChange}
               />
             </div>
-            <h3 className="text-xl text-white italic" style={{ fontFamily: "Arial, sans-serif", fontWeight: 600 }}>{profile.name || 'Customer'}</h3>
+            <h3 className="text-xl text-white italic" style={{ fontFamily: "Arial, sans-serif", fontWeight: 600 }}>{profile.name || t('store.customer','Customer')}</h3>
             <div className="flex items-center gap-1.5 mt-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-medium text-emerald-400">{t('store.activeMember', 'Active Member')}</span>
@@ -551,7 +575,30 @@ export default function CustomerProfile() {
                         <Lock size={14} className="text-gray-500" />
                         <span className="text-white tracking-widest">{'*'.repeat(10)}</span>
                         <span className="text-[10px] text-gray-500 font-medium ml-1">{t('store.securelyHidden', 'Securely Hidden')}</span>
+                        <button type="button" onClick={() => setPwOpen(o => !o)} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90" style={{ backgroundColor: pc }}>
+                          {t('store.changePassword', 'Change password')}
+                        </button>
                       </div>
+                      {pwOpen && (
+                        <div className="mt-4 space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                          {[
+                            ['current', t('store.currentPassword', 'Current password')],
+                            ['next', t('store.newPassword', 'New password')],
+                            ['confirm', t('auth.confirmPassword', 'Confirm password')],
+                          ].map(([k, label]) => (
+                            <div key={k}>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{label}</label>
+                              <PasswordInput className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2" value={pw[k]} onChange={e => setPw({ ...pw, [k]: e.target.value })} autoComplete={k === 'current' ? 'current-password' : 'new-password'} />
+                              {k === 'next' && <PasswordStrength password={pw.next} />}
+                              {k === 'confirm' && pw.confirm && pw.next !== pw.confirm && <p className="text-xs text-red-400 mt-1">{t('auth.passwordsDontMatch', 'Passwords do not match')}</p>}
+                            </div>
+                          ))}
+                          <div className="flex gap-2 pt-1">
+                            <button type="button" onClick={() => { setPwOpen(false); setPw({ current: '', next: '', confirm: '' }); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-white/10 hover:bg-white/15">{t('store.cancel', 'Cancel')}</button>
+                            <button type="button" onClick={changePassword} disabled={pwSaving} className="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-60" style={{ backgroundColor: pc }}>{pwSaving ? t('store.saving', 'Saving...') : t('store.savePassword', 'Save password')}</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

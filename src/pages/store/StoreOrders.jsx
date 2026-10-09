@@ -49,7 +49,8 @@ const ALL_COLUMNS = [
   { key: 'payment_method',   label: 'Payment',          tKey: 'col.payment' },
 ];
 const DEFAULT_COLUMNS = ['order','products','customer_name','phone','status','transfer','wilaya','commune','preferred_company','shipping_method','total','financial_status','payment_method','notes'];
-const PREPARING_COLUMNS = DEFAULT_COLUMNS;
+// The Preparing page shows a fixed, minimal set (no column picker there).
+const PREPARING_COLUMNS = ['order', 'products', 'customer_name', 'phone', 'status'];
 
 const statusConfig = {
   new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.status.new' },
@@ -119,6 +120,7 @@ export default function StoreOrders() {
     else if (!isPreparingPage && !isArchivePage && (filter === 'preparing' || filter === 'archived')) setFilter('all');
   }, [isPreparingPage, isArchivePage, filter]);
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const [bulkMenu, setBulkMenu] = useState(null); // which bulk-action menu is open: status | payment | carrier
   // The server is asked only once typing pauses, and only the newest reply is
   // kept — every keystroke used to fire a request and an older, slower reply
@@ -184,7 +186,7 @@ export default function StoreOrders() {
     };
   }, []);
   const [activeColumns, setActiveColumns] = useState(() => {
-    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v2') || 'null'); return Array.isArray(s) && s.length ? s : PREPARING_COLUMNS; } catch { return PREPARING_COLUMNS; } }
+    if (isPreparingPage) return PREPARING_COLUMNS;
     try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); return Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS; }
     catch { return DEFAULT_COLUMNS; }
   });
@@ -197,7 +199,7 @@ export default function StoreOrders() {
   }, [activeColumns]);
   // Sync columns when switching between orders/preparing pages
   useEffect(() => {
-    if (isPreparingPage) { try { const s = JSON.parse(localStorage.getItem('preparing.columns.v2') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : PREPARING_COLUMNS); } catch { setActiveColumns(PREPARING_COLUMNS); } }
+    if (isPreparingPage) { setActiveColumns(PREPARING_COLUMNS); return; }
     else { try { const s = JSON.parse(localStorage.getItem('orders.columns.v6') || 'null'); setActiveColumns(Array.isArray(s) && s.length ? s : DEFAULT_COLUMNS); } catch { setActiveColumns(DEFAULT_COLUMNS); } }
   }, [isPreparingPage]);
   useEffect(() => { localStorage.setItem('orders.pageSize', String(pageSize)); }, [pageSize]);
@@ -303,8 +305,10 @@ export default function StoreOrders() {
   };
 
   const highlightId = useMemo(() => { const p = new URLSearchParams(location.search); return p.get('highlight') || null; }, [location.search]);
+  const highlightOpened = useRef(null); // a notification link opens that order's details once
   useEffect(() => {
     if (!highlightId) return;
+    if (highlightOpened.current !== highlightId) { highlightOpened.current = highlightId; viewOrder(highlightId); }
     const el = document.querySelector(`[data-order-id="${highlightId}"]`);
     if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('ring-2','ring-amber-400'); const tm = setTimeout(() => el.classList.remove('ring-2','ring-amber-400'), 3500); return () => clearTimeout(tm); }
   }, [highlightId, orders]);
@@ -946,9 +950,13 @@ export default function StoreOrders() {
 
       {/* Orders header */}
       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-        <h1 className="text-xl sm:text-2xl font-black text-gray-900 shrink-0">Orders</h1>
+        <h1 className="text-xl sm:text-2xl font-black text-gray-900 shrink-0">{t('orders.title','Orders')}</h1>
         <div className="overflow-x-auto -mx-1 px-1 flex-1 min-w-0">
         <div className="flex items-center gap-2 w-max">
+          {/* Re-fetch from the server (skipping the local cache) */}
+          <button onClick={async () => { setRefreshing(true); try { const m = await import('../../utils/api'); m.invalidateCache?.('mords'); } catch {} await loadOrders(); setRefreshing(false); }} disabled={refreshing} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider disabled:opacity-60" title={t('common.refresh','Refresh')}>
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''}/>{t('common.refresh','Refresh')}
+          </button>
           <button onClick={() => exportCsv(filteredOrders)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <Download size={13}/>{t('orders.export','Export')}
           </button>
@@ -968,14 +976,14 @@ export default function StoreOrders() {
             <span className="px-1 text-[10px] font-bold text-gray-500 tabular-nums">{Math.round(colScale*100)}%</span>
             <button onClick={() => setColScale(Math.min(1.5, +(colScale+0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">+</button>
           </div>
-          <ColumnsPicker
+          {!isPreparingPage && <ColumnsPicker
             open={columnPickerOpen}
             setOpen={setColumnPickerOpen}
             activeColumns={activeColumns}
             ALL_COLUMNS={ALL_COLUMNS}
             toggleColumn={toggleColumn}
             moveColumn={moveColumn}
-          />
+          />}
           <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
             <Plus size={13}/>{t('orders.createOrder','Create Order')}
           </button>

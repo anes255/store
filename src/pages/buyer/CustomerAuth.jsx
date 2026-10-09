@@ -5,6 +5,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
 import { useAuthStore, useBuyerTheme, useCartStore } from '../../hooks/useStore';
 import { useStoreFont } from '../../utils/storeFont';
+import WILAYA_CITIES from '../../data/wilayaCities';
+import { bilingualLabel } from '../../data/wilayaTranslations';
+import { isValidAlgerianPhone } from '../../utils/phone';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { User, Phone, Lock, Mail, MapPin, ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBag, Heart, ShoppingCart } from 'lucide-react';
@@ -22,7 +25,7 @@ export default function CustomerAuth() {
   const [storeLoading, setStoreLoading] = useState(true);
   useStoreFont(store);
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', address: '', city: '', wilaya: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -42,7 +45,12 @@ export default function CustomerAuth() {
         navigate(`/s/${storeSlug}`);
       } else {
         if (!form.name || !form.phone || !form.password) { toast.error(t('store.namePhonePasswordRequired','Name, phone, and password required')); setLoading(false); return; }
-        const { data } = await storeApi.registerCustomer(storeSlug, form);
+        if (!isValidAlgerianPhone(form.phone)) { toast.error(t('checkout.errPhoneAlg','Please enter a valid Algerian phone (e.g. 0555123456)')); setLoading(false); return; }
+        if (form.password.length < 6) { toast.error(t('auth.minChars','Min 6 characters')); setLoading(false); return; }
+        if (form.password !== form.confirmPassword) { toast.error(t('auth.passwordsDontMatch','Passwords do not match')); setLoading(false); return; }
+        if (!form.wilaya || !form.city) { toast.error(t('auth.pickWilayaCity','Please choose your wilaya and city')); setLoading(false); return; }
+        const { confirmPassword, ...payload } = form;
+        const { data } = await storeApi.registerCustomer(storeSlug, payload);
         setAuth(data.customer, data.token, 'customer');
         toast.success(t('auth.accountCreated','Account created!'));
         navigate(`/s/${storeSlug}`);
@@ -139,14 +147,40 @@ export default function CustomerAuth() {
                 {mode !== 'login' && <PasswordStrength password={form.password}/>}
               </div>
 
+              {mode === 'register' && (
+                <div>
+                  <label className="input-label">{t('auth.confirmPassword','Confirm password')}</label>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder={t('auth.confirmPasswordPlaceholder','Re-enter your password')} value={form.confirmPassword} onChange={e => setForm({...form, confirmPassword: e.target.value})} required />
+                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showPw ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
+                  </div>
+                  {form.confirmPassword && form.password !== form.confirmPassword && <p className="text-xs text-red-500 mt-1">{t('auth.passwordsDontMatch','Passwords do not match')}</p>}
+                </div>
+              )}
+
 
 
 
               {mode === 'register' && (
                 <>
                   <div>
+                    <label className="input-label">{t('auth.wilaya','Wilaya')}</label>
+                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <select className="input-field !pl-11" value={form.wilaya} onChange={e => setForm({...form, wilaya: e.target.value, city: ''})} required>
+                        <option value="">{t('auth.wilayaPlaceholder','— Select wilaya —')}</option>
+                        {Object.keys(WILAYA_CITIES).map((w, i) => <option key={w} value={w}>{String(i + 1).padStart(2, '0')} - {bilingualLabel(w)}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
                     <label className="input-label">{t('auth.city','الدائرة (City)')}</label>
-                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input className="input-field !pl-11" placeholder={t('store.yourCity','Your city')} value={form.city} onChange={e => setForm({...form, city: e.target.value})} /></div>
+                    <div className="relative"><MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <select className="input-field !pl-11 disabled:opacity-60" value={form.city} onChange={e => setForm({...form, city: e.target.value})} disabled={!form.wilaya} required>
+                        <option value="">{form.wilaya ? t('auth.cityPlaceholder','— Select city —') : t('checkout.selectWilayaFirst','Select wilaya first')}</option>
+                        {(WILAYA_CITIES[form.wilaya] || []).map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="input-label">{t('auth.address','Address')}</label>

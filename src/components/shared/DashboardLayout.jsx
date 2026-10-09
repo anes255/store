@@ -179,6 +179,8 @@ function NotifBell(){
   },[open]);
   // Map a notification to its destination + highlight target id
   const routeFor=(n)=>{
+    // Notifications now carry the exact page + item (?highlight=<id>).
+    if(typeof n.link==='string'&&n.link.startsWith('/dashboard')&&n.link.includes('highlight='))return n.link;
     const t=n.type,r=n.ref_id||n.order_id||n.product_id||n.customer_id;
     if(t==='order')return r?`/dashboard/orders?highlight=${r}`:'/dashboard/orders';
     if(t==='stock')return r?`/dashboard/stock?highlight=${r}`:'/dashboard/stock';

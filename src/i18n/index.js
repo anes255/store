@@ -6,9 +6,12 @@ import en from './en';
 // so it is always needed). French and Arabic are separate chunks that are
 // fetched only for the visitor who actually uses them — previously all three
 // tables were parsed on every single page load, for everyone.
+// Each language = its main table + the storefront strings (buyer_*.js),
+// merged so either can be edited on its own.
+const withBuyer = (main, buyer) => () => Promise.all([main(), buyer()]).then(([m, b]) => ({ main: m.default, buyer: b.default }));
 const LOADERS = {
-  fr: () => import('./fr'),
-  ar: () => import('./ar'),
+  fr: withBuyer(() => import('./fr'), () => import('./buyer_fr')),
+  ar: withBuyer(() => import('./ar'), () => import('./buyer_ar')),
 };
 
 const stored = (() => { try { return localStorage.getItem('lang') || 'en'; } catch { return 'en'; } })();
@@ -28,7 +31,11 @@ export function loadLanguage(lng) {
   const loader = LOADERS[code];
   if (!loader) return Promise.resolve('en');
   return loader()
-    .then(m => { i18n.addResourceBundle(code, 'translation', m.default, true, true); return code; })
+    .then(m => {
+      i18n.addResourceBundle(code, 'translation', m.main, true, true);
+      i18n.addResourceBundle(code, 'translation', m.buyer, true, true); // deep-merge storefront strings
+      return code;
+    })
     .catch(() => 'en');
 }
 

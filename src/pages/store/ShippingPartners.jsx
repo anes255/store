@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope,Star}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope,Star,ArrowUp,ArrowDown}from'lucide-react';
 import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 import CarrierLogo,{isLogoImage}from'../../components/shared/CarrierLogo';
 
@@ -105,6 +105,15 @@ export default function ShippingPartners(){
   };
 
   const load=()=>{if(!currentStore?.id)return;api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r=>setCompanies(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
+  // Checkout order: move a company up/down; saved right away.
+  const moveCompany=async(c,dir)=>{
+    const list=[...companies];const i=list.findIndex(x=>x.id===c.id);const j=i+dir;
+    if(i<0||j<0||j>=list.length)return;
+    [list[i],list[j]]=[list[j],list[i]];
+    setCompanies(list);
+    try{await api.put(`/manage/stores/${currentStore.id}/delivery-companies/order`,{ids:list.map(x=>x.id)});toast.success(t('storePage.checkoutOrderSaved','Checkout order saved'));}
+    catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));load();}
+  };
   useEffect(()=>{load();loadWilayas();},[currentStore?.id]);
 
   const save=async()=>{
@@ -287,6 +296,7 @@ export default function ShippingPartners(){
               {c.phone&&<span className="break-all">{c.phone}</span>}
             </div>
             <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100 flex-wrap">
+              <span className="inline-flex items-center rounded-lg border border-gray-200 overflow-hidden shrink-0" title={t('storePage.checkoutOrder','Order at checkout')}><span className="px-1.5 text-[10px] font-bold text-gray-400">#{companies.findIndex(x=>x.id===c.id)+1}</span><button onClick={()=>moveCompany(c,-1)} disabled={companies[0]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveUp','Move up')}><ArrowUp size={14}/></button><button onClick={()=>moveCompany(c,1)} disabled={companies[companies.length-1]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveDown','Move down')}><ArrowDown size={14}/></button></span>
               <button onClick={()=>setDefaultCompany(c)} disabled={settingDefault===c.id} className={`p-2 rounded-lg ${c.is_default?'text-amber-500 bg-amber-50':'text-gray-300 hover:text-amber-500 hover:bg-amber-50'}`} title={c.is_default?t('storePage.defaultOnHint','Default company — buyers get it pre-selected at checkout. Click to clear.'):t('storePage.defaultOffHint','Make this the default company at checkout')}>{settingDefault===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Star size={14} fill={c.is_default?'currentColor':'none'}/>}</button>
               {c.api_base_url&&<button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 hover:bg-amber-50 rounded-lg text-gray-400 hover:text-amber-600" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>}
               {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
@@ -344,6 +354,7 @@ export default function ShippingPartners(){
                   <button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 sm:p-2.5 hover:bg-amber-50 rounded-xl text-gray-400 hover:text-amber-600 shrink-0" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>
                   <button onClick={()=>copyWebhookUrl(c)} className="p-2 sm:p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500 shrink-0" title="Copy webhook URL"><Link2 size={14}/></button>
                 </>}
+                <span className="inline-flex items-center rounded-lg border border-gray-200 overflow-hidden shrink-0" title={t('storePage.checkoutOrder','Order at checkout')}><span className="px-1.5 text-[10px] font-bold text-gray-400">#{companies.findIndex(x=>x.id===c.id)+1}</span><button onClick={()=>moveCompany(c,-1)} disabled={companies[0]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveUp','Move up')}><ArrowUp size={14}/></button><button onClick={()=>moveCompany(c,1)} disabled={companies[companies.length-1]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveDown','Move down')}><ArrowDown size={14}/></button></span>
                 <button onClick={()=>setDefaultCompany(c)} disabled={settingDefault===c.id} className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${c.is_default?'text-amber-500 bg-amber-50':'text-gray-400 hover:text-amber-500 hover:bg-amber-50'}`} title={c.is_default?t('storePage.defaultOnHint','Default company — buyers get it pre-selected at checkout. Click to clear.'):t('storePage.defaultOffHint','Make this the default company at checkout')}>{settingDefault===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Star size={14} fill={c.is_default?'currentColor':'none'}/>}</button>
                 <button onClick={()=>openEdit(c)} className="p-2 sm:p-2.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-brand-500 shrink-0"><Edit size={14}/></button>
                 <button onClick={()=>del(c.id)} className="p-2 sm:p-2.5 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-500 shrink-0"><Trash2 size={14}/></button>

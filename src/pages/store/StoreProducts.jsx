@@ -4,7 +4,7 @@ import { productApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
-import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList, Tag } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList, Tag, Eye, EyeOff } from 'lucide-react';
 
 export default function StoreProducts() {
   const { t } = useTranslation();
@@ -119,6 +119,15 @@ export default function StoreProducts() {
     } catch(err) { toast.error(err.response?.data?.error||t('products.failed','Failed')); }
   };
 
+  // Show / hide a product on the storefront without deleting it.
+  const setActive = async (ids, active) => {
+    const list = Array.isArray(ids) ? ids : [ids];
+    let ok = 0;
+    for (const id of list) { try { await productApi.update(currentStore.id, id, { is_active: active }); ok++; } catch {} }
+    setProducts(prev => prev.map(x => list.includes(x.id) ? { ...x, is_active: active } : x));
+    if (ok) toast.success(active ? t('products.activated', '{{n}} product(s) activated', { n: ok }) : t('products.deactivated', '{{n}} product(s) deactivated', { n: ok }));
+    else toast.error(t('storePage.failed', 'Failed'));
+  };
   const handleDelete = async (id) => { if(!confirm(t('products.deleteConfirm','Delete?'))) return; try{await productApi.delete(currentStore.id,id);toast.success(t('products.deleted','Deleted'));loadProducts();}catch{toast.error(t('products.failed','Failed'));} };
 
   const openEdit = (p) => {
@@ -169,13 +178,13 @@ export default function StoreProducts() {
             </thead>
             <tbody>
               {displayProducts.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
-                <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''}`}>
+                <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''} ${p.is_active===false?'opacity-60':''}`}>
                   <td className="p-3"><button onClick={()=>toggleSelect(p.id)}>{selectedItems.has(p.id)?<CheckSquare size={16} className="text-brand-600"/>:<Square size={16} className="text-gray-400"/>}</button></td>
                   <td className="p-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">{thumb?<img src={thumb} className="w-full h-full object-cover"/>:<div className="flex items-center justify-center h-full"><Image size={14} className="text-gray-300"/></div>}</div><div className="min-w-0"><p className="font-semibold text-gray-800 truncate">{p.name_en||p.name}</p>{p.is_featured&&<span className="text-[9px] font-bold text-brand-600">{t('products.featured','FEATURED')}</span>}</div></div></td>
                   <td className="p-3 font-bold text-brand-600">{parseFloat(p.price).toLocaleString()} DZD</td>
                   <td className="p-3 text-gray-600">{p.stock_quantity||0}</td>
                   <td className="p-3"><span className="text-xs text-gray-400">{vc}</span></td>
-                  <td className="p-3"><div className="flex justify-end gap-1"><button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button><button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button></div></td>
+                  <td className="p-3"><div className="flex justify-end gap-1 items-center">{p.is_active===false&&<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 mr-1">{t('products.inactive','Inactive')}</span>}<button onClick={()=>setActive(p.id,p.is_active===false)} className={`px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1 ${p.is_active===false?'text-emerald-600 hover:bg-emerald-50':'text-amber-600 hover:bg-amber-50'}`} title={p.is_active===false?t('products.activate','Activate'):t('products.deactivate','Deactivate')}>{p.is_active===false?<Eye size={13}/>:<EyeOff size={13}/>}<span className="hidden lg:inline">{p.is_active===false?t('products.activate','Activate'):t('products.deactivate','Deactivate')}</span></button><button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button><button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button></div></td>
                 </tr>
               );})}
             </tbody>
@@ -185,7 +194,9 @@ export default function StoreProducts() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {displayProducts.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;const cat=categories.find(c=>String(c.id)===String(p.category_id));return(
             <div key={p.id} className={`glass-card-solid rounded-2xl overflow-hidden group hover:shadow-glass-lg transition-all ${selectedItems.has(p.id) ? 'ring-2 ring-brand-400' : ''}`}>
-              <div className="aspect-square bg-gray-100 relative overflow-hidden">
+              <div className={`aspect-square bg-gray-100 relative overflow-hidden ${p.is_active===false?'grayscale opacity-70':''}`}>
+                {p.is_active===false&&<span className="absolute bottom-2 left-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-900/80 text-white">{t('products.inactive','Inactive')}</span>}
+                <button onClick={(e)=>{e.stopPropagation();setActive(p.id,p.is_active===false);}} className={`absolute bottom-2 right-2 z-10 px-2 py-1 rounded-lg shadow-md text-[11px] font-bold flex items-center gap-1 ${p.is_active===false?'bg-emerald-500 text-white':'bg-white text-amber-600'}`}>{p.is_active===false?<><Eye size={12}/>{t('products.activate','Activate')}</>:<><EyeOff size={12}/>{t('products.deactivate','Deactivate')}</>}</button>
                 {thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="flex items-center justify-center h-full"><Image size={32} className="text-gray-300"/></div>}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={()=>openEdit(p)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-gray-50"><Edit size={14}/></button>
@@ -215,7 +226,7 @@ export default function StoreProducts() {
 
       {/* Floating Bulk Action Bar */}
       {selectedItems.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white rounded-2xl px-6 py-3 flex items-center gap-4 shadow-2xl z-50">
+        <div className="fixed bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-gray-900 text-white rounded-2xl px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4 shadow-2xl z-50 overflow-x-auto whitespace-nowrap [&>*]:shrink-0">
           <span className="text-sm font-bold">{selectedItems.size} {t('products.selected','selected')}</span>
           <div className="w-px h-6 bg-gray-600" />
           <button onClick={() => { const selectedData = products.filter(p => selectedItems.has(p.id)); const csv = ['Name,Price,Stock,SKU', ...selectedData.map(p => `"${p.name_en||p.name}",${p.price},${p.stock_quantity||0},"${p.sku||''}"`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'products-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(t('products.exportedCount',`Exported ${selectedItems.size} products`,{count:selectedItems.size})); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
@@ -224,6 +235,8 @@ export default function StoreProducts() {
           <button onClick={async () => { if(!confirm(t('products.deleteSelectedConfirm',`Delete ${selectedItems.size} selected products?`,{count:selectedItems.size}))) return; for (const id of selectedItems) { try { await productApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadProducts(); toast.success(t('products.deletedSelected','Deleted selected products')); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
             <Trash2 size={13} />{t('products.deleteSelected','Delete Selected')}
           </button>
+          <button onClick={async () => { await setActive(Array.from(selectedItems), true); clearSelection(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors"><Eye size={13}/>{t('products.activate','Activate')}</button>
+          <button onClick={async () => { await setActive(Array.from(selectedItems), false); clearSelection(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors"><EyeOff size={13}/>{t('products.deactivate','Deactivate')}</button>
           <button onClick={clearSelection} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-700 rounded-lg text-xs transition-colors">
             <X size={14} />
           </button>
