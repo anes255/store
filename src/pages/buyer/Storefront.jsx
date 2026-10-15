@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
+import React, { useState, useEffect, useRef } from 'react';
+import SmartSearch from '../../components/shared/SmartSearch';
+import { StoreBottomNav, StoreHeaderIcons, CartPill } from '../../components/shared/StoreNav';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
@@ -589,6 +590,13 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const cartItems = useCartStore(s => s.items);
   const removeItem = useCartStore(s => s.removeItem);
   const inCart = cartItems.some(i => i.product_id === product.id);
+  // Brief "✓ added" pop on the card's cart button right after it's added.
+  const [justAdded, setJustAdded] = useState(false);
+  const wasInCart = useRef(inCart);
+  useEffect(() => {
+    if (inCart && !wasInCart.current) { setJustAdded(true); const h = setTimeout(() => setJustAdded(false), 1400); wasInCart.current = inCart; return () => clearTimeout(h); }
+    wasInCart.current = inCart;
+  }, [inCart]);
   const rawPrice = parseFloat(product.price) || 0;
   // If the product has an active offer with a discount (e.g. "40% OFF"),
   // compute the discounted price and treat the original as compare_at_price.
@@ -620,7 +628,9 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         {onSale && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || 'SALE'}</span>}
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
           className={`absolute bottom-1 right-1 sm:bottom-auto sm:top-4 sm:right-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
-          aria-label={inCart ? "Remove from cart" : "Add to cart"}>{inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
+          style={justAdded ? { backgroundColor: '#10b981', color: '#fff', transform: 'scale(1.18)' } : undefined}
+          aria-label={inCart ? "Remove from cart" : "Add to cart"}>{justAdded ? <Check size={14} strokeWidth={3} className="animate-[pop_.35s_ease-out]" /> : inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
+        {justAdded && <span className="absolute bottom-9 right-1 sm:bottom-auto sm:top-14 sm:right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-lg animate-[pop_.35s_ease-out] pointer-events-none">{t('store.added','Added')}</span>}
       </Link>
 
       {/* Product Info */}
@@ -654,7 +664,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
           className="w-full mt-1 sm:mt-2.5 py-1.5 sm:py-2.5 rounded-xl text-white text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 hover:opacity-90 shadow-lg transition-all"
           style={{ backgroundColor: pc }}
         >
-          <Zap size={13} /> ORDER NOW
+          <Zap size={13} /> {t('store.orderNow','ORDER NOW')}
         </button>
         {product.sku && <p className={`sm:hidden mt-1.5 text-center text-[10px] font-medium ${isLight ? 'text-gray-400' : 'text-white/35'}`}>{product.sku}</p>}
       </div>
@@ -705,6 +715,7 @@ export default function Storefront() {
   const [products, setProducts] = useState(() => { try { const c = sessionStorage.getItem('prodsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [categories, setCategories] = useState(() => { try { const c = sessionStorage.getItem('catsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [search, setSearch] = useState('');
+  const [searchPool, setSearchPool] = useState([]); // unfiltered products for search suggestions
   const [selectedCategory, setSelectedCategory] = useState(() => { try { return new URLSearchParams(window.location.search).get('category') || null; } catch { return null; } });
   // The category list stays folded behind the "All" button until it is tapped
   // (or a category was opened from a product page link).
@@ -787,6 +798,7 @@ export default function Storefront() {
         const prods = prodsRes.status==='fulfilled' ? (prodsRes.value.data.products||[]) : [];
         const cats = catsRes.status==='fulfilled' ? (catsRes.value.data||[]) : [];
         setProducts(prods);
+        if (!search && !selectedCategory) setSearchPool(prods);
         setCategories(cats);
         try { sessionStorage.setItem('prodsCache_' + storeSlug, JSON.stringify(prods)); } catch {}
         try { sessionStorage.setItem('catsCache_' + storeSlug, JSON.stringify(cats)); } catch {}
@@ -953,15 +965,7 @@ export default function Storefront() {
             </Link>
           </div>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="store-search flex items-center bg-white rounded-full shadow-md w-full overflow-hidden">
-              <Search size={20} className="ml-5 text-gray-400 shrink-0"/>
-              <input
-                className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none rounded-full"
-                placeholder={t('store.search','Search products...')}
-                value={search}
-                onChange={e=>setSearch(e.target.value)}
-              />
-            </div>
+            <SmartSearch value={search} onChange={setSearch} products={searchPool.length?searchPool:products} storeSlug={storeSlug} getName={getName} getThumb={getThumb} currency={store.currency||'DZD'} size="lg"/>
           </div>
           {/* Desktop: the actions stay laid out across the bar. */}
           <div className="hidden md:flex items-center gap-3 shrink-0 overflow-visible">
@@ -1015,15 +1019,7 @@ export default function Storefront() {
         </div>
         {/* Mobile-only search row */}
         <div className="md:hidden px-3 pb-3">
-          <div className="store-search flex items-center bg-white rounded-full shadow-md w-full overflow-hidden">
-            <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
-            <input
-              className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800 rounded-full"
-              placeholder={t('store.search','Search products...')}
-              value={search}
-              onChange={e=>setSearch(e.target.value)}
-            />
-          </div>
+          <SmartSearch value={search} onChange={setSearch} products={searchPool.length?searchPool:products} storeSlug={storeSlug} getName={getName} getThumb={getThumb} currency={store.currency||'DZD'} size="sm"/>
         </div>
       </header>
 
@@ -1273,6 +1269,7 @@ export default function Storefront() {
       <AIChatbot store={store} slug={storeSlug}/>
 
       {/* ============ MOBILE BOTTOM NAV ============ */}
+      <CartPill storeSlug={storeSlug} pc={pc} currency={store.currency||'DZD'} onCart={openCart}/>
       <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={buyerTheme.mode==='dark'} onCart={openCart}/>
 
       {/* ============ PRODUCT DETAIL MODAL ============ */}

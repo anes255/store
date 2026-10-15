@@ -4,6 +4,7 @@
 // pages fell back to English.
 export default {
   store: {
+    added: 'أُضيف', orderNow: 'اطلب الآن', viewCart: 'عرض السلة', searchHint: 'ابحث باسم المنتج أو المرجع…', clearSearch: 'مسح البحث', recentSearches: 'عمليات البحث الأخيرة', clear: 'مسح', popularNow: 'الأكثر رواجًا الآن', noMatchFor: 'لا توجد منتجات تطابق «{{q}}»', noMatchHint: 'تحقق من الكتابة أو جرّب:', kbdNavigate: 'تنقّل', kbdOpen: 'فتح', kbdClose: 'إغلاق', keepAccount: 'الاحتفاظ بحسابي', holdDeleteAccount: 'اضغط مطولًا لحذف حسابي', keepHolding: 'واصل الضغط…', releaseToCancel: 'ارفع إصبعك قبل الانتهاء للإلغاء',
     tracking: 'التتبع', orderCancelled: 'تم إلغاء الطلب', currentStatus: 'الحالة الحالية', trackingNumber: 'رقم التتبع', shippedVia: 'شُحن عبر',
     imageTooLarge: 'يجب أن يكون حجم الصورة أقل من 2 ميغابايت', pwFillAll: 'أدخل كلمة المرور الحالية والجديدة', pwChanged: 'تم تغيير كلمة المرور',
     pwWrongCurrent: 'كلمة المرور الحالية غير صحيحة', updateFailed: 'فشل التحديث', nameAndPhoneRequired: 'الاسم ورقم الهاتف مطلوبان',
@@ -47,6 +48,7 @@ export default {
   },
   track: { backToTop: 'العودة للأعلى' },
   auth: {
+    pwRuleLength: '8 أحرف أو أكثر', verified: 'تم التحقق!',
     pickWilayaCity: 'يرجى اختيار الولاية والبلدية', wilayaPlaceholder: '— اختر الولاية —', cityPlaceholder: '— اختر البلدية —',
     confirmPassword: 'تأكيد كلمة المرور', confirmPasswordPlaceholder: 'أعد إدخال كلمة المرور', passwordsDontMatch: 'كلمتا المرور غير متطابقتين',
     pwVeryWeak: 'ضعيفة جدًا', pwWeak: 'ضعيفة', pwFair: 'متوسطة', pwGood: 'جيدة', pwStrong: 'قوية', pwTipLength: 'استعمل 8 أحرف أو أكثر',

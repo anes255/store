@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import HoldToConfirm from '../../components/shared/HoldToConfirm';
 import PasswordInput from '../../components/shared/PasswordInput';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { isValidAlgerianPhone } from '../../utils/phone';
@@ -725,20 +726,22 @@ export default function CustomerProfile() {
                 ) : (
                   <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 space-y-3">
                     <p className="text-sm text-red-300 font-semibold">{t('store.deleteAccountWarning', 'Are you sure? This action is permanent and cannot be undone. All your data will be removed.')}</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleDeleteAccount}
-                        disabled={deleting}
-                        className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-                      >
-                        <Trash2 size={14} />{deleting ? t('store.deleting', 'Deleting...') : t('store.confirmDelete', 'Yes, Delete')}
-                      </button>
+                    {/* Safe choice first and prominent; deleting needs a deliberate hold. */}
+                    <div className="flex flex-wrap items-start gap-3">
                       <button
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="flex-1 py-2.5 rounded-xl bg-white/10 border border-white/10 text-gray-300 font-bold text-sm hover:bg-white/15 transition-colors"
+                        className="px-4 py-2.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-colors"
                       >
-                        {t('store.cancel', 'Cancel')}
+                        {t('store.keepAccount', 'Keep my account')}
                       </button>
+                      <HoldToConfirm
+                        onConfirm={handleDeleteAccount}
+                        disabled={deleting}
+                        label={t('store.holdDeleteAccount', 'Hold to delete my account')}
+                        holdingLabel={t('store.keepHolding', 'Keep holding…')}
+                        doneLabel={t('store.deleting', 'Deleting...')}
+                        hint={t('store.releaseToCancel', 'Release early to cancel')}
+                      />
                     </div>
                   </div>
                 )}

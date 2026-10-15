@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import AnimatedAddToCart from '../../components/shared/AnimatedAddToCart';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -378,9 +379,10 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = () => {
-    if (!requireSelections()) return;
+    if (!requireSelections()) return false;
     addItem({ ...product, price: finalPrice, quantity_offers: product.quantity_offers || [] }, quantity, buildVariantObj());
     toast.success(variantLabel ? t('store.addedVariantToCart','Added "{{label}}" to cart',{label:variantLabel}) : t('store.addedToCart','Added to cart'));
+    return true;
   };
 
   const handleBuyNow = () => {
@@ -653,14 +655,13 @@ export default function ProductDetail() {
                   <span className="w-8 text-center font-bold text-sm">{quantity}</span>
                   <button onClick={() => setQuantity(quantity+1)} className="p-2.5 hover:bg-gray-200 rounded-r-xl" aria-label="plus"><Plus size={14}/></button>
                 </div>
-                <button
-                  onClick={handleAddToCart}
+                <AnimatedAddToCart
+                  onAdd={handleAddToCart}
                   disabled={stockCount <= 0 && !product.allow_oversell}
-                  className="flex-1 min-w-0 py-3 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-1.5 hover:opacity-90 shadow-lg disabled:opacity-50 transition-all"
-                  style={{backgroundColor:pc}}
-                >
-                  <ShoppingCart size={16} className="shrink-0"/><span className="truncate">{store.btn_add_cart || t('store.addToCart','Add to Cart')}</span>
-                </button>
+                  pc={pc}
+                  label={store.btn_add_cart || t('store.addToCart','Add to Cart')}
+                  addedLabel={t('store.addedToCart','Added to cart')}
+                />
                 <button
                   onClick={handleBuyNow}
                   disabled={stockCount <= 0 && !product.allow_oversell}

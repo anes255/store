@@ -4,6 +4,7 @@
 // pages fell back to English.
 export default {
   store: {
+    added: 'Ajouté', orderNow: 'COMMANDER', viewCart: 'Voir le panier', searchHint: 'Rechercher un produit ou une référence…', clearSearch: 'Effacer la recherche', recentSearches: 'Recherches récentes', clear: 'Effacer', popularNow: 'Populaire en ce moment', noMatchFor: 'Aucun produit ne correspond à « {{q}} »', noMatchHint: 'Vérifiez l’orthographe ou essayez :', kbdNavigate: 'naviguer', kbdOpen: 'ouvrir', kbdClose: 'fermer', keepAccount: 'Garder mon compte', holdDeleteAccount: 'Maintenir pour supprimer mon compte', keepHolding: 'Maintenez…', releaseToCancel: 'Relâchez avant la fin pour annuler',
     tracking: 'Suivi', orderCancelled: 'Commande annulée', currentStatus: 'Statut actuel', trackingNumber: 'Numéro de suivi', shippedVia: 'Expédiée via',
     imageTooLarge: "L'image doit faire moins de 2 Mo", pwFillAll: 'Saisissez votre mot de passe actuel et le nouveau', pwChanged: 'Mot de passe modifié',
     pwWrongCurrent: 'Le mot de passe actuel est incorrect', updateFailed: 'Échec de la mise à jour', nameAndPhoneRequired: 'Le nom et le téléphone sont obligatoires',
@@ -47,6 +48,7 @@ export default {
   },
   track: { backToTop: 'Haut de page' },
   auth: {
+    pwRuleLength: '8+ caractères', verified: 'Vérifié !',
     pickWilayaCity: 'Veuillez choisir votre wilaya et votre commune', wilayaPlaceholder: '— Choisir la wilaya —', cityPlaceholder: '— Choisir la commune —',
     confirmPassword: 'Confirmer le mot de passe', confirmPasswordPlaceholder: 'Saisissez à nouveau le mot de passe', passwordsDontMatch: 'Les mots de passe ne correspondent pas',
     pwVeryWeak: 'Très faible', pwWeak: 'Faible', pwFair: 'Moyen', pwGood: 'Bon', pwStrong: 'Fort', pwTipLength: 'utilisez 8 caractères ou plus',

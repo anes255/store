@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion as SMotion, AnimatePresence as SAnimatePresence } from 'framer-motion';
+import { fuzzyScore } from '../../components/shared/CommandPalette';
+import HoldToConfirm from '../../components/shared/HoldToConfirm';
 import PasswordInput from '../../components/shared/PasswordInput';
 import { useTranslation } from 'react-i18next';
 import { ownerApi, aiApi, publicRoleTemplatesApi } from '../../utils/api';
@@ -7,7 +10,7 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import WhatsAppConfigModal,{WA_STATUSES,WA_STATUS_LABELS} from '../../components/shared/WhatsAppConfigModal';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag } from 'lucide-react';
+import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag, Search } from 'lucide-react';
 import { ALL_PERMISSIONS, PERM_GROUPS } from '../../utils/permissions';
 
 const themes=[{id:'classic',name:'Classic Store',desc:'PROFESSIONAL & CLEAN',c:'#7C3AED'},{id:'nova-dark',name:'Nova Dark',desc:'FUTURISTIC & SLEEK',c:'#8B5CF6'},{id:'enterprise',name:'Enterprise',desc:'DENSE & FUNCTIONAL',c:'#3B82F6'},{id:'ocean-bloom',name:'Ocean Bloom',desc:'SOFT & FRIENDLY',c:'#06B6D4'},{id:'nzxt-pro',name:'NZXT Pro',desc:'HIGH CONTRAST',c:'#A855F7'},{id:'moonlight',name:'Moonlight',desc:'ETHEREAL & CALM',c:'#818CF8'}];
@@ -725,7 +728,9 @@ export default function StoreSettings(){
   const{t}=useTranslation();const{currentStore,setCurrentStore,stores:adminStores}=useStoreManagement();const{user,logout}=useAuthStore();
   const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
   useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
-  const[s,setS]=useState({});const[sec,setSec]=useState(typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details');const[loading,setLoading]=useState(false);
+  const[s,setSRaw]=useState({});const[dirty,setDirty]=useState(false);const setS=(v)=>{setDirty(true);setSRaw(v);};
+  const[settingsQuery,setSettingsQuery]=useState('');
+  const[sec,setSec]=useState(typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details');const[loading,setLoading]=useState(false);
   const[staff,setStaff]=useState([]);const[wilayas,setWilayas]=useState([]);const[showRole,setShowRole]=useState(null);
   const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[],is_active:true});
   // Pop-out store picker for the Create User modal — opens a list of every
@@ -794,15 +799,17 @@ export default function StoreSettings(){
   const[waStatus,setWaStatus]=useState(null);
   const waCheckStatus=async()=>{if(!currentStore?.id)return;try{const{data}=await aiApi.waQrStatus(currentStore.id);setWaStatus(data);}catch{setWaStatus({status:'not_started',connected:false});}};
 
-  useEffect(()=>{if(currentStore){setS({...currentStore,theme:currentStore.theme||'classic'});loadData();
-    api.get(`/owner/stores/${currentStore.id}`).then(r=>{const fresh=r.data;if(fresh){setS(prev=>({...prev,...fresh,theme:fresh.theme||prev.theme||'classic'}));setCurrentStore(fresh);}}).catch(()=>{
-      api.get(`/owner/stores`).then(r=>{const stores=r.data||[];const fresh=stores.find(st=>st.id===currentStore.id);if(fresh)setS(prev=>({...prev,...fresh,theme:fresh.theme||prev.theme||'classic'}));}).catch(()=>{});
+  useEffect(()=>{if(currentStore){setDirty(false);setSRaw({...currentStore,theme:currentStore.theme||'classic'});loadData();
+    api.get(`/owner/stores/${currentStore.id}`).then(r=>{const fresh=r.data;if(fresh){setSRaw(prev=>({...prev,...fresh,theme:fresh.theme||prev.theme||'classic'}));setCurrentStore(fresh);}}).catch(()=>{
+      api.get(`/owner/stores`).then(r=>{const stores=r.data||[];const fresh=stores.find(st=>st.id===currentStore.id);if(fresh)setSRaw(prev=>({...prev,...fresh,theme:fresh.theme||prev.theme||'classic'}));}).catch(()=>{});
     });
   }},[currentStore?.id]);
   useEffect(()=>{if(sec==='account')loadProfile();},[sec]);
   const loadData=()=>{if(!currentStore?.id)return;api.get(`/owner/stores/${currentStore.id}/staff`).then(r=>setStaff(r.data)).catch(()=>{});api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r=>setWilayas(Array.isArray(r.data)?r.data:(r.data?.wilayas||[]))).catch(()=>setWilayas([]));};
   const loadProfile=async()=>{try{const{data}=await ownerApi.getProfile();setProfile(data);setNewUsername(data.username||'');setNewEmail(data.email||'');}catch(e){}};
+  const discard=()=>{if(currentStore){setSRaw({...currentStore,theme:currentStore.theme||'classic'});}setDirty(false);};
   const save=async()=>{
+    setDirty(false);
     // Optimistic save: reflect the change and confirm instantly, persist in the
     // background, and only surface an error (reverting) if the server rejects it.
     const snapshot=currentStore;
@@ -913,12 +920,36 @@ export default function StoreSettings(){
   const storeDomain=currentStore?.slug?`${currentStore.slug}.ender-store.com`:'';
 
   const activeSec=secs.find(x=>x.id===sec);
+  // Settings search — type to filter the sections, Enter jumps to the best one.
+  const SEC_KEYWORDS={'store-details':'name logo phone address whatsapp button contact','customization':'colors colours theme font background header design','dashboard-config':'dashboard sidebar admin','users':'staff team members roles permissions','checkout':'checkout form fields coupon order button','payments':'cod ccp baridimob payment','taxes':'tax vat','notifications':'alerts push email notifications','orders-config':'order number prefix archive','inventory':'stock low threshold oversell','domains':'domain dns custom','ai':'chatbot ai assistant','tracking-pixels':'pixel facebook tiktok google analytics','subscription':'plan billing subscription','account':'password profile email delete store'};
+  const secMatches=(()=>{const q=settingsQuery.trim();if(!q)return secs;return secs.map(x=>({x,m:fuzzyScore(q,x.l)||fuzzyScore(q,SEC_KEYWORDS[x.id]||'')||(String(SEC_KEYWORDS[x.id]||'').includes(q.toLowerCase())?{score:0}:null)})).filter(r=>r.m).sort((a,b)=>b.m.score-a.m.score).map(r=>r.x);})();
+  const SettingsSearch=(
+    <div className="relative mb-2">
+      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+      <input value={settingsQuery} onChange={e=>setSettingsQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&secMatches[0]){setSec(secMatches[0].id);setSettingsQuery('');}if(e.key==='Escape')setSettingsQuery('');}}
+        placeholder={t('storePage.searchSettings','Search settings…')} className="input-field !pl-9 !py-2 text-sm"/>
+      {settingsQuery&&<p className="text-[10px] text-gray-400 mt-1 px-1">{secMatches.length?t('storePage.enterToJump','Enter to jump'):t('storePage.noSettingMatch','No matching setting')}</p>}
+    </div>
+  );
   return(<DashboardLayout>
+    {/* Unsaved changes: a bar slides up until they are saved or discarded. */}
+    <SAnimatePresence>
+      {dirty&&(
+        <SMotion.div key="unsaved" initial={{y:90,x:'-50%',opacity:0}} animate={{y:0,x:'-50%',opacity:1}} exit={{y:90,x:'-50%',opacity:0}} transition={{type:'spring',stiffness:380,damping:30}}
+          className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-lg flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl bg-gray-900 text-white shadow-2xl">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"/>
+          <span className="text-sm font-semibold flex-1 min-w-0 truncate">{t('storePage.unsavedChanges','You have unsaved changes')}</span>
+          <button onClick={discard} className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-300 hover:bg-white/10 shrink-0">{t('storePage.discard','Discard')}</button>
+          <button onClick={save} className="px-4 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-900 hover:bg-gray-100 shrink-0 flex items-center gap-1.5"><Save size={13}/>{t('storePage.save','Save')}</button>
+        </SMotion.div>
+      )}
+    </SAnimatePresence>
     {isMobile&&!sec?(
       <div className="animate-fade-in">
         <h1 className="page-header text-xl mb-4">{t('sidebar.settings')}</h1>
         <p className="text-xs text-gray-400 mb-4">{t('storePage.mobileSettingsHint','Tap any setting to open its dedicated page.')}</p>
-        <div className="space-y-2">{secs.map(x=>{const I=x.icon;return(
+        {SettingsSearch}
+        <div className="space-y-2">{secMatches.map(x=>{const I=x.icon;return(
           <button key={x.id} onClick={()=>setSec(x.id)} className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all shadow-sm ${settingsIsDark?'bg-gray-800 border-gray-700 hover:border-brand-500 active:bg-gray-700':'bg-white border-gray-100 hover:border-brand-300 active:bg-brand-50'}`}>
             <div className="flex items-center gap-3 min-w-0">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${settingsIsDark?'bg-brand-500/15':'bg-brand-50'}`}><I size={20} className="text-brand-500"/></div>
@@ -940,7 +971,7 @@ export default function StoreSettings(){
     )}
     <div className={isMobile?"":"flex flex-col lg:flex-row gap-4 lg:gap-6"}>
       {/* Desktop sidebar */}
-      {!isMobile&&<div className="hidden lg:block w-56 shrink-0 space-y-0.5">{secs.map(x=>{const I=x.icon;return(<button key={x.id} onClick={()=>setSec(x.id)} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${sec===x.id?'bg-brand-50 text-brand-600':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}><I size={16}/>{x.l}</button>);})}</div>}
+      {!isMobile&&<div className="hidden lg:block w-56 shrink-0 space-y-0.5">{SettingsSearch}{secMatches.map(x=>{const I=x.icon;return(<button key={x.id} onClick={()=>setSec(x.id)} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${sec===x.id?'bg-brand-50 text-brand-600':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}><I size={16}/>{x.l}</button>);})}</div>}
       <div className={isMobile?"min-w-0 space-y-4 animate-fade-in pb-8":"flex-1 min-w-0 space-y-4 sm:space-y-6 animate-fade-in"}>
 
 {sec==='store-details'&&<><div className="grid lg:grid-cols-2 gap-6">
@@ -1620,9 +1651,13 @@ function DeleteStoreCard({ store, t }) {
         <div className="mt-3 space-y-2">
           <label className="input-label text-xs">{t('storePage.typeStoreName', 'Type the store name to confirm')}: <b className="text-gray-900">{name}</b></label>
           <input className="input-field" value={typed} onChange={e => setTyped(e.target.value)} placeholder={name} autoComplete="off"/>
-          <div className="flex gap-2">
-            <button type="button" disabled={!ok || busy} onClick={doDelete} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold disabled:opacity-40">{busy ? '…' : t('storePage.deleteForever', 'Delete forever')}</button>
-            <button type="button" onClick={() => { setOpen(false); setTyped(''); }} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold">{t('common.cancel', 'Cancel')}</button>
+          {/* Danger needs two deliberate steps: type the exact name, then hold. */}
+          <div className="flex flex-wrap items-start gap-3">
+            <button type="button" onClick={() => { setOpen(false); setTyped(''); }} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold">{t('storePage.keepStore', 'Keep this store')}</button>
+            <HoldToConfirm onConfirm={doDelete} disabled={!ok || busy}
+              label={t('storePage.holdDeleteStore', 'Hold to delete “{{name}}”', { name })}
+              holdingLabel={t('storePage.keepHolding', 'Keep holding…')} doneLabel={t('storePage.deleting', 'Deleting…')}
+              hint={ok ? t('storePage.releaseToCancel', 'Release early to cancel') : t('storePage.typeNameFirst', 'Type the store name above to unlock')} />
           </div>
         </div>
       )}

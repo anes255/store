@@ -1,4 +1,6 @@
 import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import CommandPalette from './CommandPalette';
+import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
 
 // Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
@@ -391,6 +393,8 @@ export default function DashboardLayout({children}){
   useEffect(()=>{try{localStorage.setItem('sidebarOpenMenus',JSON.stringify(openMenus));}catch{}},[openMenus]);
   const[sideQuery,setSideQuery]=useState('');
   const[topQuery,setTopQuery]=useState('');
+  const[paletteOpen,setPaletteOpen]=useState(false);
+  useEffect(()=>{const onKey=(e)=>{if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();setPaletteOpen(o=>!o);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[]);
   const[topFocus,setTopFocus]=useState(false);
   const[headerHidden,setHeaderHidden]=useState(false);
   const lastScrollY=useRef(0);
@@ -554,7 +558,29 @@ export default function DashboardLayout({children}){
     );
   };
 
+  // ── Ctrl/⌘+K command palette: every page, plus theme / store / sign-out ──
+  const paletteCommands = (() => {
+    const lbl = (x) => typeof x === 'string' && x.startsWith('sidebar.') ? t(x) : x;
+    const out = [];
+    items.forEach(it => {
+      if (it.type === 'link') { if (!isStaffBlocked(it.to)) out.push({ id: 'p' + it.to, label: lbl(it.label), group: t('sidebar.cmdPages', 'Pages'), icon: ICONS[it.icon], run: () => navigate(it.to) }); }
+      else (it.children || []).forEach(c => { if (!isStaffBlocked(c.to)) out.push({ id: 'p' + c.to, label: `${lbl(c.label)}`, hint: lbl(it.label), keywords: lbl(it.label), group: t('sidebar.cmdPages', 'Pages'), icon: ICONS[it.icon], run: () => navigate(c.to) }); });
+    });
+    out.push({ id: 'theme', label: t('sidebar.cmdTheme', 'Change theme'), group: t('sidebar.cmdActions', 'Actions'), icon: PaletteIcon, placeholder: t('sidebar.cmdPickTheme', 'Pick a theme…'), children: [
+      { id: 'theme-light', label: t('sidebar.cmdLight', 'Light mode'), icon: Sun, run: () => theme.setMode('light') },
+      { id: 'theme-dark', label: t('sidebar.cmdDark', 'Dark mode'), icon: Moon, run: () => theme.setMode('dark') },
+    ] });
+    if (Array.isArray(stores) && stores.length > 1) out.push({ id: 'switch', label: t('sidebar.cmdSwitchStore', 'Switch store'), group: t('sidebar.cmdActions', 'Actions'), icon: StoreIcon, placeholder: t('sidebar.cmdPickStore', 'Pick a store…'),
+      children: stores.map(st => ({ id: 'st' + st.id, label: st.name || st.store_name || st.slug, hint: currentStore?.id === st.id ? '✓' : '', icon: StoreIcon,
+        run: () => { if (currentStore?.id === st.id) return; setCurrentStore(st); window.location.href = '/dashboard'; } })) });
+    out.push({ id: 'logout', label: t('sidebar.cmdLogout', 'Log out'), group: t('sidebar.cmdActions', 'Actions'), icon: LogOutIcon,
+      run: () => { try { logout(); } catch {} try { localStorage.removeItem('token'); } catch {} window.location.href = '/login'; } });
+    return out;
+  })();
+
   return(<div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/50'}`}>
+    <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} commands={paletteCommands} isDark={isDark}
+      placeholder={t('sidebar.cmdPlaceholder','Go to a page or run a command…')} emptyText={t('sidebar.cmdEmpty','Nothing matches')} emptyHint={t('sidebar.cmdEmptyHint','Try fewer letters — e.g. “ord” for Orders.')}/>
     {/* Mobile overlay */}
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen h-[100dvh] z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>
@@ -684,7 +710,8 @@ export default function DashboardLayout({children}){
                 }
               }}
             />
-            {topQuery&&<button onMouseDown={e=>{e.preventDefault();setTopQuery('');}} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13}/></button>}
+            {topQuery?<button onMouseDown={e=>{e.preventDefault();setTopQuery('');}} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={13}/></button>
+              :<button type="button" onMouseDown={e=>{e.preventDefault();setPaletteOpen(true);}} title={t('sidebar.cmdOpen','Command palette')} className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded border ${isDark?'border-gray-600 text-gray-400':'border-gray-200 text-gray-400 bg-white'}`}>Ctrl K</button>}
             {topFocus&&topQuery.trim()&&(()=>{
               const q=topQuery.trim().toLowerCase();
               const flat=[];

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { dangerConfirm } from '../../components/shared/DangerConfirm';
 import PasswordInput from '../../components/shared/PasswordInput';
 import { createPortal } from 'react-dom';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
@@ -375,7 +376,8 @@ function StoreOwners(){
   useEffect(()=>{load();},[search]);
   const toggle=async(id)=>{try{await platformApi.toggleOwner(id);toast.success(t('common.updated','Updated'));load();}catch{toast.error(t('common.failed','Failed'));}};
   const del=async(id)=>{
-    if(!confirm(t('admin.confirmDeleteOwner','Delete this owner and deactivate their stores?')))return;
+    const _o=owners.find(o=>o.id===id);const _n=(_o?.full_name||_o?.name||'').trim();
+    if(!(await dangerConfirm({title:t('admin.deleteOwnerTitle','Delete this store owner?'),description:t('admin.confirmDeleteOwner','Delete this owner and deactivate their stores?'),confirmText:_n||undefined,holdLabel:t('admin.holdDeleteOwner','Hold to delete owner'),cancelLabel:t('common.cancel','Cancel')})))return;
     try{
       await platformApi.deleteOwner(id);
       toast.success(t('admin.ownerDeleted','Owner deleted'));
@@ -465,7 +467,7 @@ function AllStores(){
   const load=()=>{platformApi.getStores().then(r=>setStores(r.data||[])).catch(()=>{}).finally(()=>setLoading(false));};
   useEffect(()=>{load();},[]);
   const toggle=async(id)=>{try{await api.patch(`/platform/stores/${id}/toggle`);toast.success(t('platform.toggled','Toggled'));load();}catch{toast.error(t('store.failed','Failed'));}};
-  const del=async(id)=>{if(!confirm(t('platform.deleteStoreConfirm','Delete this store and ALL its data? This cannot be undone.')))return;try{await api.delete(`/platform/stores/${id}`);toast.success(t('store.deleted','Deleted'));setDetail(null);load();}catch{toast.error(t('store.failed','Failed'));}};
+  const del=async(id)=>{const _s=stores.find(x=>x.id===id);const _n=(_s?.name||_s?.store_name||'').trim();if(!(await dangerConfirm({title:t('platform.deleteStoreTitle','Delete this store?'),description:t('platform.deleteStoreConfirm','Delete this store and ALL its data? This cannot be undone.'),confirmText:_n||undefined,holdLabel:t('platform.holdDeleteStore','Hold to delete store'),cancelLabel:t('common.cancel','Cancel')})))return;try{await api.delete(`/platform/stores/${id}`);toast.success(t('store.deleted','Deleted'));setDetail(null);load();}catch{toast.error(t('store.failed','Failed'));}};
   const filteredStores=stores.filter(s=>{
     if(storeFilter==='live'&&!s.is_published)return false;
     if(storeFilter==='offline'&&s.is_published)return false;
@@ -1196,7 +1198,7 @@ function AdminManagement(){
     setSaving(false);
   };
 
-  const remove=async(id)=>{if(!confirm(t('platform.removeAdminConfirm','Remove this admin? They will lose all super admin access.')))return;try{await platformApi.removeAdmin(id);toast.success(t('store.removed','Removed'));load();}catch(e){toast.error(e?.response?.data?.error||'Failed');}};
+  const remove=async(id)=>{if(!(await dangerConfirm({title:t('platform.removeAdminTitle','Remove this admin?'),description:t('platform.removeAdminConfirm','Remove this admin? They will lose all super admin access.'),holdLabel:t('platform.holdRemoveAdmin','Hold to remove admin'),cancelLabel:t('common.cancel','Cancel')})))return;try{await platformApi.removeAdmin(id);toast.success(t('store.removed','Removed'));load();}catch(e){toast.error(e?.response?.data?.error||'Failed');}};
   const toggle=async(id)=>{try{await platformApi.toggleAdmin(id);load();}catch{toast.error(t('store.failed','Failed'));}};
 
   const pg=usePaged(admins);

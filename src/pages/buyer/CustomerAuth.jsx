@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -105,15 +106,35 @@ export default function CustomerAuth() {
         {/* The card's surface is set explicitly rather than via `bg-white/80`:
             that utility is not covered by the buyer dark-mode overrides, so in
             dark mode it stayed light grey while the text inside turned white. */}
-        <div className="w-full max-w-md backdrop-blur-xl rounded-3xl shadow-2xl border p-8"
+        <motion.div layout transition={{ layout: { type: 'spring', stiffness: 260, damping: 30 } }}
+          initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="w-full max-w-md backdrop-blur-xl rounded-3xl shadow-2xl border p-8 overflow-hidden"
           style={{
             backgroundColor: isDarkBuyer ? 'rgba(12,12,12,0.88)' : 'rgba(255,255,255,0.85)',
             borderColor: pc + (isDarkBuyer ? '55' : '33'),
             ...(!isDarkBuyer && bodyTextColor ? { color: bodyTextColor } : {}),
           }}>
+          {/* Log in / Create account switch — a pill slides under the active side */}
+          <div className="relative grid grid-cols-2 p-1 mb-6 rounded-2xl" style={{ backgroundColor: pc + '14' }}>
+            <motion.span aria-hidden className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl shadow-md"
+              initial={false} animate={{ left: mode === 'login' ? 4 : 'calc(50%)' }}
+              transition={{ type: 'spring', stiffness: 420, damping: 34 }} style={{ backgroundColor: pc }} />
+            {['login', 'register'].map(m => (
+              <button key={m} type="button" onClick={() => setMode(m)}
+                className={`relative z-10 py-2 text-sm font-bold rounded-xl transition-colors duration-200 ${mode === m ? 'text-white' : 'text-gray-500'}`}>
+                {m === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')}
+              </button>
+            ))}
+          </div>
           <div className="flex justify-center mb-6">
             {store?.logo ? <img src={store.logo} className="w-14 h-14 rounded-2xl object-cover shadow-lg" alt=""/> : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
           </div>
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={mode}
+            initial={{ opacity: 0, x: mode === 'login' ? -28 : 28, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, x: mode === 'login' ? 28 : -28, filter: 'blur(4px)' }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}>
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{mode === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')}</h1>
             <p className="text-gray-500 mb-8">{mode === 'login' ? t('store.enterPhonePassword','Enter your phone number and password') : t('store.fillDetails','Fill in your details to get started')}</p>
 
@@ -200,7 +221,9 @@ export default function CustomerAuth() {
                 {mode === 'login' ? t('auth.register','Create Account') : t('auth.login','Log In')}
               </button>
             </p>
-        </div>
+          </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </div>
       <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={isDarkBuyer}/>
     </div>

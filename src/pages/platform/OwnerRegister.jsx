@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OtpInput from '../../components/shared/OtpInput';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { getPlatformInfo } from '../../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
@@ -22,6 +23,7 @@ export default function OwnerRegister() {
   const [otpToken, setOtpToken] = useState('');
   const [phoneMasked, setPhoneMasked] = useState('');
   const [code, setCode] = useState('');
+  const [codeStatus, setCodeStatus] = useState('idle'); // idle | error | success
   const [resendIn, setResendIn] = useState(0);
   // Platform branding comes exclusively from the super admin's settings —
   // no hard-coded fallback name is shown if the API hasn't responded yet.
@@ -61,17 +63,24 @@ export default function OwnerRegister() {
     setLoading(false);
   };
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    if (!code || code.length < 6) { toast.error(t('auth.enterCode','Enter the 6-digit code')); return; }
+  const handleVerify = async (e, typed) => {
+    e?.preventDefault?.();
+    const c = typed || code;
+    if (!c || c.length < 6) { toast.error(t('auth.enterCode','Enter the 6-digit code')); return; }
+    if (loading) return;
     setLoading(true);
     try {
-      const { data } = await ownerApi.verifyOtp({ otp_token: otpToken, code });
-      setAuth(data.owner, data.token, 'store_owner');
+      const { data } = await ownerApi.verifyOtp({ otp_token: otpToken, code: c });
+      setCodeStatus('success');
       toast.success(t('auth.accountCreated','Account created! Welcome aboard!'));
-      navigate('/dashboard');
-    } catch (err) { toast.error(err.response?.data?.error || t('auth.invalidCode','Invalid code')); }
-    setLoading(false);
+      // Let the green "verified" state show for a moment before leaving.
+      setTimeout(() => { setAuth(data.owner, data.token, 'store_owner'); navigate('/dashboard'); }, 700);
+    } catch (err) {
+      setCodeStatus('error');
+      setTimeout(() => setCodeStatus('idle'), 900);
+      toast.error(err.response?.data?.error || t('auth.invalidCode','Invalid code'));
+      setLoading(false);
+    }
   };
 
   const handleResend = async () => {
@@ -206,17 +215,11 @@ export default function OwnerRegister() {
             <form onSubmit={handleVerify} className="space-y-4">
               <div>
                 <label className="input-label">{t('auth.verificationCode','Verification code')}</label>
-                <input
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  autoFocus
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="input-field text-center text-3xl tracking-[0.6em] font-mono"
-                  placeholder="------"
-                  required
-                />
+                {/* One box per digit; the code is checked as soon as all 6 are in. */}
+                <OtpInput value={code} onChange={(v) => { setCode(v); if (codeStatus !== 'idle') setCodeStatus('idle'); }}
+                  status={codeStatus} disabled={codeStatus === 'success'}
+                  onComplete={(v) => handleVerify(null, v)} />
+                {codeStatus === 'success' && <p className="mt-3 text-center text-sm font-bold text-emerald-600">✓ {t('auth.verified','Verified!')}</p>}
               </div>
               <button type="submit" disabled={loading || code.length !== 6} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5 mt-2">
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{t('auth.verifyAndCreate','Verify & Create Account')} <ArrowRight size={18}/></>}

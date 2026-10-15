@@ -496,10 +496,12 @@ input[type="date"],input[type="datetime-local"],input[type="month"],input[type="
    themes. The buyer dark-mode rules repaint every input dark with light text,
    which turned this pill into a murky black bar on a purple header. It stays
    white with dark text instead. */
-.store-search{background-color:#ffffff !important;}
-.store-search input{background-color:transparent !important;color:#111827 !important;-webkit-text-fill-color:#111827 !important;caret-color:#111827 !important;}
-.store-search input::placeholder{color:#6b7280 !important;-webkit-text-fill-color:#6b7280 !important;opacity:1;}
-.store-search svg{color:#6b7280 !important;}
+/* Doubled selectors so these beat `.buyer-theme-dark .bg-white` / dark inputs. */
+.store-search,.buyer-theme-dark .store-search.store-search{background-color:#ffffff !important;}
+.store-search input,.buyer-theme-dark .store-search.store-search input,
+.buyer-theme-dark .store-search.store-search input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]){background-color:transparent !important;color:#111827 !important;-webkit-text-fill-color:#111827 !important;caret-color:#111827 !important;}
+.store-search input::placeholder,.buyer-theme-dark .store-search.store-search input::placeholder{color:#6b7280 !important;-webkit-text-fill-color:#6b7280 !important;opacity:1;}
+.store-search svg,.buyer-theme-dark .store-search.store-search svg{color:#6b7280 !important;}
 
 /* ═══ Browser autofill ═══
    When a buyer picks a saved password or phone, Chrome paints the field with
@@ -521,3 +523,6 @@ html.admin-dark input:-webkit-autofill,html.platform-dark input:-webkit-autofill
   -webkit-text-fill-color:#f3f4f6 !important;
   caret-color:#f3f4f6;
 }
+
+/* Small "pop" used by the add-to-cart confirmations. */
+@keyframes pop { 0% { transform: scale(.4); opacity: 0 } 60% { transform: scale(1.15); opacity: 1 } 100% { transform: scale(1) } }

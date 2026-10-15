@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useEffect,useState,useRef}from'react';import{Routes,Route,Navigate,useNavigate,useParams,useLocation}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
+import DangerConfirmHost from './components/shared/DangerConfirm';
 
 // The platform brand name is permanently "MakretDZ". The document title is
 // hard-locked and never overridden by the API, even if platform_settings
@@ -129,7 +130,7 @@ const RESERVED_SLUGS=new Set(['admin','dashboard','login','register','s','api','
 const SlugGuard=({children})=>{const{storeSlug}=useParams();if(RESERVED_SLUGS.has((storeSlug||'').toLowerCase()))return null;return children;};
 const P=({children})=>(<ProtectedRoute allowedRoles={['store_owner']}>{children}</ProtectedRoute>);
 
-export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>
+export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><DangerConfirmHost/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>
 <Route path="/" element={<LandingPage/>}/>
 <Route path="/login" element={<OwnerLogin/>}/>
 <Route path="/register" element={<OwnerRegister/>}/>
