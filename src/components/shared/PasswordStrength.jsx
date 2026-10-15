@@ -50,7 +50,7 @@ export default function PasswordStrength({ password, className = '' }) {
         {rules.map((r) => (
           <span key={r.label}
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all duration-300 ${r.ok ? 'bg-emerald-50 border-emerald-300 text-emerald-700 scale-100' : 'bg-gray-50 border-gray-200 text-gray-400 scale-95'}`}>
-            <span className={`w-3 h-3 rounded-full grid place-items-center transition-colors duration-300 ${r.ok ? 'bg-emerald-500 text-white' : 'bg-gray-200'}`}>
+            <span className={`w-3 h-3 rounded-full grid place-items-center transition-all duration-300 ${r.ok ? 'bg-emerald-500 text-white scale-110' : 'border-[1.5px] border-gray-300 bg-transparent'}`}>
               {r.ok && <Check size={8} strokeWidth={4} />}
             </span>
             {r.label}

@@ -126,11 +126,16 @@ export default function SmartSearch({ value, onChange, products = [], storeSlug,
                   <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('store.recentSearches', 'Recent searches')}</span>
                   <button type="button" onClick={clearRecent} className="text-[11px] text-gray-400 hover:text-gray-600">{t('store.clear', 'Clear')}</button>
                 </div>
-                {recent.map((r) => { idx++; const i = idx; return (
-                  <button key={'r' + r} type="button" onMouseEnter={() => setActive(i)} onClick={() => pickRow({ type: 'recent', r })} className={rowCls(i)}>
-                    <Clock size={14} className="text-gray-400 shrink-0" /><span className="text-sm truncate">{r}</span>
-                  </button>
-                ); })}
+                {/* recent searches as chips — one tap repeats the search */}
+                <div className="flex flex-wrap gap-1.5 px-2 pb-1">
+                  {recent.map((r, n) => { idx++; const i = idx; return (
+                    <motion.button key={'r' + r} type="button" onMouseEnter={() => setActive(i)} onClick={() => pickRow({ type: 'recent', r })}
+                      initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: n * 0.03 }}
+                      className={`inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${active === i ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}>
+                      <Clock size={11} className="shrink-0 opacity-60" /><span className="truncate">{r}</span>
+                    </motion.button>
+                  ); })}
+                </div>
               </div>
             )}
             {!q && popular.length > 0 && (
@@ -145,14 +150,18 @@ export default function SmartSearch({ value, onChange, products = [], storeSlug,
                 ); })}
               </div>
             )}
-            {q && suggestions.length > 0 && suggestions.map((p) => { idx++; const i = idx; const th = getThumb(p); return (
-              <button key={'s' + p.id} type="button" onMouseEnter={() => setActive(i)} onClick={() => pickProduct(p)} className={rowCls(i)}>
+            {q && suggestions.length > 0 && suggestions.map((p, n) => { idx++; const i = idx; const th = getThumb(p); return (
+              <motion.button key={'s' + p.id} type="button" onMouseEnter={() => setActive(i)} onClick={() => pickProduct(p)} className={rowCls(i)}
+                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: n * 0.03, duration: 0.15 }}>
                 <span className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0">{th && <img src={th} alt="" className="w-full h-full object-cover" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold truncate">{highlight(getName(p))}</span>
-                  <span className="block text-[11px] text-gray-400">{Number(p.price || 0).toLocaleString()} {currency}</span>
+                  <span className="flex items-center gap-1.5 text-[11px] text-gray-400 min-w-0">
+                    {p.category_name && <span className="px-1.5 py-px rounded-md bg-gray-100 text-gray-600 font-semibold truncate max-w-[50%]">{p.category_name}</span>}
+                    <span className="shrink-0">{Number(p.price || 0).toLocaleString()} {currency}</span>
+                  </span>
                 </span>
-              </button>
+              </motion.button>
             ); })}
             {q && suggestions.length === 0 && (
               <div className="px-3 py-3">

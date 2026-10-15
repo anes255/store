@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SmartSearch from '../../components/shared/SmartSearch';
 import { StoreBottomNav, StoreHeaderIcons, CartPill } from '../../components/shared/StoreNav';
+import flyToCart from '../../components/shared/flyToCart';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, aiApi } from '../../utils/api';
@@ -590,11 +591,13 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const cartItems = useCartStore(s => s.items);
   const removeItem = useCartStore(s => s.removeItem);
   const inCart = cartItems.some(i => i.product_id === product.id);
-  // Brief "✓ added" pop on the card's cart button right after it's added.
+  // Right after it's added: the photo flies into the cart and the card's
+  // cart button turns into a green "✓ Added" for a moment.
   const [justAdded, setJustAdded] = useState(false);
   const wasInCart = useRef(inCart);
+  const imgRef = useRef(null);
   useEffect(() => {
-    if (inCart && !wasInCart.current) { setJustAdded(true); const h = setTimeout(() => setJustAdded(false), 1400); wasInCart.current = inCart; return () => clearTimeout(h); }
+    if (inCart && !wasInCart.current) { flyToCart(imgRef.current); setJustAdded(true); const h = setTimeout(() => setJustAdded(false), 1600); wasInCart.current = inCart; return () => clearTimeout(h); }
     wasInCart.current = inCart;
   }, [inCart]);
   const rawPrice = parseFloat(product.price) || 0;
@@ -616,7 +619,7 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
       <Link to={href} className="relative block cursor-pointer" onClick={() => onView?.(product)}>
         <div className="aspect-square bg-white/5 relative overflow-hidden m-1 sm:m-2.5 rounded-xl">
           {thumb
-            ? <img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+            ? <img ref={imgRef} src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
             : <div className="w-full h-full flex items-center justify-center"><Package size={32} className="text-white/15" /></div>}
         </div>
 
@@ -978,7 +981,7 @@ export default function Storefront() {
               <Heart size={20}/>
               {wishlist.length>0&&<span className="notif-badge">{wishlist.length}</span>}
             </Link>
-            <button onClick={openCart} className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title={t('store.cart','Cart')}>
+            <button onClick={openCart} data-cart-target="header" className="p-2 hover:bg-white/20 rounded-full relative shrink-0" title={t('store.cart','Cart')}>
               <ShoppingCart size={20}/>
               {getCount()>0&&<span className="notif-badge">{getCount()}</span>}
             </button>

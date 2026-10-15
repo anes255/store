@@ -928,7 +928,7 @@ export default function StoreSettings(){
       <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
       <input value={settingsQuery} onChange={e=>setSettingsQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&secMatches[0]){setSec(secMatches[0].id);setSettingsQuery('');}if(e.key==='Escape')setSettingsQuery('');}}
         placeholder={t('storePage.searchSettings','Search settings…')} className="input-field !pl-9 !py-2 text-sm"/>
-      {settingsQuery&&<p className="text-[10px] text-gray-400 mt-1 px-1">{secMatches.length?t('storePage.enterToJump','Enter to jump'):t('storePage.noSettingMatch','No matching setting')}</p>}
+      {settingsQuery&&<p className="text-[10px] text-gray-400 mt-1 px-1">{secMatches.length?<>{t('storePage.enterToJump','Enter to jump')} · {t('storePage.sectionsHidden','{{n}} hidden',{n:secs.length-secMatches.length})}</>:t('storePage.noSettingMatch','No matching setting')}</p>}
     </div>
   );
   return(<DashboardLayout>
@@ -1651,13 +1651,17 @@ function DeleteStoreCard({ store, t }) {
         <div className="mt-3 space-y-2">
           <label className="input-label text-xs">{t('storePage.typeStoreName', 'Type the store name to confirm')}: <b className="text-gray-900">{name}</b></label>
           <input className="input-field" value={typed} onChange={e => setTyped(e.target.value)} placeholder={name} autoComplete="off"/>
+          {/* how much of the name matches so far (amber once there's a typo) */}
+          {(() => { let m = 0; while (m < typed.length && m < name.length && typed[m] === name[m]) m++; const typo = typed.length > m; const pct = ok ? 100 : name.length ? (m / name.length) * 100 : 0;
+            return <div className="h-1 rounded-full bg-gray-100 overflow-hidden"><div className={`h-full rounded-full transition-all duration-300 ${ok ? 'bg-emerald-500' : typo ? 'bg-amber-400' : 'bg-red-500'}`} style={{ width: `${pct}%` }}/></div>; })()}
           {/* Danger needs two deliberate steps: type the exact name, then hold. */}
           <div className="flex flex-wrap items-start gap-3">
             <button type="button" onClick={() => { setOpen(false); setTyped(''); }} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold">{t('storePage.keepStore', 'Keep this store')}</button>
             <HoldToConfirm onConfirm={doDelete} disabled={!ok || busy}
               label={t('storePage.holdDeleteStore', 'Hold to delete “{{name}}”', { name })}
               holdingLabel={t('storePage.keepHolding', 'Keep holding…')} doneLabel={t('storePage.deleting', 'Deleting…')}
-              hint={ok ? t('storePage.releaseToCancel', 'Release early to cancel') : t('storePage.typeNameFirst', 'Type the store name above to unlock')} />
+              hint={ok ? t('storePage.releaseToCancel', 'Release early to cancel') : t('storePage.typeNameFirst', 'Type the store name above to unlock')}
+              releasedLabel={t('storePage.releasedNothing', 'Released — nothing was deleted')} />
           </div>
         </div>
       )}

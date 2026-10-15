@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -32,9 +32,10 @@ function useStoreNavData(storeSlug, onCart) {
 // let it glide from the previous tab after navigation.
 let lastActive = { idx: -1, n: 0 };
 
-// Phones: fixed bar along the bottom of the screen. The active tab's icon
-// lifts into a floating bubble that glides between tabs (spring animation);
-// the cart badge pops whenever the count changes.
+// Phones: fixed bar along the bottom of the screen. The active tab sits in a
+// floating bubble. Switching tabs: the bubble glides over, swelling while it
+// travels (empty — the old icon drops back into the bar), and the new icon
+// pops into it once it lands. The cart badge pops whenever the count changes.
 export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', dark = false, onCart }) {
   const { pathname } = useLocation();
   const { t, cartCount, favCount, loggedIn, openCart } = useStoreNavData(storeSlug, onCart);
@@ -50,8 +51,11 @@ export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', dark = false,
   ].filter(Boolean);
   const activeIdx = tabs.findIndex(x => x.on);
   const n = tabs.length;
-  const prev = lastActive.n === n ? lastActive.idx : -1;
-  useEffect(() => { lastActive = { idx: activeIdx, n }; }, [activeIdx, n]);
+  // previous active tab: from the last render, or from the bar on the page we came from
+  const prevRef = useRef(lastActive.n === n ? lastActive.idx : -1);
+  const prev = prevRef.current;
+  useEffect(() => { prevRef.current = activeIdx; lastActive = { idx: activeIdx, n }; }, [activeIdx, n]);
+  const moved = prev >= 0 && prev !== activeIdx;
   const posOf = (i) => `calc(${((i + 0.5) / n) * 100}% - 24px)`;
   const barBg = dark ? '#111827' : '#ffffff';
   return (
@@ -59,21 +63,21 @@ export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', dark = false,
       <div className="relative flex items-stretch">
         {/* gliding bubble behind the active tab */}
         {activeIdx >= 0 && (
-          <motion.div aria-hidden className="absolute -top-5 w-12 h-12 rounded-full pointer-events-none"
-            initial={prev >= 0 && prev !== activeIdx ? { left: posOf(prev) } : false}
-            animate={{ left: posOf(activeIdx) }}
-            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            style={{ backgroundColor: pc, boxShadow: `0 8px 18px ${pc}55, 0 0 0 5px ${barBg}` }} />
+          <motion.div key={`bubble-${activeIdx}`} aria-hidden className="absolute -top-5 w-12 h-12 rounded-full pointer-events-none"
+            initial={moved ? { left: posOf(prev), scale: 1 } : false}
+            animate={{ left: posOf(activeIdx), scale: moved ? [1, 1.22, 1] : 1 }}
+            transition={{ left: { type: 'spring', stiffness: 380, damping: 30 }, scale: { duration: 0.45, times: [0, 0.45, 1], ease: 'easeInOut' } }}
+            style={{ backgroundColor: pc, boxShadow: `0 8px 20px ${pc}66, 0 0 0 5px ${barBg}` }} />
         )}
         {tabs.map((tab, i) => {
           const Icon = tab.icon;
           const active = i === activeIdx;
           const inner = (
             <>
-              <motion.span className="relative z-10 grid place-items-center w-12 h-8"
-                initial={prev >= 0 && prev !== activeIdx ? { y: i === prev ? -14 : 0, scale: i === prev ? 1.08 : 1 } : false}
-                animate={{ y: active ? -14 : 0, scale: active ? 1.08 : 1 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+              <motion.span key={tab.key + (active ? '-on' : '-off')} className="relative z-10 grid place-items-center w-12 h-8"
+                initial={!moved ? false : active ? { y: -14, scale: 0.3, opacity: 0 } : i === prev ? { y: -14, scale: 1.08 } : false}
+                animate={{ y: active ? -14 : 0, scale: active ? 1.08 : 1, opacity: 1 }}
+                transition={active && moved ? { type: 'spring', stiffness: 520, damping: 20, delay: 0.2 } : { type: 'spring', stiffness: 420, damping: 26 }}
                 style={{ color: active ? '#fff' : undefined }}>
                 <Icon size={20} />
                 {tab.badge > 0 && (
@@ -89,7 +93,7 @@ export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', dark = false,
           const cls = `flex-1 min-w-0 flex flex-col items-center pt-1.5 pb-0.5 ${active ? '' : (dark ? 'text-gray-500' : 'text-gray-400')}`;
           return tab.to
             ? <Link key={tab.key} to={tab.to} className={cls} aria-current={active ? 'page' : undefined}>{inner}</Link>
-            : <button key={tab.key} type="button" onClick={tab.onClick} className={cls}>{inner}</button>;
+            : <button key={tab.key} type="button" onClick={tab.onClick} className={cls} data-cart-target={tab.key === 'cart' ? 'tab' : undefined}>{inner}</button>;
         })}
       </div>
     </div>
@@ -110,7 +114,7 @@ export function StoreHeaderIcons({ storeSlug, store, onCart, className = '' }) {
       <Link to={`${base}/favorites`} className={btn} title={t('store.favoritesWord', 'Favorites')}>
         <Heart size={20} />{favCount > 0 && <span className="notif-badge">{favCount}</span>}
       </Link>
-      <button type="button" onClick={openCart} className={btn} title={t('store.cart', 'Cart')}>
+      <button type="button" onClick={openCart} className={btn} title={t('store.cart', 'Cart')} data-cart-target="header">
         <ShoppingCart size={20} />{cartCount > 0 && <span className="notif-badge">{cartCount}</span>}
       </button>
     </div>
@@ -126,16 +130,23 @@ export function CartPill({ storeSlug, pc = '#7c3aed', currency = 'DZD', onCart, 
   const total = items.reduce((sum, i) => sum + (Number(i.price) || 0) * (i.quantity || 1), 0);
   const thumbs = items.slice(-3).reverse();
   const show = !hidden && cartCount > 0;
+  const bodyRef = useRef(null);
+  useEffect(() => {
+    const onBump = () => { try { bodyRef.current?.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(0.97)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-out' }); } catch {} };
+    window.addEventListener('cart:bump', onBump);
+    return () => window.removeEventListener('cart:bump', onBump);
+  }, []);
   return (
     <AnimatePresence>
       {show && (
-        <motion.button key="cart-pill" type="button" onClick={openCart}
-          className="fixed z-30 left-1/2 bottom-[calc(84px+env(safe-area-inset-bottom))] md:bottom-6 flex items-center gap-2.5 pl-1.5 pr-2 py-1.5 rounded-full text-white shadow-2xl"
+        <motion.button key="cart-pill" type="button" onClick={openCart} data-cart-target="pill"
+          className="fixed z-30 left-1/2 bottom-[calc(84px+env(safe-area-inset-bottom))] md:bottom-6 rounded-full text-white shadow-2xl"
           style={{ backgroundColor: pc, boxShadow: `0 12px 28px ${pc}66` }}
           initial={{ y: 90, x: '-50%', opacity: 0 }} animate={{ y: 0, x: '-50%', opacity: 1 }} exit={{ y: 90, x: '-50%', opacity: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 28 }}
           whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}
           aria-label={t('store.viewCart', 'View cart')}>
+          <span ref={bodyRef} className="flex items-center gap-2.5 pl-1.5 pr-2 py-1.5">
           <span className="flex -space-x-3">
             {thumbs.map((it, i) => (
               <motion.span key={(it.product_id || i) + '-' + i} className="w-9 h-9 rounded-full border-2 overflow-hidden bg-white/90 grid place-items-center"
@@ -153,6 +164,7 @@ export function CartPill({ storeSlug, pc = '#7c3aed', currency = 'DZD', onCart, 
             initial={{ scale: 1.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 12 }}>
             {cartCount}
           </motion.span>
+          </span>
         </motion.button>
       )}
     </AnimatePresence>

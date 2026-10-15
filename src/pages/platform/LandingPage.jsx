@@ -295,8 +295,10 @@ export default function LandingPage() {
   const [blocks, setBlocks] = useState([]);
   const [hasCustom, setHasCustom] = useState(false);
   const [apiPlans, setApiPlans] = useState(null); // null = still loading / unavailable
-  // Pricing "hand of cards": fanned until hovered; only on wide screens.
-  const [fanOpen, setFanOpen] = useState(false);
+  // Pricing: on wide screens the three plans sit like a hand of glass cards —
+  // the featured one raised in the middle, the others tilted behind it.
+  // Clicking a side card slides it into the middle (the cards swap places).
+  const [featuredPlan, setFeaturedPlan] = useState(null);
   const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
   useEffect(() => { const mq = window.matchMedia('(min-width: 768px)'); const on = () => setIsWide(mq.matches); mq.addEventListener?.('change', on); return () => mq.removeEventListener?.('change', on); }, []);
 
@@ -526,32 +528,42 @@ export default function LandingPage() {
       <section id="pricing" className={`${S.sectionPadding} ${S.pricingBg}`}>
         <div className="max-w-5xl mx-auto text-center">
           <h2 className={`text-4xl md:text-5xl font-extrabold ${S.cardTitleColor}`}>{t('pricing.title')}</h2>
-          {/* Plans fan out like a hand of cards (side cards tilted, the
-              middle one raised); hovering the group spreads them flat. */}
+          {/* Plans sit like a hand of cards (side cards tilted back, the
+              featured one raised in the middle); click a side card to bring
+              it to the middle. */}
           <div className="relative mt-12">
           <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[70%] rounded-full blur-3xl opacity-40 animate-[spin_18s_linear_infinite]" style={{ background: 'conic-gradient(from 0deg, rgba(197,165,90,0.55), transparent 35%, rgba(124,58,237,0.45), transparent 70%, rgba(197,165,90,0.55))' }} />
-          <div onMouseEnter={()=>setFanOpen(true)} onMouseLeave={()=>setFanOpen(false)} className={`relative grid gap-8 mx-auto ${apiPlans.length >= 3 ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'}`}>
+          <div className={`relative grid gap-8 mx-auto ${apiPlans.length >= 3 ? 'md:grid-cols-3 max-w-5xl' : 'md:grid-cols-2 max-w-3xl'}`}>
             {apiPlans.map(p => ({
                   name: pick(p.name, 'Plan'),
                   price: p.price_monthly > 0 ? `${Number(p.price_monthly).toLocaleString()} ${p.currency || 'DZD'}` : t('landing.free','Free'),
                   period: p.price_monthly > 0 ? t('landing.perMonth','/month') : t('landing.daysN','{{count}} days',{count:info.trial_days||14}),
                   popular: !!p.is_popular,
                   features: (p.features && (p.features[lang] && p.features[lang].length ? p.features[lang] : p.features.en)) || [],
-                })).map((plan, i, arr) => (
-              <motion.div key={S.id+'p'+i} initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.1}} style={{zIndex: plan.popular ? 3 : 2 - Math.abs(i-(arr.length-1)/2)}} className="relative">
-              {(() => { const d = i - (arr.length - 1) / 2; const fan = isWide && arr.length >= 3 && !fanOpen; return (
-              <motion.div animate={fan ? { rotate: d * 7, x: -d * 34, y: Math.abs(d) * 26, scale: plan.popular ? 1.06 : 0.97 } : { rotate: 0, x: 0, y: plan.popular && isWide ? -10 : 0, scale: plan.popular ? 1.04 : 1 }}
-                transition={{ type: 'spring', stiffness: 160, damping: 18 }} whileHover={{ y: -12, scale: plan.popular ? 1.07 : 1.03 }}
-                className={`relative backdrop-blur-xl ${S.cardRadius} p-8 ${plan.popular ? `${S.pricingPopularGrad} text-white shadow-2xl ${S.pricingPopularShadow} scale-105` : `${S.pricingCardBg} border ${S.pricingCardBorder}`}`}>
+                })).map((plan, i, arr) => {
+              const popIdx = arr.findIndex(x => x.popular);
+              const feat = featuredPlan ?? (popIdx >= 0 ? popIdx : Math.floor((arr.length - 1) / 2));
+              const hand = isWide && arr.length === 3;
+              const pickable = isWide && arr.length >= 2;
+              const isFeat = i === feat;
+              const slot = !hand ? i : isFeat ? 1 : (i === [0, 1, 2].filter(x => x !== feat)[0] ? 0 : 2);
+              const d = slot - 1;
+              return (
+              <motion.div key={S.id+'p'+i} layout transition={{ layout: { type: 'spring', stiffness: 220, damping: 26 }, delay: i*0.1 }}
+                initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
+                style={{ order: slot, zIndex: isFeat ? 3 : 1 }} className={`relative ${pickable && !isFeat ? 'cursor-pointer' : ''}`}
+                onClick={pickable && !isFeat ? () => setFeaturedPlan(i) : undefined}>
+              <motion.div animate={hand ? (isFeat ? { rotate: 0, x: 0, y: -12, scale: 1.06, opacity: 1 } : { rotate: d * 2.5, x: -d * 18, y: 16, scale: 0.94, opacity: 0.88 }) : { rotate: 0, x: 0, y: isFeat && pickable ? -8 : 0, scale: pickable ? (isFeat ? 1.04 : 0.97) : 1, opacity: pickable && !isFeat ? 0.9 : 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 22 }} whileHover={pickable && !isFeat ? { y: hand ? 6 : -4, opacity: 1 } : { y: -6 }}
+                className={`relative backdrop-blur-xl ${S.cardRadius} p-8 transition-colors duration-500 ${isFeat ? `${S.pricingPopularGrad} text-white shadow-2xl ${S.pricingPopularShadow}` : `${S.pricingCardBg} border ${S.pricingCardBorder}`}`}>
                 {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-brand-400 text-gray-900 text-xs font-bold rounded-full">{t('landing.mostPopular','MOST POPULAR')}</span>}
-                <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : S.cardTitleColor}`}>{plan.name}</h3>
-                <div className="mt-4 mb-6"><span className={`text-4xl font-extrabold ${plan.popular ? 'text-white' : S.cardTitleColor}`}>{plan.price}</span><span className={`text-sm ${plan.popular ? 'text-white/70' : S.cardDescColor}`}>{plan.period}</span></div>
-                <ul className="space-y-3 mb-8">{plan.features.map((f, j) => <li key={j} className={`flex items-center gap-2 text-sm ${plan.popular ? 'text-white/90' : S.cardDescColor}`}><Check size={16} className={plan.popular ? 'text-white' : S.cardIconColor} />{f}</li>)}</ul>
-                <Link to="/register" className={`block w-full py-3 ${S.btnRadius} font-bold text-center transition-all ${plan.popular ? 'bg-white text-brand-700 hover:bg-gray-100' : 'bg-brand-500 text-white hover:bg-brand-600'}`}>{t('pricing.start')}</Link>
+                <h3 className={`text-xl font-bold ${isFeat ? 'text-white' : S.cardTitleColor}`}>{plan.name}</h3>
+                <div className="mt-4 mb-6"><span className={`text-4xl font-extrabold ${isFeat ? 'text-white' : S.cardTitleColor}`}>{plan.price}</span><span className={`text-sm ${isFeat ? 'text-white/70' : S.cardDescColor}`}>{plan.period}</span></div>
+                <ul className="space-y-3 mb-8">{plan.features.map((f, j) => <li key={j} className={`flex items-center gap-2 text-sm ${isFeat ? 'text-white/90' : S.cardDescColor}`}><Check size={16} className={isFeat ? 'text-white' : S.cardIconColor} />{f}</li>)}</ul>
+                <Link to="/register" onClick={e => e.stopPropagation()} className={`block w-full py-3 ${S.btnRadius} font-bold text-center transition-all ${isFeat ? 'bg-white text-brand-700 hover:bg-gray-100 shadow-lg' : 'bg-brand-500 text-white hover:bg-brand-600'}`}>{t('pricing.start')}</Link>
               </motion.div>
-              ); })()}
               </motion.div>
-            ))}
+            ); })}
           </div>
           </div>
         </div>

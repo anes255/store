@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
@@ -26,6 +26,19 @@ export default function CustomerAuth() {
   const [storeLoading, setStoreLoading] = useState(true);
   useStoreFont(store);
   const [mode, setMode] = useState('login');
+  // Switching between "Log in" and "Create account": the pill moves at once,
+  // the form fades out, the store logo holds the card for a beat, then the
+  // other form fades in (the card resizes around it).
+  const [pillMode, setPillMode] = useState('login');
+  const [swapping, setSwapping] = useState(false);
+  const swapTimers = useRef([]);
+  useEffect(() => () => swapTimers.current.forEach(clearTimeout), []);
+  const switchMode = (m) => {
+    if (m === pillMode) return;
+    swapTimers.current.forEach(clearTimeout);
+    setPillMode(m); setSwapping(true);
+    swapTimers.current = [setTimeout(() => setMode(m), 220), setTimeout(() => setSwapping(false), 680)];
+  };
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -108,7 +121,7 @@ export default function CustomerAuth() {
             dark mode it stayed light grey while the text inside turned white. */}
         <motion.div layout transition={{ layout: { type: 'spring', stiffness: 260, damping: 30 } }}
           initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="w-full max-w-md backdrop-blur-xl rounded-3xl shadow-2xl border p-8 overflow-hidden"
+          className="relative w-full max-w-md backdrop-blur-xl rounded-3xl shadow-2xl border p-8 overflow-hidden"
           style={{
             backgroundColor: isDarkBuyer ? 'rgba(12,12,12,0.88)' : 'rgba(255,255,255,0.85)',
             borderColor: pc + (isDarkBuyer ? '55' : '33'),
@@ -117,11 +130,11 @@ export default function CustomerAuth() {
           {/* Log in / Create account switch — a pill slides under the active side */}
           <div className="relative grid grid-cols-2 p-1 mb-6 rounded-2xl" style={{ backgroundColor: pc + '14' }}>
             <motion.span aria-hidden className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl shadow-md"
-              initial={false} animate={{ left: mode === 'login' ? 4 : 'calc(50%)' }}
+              initial={false} animate={{ left: pillMode === 'login' ? 4 : 'calc(50%)' }}
               transition={{ type: 'spring', stiffness: 420, damping: 34 }} style={{ backgroundColor: pc }} />
             {['login', 'register'].map(m => (
-              <button key={m} type="button" onClick={() => setMode(m)}
-                className={`relative z-10 py-2 text-sm font-bold rounded-xl transition-colors duration-200 ${mode === m ? 'text-white' : 'text-gray-500'}`}>
+              <button key={m} type="button" onClick={() => switchMode(m)}
+                className={`relative z-10 py-2 text-sm font-bold rounded-xl transition-colors duration-200 ${pillMode === m ? 'text-white' : 'text-gray-500'}`}>
                 {m === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')}
               </button>
             ))}
@@ -129,12 +142,9 @@ export default function CustomerAuth() {
           <div className="flex justify-center mb-6">
             {store?.logo ? <img src={store.logo} className="w-14 h-14 rounded-2xl object-cover shadow-lg" alt=""/> : <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
           </div>
-          <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={mode}
-            initial={{ opacity: 0, x: mode === 'login' ? -28 : 28, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, x: mode === 'login' ? 28 : -28, filter: 'blur(4px)' }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}>
+          <motion.div initial={false}
+            animate={{ opacity: swapping ? 0 : 1, scale: swapping ? 0.97 : 1, filter: swapping ? 'blur(6px)' : 'blur(0px)' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }} style={{ pointerEvents: swapping ? 'none' : undefined }}>
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{mode === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')}</h1>
             <p className="text-gray-500 mb-8">{mode === 'login' ? t('store.enterPhonePassword','Enter your phone number and password') : t('store.fillDetails','Fill in your details to get started')}</p>
 
@@ -217,12 +227,20 @@ export default function CustomerAuth() {
 
             <p className="mt-6 text-center text-sm text-gray-500">
               {mode === 'login' ? t('auth.noAccount',"Don't have an account?") + ' ' : t('auth.hasAccount','Already have an account?') + ' '}
-              <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="font-semibold hover:underline" style={{color:pc}}>
+              <button onClick={() => switchMode(mode === 'login' ? 'register' : 'login')} className="font-semibold hover:underline" style={{color:pc}}>
                 {mode === 'login' ? t('auth.register','Create Account') : t('auth.login','Log In')}
               </button>
             </p>
           </motion.div>
-          </AnimatePresence>
+          {/* logo interlude while the forms swap */}
+          <motion.div aria-hidden className="absolute inset-0 grid place-items-center pointer-events-none" initial={false}
+            animate={{ opacity: swapping ? 1 : 0 }} transition={{ duration: 0.18 }}>
+            <motion.div className="relative" initial={false}
+              animate={{ scale: swapping ? 1 : 0.6, rotate: swapping ? 0 : -12 }} transition={{ type: 'spring', stiffness: 380, damping: 22 }}>
+              <span className="absolute -inset-2 rounded-[22px] border-2 border-t-transparent animate-spin" style={{ borderColor: pc, borderTopColor: 'transparent', animationDuration: '0.9s' }} />
+              {store?.logo ? <img src={store.logo} className="w-16 h-16 rounded-2xl object-cover shadow-xl" alt=""/> : <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-xl" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
+            </motion.div>
+          </motion.div>
         </motion.div>
       </div>
       <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={isDarkBuyer}/>

@@ -741,7 +741,7 @@ export default function CustomerProfile() {
                         holdingLabel={t('store.keepHolding', 'Keep holding…')}
                         doneLabel={t('store.deleting', 'Deleting...')}
                         hint={t('store.releaseToCancel', 'Release early to cancel')}
-                      />
+                       releasedLabel={t('store.releasedNothing','Released — nothing was deleted')} />
                     </div>
                   </div>
                 )}

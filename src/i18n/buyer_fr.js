@@ -4,7 +4,7 @@
 // pages fell back to English.
 export default {
   store: {
-    added: 'Ajouté', orderNow: 'COMMANDER', viewCart: 'Voir le panier', searchHint: 'Rechercher un produit ou une référence…', clearSearch: 'Effacer la recherche', recentSearches: 'Recherches récentes', clear: 'Effacer', popularNow: 'Populaire en ce moment', noMatchFor: 'Aucun produit ne correspond à « {{q}} »', noMatchHint: 'Vérifiez l’orthographe ou essayez :', kbdNavigate: 'naviguer', kbdOpen: 'ouvrir', kbdClose: 'fermer', keepAccount: 'Garder mon compte', holdDeleteAccount: 'Maintenir pour supprimer mon compte', keepHolding: 'Maintenez…', releaseToCancel: 'Relâchez avant la fin pour annuler',
+    releasedNothing: 'Relâché — rien n’a été supprimé', added: 'Ajouté', orderNow: 'COMMANDER', viewCart: 'Voir le panier', searchHint: 'Rechercher un produit ou une référence…', clearSearch: 'Effacer la recherche', recentSearches: 'Recherches récentes', clear: 'Effacer', popularNow: 'Populaire en ce moment', noMatchFor: 'Aucun produit ne correspond à « {{q}} »', noMatchHint: 'Vérifiez l’orthographe ou essayez :', kbdNavigate: 'naviguer', kbdOpen: 'ouvrir', kbdClose: 'fermer', keepAccount: 'Garder mon compte', holdDeleteAccount: 'Maintenir pour supprimer mon compte', keepHolding: 'Maintenez…', releaseToCancel: 'Relâchez avant la fin pour annuler',
     tracking: 'Suivi', orderCancelled: 'Commande annulée', currentStatus: 'Statut actuel', trackingNumber: 'Numéro de suivi', shippedVia: 'Expédiée via',
     imageTooLarge: "L'image doit faire moins de 2 Mo", pwFillAll: 'Saisissez votre mot de passe actuel et le nouveau', pwChanged: 'Mot de passe modifié',
     pwWrongCurrent: 'Le mot de passe actuel est incorrect', updateFailed: 'Échec de la mise à jour', nameAndPhoneRequired: 'Le nom et le téléphone sont obligatoires',
@@ -48,7 +48,7 @@ export default {
   },
   track: { backToTop: 'Haut de page' },
   auth: {
-    pwRuleLength: '8+ caractères', verified: 'Vérifié !',
+    verificationSuccessful: 'Vérification réussie', continueToDashboard: 'Continuer vers le tableau de bord', pwRuleLength: '8+ caractères', verified: 'Vérifié !',
     pickWilayaCity: 'Veuillez choisir votre wilaya et votre commune', wilayaPlaceholder: '— Choisir la wilaya —', cityPlaceholder: '— Choisir la commune —',
     confirmPassword: 'Confirmer le mot de passe', confirmPasswordPlaceholder: 'Saisissez à nouveau le mot de passe', passwordsDontMatch: 'Les mots de passe ne correspondent pas',
     pwVeryWeak: 'Très faible', pwWeak: 'Faible', pwFair: 'Moyen', pwGood: 'Bon', pwStrong: 'Fort', pwTipLength: 'utilisez 8 caractères ou plus',
@@ -59,4 +59,21 @@ export default {
     paymentMethod: 'Mode de paiement', receiptInfo: 'Vous enverrez votre reçu de paiement juste après avoir passé la commande.', freeShipping: 'Gratuite',
     freeShipHint: 'Ajoutez {{amount}} pour la livraison gratuite', selectWilayaFirst: "Choisissez d'abord la wilaya",
   },
+  danger: {
+    areYouSure: 'Êtes-vous sûr ?', type: 'Tapez', toConfirm: 'pour confirmer', holdToDelete: 'Maintenir pour supprimer', keepHolding: 'Maintenez…',
+    deleting: 'Suppression…', released: 'Relâché — rien n’a été supprimé', releaseToCancel: 'Relâchez avant la fin pour annuler', typeToUnlock: 'Tapez le nom ci-dessus pour déverrouiller',
+  },
+  storePage: {
+    unsavedChanges: 'Modifications non enregistrées', discard: 'Annuler', save: 'Enregistrer', searchSettings: 'Rechercher un réglage…', enterToJump: 'Entrée pour y aller',
+    noSettingMatch: 'Aucun réglage trouvé', sectionsHidden: '{{n}} masquées', keepStore: 'Garder cette boutique', holdDeleteStore: 'Maintenir pour supprimer « {{name}} »',
+    keepHolding: 'Maintenez…', deleting: 'Suppression…', releaseToCancel: 'Relâchez avant la fin pour annuler', typeNameFirst: 'Tapez le nom de la boutique pour déverrouiller',
+    releasedNothing: 'Relâché — rien n’a été supprimé',
+  },
+  sidebar: {
+    cmdPlaceholder: 'Aller à une page ou lancer une commande…', cmdEmpty: 'Aucun résultat', cmdEmptyHint: 'Essayez moins de lettres — ex. « cmd » pour Commandes.',
+    cmdPages: 'Pages', cmdActions: 'Actions', cmdRecent: 'Récent', cmdTheme: 'Changer de thème', cmdPickTheme: 'Choisissez un thème…', cmdLight: 'Mode clair', cmdDark: 'Mode sombre',
+    cmdSwitchStore: 'Changer de boutique', cmdPickStore: 'Choisissez une boutique…', cmdLogout: 'Se déconnecter', searchShortcut: 'Recherche rapide',
+  },
+  platform: { deleteStoreTitle: 'Supprimer cette boutique ?', holdDeleteStore: 'Maintenir pour supprimer la boutique', removeAdminTitle: 'Retirer cet administrateur ?', holdRemoveAdmin: 'Maintenir pour retirer l’administrateur' },
+  admin: { deleteOwnerTitle: 'Supprimer ce propriétaire ?', holdDeleteOwner: 'Maintenir pour supprimer le propriétaire' },
 };

@@ -580,7 +580,7 @@ export default function DashboardLayout({children}){
 
   return(<div className={`flex min-h-screen ${isDark?'bg-gray-950':'bg-gray-50/50'}`}>
     <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} commands={paletteCommands} isDark={isDark}
-      placeholder={t('sidebar.cmdPlaceholder','Go to a page or run a command…')} emptyText={t('sidebar.cmdEmpty','Nothing matches')} emptyHint={t('sidebar.cmdEmptyHint','Try fewer letters — e.g. “ord” for Orders.')}/>
+      placeholder={t('sidebar.cmdPlaceholder','Go to a page or run a command…')} emptyText={t('sidebar.cmdEmpty','Nothing matches')} emptyHint={t('sidebar.cmdEmptyHint','Try fewer letters — e.g. “ord” for Orders.')} recentLabel={t('sidebar.cmdRecent','Recent')}/>
     {/* Mobile overlay */}
     {sidebarOpen&&isMobile&&<div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={()=>setSidebarOpen(false)}/>}
     <aside className={`flex flex-col fixed h-screen h-[100dvh] z-40 transition-all duration-300 border-r ${isDark?'bg-gray-900 border-gray-800':'bg-white border-gray-100'} ${isMobile?(sidebarOpen?'w-56 translate-x-0':'-translate-x-full w-56'):(sidebarOpen?'w-56':'w-16')}`}>

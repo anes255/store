@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import OtpInput from '../../components/shared/OtpInput';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { getPlatformInfo } from '../../utils/api';
@@ -8,7 +9,7 @@ import toast from 'react-hot-toast';
 import { ownerApi } from '../../utils/api';
 import { useAuthStore } from '../../hooks/useStore';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff, MessageCircle, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff, MessageCircle, ArrowLeft, Check } from 'lucide-react';
 import WILAYA_CITIES from '../../data/wilayaCities';
 
 export default function OwnerRegister() {
@@ -24,6 +25,11 @@ export default function OwnerRegister() {
   const [phoneMasked, setPhoneMasked] = useState('');
   const [code, setCode] = useState('');
   const [codeStatus, setCodeStatus] = useState('idle'); // idle | error | success
+  // After a correct code the card turns into a "Verification successful"
+  // screen; the dashboard opens on its own after a moment (or on the button).
+  const [verified, setVerified] = useState(null);
+  const leftRef = useRef(false);
+  const goToDashboard = (d) => { if (leftRef.current || !d) return; leftRef.current = true; setAuth(d.owner, d.token, 'store_owner'); navigate('/dashboard'); };
   const [resendIn, setResendIn] = useState(0);
   // Platform branding comes exclusively from the super admin's settings —
   // no hard-coded fallback name is shown if the API hasn't responded yet.
@@ -72,9 +78,9 @@ export default function OwnerRegister() {
     try {
       const { data } = await ownerApi.verifyOtp({ otp_token: otpToken, code: c });
       setCodeStatus('success');
-      toast.success(t('auth.accountCreated','Account created! Welcome aboard!'));
-      // Let the green "verified" state show for a moment before leaving.
-      setTimeout(() => { setAuth(data.owner, data.token, 'store_owner'); navigate('/dashboard'); }, 700);
+      // the boxes flash green first, then the success screen takes over
+      setTimeout(() => setVerified(data), 450);
+      setTimeout(() => goToDashboard(data), 2600);
     } catch (err) {
       setCodeStatus('error');
       setTimeout(() => setCodeStatus('idle'), 900);
@@ -202,7 +208,27 @@ export default function OwnerRegister() {
             {t('auth.hasAccount')}{' '}
             <Link to="/login" className="text-brand-600 font-semibold hover:underline">{t('auth.login')}</Link>
           </p>
-          </>) : (<>
+          </>) : verified ? (
+            <motion.div className="text-center py-6" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25 }}>
+              <div className="relative w-20 h-20 mx-auto mb-5">
+                <motion.span className="absolute inset-0 rounded-full bg-emerald-400/30" initial={{ scale: 0.6, opacity: 1 }} animate={{ scale: 1.7, opacity: 0 }} transition={{ duration: 0.9, ease: 'easeOut' }} />
+                <motion.span className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 grid place-items-center text-white shadow-lg shadow-emerald-500/40"
+                  initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 16 }}>
+                  <Check size={38} strokeWidth={3} />
+                </motion.span>
+              </div>
+              <motion.h1 className="text-2xl font-extrabold font-display text-gray-900" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                {t('auth.verificationSuccessful', 'Verification successful')}
+              </motion.h1>
+              <motion.p className="text-gray-500 mt-2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+                {t('auth.accountCreated','Account created! Welcome aboard!')}
+              </motion.p>
+              <motion.button type="button" onClick={() => goToDashboard(verified)} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5 mt-7"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                {t('auth.continueToDashboard', 'Continue to dashboard')} <ArrowRight size={18}/>
+              </motion.button>
+            </motion.div>
+          ) : (<>
             <button type="button" onClick={() => { setStep(1); setCode(''); }} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
               <ArrowLeft size={16}/> {t('storePage.back','Back')}
             </button>

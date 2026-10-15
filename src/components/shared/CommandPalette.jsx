@@ -28,9 +28,15 @@ const Highlight = ({ text, marks }) => {
   return <>{String(text).split('').map((c, i) => set.has(i) ? <b key={i} className="text-brand-600 dark:text-brand-300">{c}</b> : <span key={i}>{c}</span>)}</>;
 };
 
+// Commands run recently, newest first — shown as a "Recent" group when the
+// box is empty, so the palette never opens on a blank list.
+const RECENT_KEY = 'cmdPaletteRecent';
+const readRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } };
+const pushRecent = (id) => { if (id === 'logout') return; try { localStorage.setItem(RECENT_KEY, JSON.stringify([id, ...readRecent().filter(x => x !== id)].slice(0, 4))); } catch {} };
+
 // Ctrl/⌘ + K palette. `commands`: [{ id, label, group, icon, hint, run(), children: [...] }]
-// A command with `children` opens a nested list (Backspace on an empty box goes back).
-export default function CommandPalette({ open, onClose, commands = [], isDark = false, placeholder = 'Type a command or search…', emptyText = 'No results', emptyHint = 'Try fewer letters — e.g. “ord” for Orders.' }) {
+// A command with `children` opens a nested list (Esc or Backspace on an empty box goes back).
+export default function CommandPalette({ open, onClose, commands = [], isDark = false, placeholder = 'Type a command or search…', emptyText = 'No results', emptyHint = 'Try fewer letters — e.g. “ord” for Orders.', recentLabel = 'Recent' }) {
   const [query, setQuery] = useState('');
   const [stack, setStack] = useState([]); // nested command trail
   const [active, setActive] = useState(0);
@@ -41,16 +47,25 @@ export default function CommandPalette({ open, onClose, commands = [], isDark = 
 
   const level = stack.length ? stack[stack.length - 1].children || [] : commands;
   const results = useMemo(() => {
-    if (!query.trim()) return level.map(c => ({ c, marks: null }));
+    if (!query.trim()) {
+      const rows = level.map(c => ({ c, marks: null, g: c.group, k: c.id }));
+      if (stack.length) return rows;
+      // root level with an empty box: recent commands first
+      const flat = [];
+      commands.forEach(c => { flat.push(c); (c.children || []).forEach(ch => flat.push(ch)); });
+      const recent = readRecent().map(id => flat.find(c => c.id === id)).filter(c => c && !c.children);
+      return [...recent.map(c => ({ c, marks: null, g: recentLabel, k: 'recent-' + c.id })), ...rows];
+    }
     return level.map(c => ({ c, m: fuzzyScore(query, c.label) || fuzzyScore(query, (c.keywords || '') + ' ' + c.label) }))
-      .filter(x => x.m).sort((a, b) => b.m.score - a.m.score).map(x => ({ c: x.c, marks: fuzzyScore(query, x.c.label)?.marks }));
-  }, [query, level]);
+      .filter(x => x.m).sort((a, b) => b.m.score - a.m.score).map(x => ({ c: x.c, marks: fuzzyScore(query, x.c.label)?.marks, g: x.c.group, k: x.c.id }));
+  }, [query, level, stack.length, commands, recentLabel, open]); // eslint-disable-line
   useEffect(() => { setActive(0); }, [query, stack.length]);
   useEffect(() => { listRef.current?.querySelector(`[data-idx="${active}"]`)?.scrollIntoView({ block: 'nearest' }); }, [active]);
 
   const choose = (c) => {
     if (!c) return;
     if (c.children && c.children.length) { setStack(s => [...s, c]); setQuery(''); return; }
+    pushRecent(c.id);
     onClose();
     setTimeout(() => c.run && c.run(), 0);
   };
@@ -94,16 +109,19 @@ export default function CommandPalette({ open, onClose, commands = [], isDark = 
                   <p className="text-sm font-semibold">{emptyText}</p>
                   <p className="text-xs text-gray-400 mt-1">{emptyHint}</p>
                 </div>
-              ) : results.map(({ c, marks }, i) => {
-                const header = !query.trim() && c.group && c.group !== lastGroup ? c.group : null;
-                lastGroup = c.group;
+              ) : results.map(({ c, marks, g, k }, i) => {
+                const header = !query.trim() && g && g !== lastGroup ? g : null;
+                lastGroup = g;
                 const Icon = c.icon;
+                const on = i === active;
                 return (
-                  <React.Fragment key={c.id}>
+                  <React.Fragment key={k}>
                     {header && <div className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">{header}</div>}
                     <button type="button" data-idx={i} onMouseMove={() => setActive(i)} onClick={() => choose(c)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors ${i === active ? (isDark ? 'bg-gray-800' : 'bg-gray-100') : ''}`}>
-                      {Icon ? <Icon size={16} className="text-gray-400 shrink-0" /> : <span className="w-4" />}
+                      className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors ${on ? (isDark ? 'bg-gray-800' : 'bg-gray-100') : ''}`}>
+                      {/* accent bar that glides to the highlighted row */}
+                      {on && <motion.span layoutId="cmd-accent" className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-brand-500" transition={{ type: 'spring', stiffness: 600, damping: 40 }} />}
+                      {Icon ? <Icon size={16} className={`shrink-0 ${on ? 'text-brand-500' : 'text-gray-400'}`} /> : <span className="w-4" />}
                       <span className="flex-1 min-w-0 truncate"><Highlight text={c.label} marks={marks} /></span>
                       {c.hint && <span className="text-[11px] text-gray-400 truncate max-w-[40%]">{c.hint}</span>}
                       {c.children ? <ChevronRight size={14} className="text-gray-400" /> : i === active && <CornerDownLeft size={13} className="text-gray-400" />}
