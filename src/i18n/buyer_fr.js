@@ -4,7 +4,7 @@
 // pages fell back to English.
 export default {
   store: {
-    releasedNothing: 'Relâché — rien n’a été supprimé', added: 'Ajouté', orderNow: 'COMMANDER', viewCart: 'Voir le panier', searchHint: 'Rechercher un produit ou une référence…', clearSearch: 'Effacer la recherche', recentSearches: 'Recherches récentes', clear: 'Effacer', popularNow: 'Populaire en ce moment', noMatchFor: 'Aucun produit ne correspond à « {{q}} »', noMatchHint: 'Vérifiez l’orthographe ou essayez :', kbdNavigate: 'naviguer', kbdOpen: 'ouvrir', kbdClose: 'fermer', keepAccount: 'Garder mon compte', holdDeleteAccount: 'Maintenir pour supprimer mon compte', keepHolding: 'Maintenez…', releaseToCancel: 'Relâchez avant la fin pour annuler',
+    allProducts: 'Tous les produits', releasedNothing: 'Relâché — rien n’a été supprimé', added: 'Ajouté', orderNow: 'COMMANDER', viewCart: 'Voir le panier', searchHint: 'Rechercher un produit ou une référence…', clearSearch: 'Effacer la recherche', recentSearches: 'Recherches récentes', clear: 'Effacer', popularNow: 'Populaire en ce moment', noMatchFor: 'Aucun produit ne correspond à « {{q}} »', noMatchHint: 'Vérifiez l’orthographe ou essayez :', kbdNavigate: 'naviguer', kbdOpen: 'ouvrir', kbdClose: 'fermer', keepAccount: 'Garder mon compte', holdDeleteAccount: 'Maintenir pour supprimer mon compte', keepHolding: 'Maintenez…', releaseToCancel: 'Relâchez avant la fin pour annuler',
     tracking: 'Suivi', orderCancelled: 'Commande annulée', currentStatus: 'Statut actuel', trackingNumber: 'Numéro de suivi', shippedVia: 'Expédiée via',
     imageTooLarge: "L'image doit faire moins de 2 Mo", pwFillAll: 'Saisissez votre mot de passe actuel et le nouveau', pwChanged: 'Mot de passe modifié',
     pwWrongCurrent: 'Le mot de passe actuel est incorrect', updateFailed: 'Échec de la mise à jour', nameAndPhoneRequired: 'Le nom et le téléphone sont obligatoires',
@@ -64,6 +64,10 @@ export default {
     deleting: 'Suppression…', released: 'Relâché — rien n’a été supprimé', releaseToCancel: 'Relâchez avant la fin pour annuler', typeToUnlock: 'Tapez le nom ci-dessus pour déverrouiller',
   },
   storePage: {
+    ecotrackBased: 'Plateforme EcoTrack — collez simplement votre jeton', platformUrl: 'Adresse de la plateforme de la société', platformUrlHint: 'Modifiez-la si la société a changé d’adresse.',
+    trackingWebsite: 'Site web de suivi', trackingWebsiteHint: 'La page où l’on peut suivre un colis. Mettez {tracking_number} à la place du numéro.',
+    previewMobile: 'Mobile', previewDesktop: 'Ordinateur', previewUnavailable: 'Aperçu indisponible', previewNote: 'Ceci est votre vraie page de commande avec un produit d’exemple. Vos changements s’affichent ici avant d’enregistrer.',
+    sampleProduct: 'Produit d’exemple', previewNoOrder: 'Aperçu — aucune commande n’est passée',
     unsavedChanges: 'Modifications non enregistrées', discard: 'Annuler', save: 'Enregistrer', searchSettings: 'Rechercher un réglage…', enterToJump: 'Entrée pour y aller',
     noSettingMatch: 'Aucun réglage trouvé', sectionsHidden: '{{n}} masquées', keepStore: 'Garder cette boutique', holdDeleteStore: 'Maintenir pour supprimer « {{name}} »',
     keepHolding: 'Maintenez…', deleting: 'Suppression…', releaseToCancel: 'Relâchez avant la fin pour annuler', typeNameFirst: 'Tapez le nom de la boutique pour déverrouiller',
@@ -81,4 +85,5 @@ export default {
   },
   platform: { deleteStoreTitle: 'Supprimer cette boutique ?', holdDeleteStore: 'Maintenir pour supprimer la boutique', removeAdminTitle: 'Retirer cet administrateur ?', holdRemoveAdmin: 'Maintenir pour retirer l’administrateur' },
   admin: { deleteOwnerTitle: 'Supprimer ce propriétaire ?', holdDeleteOwner: 'Maintenir pour supprimer le propriétaire' },
+  products: { status: 'Statut' },
 };

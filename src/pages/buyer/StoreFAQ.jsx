@@ -102,7 +102,7 @@ export default function StoreFAQ() {
         </div>
       </div>
       <div className="h-20 md:hidden"/>
-      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={isDark}/>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/>
     </div>
   );
 }

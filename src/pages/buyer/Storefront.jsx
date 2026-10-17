@@ -1043,13 +1043,40 @@ export default function Storefront() {
       </section>
 
       {/* ============ CATEGORY TABS ============ */}
+      {/* "All" opens a list of every category to pick from; the picked one
+          shows as a pill next to it. Pills are flex-centred with a fixed
+          height so the text sits in the middle whatever the store font. */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <button onClick={()=>{ if(selectedCategory){ setSelectedCategory(null); setShowCategories(true); } else setShowCategories(v=>!v); }} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${!selectedCategory?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={!selectedCategory?{backgroundColor:pc}:{}}><span className="inline-flex items-center gap-1.5">{t('store.allCategories','All')}{categories.length>0&&<ChevronDown size={14} className={`transition-transform ${showCategories?'rotate-180':''}`}/>}</span></button>
-          {(showCategories||selectedCategory) && categories.map(cat=>(
-            <button key={cat.id} onClick={()=>setSelectedCategory(cat.id)} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${selectedCategory===cat.id?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={selectedCategory===cat.id?{backgroundColor:pc}:{}}>{getName(cat)}</button>
-          ))}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <button onClick={()=>setShowCategories(v=>!v)} aria-expanded={showCategories}
+            className={`h-10 px-5 inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-bold leading-none whitespace-nowrap shrink-0 transition-all ${!selectedCategory?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={!selectedCategory?{backgroundColor:pc}:{}}>
+            <span className="leading-none">{t('store.allCategories','All')}</span>
+            {categories.length>0&&<ChevronDown size={14} className={`shrink-0 transition-transform ${showCategories?'rotate-180':''}`}/>}
+          </button>
+          {selectedCategory && (()=>{ const cat=categories.find(c=>String(c.id)===String(selectedCategory)); return cat ? (
+            <button onClick={()=>setSelectedCategory(null)} title={t('store.clearFilters','Clear filters')}
+              className="h-10 pl-5 pr-3 inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-bold leading-none whitespace-nowrap shrink-0 text-white shadow-md" style={{backgroundColor:pc}}>
+              <span className="leading-none">{getName(cat)}</span><X size={14} className="shrink-0 opacity-80"/>
+            </button>
+          ) : null; })()}
         </div>
+        {showCategories && categories.length>0 && (
+          <div className="mt-1 mb-2 p-2 rounded-2xl bg-white border border-gray-200 shadow-xl grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 animate-[pop_.2s_ease-out]">
+            <button onClick={()=>{setSelectedCategory(null);setShowCategories(false);}}
+              className={`min-h-[44px] px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2 text-left transition-colors ${!selectedCategory?'text-white':'text-gray-700 hover:bg-gray-100'}`} style={!selectedCategory?{backgroundColor:pc}:{}}>
+              <span className="flex-1 min-w-0 truncate">{t('store.allProducts','All products')}</span>
+              {!selectedCategory&&<Check size={14} className="shrink-0"/>}
+            </button>
+            {categories.map(cat=>{ const on=String(selectedCategory)===String(cat.id); return (
+              <button key={cat.id} onClick={()=>{setSelectedCategory(cat.id);setShowCategories(false);}}
+                className={`min-h-[44px] px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2 text-left transition-colors ${on?'text-white':'text-gray-700 hover:bg-gray-100'}`} style={on?{backgroundColor:pc}:{}}>
+                {cat.image&&<img src={cat.image} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0"/>}
+                <span className="flex-1 min-w-0 truncate">{getName(cat)}</span>
+                {on&&<Check size={14} className="shrink-0"/>}
+              </button>
+            ); })}
+          </div>
+        )}
       </div>
 
       {/* ============ FILTER BAR ============ */}
@@ -1273,7 +1300,7 @@ export default function Storefront() {
 
       {/* ============ MOBILE BOTTOM NAV ============ */}
       <CartPill storeSlug={storeSlug} pc={pc} currency={store.currency||'DZD'} onCart={openCart}/>
-      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={buyerTheme.mode==='dark'} onCart={openCart}/>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} onCart={openCart}/>
 
       {/* ============ PRODUCT DETAIL MODAL ============ */}
       {detailProduct && (

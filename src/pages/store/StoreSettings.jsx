@@ -59,277 +59,46 @@ function SubscriptionSection(){
 }
 
 // ============ CHECKOUT PREVIEW ============
+// The real checkout page, loaded in a phone-sized frame in preview mode
+// (sample product, nothing is ordered or saved). Unsaved settings are sent
+// to it as they change, so the preview is exactly what buyers will see.
 function CheckoutPreview({ s }) {
   const{t}=useTranslation();
-  const theme = useAdminTheme();
-  const isDark = theme.mode === 'dark';
-  const pc = s.primary_color || '#7C3AED';
-  const storeName = s.name || s.store_name || t('storePage.myStore','My Store');
-
+  const frameRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+  const [mode, setMode] = useState('mobile'); // mobile | desktop
+  const slug = s.slug;
+  const send = () => { try { frameRef.current?.contentWindow?.postMessage({ type: 'checkout-preview', settings: s }, window.location.origin); } catch {} };
+  useEffect(() => { if (!loaded) return; const h = setTimeout(send, 150); return () => clearTimeout(h); }, [s, loaded]); // eslint-disable-line
+  // the frame asks for the settings once it is ready
+  useEffect(() => {
+    const onMsg = (e) => { if (e.origin === window.location.origin && e.data?.type === 'checkout-preview-ready') send(); };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }); // eslint-disable-line
+  const W = mode === 'mobile' ? 375 : 1024, H = mode === 'mobile' ? 740 : 760;
+  const scale = mode === 'mobile' ? 0.82 : 0.33;
   return (
     <div className="glass-card-solid p-4 sm:p-6">
       <div className="flex items-center gap-2 mb-4">
         <Eye size={16} className="text-purple-500" />
         <h3 className="font-bold">{t('storePage.checkoutPreview','Checkout Preview')}</h3>
-        <span className="text-[10px] text-gray-400 ml-auto">{t('storePage.livePreviewLabel','Live preview')}</span>
-      </div>
-
-      {/* Phone frame */}
-      <div className="mx-auto" style={{ maxWidth: 340 }}>
-        <div
-          className="rounded-[2rem] border-[6px] overflow-hidden shadow-2xl"
-          style={{
-            borderColor: isDark ? '#374151' : '#1f2937',
-            background: isDark ? '#111827' : '#ffffff',
-          }}
-        >
-          {/* Notch */}
-          <div className="flex justify-center pt-2 pb-1" style={{ background: isDark ? '#111827' : '#ffffff' }}>
-            <div className="w-20 h-5 rounded-full" style={{ background: isDark ? '#1f2937' : '#e5e7eb' }} />
-          </div>
-
-          {/* Header */}
-          <div className="px-4 py-3 flex items-center gap-2" style={{ backgroundColor: pc }}>
-            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white text-[10px] font-bold">
-              {storeName[0]}
-            </div>
-            <span className="text-white text-sm font-bold truncate">{storeName}</span>
-            <span className="ml-auto text-white/60 text-[10px]">{t('storePage.checkout','Checkout')}</span>
-          </div>
-
-          {/* Scrollable content */}
-          <div
-            className="px-4 py-3 space-y-3 overflow-y-auto"
-            style={{
-              maxHeight: 420,
-              background: isDark ? '#111827' : '#f9fafb',
-            }}
-          >
-            {/* Customer Info */}
-            <div
-              className="rounded-xl p-3 space-y-2"
-              style={{
-                background: isDark ? '#1f2937' : '#ffffff',
-                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-              }}
-            >
-              <p
-                className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ color: pc }}
-              >
-                {t('storePage.customerInfo','Customer Info')}
-              </p>
-              {/* Full Name - always required */}
-              <div>
-                <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
-                  {t('storePage.fullNameRequired','Full Name *')}
-                </p>
-                <div
-                  className="h-7 rounded-lg mt-0.5 flex items-center px-2"
-                  style={{
-                    background: isDark ? '#111827' : '#f3f4f6',
-                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                  }}
-                >
-                  <span className="text-[10px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
-                    Ahmed Ben Ali
-                  </span>
-                </div>
-              </div>
-              {/* Phone - always required */}
-              <div>
-                <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
-                  {t('storePage.phoneRequired','Phone *')}
-                </p>
-                <div
-                  className="h-7 rounded-lg mt-0.5 flex items-center px-2"
-                  style={{
-                    background: isDark ? '#111827' : '#f3f4f6',
-                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                  }}
-                >
-                  <span className="text-[10px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
-                    +213 555 123 456
-                  </span>
-                </div>
-              </div>
-              {/* Email - conditional */}
-              {s.checkout_email && (
-                <div>
-                  <p className="text-[9px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
-                    {t('storePage.emailLabel','Email')}
-                  </p>
-                  <div
-                    className="h-7 rounded-lg mt-0.5 flex items-center px-2"
-                    style={{
-                      background: isDark ? '#111827' : '#f3f4f6',
-                      border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                    }}
-                  >
-                    <span className="text-[10px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
-                      customer@email.com
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Shipping Method */}
-            <div
-              className="rounded-xl p-3 space-y-2"
-              style={{
-                background: isDark ? '#1f2937' : '#ffffff',
-                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-              }}
-            >
-              <p
-                className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ color: pc }}
-              >
-                {t('storePage.shipping','Shipping')}
-              </p>
-              <label className="flex items-center gap-2 p-2 rounded-lg cursor-default" style={{ background: isDark ? '#111827' : '#f3f4f6' }}>
-                <div
-                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
-                  style={{ borderColor: pc }}
-                >
-                  <div className="w-2 h-2 rounded-full" style={{ background: pc }} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>{t('storePage.homeDelivery','Home Delivery')}</p>
-                  <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.twoFourDays','2-4 days')}</p>
-                </div>
-                <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>500 {s.currency || 'DZD'}</span>
-              </label>
-              <label className="flex items-center gap-2 p-2 rounded-lg cursor-default" style={{ background: 'transparent' }}>
-                <div
-                  className="w-4 h-4 rounded-full border-2"
-                  style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }}
-                />
-                <div className="flex-1">
-                  <p className="text-[10px] font-semibold" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('storePage.deskPickup','Desk Pickup')}</p>
-                  <p className="text-[9px]" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>{t('storePage.oneTwoDays','1-2 days')}</p>
-                </div>
-                <span className="text-[10px]" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>300 {s.currency || 'DZD'}</span>
-              </label>
-            </div>
-
-            {/* Order Notes - conditional */}
-            {s.order_notes && (
-              <div
-                className="rounded-xl p-3"
-                style={{
-                  background: isDark ? '#1f2937' : '#ffffff',
-                  border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                }}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: pc }}>
-                  {t('storePage.orderNotes','Order Notes')}
-                </p>
-                <div
-                  className="h-12 rounded-lg mt-1.5 px-2 pt-1"
-                  style={{
-                    background: isDark ? '#111827' : '#f3f4f6',
-                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                  }}
-                >
-                  <span className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
-                    {t('storePage.specialInstructions','Special instructions...')}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Order Summary */}
-            <div
-              className="rounded-xl p-3 space-y-1.5"
-              style={{
-                background: isDark ? '#1f2937' : '#ffffff',
-                border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-              }}
-            >
-              <p
-                className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ color: pc }}
-              >
-                {t('storePage.orderSummary','Order Summary')}
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg" style={{ background: isDark ? '#374151' : '#e5e7eb' }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold truncate" style={{ color: isDark ? '#e5e7eb' : '#374151' }}>
-                    {t('storePage.sampleProduct','Sample Product')}
-                  </p>
-                  <p className="text-[9px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>Qty: 1</p>
-                </div>
-                <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>
-                  2,500 {s.currency || 'DZD'}
-                </span>
-              </div>
-              {s.show_savings && (
-                <div className="flex justify-between text-[9px] px-1 pt-1" style={{ color: '#10b981' }}>
-                  <span>{t('storePage.youSave','You save')}</span>
-                  <span className="font-bold">-500 {s.currency || 'DZD'}</span>
-                </div>
-              )}
-              <div
-                className="border-t pt-1.5 mt-1 flex justify-between"
-                style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
-              >
-                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('storePage.subtotal','Subtotal')}</span>
-                <span className="text-[10px] font-bold" style={{ color: isDark ? '#e5e7eb' : '#1f2937' }}>2,500 {s.currency || 'DZD'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[10px] font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{t('storePage.shippingLabel','Shipping')}</span>
-                <span className="text-[10px]" style={{ color: isDark ? '#d1d5db' : '#374151' }}>500 {s.currency || 'DZD'}</span>
-              </div>
-              <div
-                className="border-t pt-1.5 flex justify-between"
-                style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}
-              >
-                <span className="text-xs font-bold" style={{ color: isDark ? '#ffffff' : '#1f2937' }}>{t('storePage.total','Total')}</span>
-                <span className="text-xs font-black" style={{ color: pc }}>3,000 {s.currency || 'DZD'}</span>
-              </div>
-            </div>
-
-            {/* Trust Signals - conditional */}
-            {s.trust_signals !== false && (
-              <div className="flex items-center justify-center gap-3 py-1">
-                <div className="flex items-center gap-1">
-                  <Lock size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
-                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.secure','Secure')}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Shield size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
-                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.protected','Protected')}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Check size={9} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
-                  <span className="text-[8px]" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{t('storePage.verified','Verified')}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Place Order Button */}
-            <button
-              className="w-full py-2.5 rounded-xl text-white text-xs font-bold"
-              style={{ backgroundColor: pc }}
-            >
-              {s.btn_order_now || t('storePage.placeOrder','Place Order')} - 3,000 {s.currency || 'DZD'}
+        <div className="ml-auto flex items-center bg-gray-100 rounded-lg p-0.5">
+          {['mobile','desktop'].map(m => (
+            <button key={m} type="button" onClick={() => setMode(m)} className={`px-2 py-1 rounded-md text-[11px] font-bold ${mode===m?'bg-white shadow-sm text-brand-600':'text-gray-400'}`}>
+              {m === 'mobile' ? t('storePage.previewMobile','Mobile') : t('storePage.previewDesktop','Desktop')}
             </button>
-
-            {/* Sticky Checkout indicator */}
-            {s.sticky_checkout && (
-              <p className="text-[8px] text-center" style={{ color: isDark ? '#4b5563' : '#d1d5db' }}>
-                {t('storePage.stickyCheckoutEnabled','Sticky checkout bar enabled')}
-              </p>
-            )}
-          </div>
-
-          {/* Bottom bar */}
-          <div className="h-1.5 mx-auto w-24 rounded-full my-2" style={{ background: isDark ? '#374151' : '#d1d5db' }} />
+          ))}
         </div>
       </div>
+      {!slug ? <p className="text-sm text-gray-400 text-center py-10">{t('storePage.previewUnavailable','Preview unavailable')}</p> : (
+        <div className="mx-auto rounded-[1.6rem] border-[6px] border-gray-800 overflow-hidden shadow-2xl bg-white relative" style={{ width: W * scale + 12, height: H * scale + 12 }}>
+          {!loaded && <div className="absolute inset-0 grid place-items-center"><div className="w-7 h-7 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin" /></div>}
+          <iframe ref={frameRef} title="checkout-preview" src={`/s/${slug}/checkout?preview=1`} onLoad={() => setLoaded(true)}
+            style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: '0 0', border: 0, opacity: loaded ? 1 : 0 }} />
+        </div>
+      )}
+      <p className="text-[10px] text-gray-400 text-center mt-3">{t('storePage.previewNote','This is your real checkout page with a sample product. Changes show here before you save.')}</p>
     </div>
   );
 }

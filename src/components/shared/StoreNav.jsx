@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Package, Heart, Truck, ShoppingCart, User } from 'lucide-react';
-import { useCartStore, useWishlistStore, useAuthStore } from '../../hooks/useStore';
+import { useCartStore, useWishlistStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 
 // The store's navigation icons (shop, favourites, tracking, cart, account),
 // shared by every buyer page so they stay put when the buyer leaves the
@@ -36,8 +36,11 @@ let lastActive = { idx: -1, n: 0 };
 // floating bubble. Switching tabs: the bubble glides over, swelling while it
 // travels (empty — the old icon drops back into the bar), and the new icon
 // pops into it once it lands. The cart badge pops whenever the count changes.
-export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', dark = false, onCart }) {
+export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', onCart }) {
   const { pathname } = useLocation();
+  // Light/dark always follows the buyer's selected theme, on every page (pages
+  // used to pass their own guess, so the bar changed colour between pages).
+  const dark = useBuyerTheme(s => s.mode) === 'dark';
   const { t, cartCount, favCount, loggedIn, openCart } = useStoreNavData(storeSlug, onCart);
   const base = `/s/${storeSlug}`;
   const accountPath = `${base}/${loggedIn ? 'profile' : 'auth'}`;

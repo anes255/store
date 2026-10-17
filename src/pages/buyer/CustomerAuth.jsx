@@ -243,7 +243,7 @@ export default function CustomerAuth() {
           </motion.div>
         </motion.div>
       </div>
-      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark={isDarkBuyer}/>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/>
     </div>
   );
 }

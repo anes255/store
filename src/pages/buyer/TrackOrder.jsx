@@ -492,7 +492,7 @@ export default function TrackOrder() {
         )}
       </div>
       <ScrollToTopButton color={pc} label={t('track.backToTop', 'Back to top')} aboveBottomNav />
-      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark/>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/>
     </div>
   );
 }

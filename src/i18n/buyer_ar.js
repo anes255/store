@@ -4,7 +4,7 @@
 // pages fell back to English.
 export default {
   store: {
-    releasedNothing: 'تم الإفلات — لم يُحذف شيء', added: 'أُضيف', orderNow: 'اطلب الآن', viewCart: 'عرض السلة', searchHint: 'ابحث باسم المنتج أو المرجع…', clearSearch: 'مسح البحث', recentSearches: 'عمليات البحث الأخيرة', clear: 'مسح', popularNow: 'الأكثر رواجًا الآن', noMatchFor: 'لا توجد منتجات تطابق «{{q}}»', noMatchHint: 'تحقق من الكتابة أو جرّب:', kbdNavigate: 'تنقّل', kbdOpen: 'فتح', kbdClose: 'إغلاق', keepAccount: 'الاحتفاظ بحسابي', holdDeleteAccount: 'اضغط مطولًا لحذف حسابي', keepHolding: 'واصل الضغط…', releaseToCancel: 'ارفع إصبعك قبل الانتهاء للإلغاء',
+    allProducts: 'كل المنتجات', releasedNothing: 'تم الإفلات — لم يُحذف شيء', added: 'أُضيف', orderNow: 'اطلب الآن', viewCart: 'عرض السلة', searchHint: 'ابحث باسم المنتج أو المرجع…', clearSearch: 'مسح البحث', recentSearches: 'عمليات البحث الأخيرة', clear: 'مسح', popularNow: 'الأكثر رواجًا الآن', noMatchFor: 'لا توجد منتجات تطابق «{{q}}»', noMatchHint: 'تحقق من الكتابة أو جرّب:', kbdNavigate: 'تنقّل', kbdOpen: 'فتح', kbdClose: 'إغلاق', keepAccount: 'الاحتفاظ بحسابي', holdDeleteAccount: 'اضغط مطولًا لحذف حسابي', keepHolding: 'واصل الضغط…', releaseToCancel: 'ارفع إصبعك قبل الانتهاء للإلغاء',
     tracking: 'التتبع', orderCancelled: 'تم إلغاء الطلب', currentStatus: 'الحالة الحالية', trackingNumber: 'رقم التتبع', shippedVia: 'شُحن عبر',
     imageTooLarge: 'يجب أن يكون حجم الصورة أقل من 2 ميغابايت', pwFillAll: 'أدخل كلمة المرور الحالية والجديدة', pwChanged: 'تم تغيير كلمة المرور',
     pwWrongCurrent: 'كلمة المرور الحالية غير صحيحة', updateFailed: 'فشل التحديث', nameAndPhoneRequired: 'الاسم ورقم الهاتف مطلوبان',
@@ -64,6 +64,10 @@ export default {
     deleting: 'جارٍ الحذف…', released: 'تم الإفلات — لم يُحذف شيء', releaseToCancel: 'ارفع إصبعك قبل الانتهاء للإلغاء', typeToUnlock: 'اكتب الاسم أعلاه لفتح القفل',
   },
   storePage: {
+    ecotrackBased: 'منصة EcoTrack — الصق الرمز فقط', platformUrl: 'عنوان منصة الشركة', platformUrlHint: 'غيّره إذا انتقلت الشركة إلى عنوان جديد.',
+    trackingWebsite: 'موقع تتبّع الطرود', trackingWebsiteHint: 'الصفحة التي يمكن فيها تتبّع الطرد. ضع {tracking_number} مكان الرقم.',
+    previewMobile: 'هاتف', previewDesktop: 'حاسوب', previewUnavailable: 'المعاينة غير متاحة', previewNote: 'هذه صفحة الطلب الحقيقية لمتجرك مع منتج تجريبي. تظهر تغييراتك هنا قبل الحفظ.',
+    sampleProduct: 'منتج تجريبي', previewNoOrder: 'معاينة — لن يتم تسجيل أي طلب',
     unsavedChanges: 'لديك تغييرات غير محفوظة', discard: 'تجاهل', save: 'حفظ', searchSettings: 'ابحث في الإعدادات…', enterToJump: 'Enter للانتقال',
     noSettingMatch: 'لا يوجد إعداد مطابق', sectionsHidden: '{{n}} مخفية', keepStore: 'الاحتفاظ بهذا المتجر', holdDeleteStore: 'اضغط مطولًا لحذف «{{name}}»',
     keepHolding: 'واصل الضغط…', deleting: 'جارٍ الحذف…', releaseToCancel: 'ارفع إصبعك قبل الانتهاء للإلغاء', typeNameFirst: 'اكتب اسم المتجر أعلاه لفتح القفل',
@@ -81,4 +85,5 @@ export default {
   },
   platform: { deleteStoreTitle: 'حذف هذا المتجر؟', holdDeleteStore: 'اضغط مطولًا لحذف المتجر', removeAdminTitle: 'إزالة هذا المشرف؟', holdRemoveAdmin: 'اضغط مطولًا لإزالة المشرف' },
   admin: { deleteOwnerTitle: 'حذف صاحب المتجر هذا؟', holdDeleteOwner: 'اضغط مطولًا لحذف صاحب المتجر' },
+  products: { status: 'الحالة' },
 };

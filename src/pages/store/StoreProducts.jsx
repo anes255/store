@@ -6,6 +6,21 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList, Tag, Eye, EyeOff } from 'lucide-react';
 
+// Active / inactive switch for a product: green "Active" (shown on the
+// storefront) or grey "Inactive" (hidden, kept in the dashboard).
+function ActiveSwitch({ active, onToggle, t, compact = false }) {
+  return (
+    <button type="button" role="switch" aria-checked={active} onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      title={active ? t('products.deactivate', 'Deactivate') : t('products.activate', 'Activate')}
+      className={`inline-flex items-center gap-1.5 shrink-0 rounded-full pl-0.5 pr-2 py-0.5 text-[11px] font-bold transition-colors ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+      <span className={`relative w-8 h-[18px] rounded-full transition-colors ${active ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+        <span className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all ${active ? 'left-[16px]' : 'left-[2px]'}`} />
+      </span>
+      {!compact && (active ? t('products.active', 'Active') : t('products.inactive', 'Inactive'))}
+    </button>
+  );
+}
+
 export default function StoreProducts() {
   const { t } = useTranslation();
   const { currentStore } = useStoreManagement();
@@ -174,17 +189,18 @@ export default function StoreProducts() {
         <div className="glass-card-solid rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-              <tr><th className="p-3 w-8"></th><th className="p-3 text-left">{t('products.product','Product')}</th><th className="p-3 text-left">{t('products.price','Price')}</th><th className="p-3 text-left">{t('products.stock','Stock')}</th><th className="p-3 text-left">{t('products.variants','Variants')}</th><th className="p-3 text-right">{t('products.actions','Actions')}</th></tr>
+              <tr><th className="p-3 w-8"></th><th className="p-3 text-left">{t('products.product','Product')}</th><th className="p-3 text-left">{t('products.price','Price')}</th><th className="p-3 text-left">{t('products.stock','Stock')}</th><th className="p-3 text-left">{t('products.variants','Variants')}</th><th className="p-3 text-left">{t('products.status','Status')}</th><th className="p-3 text-right">{t('products.actions','Actions')}</th></tr>
             </thead>
             <tbody>
               {displayProducts.map(p=>{const thumb=getThumb(p);let vars=p.variants;if(typeof vars==='string')try{vars=JSON.parse(vars);}catch{vars=[];}const vc=Array.isArray(vars)?vars.length:0;return(
-                <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''} ${p.is_active===false?'opacity-60':''}`}>
+                <tr key={p.id} className={`border-t border-gray-100 hover:bg-gray-50 ${selectedItems.has(p.id)?'bg-brand-50/50':''}`}>
                   <td className="p-3"><button onClick={()=>toggleSelect(p.id)}>{selectedItems.has(p.id)?<CheckSquare size={16} className="text-brand-600"/>:<Square size={16} className="text-gray-400"/>}</button></td>
                   <td className="p-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">{thumb?<img src={thumb} className="w-full h-full object-cover"/>:<div className="flex items-center justify-center h-full"><Image size={14} className="text-gray-300"/></div>}</div><div className="min-w-0"><p className="font-semibold text-gray-800 truncate">{p.name_en||p.name}</p>{p.is_featured&&<span className="text-[9px] font-bold text-brand-600">{t('products.featured','FEATURED')}</span>}</div></div></td>
                   <td className="p-3 font-bold text-brand-600">{parseFloat(p.price).toLocaleString()} DZD</td>
                   <td className="p-3 text-gray-600">{p.stock_quantity||0}</td>
                   <td className="p-3"><span className="text-xs text-gray-400">{vc}</span></td>
-                  <td className="p-3"><div className="flex justify-end gap-1 items-center">{p.is_active===false&&<span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 mr-1">{t('products.inactive','Inactive')}</span>}<button onClick={()=>setActive(p.id,p.is_active===false)} className={`px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1 ${p.is_active===false?'text-emerald-600 hover:bg-emerald-50':'text-amber-600 hover:bg-amber-50'}`} title={p.is_active===false?t('products.activate','Activate'):t('products.deactivate','Deactivate')}>{p.is_active===false?<Eye size={13}/>:<EyeOff size={13}/>}<span className="hidden lg:inline">{p.is_active===false?t('products.activate','Activate'):t('products.deactivate','Deactivate')}</span></button><button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button><button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button></div></td>
+                  <td className="p-3"><ActiveSwitch active={p.is_active!==false} onToggle={()=>setActive(p.id,p.is_active===false)} t={t}/></td>
+                  <td className="p-3"><div className="flex justify-end gap-1 items-center"><button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button><button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button></div></td>
                 </tr>
               );})}
             </tbody>
@@ -196,7 +212,6 @@ export default function StoreProducts() {
             <div key={p.id} className={`glass-card-solid rounded-2xl overflow-hidden group hover:shadow-glass-lg transition-all ${selectedItems.has(p.id) ? 'ring-2 ring-brand-400' : ''}`}>
               <div className={`aspect-square bg-gray-100 relative overflow-hidden ${p.is_active===false?'grayscale opacity-70':''}`}>
                 {p.is_active===false&&<span className="absolute bottom-2 left-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-900/80 text-white">{t('products.inactive','Inactive')}</span>}
-                <button onClick={(e)=>{e.stopPropagation();setActive(p.id,p.is_active===false);}} className={`absolute bottom-2 right-2 z-10 px-2 py-1 rounded-lg shadow-md text-[11px] font-bold flex items-center gap-1 ${p.is_active===false?'bg-emerald-500 text-white':'bg-white text-amber-600'}`}>{p.is_active===false?<><Eye size={12}/>{t('products.activate','Activate')}</>:<><EyeOff size={12}/>{t('products.deactivate','Deactivate')}</>}</button>
                 {thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="flex items-center justify-center h-full"><Image size={32} className="text-gray-300"/></div>}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={()=>openEdit(p)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-gray-50"><Edit size={14}/></button>
@@ -216,6 +231,7 @@ export default function StoreProducts() {
                   <span className="text-xs text-gray-400">{t('products.stock','Stock')}: {p.stock_quantity||0}</span>
                 </div>
                 {vc>0&&<div className="flex items-center gap-1 mt-1.5">{vars.slice(0,4).map((v,i)=>v.type==='color'?<div key={i} className="w-4 h-4 rounded-full border border-gray-200" style={{backgroundColor:v.value}}/>:<span key={i} className="px-1.5 py-0.5 bg-gray-100 rounded text-[9px] font-bold text-gray-500">{v.name}</span>)}{vc>4&&<span className="text-[9px] text-gray-400">+{vc-4}</span>}</div>}
+                <div className="mt-2 pt-2 border-t border-gray-100"><ActiveSwitch active={p.is_active!==false} onToggle={()=>setActive(p.id,p.is_active===false)} t={t}/></div>
               </div>
             </div>
           );})}

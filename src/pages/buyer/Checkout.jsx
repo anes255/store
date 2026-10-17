@@ -47,9 +47,13 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const buyerTheme = useBuyerTheme();
   useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const isDark = buyerTheme.mode === 'dark';
+  // Preview mode (?preview=1): shown inside the checkout settings page. Uses a
+  // sample product instead of the cart, never places orders or saves carts,
+  // and applies the settings the owner is editing (sent by postMessage).
+  const previewMode = !isModal && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
   // "Buy Now" uses directItems; regular checkout uses the cart store.
-  const isBuyNow = !!directItems;
-  const [buyNowItems, setBuyNowItems] = useState(directItems || []);
+  const isBuyNow = !!directItems || previewMode;
+  const [buyNowItems, setBuyNowItems] = useState(directItems || (previewMode ? [{ product_id: 'preview', name: t('storePage.sampleProduct', 'Sample product'), price: 2500, quantity: 1, image: '' }] : []));
   const items = isBuyNow ? buyNowItems : cartStore.items;
   // The line's trash button: when an offer tier is selected it first undoes
   // that selection (back to a single unit, no offer) instead of deleting the
@@ -312,7 +316,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const [deliveryCompanies, setDeliveryCompanies] = useState([]);
   const [companiesLoaded, setCompaniesLoaded] = useState(false);
 
-  useEffect(() => { storeApi.getStore(storeSlug).then(r => { setStore(r.data); try { initPixels(r.data?.tracking_pixels); trackInitiateCheckout(r.data?.tracking_pixels, items, items.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0)); } catch {} }).catch(() => {}); }, [storeSlug]); // eslint-disable-line
+  useEffect(() => { storeApi.getStore(storeSlug).then(r => { setStore(r.data); if (previewMode) { try { window.parent.postMessage({ type: 'checkout-preview-ready' }, window.location.origin); } catch {} return; } try { initPixels(r.data?.tracking_pixels); trackInitiateCheckout(r.data?.tracking_pixels, items, items.reduce((s,i)=>s+Number(i.price||0)*Number(i.quantity||1),0)); } catch {} }).catch(() => {}); }, [storeSlug]); // eslint-disable-line
   // Load shipping wilayas for real pricing
   useEffect(() => {
     if (!storeSlug) return;
@@ -354,8 +358,22 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (code && !form.shipping_zip) setForm(prev => ({ ...prev, shipping_zip: code.padStart(2,'0') + '000' }));
   }, [form.shipping_wilaya, shippingWilayas]);
 
+  // Live settings from the checkout settings page (preview mode only): only
+  // keys the store already has are taken over, so nothing unrelated leaks in.
+  useEffect(() => {
+    if (!previewMode) return;
+    const onMsg = (e) => {
+      if (e.origin !== window.location.origin || e.data?.type !== 'checkout-preview' || !e.data.settings) return;
+      const next = e.data.settings;
+      setStore(prev => { if (!prev) return prev; const out = { ...prev }; Object.keys(next).forEach(k => { if (k in prev) out[k] = next[k]; }); return out; });
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [previewMode]);
+
   // Sync cart to backend for abandoned cart recovery (includes checkout form fields)
   useEffect(() => {
+    if (previewMode) return;
     if (!form.customer_phone || form.customer_phone.length < 8 || !items.length || !storeSlug) return;
     const timer = setTimeout(() => {
       const cartItems = items.map(i => ({ product_id: i.product_id || i.id, name: i.name || i.name_en, price: i.price, quantity: i.quantity, variant: i.variant || null }));
@@ -455,6 +473,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   };
 
   const placeOrder = async () => {
+    if (previewMode) return toast(t('storePage.previewNoOrder', 'Preview — no order is placed'), { icon: '👀' });
     // All boxes are required. Field-specific errors so the message matches the
     // actual missing field — buyer has to complete every input before checkout.
     if (!form.customer_name) return toast.error(t('checkout.errName', 'Please enter your name'));

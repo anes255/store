@@ -313,6 +313,42 @@ export default function CustomerProfile() {
   if (!profile) return null;
 
   // -- Render -----------------------------------------------------------------
+  // Password row + change-password form, shown both when viewing and when
+  // editing the profile.
+  const passwordSection = (
+                                        <div className="pt-2 border-t border-white/5">
+                      <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.password', 'Password')}</label>
+                      <div className="flex items-center gap-2">
+                        <Lock size={14} className="text-gray-500" />
+                        <span className="text-white tracking-widest">{'*'.repeat(10)}</span>
+                        <span className="text-[10px] text-gray-500 font-medium ml-1">{t('store.securelyHidden', 'Securely Hidden')}</span>
+                        <button type="button" onClick={() => setPwOpen(o => !o)} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90" style={{ backgroundColor: pc }}>
+                          {t('store.changePassword', 'Change password')}
+                        </button>
+                      </div>
+                      {pwOpen && (
+                        <div className="mt-4 space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                          {[
+                            ['current', t('store.currentPassword', 'Current password')],
+                            ['next', t('store.newPassword', 'New password')],
+                            ['confirm', t('auth.confirmPassword', 'Confirm password')],
+                          ].map(([k, label]) => (
+                            <div key={k}>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{label}</label>
+                              <PasswordInput className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2" value={pw[k]} onChange={e => setPw({ ...pw, [k]: e.target.value })} autoComplete={k === 'current' ? 'current-password' : 'new-password'} />
+                              {k === 'next' && <PasswordStrength password={pw.next} />}
+                              {k === 'confirm' && pw.confirm && pw.next !== pw.confirm && <p className="text-xs text-red-400 mt-1">{t('auth.passwordsDontMatch', 'Passwords do not match')}</p>}
+                            </div>
+                          ))}
+                          <div className="flex gap-2 pt-1">
+                            <button type="button" onClick={() => { setPwOpen(false); setPw({ current: '', next: '', confirm: '' }); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-white/10 hover:bg-white/15">{t('store.cancel', 'Cancel')}</button>
+                            <button type="button" onClick={changePassword} disabled={pwSaving} className="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-60" style={{ backgroundColor: pc }}>{pwSaving ? t('store.saving', 'Saving...') : t('store.savePassword', 'Save password')}</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+  );
+
   return (
     <div className="min-h-screen" style={{ fontFamily: store?.header_font || 'Arial, sans-serif', background: store?.config?.profile_bg_color || storeCanvas(store, store?.primary_color)}}>
 
@@ -569,38 +605,7 @@ export default function CustomerProfile() {
                         </p>
                       </div>
                     )}
-                    {/* Password (decorative) */}
-                    <div className="pt-2 border-t border-white/5">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.3em] block mb-2" style={{ color: pc + 'bb' }}>{t('store.password', 'Password')}</label>
-                      <div className="flex items-center gap-2">
-                        <Lock size={14} className="text-gray-500" />
-                        <span className="text-white tracking-widest">{'*'.repeat(10)}</span>
-                        <span className="text-[10px] text-gray-500 font-medium ml-1">{t('store.securelyHidden', 'Securely Hidden')}</span>
-                        <button type="button" onClick={() => setPwOpen(o => !o)} className="ml-auto px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90" style={{ backgroundColor: pc }}>
-                          {t('store.changePassword', 'Change password')}
-                        </button>
-                      </div>
-                      {pwOpen && (
-                        <div className="mt-4 space-y-3 p-4 rounded-xl bg-white/5 border border-white/10">
-                          {[
-                            ['current', t('store.currentPassword', 'Current password')],
-                            ['next', t('store.newPassword', 'New password')],
-                            ['confirm', t('auth.confirmPassword', 'Confirm password')],
-                          ].map(([k, label]) => (
-                            <div key={k}>
-                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{label}</label>
-                              <PasswordInput className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2" value={pw[k]} onChange={e => setPw({ ...pw, [k]: e.target.value })} autoComplete={k === 'current' ? 'current-password' : 'new-password'} />
-                              {k === 'next' && <PasswordStrength password={pw.next} />}
-                              {k === 'confirm' && pw.confirm && pw.next !== pw.confirm && <p className="text-xs text-red-400 mt-1">{t('auth.passwordsDontMatch', 'Passwords do not match')}</p>}
-                            </div>
-                          ))}
-                          <div className="flex gap-2 pt-1">
-                            <button type="button" onClick={() => { setPwOpen(false); setPw({ current: '', next: '', confirm: '' }); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-300 bg-white/10 hover:bg-white/15">{t('store.cancel', 'Cancel')}</button>
-                            <button type="button" onClick={changePassword} disabled={pwSaving} className="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-60" style={{ backgroundColor: pc }}>{pwSaving ? t('store.saving', 'Saving...') : t('store.savePassword', 'Save password')}</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {passwordSection}
                   </div>
                 ) : (
                   /* Edit mode */
@@ -698,6 +703,7 @@ export default function CustomerProfile() {
                         </select>
                       </div>
                     </div>
+                    {passwordSection}
                     <button
                       onClick={saveProfile}
                       disabled={saving}
@@ -1099,7 +1105,7 @@ export default function CustomerProfile() {
       </div>
 
       {trackOrder && <TrackingModal order={trackOrder} onClose={() => setTrackOrder(null)} pc={pc} />}
-      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} dark/>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/>
     </div>
   );
 }

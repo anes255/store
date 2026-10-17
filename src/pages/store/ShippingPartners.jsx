@@ -62,6 +62,29 @@ const PRESETS=[
   {name:'FedEx',logo:'F',color:'from-purple-600 to-indigo-600',api_base_url:'https://apis.fedex.com',api_auth_type:'oauth2',api_tracking_endpoint:'/track/v1/trackingnumbers',api_status_path:'output.completeTrackResults.0.trackResults.0.latestStatusDetail.description',headers:[],query_params:[],oauth2_token_url:'https://apis.fedex.com/oauth/token',headers_oauth2:['client_id','client_secret'],help:'developer.fedex.com → My Projects → copy client_id and client_secret (system fetches the OAuth token automatically)',verified:true,method:'POST',body_template:'{"trackingInfo":[{"trackingNumberInfo":{"trackingNumber":"{tracking_number}"}}],"includeDetailedScans":false}'},
   {name:'UPS',logo:'U',color:'from-amber-700 to-yellow-700',api_base_url:'https://onlinetools.ups.com/api',api_auth_type:'oauth2',api_tracking_endpoint:'/track/v1/details/{tracking_number}',api_status_path:'trackResponse.shipment.0.package.0.activity.0.status.description',headers:[],query_params:[],oauth2_token_url:'https://onlinetools.ups.com/security/v1/oauth/token',headers_oauth2:['client_id','client_secret'],help:'developer.ups.com → Apps → copy Client ID and Client Secret (OAuth handled automatically)',verified:true},
   {name:'Boxy DZ',logo:'B',color:'from-lime-500 to-green-600',api_base_url:'',api_auth_type:'bearer',api_tracking_endpoint:'',api_status_path:'',headers:[],query_params:[],help:'Boxy DZ has no documented public API — keep MANUAL or paste tracking URL',verified:false,manual_only:true},
+  // ─── More EcoTrack-based companies ──────────────────────────────────────
+  // All of these run on the EcoTrack platform (each has its own
+  // <name>.ecotrack.dz address), so they share EcoTrack's configuration:
+  // one Bearer token, create orders, track, labels, returns. If a company's
+  // address differs or changes, the owner edits "Company platform URL".
+  ...[
+    ['48HR Courrier Express','48hr','from-red-600 to-gray-900'],
+    ['Zimou Express','zimou','from-rose-500 to-red-600'],
+    ['Speed Mail+','speedmail','from-violet-600 to-amber-400'],
+    ['Yalitec','yalitec','from-orange-500 to-blue-500'],
+    ['WeCan Services','wecan','from-red-700 to-gray-900'],
+    ['RJ360 Express','rj360','from-blue-800 to-orange-500'],
+    ['E-Com Delivery','ecomdelivery','from-red-500 to-gray-900'],
+    ['Easy & Speed','easyspeed','from-blue-700 to-yellow-400'],
+    ['MSM Go','msmgo','from-yellow-400 to-red-600'],
+    ['World Express','worldexpress','from-blue-700 to-red-500'],
+    ['Swift Express','swift','from-red-600 to-red-500'],
+  ].map(([name,sub,color])=>({name,logo:name[0],color,ecotrack:true,
+    api_base_url:`https://${sub}.ecotrack.dz/api/v1`,api_auth_type:'bearer',
+    api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',
+    headers:[],query_params:[],verified:true,
+    help:`${name} runs on EcoTrack (${sub}.ecotrack.dz) → API → copy your Bearer token. Supports create orders, track, labels, returns. If the company gave you a different platform address, change "Company platform URL" below.`,
+    create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',create_body_template:''})),
 ];
 
 const EMPTY={name:'',base_rate:'',phone:'',logo:'',tracking_url:'',api_base_url:'',api_auth_type:'none',api_key:'',api_headers:{},api_query_params:{},api_tracking_endpoint:'',api_status_path:'',api_method:'GET',api_body_template:'',oauth2_token_url:'',oauth2_credentials:{},api_create_endpoint:'',api_create_method:'POST',api_create_body_template:'',api_create_tracking_path:'',use_api:false};
@@ -399,8 +422,8 @@ export default function ShippingPartners(){
         <div className="space-y-2 mb-4">
           {PRESETS.map(p=>(
             <button key={p.name} onClick={()=>pickPreset(p)} className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-brand-400 text-left flex items-center gap-4 transition-all">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white font-bold text-lg shrink-0`}>{p.logo}</div>
-              <div className="flex-1"><p className="font-bold text-gray-900">{p.name}</p><p className="text-xs text-gray-400">{t('storePage.preConfigured','Pre-configured — just paste credentials')}</p></div>
+              <CarrierLogo name={p.name} className="w-12 h-12 rounded-xl text-lg"/>
+              <div className="flex-1 min-w-0"><p className="font-bold text-gray-900">{p.name}</p><p className="text-xs text-gray-400">{p.ecotrack?t('storePage.ecotrackBased','EcoTrack platform — just paste your token'):t('storePage.preConfigured','Pre-configured — just paste credentials')}</p></div>
               <Wifi size={16} className="text-emerald-500 shrink-0"/>
             </button>
           ))}
@@ -468,6 +491,9 @@ export default function ShippingPartners(){
           {/* API Credentials — simplified view: only show what user needs to paste */}
           {form.use_api&&(<div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-3">
             <p className="text-sm font-bold text-emerald-800 flex items-center gap-2"><Zap size={14}/>{t('storePage.apiCredentials','API Credentials')}</p>
+
+            {/* Companies sometimes move to a new address — the owner can fix it here */}
+            <div><label className="text-xs font-bold text-emerald-700">{t('storePage.platformUrl','Company platform URL')}</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>{setForm({...form,api_base_url:e.target.value});setTestResult(null);}} placeholder="https://company.ecotrack.dz/api/v1"/><p className="text-[10px] text-emerald-700 mt-1">{t('storePage.platformUrlHint','Change it if the company moved to a new address.')}</p></div>
 
             {form.api_auth_type==='bearer'&&(
               <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/><p className="text-[10px] text-emerald-700 mt-1">Sent as: Authorization: Bearer &lt;token&gt;</p></div>
@@ -561,9 +587,9 @@ export default function ShippingPartners(){
             )}
           </div>)}
 
-          {!form.use_api&&(
-            <div><label className="input-label">{t('storePage.trackingUrlOptional','Tracking URL (optional)')}</label><input className="input-field text-sm" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://company.com/track/{tracking_number}"/><p className="text-[10px] text-gray-400 mt-1">Use {'{tracking_number}'} as placeholder</p></div>
-          )}
+          {/* The company's public tracking website — linked from orders and the
+              buyer's tracking page. Editable because companies change URLs. */}
+          <div><label className="input-label">{t('storePage.trackingWebsite','Tracking website URL')}</label><input className="input-field text-sm font-mono" value={form.tracking_url} onChange={e=>setForm({...form,tracking_url:e.target.value})} placeholder="https://company.com/track/{tracking_number}"/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.trackingWebsiteHint','The page where a parcel can be followed. Use {tracking_number} where the number goes.')}</p></div>
 
           {/* Advanced toggle — hidden by default */}
           <details className="border-t pt-3">
