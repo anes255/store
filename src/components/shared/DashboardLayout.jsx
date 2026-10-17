@@ -2,6 +2,7 @@ import React,{useState,useEffect,useRef} from'react';import{createPortal}from're
 import CommandPalette from './CommandPalette';
 import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
+import{deletionDaysLeft}from'../../utils/storeDeletion';
 
 // Map sidebar item IDs to the feature_key that gates them. If a plan doesn't
 // include the key the sidebar item renders with a lock icon + muted styling,
@@ -744,6 +745,11 @@ export default function DashboardLayout({children}){
         </div>
         </div>
       </header>
+      {currentStore?.deletion_scheduled_at&&!user?.is_staff&&(()=>{const left=deletionDaysLeft(currentStore.deletion_scheduled_at)??0;return(
+        <Link to="/dashboard/settings" className="flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold bg-red-600 text-white hover:bg-red-700">
+          <span>{t('storePage.deletionBanner','This store will be permanently deleted in {{n}} days.',{n:left})}</span>
+          <span className="underline font-bold">{t('storePage.cancelDeletion','Cancel deletion')}</span>
+        </Link>);})()}
       <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`} style={theme.backgroundColor?{background:theme.backgroundColor}:undefined}>
         {isStaffBlocked(location.pathname)?(
           <div className={`max-w-md mx-auto mt-16 p-8 rounded-3xl text-center ${isDark?'bg-gray-900 border border-gray-800':'bg-white border border-gray-100 shadow-md'}`}>

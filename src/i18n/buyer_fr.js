@@ -68,6 +68,11 @@ export default {
     noSettingMatch: 'Aucun réglage trouvé', sectionsHidden: '{{n}} masquées', keepStore: 'Garder cette boutique', holdDeleteStore: 'Maintenir pour supprimer « {{name}} »',
     keepHolding: 'Maintenez…', deleting: 'Suppression…', releaseToCancel: 'Relâchez avant la fin pour annuler', typeNameFirst: 'Tapez le nom de la boutique pour déverrouiller',
     releasedNothing: 'Relâché — rien n’a été supprimé',
+    deleteStoreCooldownDesc: 'Programme la suppression définitive de la boutique avec tous ses produits, commandes, clients et réglages dans {{n}} jours. Vous pouvez annuler à tout moment d’ici là.',
+    scheduling: 'Programmation…', deletionScheduled: 'Boutique programmée pour suppression', deletionScheduledToast: 'Boutique programmée pour suppression dans {{n}} jours',
+    deletionScheduledDesc: '« {{name}} » et tous ses produits, commandes et clients seront définitivement supprimés le {{date}}. La boutique reste en ligne jusque-là.',
+    dayLeft: 'jour restant', daysLeft: 'jours restants', cancelDeletion: 'Annuler la suppression', deletionCancelled: 'Suppression annulée — votre boutique est en sécurité',
+    deletionBanner: 'Cette boutique sera définitivement supprimée dans {{n}} jours.',
   },
   sidebar: {
     cmdPlaceholder: 'Aller à une page ou lancer une commande…', cmdEmpty: 'Aucun résultat', cmdEmptyHint: 'Essayez moins de lettres — ex. « cmd » pour Commandes.',

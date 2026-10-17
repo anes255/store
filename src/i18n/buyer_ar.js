@@ -68,6 +68,11 @@ export default {
     noSettingMatch: 'لا يوجد إعداد مطابق', sectionsHidden: '{{n}} مخفية', keepStore: 'الاحتفاظ بهذا المتجر', holdDeleteStore: 'اضغط مطولًا لحذف «{{name}}»',
     keepHolding: 'واصل الضغط…', deleting: 'جارٍ الحذف…', releaseToCancel: 'ارفع إصبعك قبل الانتهاء للإلغاء', typeNameFirst: 'اكتب اسم المتجر أعلاه لفتح القفل',
     releasedNothing: 'تم الإفلات — لم يُحذف شيء',
+    deleteStoreCooldownDesc: 'يجدول الحذف النهائي للمتجر مع جميع منتجاته وطلباته وعملائه وإعداداته بعد {{n}} يومًا. يمكنك الإلغاء في أي وقت قبل ذلك.',
+    scheduling: 'جارٍ الجدولة…', deletionScheduled: 'المتجر مجدول للحذف', deletionScheduledToast: 'تمت جدولة حذف المتجر بعد {{n}} يومًا',
+    deletionScheduledDesc: 'سيتم حذف «{{name}}» مع جميع منتجاته وطلباته وعملائه نهائيًا في {{date}}. يبقى المتجر متاحًا حتى ذلك الحين.',
+    dayLeft: 'يوم متبقٍ', daysLeft: 'أيام متبقية', cancelDeletion: 'إلغاء الحذف', deletionCancelled: 'تم إلغاء الحذف — متجرك في أمان',
+    deletionBanner: 'سيتم حذف هذا المتجر نهائيًا بعد {{n}} يومًا.',
   },
   sidebar: {
     cmdPlaceholder: 'انتقل إلى صفحة أو نفّذ أمرًا…', cmdEmpty: 'لا توجد نتائج', cmdEmptyHint: 'جرّب أحرفًا أقل.',

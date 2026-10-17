@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion as SMotion, AnimatePresence as SAnimatePresence } from 'framer-motion';
 import { fuzzyScore } from '../../components/shared/CommandPalette';
 import HoldToConfirm from '../../components/shared/HoldToConfirm';
+import { DELETION_COOLDOWN_DAYS, deletionDaysLeft } from '../../utils/storeDeletion';
 import PasswordInput from '../../components/shared/PasswordInput';
 import { useTranslation } from 'react-i18next';
 import { ownerApi, aiApi, publicRoleTemplatesApi } from '../../utils/api';
@@ -996,7 +997,7 @@ export default function StoreSettings(){
 <div className="glass-card-solid p-4 sm:p-6 space-y-4"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center"><Globe size={20} className="text-cyan-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.regionalSettings','Regional Settings')}</h3><p className="text-xs text-gray-400">{t('storePage.currencyLanguage','CURRENCY & LANGUAGE')}</p></div></div><div><label className="input-label text-xs uppercase tracking-wider">{t('storePage.storeCurrency','Store Currency')}</label><select className="input-field" value={s.currency||'DZD'} onChange={set('currency')}><option value="DZD">{t('storePage.currencyDzd','DZD - Algerian Dinar')}</option><option value="EUR">{t('storePage.currencyEur','EUR - Euro')}</option><option value="USD">{t('storePage.currencyUsd','USD - Dollar')}</option></select></div><div><label className="input-label text-xs uppercase tracking-wider">{t('storePage.defaultLanguage','Default Language')}</label><div className="grid grid-cols-3 gap-2 sm:gap-3 mt-2">{[{c:'ar',l:'العربية',f:'🇩🇿'},{c:'fr',l:'Français',f:'🇫🇷'},{c:'en',l:'English',f:'🇬🇧'}].map(x=>(<button key={x.c} onClick={()=>setV('default_language',x.c)} className={`p-3 rounded-xl border-2 text-center transition-all ${(s.default_language||'en')===x.c?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300'}`}><span className="text-2xl block mb-1">{x.f}</span><span className="text-xs font-semibold">{x.l}</span>{(s.default_language||'en')===x.c&&<Check size={14} className="text-brand-500 mx-auto mt-1"/>}</button>))}</div></div></div>
 </div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center"><BarChart3 size={20} className="text-purple-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.seo','SEO')}</h3><p className="text-xs text-gray-400">{t('storePage.seoDesc','IMPROVE VISIBILITY ON GOOGLE')}</p></div></div><div><label className="input-label text-xs">{t('storePage.homepageTitle','Homepage Title')}</label><input className="input-field" value={s.meta_title||''} onChange={set('meta_title')}/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.charsMax70','70 chars max')}</p></div><div><label className="input-label text-xs">{t('storePage.metaDescription','Meta Description')}</label><textarea className="input-field" rows={3} value={s.meta_description||''} onChange={set('meta_description')}/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.charsMax160','160 chars max')}</p></div></div>
-<DeleteStoreCard store={currentStore} t={t}/>
+<DeleteStoreCard store={currentStore} t={t} onChange={patch=>setCurrentStore({...currentStore,...patch})}/>
 </>}
 
 {sec==='customization'&&<>
@@ -1616,33 +1617,75 @@ export default function StoreSettings(){
 
 // ── Danger zone: delete this store ─────────────────────────────────────────
 // Requires typing the exact store name; the server re-checks it.
-function DeleteStoreCard({ store, t }) {
+function DeleteStoreCard({ store, t, onChange }) {
   const [open, setOpen] = React.useState(false);
   const [typed, setTyped] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   if (!store?.id) return null;
   const name = String(store.name || store.store_name || '').trim();
   const ok = typed.trim() === name && name.length > 0;
+  const scheduledAt = store.deletion_scheduled_at;
+  // Deleting only schedules the store; the backend purges it after the cooldown.
   const doDelete = async () => {
     if (!ok) return;
     setBusy(true);
     try {
-      await ownerApi.deleteStore(store.id, typed.trim());
-      ['currentStore', 'currentStoreId', 'currentStoreSlug'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
-      toast.success(t('storePage.storeDeleted', 'Store deleted'));
-      window.location.href = '/dashboard';
+      const { data } = await ownerApi.deleteStore(store.id, typed.trim());
+      onChange?.({ deletion_scheduled_at: data?.deletion_scheduled_at || new Date(Date.now() + DELETION_COOLDOWN_DAYS * 86400000).toISOString() });
+      toast.success(t('storePage.deletionScheduledToast', 'Store scheduled for deletion in {{n}} days', { n: DELETION_COOLDOWN_DAYS }));
+      setOpen(false); setTyped('');
     } catch (e) {
       toast.error(e?.response?.data?.error || t('storePage.failed', 'Failed'));
-      setBusy(false);
     }
+    setBusy(false);
   };
+  const cancelDeletion = async () => {
+    setBusy(true);
+    try {
+      await ownerApi.cancelStoreDeletion(store.id);
+      onChange?.({ deletion_scheduled_at: null });
+      toast.success(t('storePage.deletionCancelled', 'Deletion cancelled — your store is safe'));
+    } catch (e) {
+      toast.error(e?.response?.data?.error || t('storePage.failed', 'Failed'));
+    }
+    setBusy(false);
+  };
+  if (scheduledAt) {
+    const left = deletionDaysLeft(scheduledAt) ?? 0;
+    const elapsed = DELETION_COOLDOWN_DAYS - left;
+    const date = new Date(scheduledAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    return (
+      <div className="glass-card-solid p-4 sm:p-6 mt-6 border-2 border-red-300">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0"><Clock size={20} className="text-red-500"/></div>
+          <div>
+            <h3 className="font-bold text-red-600">{t('storePage.deletionScheduled', 'Store scheduled for deletion')}</h3>
+            <p className="text-xs text-gray-500">{t('storePage.deletionScheduledDesc', '“{{name}}” and all its products, orders and customers will be permanently deleted on {{date}}. The store stays online until then.', { name, date })}</p>
+          </div>
+        </div>
+        <div className="flex items-end gap-3">
+          <span className="text-6xl font-black leading-none text-red-600 tabular-nums">{left}</span>
+          <span className="text-sm font-bold text-gray-500 pb-1">{left === 1 ? t('storePage.dayLeft', 'day left') : t('storePage.daysLeft', 'days left')}</span>
+        </div>
+        {/* one pip per cooldown day; days already gone are dimmed */}
+        <div className="flex gap-1 mt-4" aria-hidden="true">
+          {Array.from({ length: DELETION_COOLDOWN_DAYS }, (_, i) => (
+            <span key={i} className={`h-2 flex-1 rounded-full ${i < elapsed ? 'bg-gray-200' : 'bg-red-500'}`}/>
+          ))}
+        </div>
+        <button type="button" onClick={cancelDeletion} disabled={busy} className="mt-5 w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 disabled:opacity-60 flex items-center justify-center gap-2">
+          {busy ? <RefreshCw size={16} className="animate-spin"/> : <Check size={16}/>}{t('storePage.cancelDeletion', 'Cancel deletion')}
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="glass-card-solid p-4 sm:p-6 mt-6 border border-red-200">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0"><Trash2 size={20} className="text-red-500"/></div>
         <div>
           <h3 className="font-bold text-red-600">{t('storePage.deleteStore', 'Delete this store')}</h3>
-          <p className="text-xs text-gray-500">{t('storePage.deleteStoreDesc', 'Permanently removes the store with all its products, orders, customers and settings. This cannot be undone.')}</p>
+          <p className="text-xs text-gray-500">{t('storePage.deleteStoreCooldownDesc', 'Schedules the store with all its products, orders, customers and settings for permanent deletion in {{n}} days. You can cancel at any time before then.', { n: DELETION_COOLDOWN_DAYS })}</p>
         </div>
       </div>
       {!open ? (
@@ -1659,7 +1702,7 @@ function DeleteStoreCard({ store, t }) {
             <button type="button" onClick={() => { setOpen(false); setTyped(''); }} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold">{t('storePage.keepStore', 'Keep this store')}</button>
             <HoldToConfirm onConfirm={doDelete} disabled={!ok || busy}
               label={t('storePage.holdDeleteStore', 'Hold to delete “{{name}}”', { name })}
-              holdingLabel={t('storePage.keepHolding', 'Keep holding…')} doneLabel={t('storePage.deleting', 'Deleting…')}
+              holdingLabel={t('storePage.keepHolding', 'Keep holding…')} doneLabel={t('storePage.scheduling', 'Scheduling…')}
               hint={ok ? t('storePage.releaseToCancel', 'Release early to cancel') : t('storePage.typeNameFirst', 'Type the store name above to unlock')}
               releasedLabel={t('storePage.releasedNothing', 'Released — nothing was deleted')} />
           </div>

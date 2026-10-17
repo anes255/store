@@ -127,6 +127,7 @@ export const ownerApi = {
   createStore: (data) => api.post('/owner/stores', data),
   // Permanently deletes a store. The server checks confirm_name === store name.
   deleteStore: (storeId, confirm_name) => api.delete(`/owner/stores/${storeId}`, { data: { confirm_name } }).then(r => { invalidateCache('owner:stores'); invalidateCache('store'); invalidateCache('dash'); return r; }),
+  cancelStoreDeletion: (storeId) => api.post(`/owner/stores/${storeId}/cancel-deletion`).then(r => { invalidateCache('owner:stores'); invalidateCache('store'); return r; }),
   getDashboard: (storeId) => cachedGet(`dash:${storeId}`, () => api.get(`/owner/stores/${storeId}/dashboard`)),
   updateStore: (storeId, data) => api.put(`/owner/stores/${storeId}`, data).then(r => { invalidateCache('store'); invalidateCache('dash'); invalidateCache('owner:stores'); return r; }),
   getStaff: (storeId) => api.get(`/owner/stores/${storeId}/staff`),
