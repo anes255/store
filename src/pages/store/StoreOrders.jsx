@@ -9,6 +9,7 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
 import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer } from 'lucide-react';
+import useStaffAccess from '../../hooks/useStaffAccess';
 
 // All columns available to toggle / reorder.
 const ALL_COLUMNS = [
@@ -99,6 +100,12 @@ function copy(text) { try { navigator.clipboard.writeText(text); toast.success('
 
 export default function StoreOrders() {
   const { t } = useTranslation();
+  // Staff: only the actions their store admin allowed (server enforces it too).
+  const { can, canAny, isStaff } = useStaffAccess();
+  const canStatus = canAny('orders_edit', 'orders_confirm', 'orders_prepare');
+  const canEdit = can('orders_edit');
+  const canDelete = can('orders_delete');
+  const canDispatch = canAny('orders_edit', 'orders_prepare');
   // Resolve status label via translation key, falling back to the hardcoded English label
   const sl = (sc) => sc?.tKey ? t(sc.tKey, sc.label) : (sc?.label || '');
   const { currentStore } = useStoreManagement();
@@ -960,9 +967,9 @@ export default function StoreOrders() {
           <button onClick={() => exportCsv(filteredOrders)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <Download size={13}/>{t('orders.export','Export')}
           </button>
-          <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+          {(!isStaff || can('staff_manage')) && <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <BarChart3 size={13}/>{t('orders.adminStats','Admin Stats')}
-          </button>
+          </button>}
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Order row size">
             {[['compact','S'],['normal','M'],['large','L']].map(([k,lbl]) => (
               <button key={k} onClick={() => setDensity(k)}
@@ -984,9 +991,9 @@ export default function StoreOrders() {
             toggleColumn={toggleColumn}
             moveColumn={moveColumn}
           />}
-          <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
+          {canEdit && <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
             <Plus size={13}/>{t('orders.createOrder','Create Order')}
-          </button>
+          </button>}
         </div>
         </div>
       </div>
@@ -1118,21 +1125,21 @@ export default function StoreOrders() {
           <span className="text-xs sm:text-sm font-bold shrink-0">{selectedItems.size} sel.</span>
           <div className="w-px h-5 bg-gray-600 shrink-0"/>
           {/* Bulk status change */}
-          <div className="shrink-0">
+          {canStatus && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='status'?null:'status')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
-          </div>
+          </div>}
           {/* On the Preparing page only Status + Print are allowed */}
           {!isPreparingPage && (<>
           {/* Bulk financial status change */}
-          <div className="shrink-0">
+          {canEdit && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='payment'?null:'payment')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">Payment</span> <ChevronDown size={10}/></button>
-          </div>
+          </div>}
           {/* Auto transfer – uses each order's preferred delivery company */}
-          <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>
+          {canDispatch && <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>}
           {/* Bulk transfer to delivery company */}
-          <div className="shrink-0">
+          {canDispatch && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='carrier'?null:'carrier')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
-          </div>
+          </div>}
           <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
           </>)}
           <div className="flex items-center rounded-lg bg-blue-600 shrink-0 overflow-hidden">
@@ -1147,7 +1154,7 @@ export default function StoreOrders() {
               {[1,2,3,4].map(n => <option key={n} value={n} className="bg-white text-gray-800">{n}/{t('orders.perPageShort','page')}</option>)}
             </select>
           </div>
-          {!isPreparingPage && (
+          {!isPreparingPage && canDelete && (
           <button onClick={() => setDeleteConfirm({ ids: Array.from(selectedItems) })} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold shrink-0"><Trash2 size={12}/><span className="hidden sm:inline">{t('common.delete','Delete')}</span></button>
           )}
           <button onClick={clearSelection} className="p-1.5 hover:bg-gray-700 rounded-lg shrink-0"><X size={14}/></button>
@@ -1408,7 +1415,7 @@ export default function StoreOrders() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              {canStatus && <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(isPreparingPage ? ['ready','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
@@ -1422,7 +1429,7 @@ export default function StoreOrders() {
                     );
                   })}
                 </div>
-              </div>
+              </div>}
             </div>
             </>
             ); })()}

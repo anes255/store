@@ -37,3 +37,22 @@ export const ALL_PERMISSIONS = [
 ];
 
 export const PERM_GROUPS = [...new Set(ALL_PERMISSIONS.map(p => p.group))];
+
+// Old role templates used different keys — map them onto the current ones
+// (same table as the server's middleware/staffAccess.js).
+const ALIASES = {
+  view_dashboard: ['dashboard_view'], view_orders: ['orders_view'],
+  manage_orders: ['orders_view', 'orders_edit', 'orders_confirm', 'orders_prepare'],
+  view_products: ['products_view'], manage_products: ['products_view', 'products_edit', 'stock_manage'],
+  view_customers: ['customers_view'], manage_customers: ['customers_view', 'customers_edit'],
+  view_analytics: ['analytics_view', 'dashboard_view'], manage_settings: ['settings_view', 'settings_edit'],
+  manage_staff: ['staff_manage'], confirm_orders: ['orders_confirm'], prepare_orders: ['orders_prepare'],
+};
+export function normalizePerms(raw) {
+  let p = raw;
+  if (typeof p === 'string') { try { p = JSON.parse(p || '[]'); } catch { p = []; } }
+  if (!Array.isArray(p)) p = [];
+  const out = new Set();
+  for (const k of p) { out.add(k); (ALIASES[k] || []).forEach((x) => out.add(x)); }
+  return out;
+}

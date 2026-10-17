@@ -5,6 +5,7 @@ import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit, Trash2, X, Package, Image, Upload, Palette, Sparkles, CheckSquare, Square, Download, LayoutGrid, LayoutList, Tag, Eye, EyeOff } from 'lucide-react';
+import useStaffAccess from '../../hooks/useStaffAccess';
 
 // Active / inactive switch for a product: green "Active" (shown on the
 // storefront) or grey "Inactive" (hidden, kept in the dashboard).
@@ -23,6 +24,10 @@ function ActiveSwitch({ active, onToggle, t, compact = false }) {
 
 export default function StoreProducts() {
   const { t } = useTranslation();
+  // Staff: only the product actions their store admin allowed.
+  const { can } = useStaffAccess();
+  const canEdit = can('products_edit');
+  const canDelete = can('products_delete');
   const { currentStore } = useStoreManagement();
   const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -162,7 +167,7 @@ export default function StoreProducts() {
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="page-header">{t('sidebar.products')}</h1>
-        <button onClick={()=>{setEditing(null);setForm({...empty});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('products.addProduct')}</button>
+        {canEdit&&<button onClick={()=>{setEditing(null);setForm({...empty});setShowModal(true);}} className="btn-primary flex items-center gap-2 text-sm"><Plus size={16}/>{t('products.addProduct')}</button>}
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
         <button onClick={toggleAll} className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0" title={selectedItems.size === products.length ? t('products.deselectAll','Deselect All') : t('products.selectAll','Select All')}>
@@ -184,7 +189,7 @@ export default function StoreProducts() {
       {(()=>{const displayProducts = filterCategory ? products.filter(p => String(p.category_id||'') === String(filterCategory)) : products; return (
       <>
       {displayProducts.length===0?(
-        <div className="flex flex-col items-center py-20 glass-card-solid"><Package size={48} className="text-gray-300 mb-4"/><p className="text-gray-500 mb-4">{t('products.noProducts')}</p><button onClick={()=>{setForm({...empty});setShowModal(true);}} className="btn-primary text-sm"><Plus size={16} className="mr-1 inline"/>{t('products.addProduct')}</button></div>
+        <div className="flex flex-col items-center py-20 glass-card-solid"><Package size={48} className="text-gray-300 mb-4"/><p className="text-gray-500 mb-4">{t('products.noProducts')}</p>{canEdit&&<button onClick={()=>{setForm({...empty});setShowModal(true);}} className="btn-primary text-sm"><Plus size={16} className="mr-1 inline"/>{t('products.addProduct')}</button>}</div>
       ):viewMode==='list'?(
         <div className="glass-card-solid rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
@@ -199,8 +204,8 @@ export default function StoreProducts() {
                   <td className="p-3 font-bold text-brand-600">{parseFloat(p.price).toLocaleString()} DZD</td>
                   <td className="p-3 text-gray-600">{p.stock_quantity||0}</td>
                   <td className="p-3"><span className="text-xs text-gray-400">{vc}</span></td>
-                  <td className="p-3"><ActiveSwitch active={p.is_active!==false} onToggle={()=>setActive(p.id,p.is_active===false)} t={t}/></td>
-                  <td className="p-3"><div className="flex justify-end gap-1 items-center"><button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button><button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button></div></td>
+                  <td className="p-3">{canEdit?<ActiveSwitch active={p.is_active!==false} onToggle={()=>setActive(p.id,p.is_active===false)} t={t}/>:<span className={`text-[11px] font-bold ${p.is_active!==false?'text-emerald-600':'text-gray-400'}`}>{p.is_active!==false?t('products.active','Active'):t('products.inactive','Inactive')}</span>}</td>
+                  <td className="p-3"><div className="flex justify-end gap-1 items-center">{canEdit&&<button onClick={()=>openEdit(p)} className="p-1.5 hover:bg-gray-100 rounded"><Edit size={14}/></button>}{canDelete&&<button onClick={()=>handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded text-red-500"><Trash2 size={14}/></button>}</div></td>
                 </tr>
               );})}
             </tbody>
@@ -214,8 +219,8 @@ export default function StoreProducts() {
                 {p.is_active===false&&<span className="absolute bottom-2 left-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-900/80 text-white">{t('products.inactive','Inactive')}</span>}
                 {thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="flex items-center justify-center h-full"><Image size={32} className="text-gray-300"/></div>}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={()=>openEdit(p)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-gray-50"><Edit size={14}/></button>
-                  <button onClick={()=>handleDelete(p.id)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-red-50 text-red-500"><Trash2 size={14}/></button>
+                  {canEdit&&<button onClick={()=>openEdit(p)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-gray-50"><Edit size={14}/></button>}
+                  {canDelete&&<button onClick={()=>handleDelete(p.id)} className="p-1.5 bg-white rounded-lg shadow-md hover:bg-red-50 text-red-500"><Trash2 size={14}/></button>}
                 </div>
                 {/* Selection checkbox */}
                 <button onClick={(e)=>{e.stopPropagation();toggleSelect(p.id);}} className="absolute top-2 left-2 z-10">
@@ -231,7 +236,7 @@ export default function StoreProducts() {
                   <span className="text-xs text-gray-400">{t('products.stock','Stock')}: {p.stock_quantity||0}</span>
                 </div>
                 {vc>0&&<div className="flex items-center gap-1 mt-1.5">{vars.slice(0,4).map((v,i)=>v.type==='color'?<div key={i} className="w-4 h-4 rounded-full border border-gray-200" style={{backgroundColor:v.value}}/>:<span key={i} className="px-1.5 py-0.5 bg-gray-100 rounded text-[9px] font-bold text-gray-500">{v.name}</span>)}{vc>4&&<span className="text-[9px] text-gray-400">+{vc-4}</span>}</div>}
-                <div className="mt-2 pt-2 border-t border-gray-100"><ActiveSwitch active={p.is_active!==false} onToggle={()=>setActive(p.id,p.is_active===false)} t={t}/></div>
+                {canEdit&&<div className="mt-2 pt-2 border-t border-gray-100"><ActiveSwitch active={p.is_active!==false} onToggle={()=>setActive(p.id,p.is_active===false)} t={t}/></div>}
               </div>
             </div>
           );})}
@@ -248,11 +253,11 @@ export default function StoreProducts() {
           <button onClick={() => { const selectedData = products.filter(p => selectedItems.has(p.id)); const csv = ['Name,Price,Stock,SKU', ...selectedData.map(p => `"${p.name_en||p.name}",${p.price},${p.stock_quantity||0},"${p.sku||''}"`)].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'products-export.csv'; a.click(); URL.revokeObjectURL(url); toast.success(t('products.exportedCount',`Exported ${selectedItems.size} products`,{count:selectedItems.size})); }} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">
             <Download size={13} />{t('products.exportSelected','Export Selected')}
           </button>
-          <button onClick={async () => { if(!confirm(t('products.deleteSelectedConfirm',`Delete ${selectedItems.size} selected products?`,{count:selectedItems.size}))) return; for (const id of selectedItems) { try { await productApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadProducts(); toast.success(t('products.deletedSelected','Deleted selected products')); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
+          {canDelete&&<button onClick={async () => { if(!confirm(t('products.deleteSelectedConfirm',`Delete ${selectedItems.size} selected products?`,{count:selectedItems.size}))) return; for (const id of selectedItems) { try { await productApi.delete(currentStore.id, id); } catch {} } clearSelection(); loadProducts(); toast.success(t('products.deletedSelected','Deleted selected products')); }} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition-colors">
             <Trash2 size={13} />{t('products.deleteSelected','Delete Selected')}
-          </button>
-          <button onClick={async () => { await setActive(Array.from(selectedItems), true); clearSelection(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors"><Eye size={13}/>{t('products.activate','Activate')}</button>
-          <button onClick={async () => { await setActive(Array.from(selectedItems), false); clearSelection(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors"><EyeOff size={13}/>{t('products.deactivate','Deactivate')}</button>
+          </button>}
+          {canEdit&&<button onClick={async () => { await setActive(Array.from(selectedItems), true); clearSelection(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold transition-colors"><Eye size={13}/>{t('products.activate','Activate')}</button>}
+          {canEdit&&<button onClick={async () => { await setActive(Array.from(selectedItems), false); clearSelection(); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold transition-colors"><EyeOff size={13}/>{t('products.deactivate','Deactivate')}</button>}
           <button onClick={clearSelection} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-700 rounded-lg text-xs transition-colors">
             <X size={14} />
           </button>

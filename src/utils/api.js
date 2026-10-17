@@ -19,6 +19,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A staff account that was disabled by the store admin: sign out now.
+    if (error?.response?.data?.code === 'STAFF_DISABLED') {
+      ['user', 'token', 'role', 'currentStoreId', 'currentStoreSlug', 'currentStore'].forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+      if (!/\/login/.test(window.location.pathname)) window.location.href = '/login?disabled=1';
+    }
+    // The server refused because of the staff member's role: say so clearly
+    // (pages often only show a generic "Failed").
+    if (error?.response?.status === 403 && error?.response?.data?.missing_permission) {
+      import('react-hot-toast').then(({ default: toast }) => toast.error(error.response.data.error || 'Your role does not allow this action.', { id: 'perm-denied' })).catch(() => {});
+    }
     return Promise.reject(error);
   }
 );

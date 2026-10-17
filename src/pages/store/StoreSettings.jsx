@@ -1,3 +1,4 @@
+import useStaffAccess from '../../hooks/useStaffAccess';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion as SMotion, AnimatePresence as SAnimatePresence } from 'framer-motion';
 import { fuzzyScore } from '../../components/shared/CommandPalette';
@@ -496,6 +497,8 @@ function UsersActivityLog({ storeId, isDark, t }) {
 
 export default function StoreSettings(){
   const{t}=useTranslation();const{currentStore,setCurrentStore,stores:adminStores}=useStoreManagement();const{user,logout}=useAuthStore();
+  // Staff without "Edit Store Settings" can look but not save.
+  const canEditSettings=useStaffAccess().can('settings_edit');
   const[isMobile,setIsMobile]=useState(typeof window!=='undefined'&&window.innerWidth<1024);
   useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
   const[s,setSRaw]=useState({});const[dirty,setDirty]=useState(false);const setS=(v)=>{setDirty(true);setSRaw(v);};
@@ -579,6 +582,7 @@ export default function StoreSettings(){
   const loadProfile=async()=>{try{const{data}=await ownerApi.getProfile();setProfile(data);setNewUsername(data.username||'');setNewEmail(data.email||'');}catch(e){}};
   const discard=()=>{if(currentStore){setSRaw({...currentStore,theme:currentStore.theme||'classic'});}setDirty(false);};
   const save=async()=>{
+    if(!canEditSettings){toast.error(t('storePage.viewOnlySettings','Your role can view settings but not change them.'));return;}
     setDirty(false);
     // Optimistic save: reflect the change and confirm instantly, persist in the
     // background, and only surface an error (reverting) if the server rejects it.
@@ -704,7 +708,7 @@ export default function StoreSettings(){
   return(<DashboardLayout>
     {/* Unsaved changes: a bar slides up until they are saved or discarded. */}
     <SAnimatePresence>
-      {dirty&&(
+      {dirty&&canEditSettings&&(
         <SMotion.div key="unsaved" initial={{y:90,x:'-50%',opacity:0}} animate={{y:0,x:'-50%',opacity:1}} exit={{y:90,x:'-50%',opacity:0}} transition={{type:'spring',stiffness:380,damping:30}}
           className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-lg flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl bg-gray-900 text-white shadow-2xl">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"/>
@@ -766,7 +770,7 @@ export default function StoreSettings(){
 <div className="glass-card-solid p-4 sm:p-6 space-y-4"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center"><Globe size={20} className="text-cyan-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.regionalSettings','Regional Settings')}</h3><p className="text-xs text-gray-400">{t('storePage.currencyLanguage','CURRENCY & LANGUAGE')}</p></div></div><div><label className="input-label text-xs uppercase tracking-wider">{t('storePage.storeCurrency','Store Currency')}</label><select className="input-field" value={s.currency||'DZD'} onChange={set('currency')}><option value="DZD">{t('storePage.currencyDzd','DZD - Algerian Dinar')}</option><option value="EUR">{t('storePage.currencyEur','EUR - Euro')}</option><option value="USD">{t('storePage.currencyUsd','USD - Dollar')}</option></select></div><div><label className="input-label text-xs uppercase tracking-wider">{t('storePage.defaultLanguage','Default Language')}</label><div className="grid grid-cols-3 gap-2 sm:gap-3 mt-2">{[{c:'ar',l:'العربية',f:'🇩🇿'},{c:'fr',l:'Français',f:'🇫🇷'},{c:'en',l:'English',f:'🇬🇧'}].map(x=>(<button key={x.c} onClick={()=>setV('default_language',x.c)} className={`p-3 rounded-xl border-2 text-center transition-all ${(s.default_language||'en')===x.c?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300'}`}><span className="text-2xl block mb-1">{x.f}</span><span className="text-xs font-semibold">{x.l}</span>{(s.default_language||'en')===x.c&&<Check size={14} className="text-brand-500 mx-auto mt-1"/>}</button>))}</div></div></div>
 </div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center"><BarChart3 size={20} className="text-purple-500"/></div><div><h3 className="font-bold text-gray-900">{t('storePage.seo','SEO')}</h3><p className="text-xs text-gray-400">{t('storePage.seoDesc','IMPROVE VISIBILITY ON GOOGLE')}</p></div></div><div><label className="input-label text-xs">{t('storePage.homepageTitle','Homepage Title')}</label><input className="input-field" value={s.meta_title||''} onChange={set('meta_title')}/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.charsMax70','70 chars max')}</p></div><div><label className="input-label text-xs">{t('storePage.metaDescription','Meta Description')}</label><textarea className="input-field" rows={3} value={s.meta_description||''} onChange={set('meta_description')}/><p className="text-[10px] text-gray-400 mt-1">{t('storePage.charsMax160','160 chars max')}</p></div></div>
-<DeleteStoreCard store={currentStore} t={t} onChange={patch=>setCurrentStore({...currentStore,...patch})}/>
+{!user?.is_staff&&<DeleteStoreCard store={currentStore} t={t} onChange={patch=>setCurrentStore({...currentStore,...patch})}/>}
 </>}
 
 {sec==='customization'&&<>

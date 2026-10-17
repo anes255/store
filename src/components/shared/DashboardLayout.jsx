@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 import CommandPalette from './CommandPalette';
 import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
@@ -18,10 +18,10 @@ const FEATURE_GATE_MAP = {
 // Used to hide/disable items for team members based on the permissions their
 // store admin granted them. Owners (is_staff=false) bypass this entirely.
 const PERM_GATE_MAP = {
-  '/dashboard': 'dashboard_view',
+  '/dashboard': ['dashboard_view','analytics_view','orders_view','products_view','customers_view','finances_view'],
   '/dashboard/analytics': 'analytics_view',
   '/dashboard/orders': 'orders_view',
-  '/dashboard/abandoned': 'orders_view',
+  '/dashboard/abandoned': ['abandoned_view','orders_view'],
   '/dashboard/preparing': 'orders_prepare',
   '/dashboard/orders-archive': 'orders_view',
   '/dashboard/products': 'products_view',
@@ -30,21 +30,30 @@ const PERM_GATE_MAP = {
   '/dashboard/ai-intelligence': 'analytics_view',
   '/dashboard/settings': 'settings_view',
   '/dashboard/contact': 'settings_view',
-  '/dashboard/faqs': 'settings_edit',
-  '/dashboard/about': 'settings_edit',
-  '/dashboard/shipping-partners': 'shipping_manage',
+  '/dashboard/faqs': ['faqs_manage','content_manage','settings_edit'],
+  '/dashboard/about': ['about_manage','content_manage','settings_edit'],
+  '/dashboard/shipping-partners': 'shipping_partners',
   '/dashboard/shipping-wilayas': 'shipping_manage',
-  '/dashboard/how-to-connect': 'shipping_manage',
-  '/dashboard/tracking-orders': 'orders_view',
+  '/dashboard/how-to-connect': ['shipping_partners','shipping_manage'],
+  '/dashboard/tracking-orders': ['tracking_view','orders_view'],
   '/dashboard/customers': 'customers_view',
   '/dashboard/blacklist': 'customers_blacklist',
   '/dashboard/auto-blacklist': 'customers_blacklist',
   '/dashboard/costs': 'finances_view',
   '/dashboard/taxes': 'taxes_view',
-  '/dashboard/billing': 'settings_edit',
-  '/dashboard/apps': 'settings_view',
+  '/dashboard/billing': 'billing_view',
+  '/dashboard/apps': ['apps_view','settings_view'],
   '/dashboard/staff': 'staff_manage',
   '/dashboard/domains': 'domains_manage',
+  '/dashboard/landing-pages': 'builder_edit',
+  '/dashboard/offers': 'offers_manage',
+  '/dashboard/order-tracking': ['tracking_view','orders_view'],
+  '/dashboard/status-management': 'settings_edit',
+  '/dashboard/form-settings': 'settings_edit',
+  '/dashboard/store-settings': 'settings_edit',
+  '/dashboard/logo': 'settings_edit',
+  '/dashboard/themes': 'settings_edit',
+  '/dashboard/tracking-pixels': 'settings_edit',
 };
 
 // LiveBadge — shows the live "● Live" pill plus a count of buyers currently
@@ -455,17 +464,14 @@ export default function DashboardLayout({children}){
   // ===== Staff permission gating =====
   // When the logged-in user is a team member (is_staff=true), restrict sidebar
   // items to the permissions their store admin granted. Owners see everything.
-  const staffPerms = React.useMemo(() => {
-    if (!user?.is_staff) return null; // null = owner, show everything
-    let p = user.permissions;
-    if (typeof p === 'string') { try { p = JSON.parse(p); } catch { p = []; } }
-    return Array.isArray(p) ? p : [];
-  }, [user]);
+  // Live permissions for the selected store (refreshed from the server, so
+  // changes by the admin apply without logging out). null = owner.
+  const staffPerms = useStaffAccess().perms;
   const hasStaffPerm=(path)=>{
     if(!staffPerms)return true;
     const need=PERM_GATE_MAP[path];
     if(!need)return true; // unmapped routes default visible
-    return staffPerms.includes(need);
+    return (Array.isArray(need)?need:[need]).some(k=>staffPerms.has(k));
   };
   const isStaffBlocked=(path)=>!!staffPerms&&!hasStaffPerm(path);
 

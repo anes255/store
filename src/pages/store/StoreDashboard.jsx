@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import api, { ownerApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
+import useStaffAccess from '../../hooks/useStaffAccess';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import toast from 'react-hot-toast';
 import {
@@ -87,6 +88,14 @@ export default function StoreDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [products, setProducts] = useState([]);
+  // Staff only see the figures and sections their permissions cover (the
+  // server also leaves the rest out of the dashboard data).
+  const { can, canAny } = useStaffAccess();
+  const showOrders = can('orders_view');
+  const showMoney = can('finances_view');
+  const showProducts = canAny('products_view', 'products_edit', 'stock_manage');
+  const showCustomers = can('customers_view');
+  const showVisits = canAny('analytics_view', 'dashboard_view');
 
   useEffect(() => {
     const loadStores = async () => {
@@ -112,9 +121,10 @@ export default function StoreDashboard() {
   useEffect(() => {
     if (currentStore?.id) {
       ownerApi.getDashboard(currentStore.id).then(r => setDashboard(r.data)).catch(() => {});
-      api.get(`/manage/stores/${currentStore.id}/products`).then(r => setProducts(r.data?.products || r.data || [])).catch(() => {});
+      if (showProducts) api.get(`/manage/stores/${currentStore.id}/products`).then(r => setProducts(r.data?.products || r.data || [])).catch(() => {});
+      else setProducts([]);
     }
-  }, [currentStore?.id]);
+  }, [currentStore?.id, showProducts]);
 
   if (loading) return <DashboardLayout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-3 border-brand-200 border-t-brand-500 rounded-full animate-spin" /></div></DashboardLayout>;
 
@@ -159,11 +169,18 @@ export default function StoreDashboard() {
   const statCards = [
     // No visit history is stored yet, so this card carries no delta rather than
     // an invented one.
-    { icon: Eye, label: t('dashboard.storeVisits'), value: stats.storeVisits?.toLocaleString() || '0', color: 'from-blue-500 to-cyan-500', change: null },
-    { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${t('storePage.dzd','DZD')}`, color: 'from-emerald-500 to-teal-500', change: pctChange('revenue') },
-    { icon: ShoppingCart, label: t('dashboard.totalOrders'), value: stats.totalOrders || 0, color: 'from-purple-500 to-pink-500', change: pctChange('orders') },
-    { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${t('storePage.dzd','DZD')}`, color: 'from-amber-500 to-orange-500', change: pctChange('avgOrderValue') },
-  ];
+    showVisits && { icon: Eye, label: t('dashboard.storeVisits'), value: stats.storeVisits?.toLocaleString() || '0', color: 'from-blue-500 to-cyan-500', change: null },
+    showMoney && { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${t('storePage.dzd','DZD')}`, color: 'from-emerald-500 to-teal-500', change: pctChange('revenue') },
+    showOrders && { icon: ShoppingCart, label: t('dashboard.totalOrders'), value: stats.totalOrders || 0, color: 'from-purple-500 to-pink-500', change: pctChange('orders') },
+    showMoney && { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${t('storePage.dzd','DZD')}`, color: 'from-amber-500 to-orange-500', change: pctChange('avgOrderValue') },
+    showProducts && !showMoney && { icon: Package, label: t('storePage.products', 'Products'), value: stats.totalProducts || products.length || 0, color: 'from-orange-500 to-amber-500', change: null },
+  ].filter(Boolean);
+  const quickActions = [
+    can('products_edit') && { label: t('dashboard.addProduct'), icon: Plus, path: '/dashboard/products', color: 'bg-blue-500' },
+    showOrders && { label: t('dashboard.viewOrders'), icon: ShoppingCart, path: '/dashboard/orders', color: 'bg-purple-500' },
+    showCustomers && { label: t('dashboard.customers'), icon: Eye, path: '/dashboard/customers', color: 'bg-emerald-500' },
+    can('settings_view') && { label: t('dashboard.settings'), icon: Sparkles, path: '/dashboard/settings', color: 'bg-orange-500' },
+  ].filter(Boolean);
 
   return (
     <DashboardLayout>
@@ -208,13 +225,8 @@ export default function StoreDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: t('dashboard.addProduct'), icon: Plus, path: '/dashboard/products', color: 'bg-blue-500' },
-          { label: t('dashboard.viewOrders'), icon: ShoppingCart, path: '/dashboard/orders', color: 'bg-purple-500' },
-          { label: t('dashboard.customers'), icon: Eye, path: '/dashboard/customers', color: 'bg-emerald-500' },
-          { label: t('dashboard.settings'), icon: Sparkles, path: '/dashboard/settings', color: 'bg-orange-500' },
-        ].map((action, i) => {
+      {quickActions.length > 0 && <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {quickActions.map((action, i) => {
           const Icon = action.icon;
           return (
             <Link key={i} to={action.path} className={`${action.color} rounded-2xl p-5 text-white hover:opacity-90 transition-all group shadow-lg`}>
@@ -223,10 +235,10 @@ export default function StoreDashboard() {
             </Link>
           );
         })}
-      </div>
+      </div>}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {statCards.length > 0 && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -246,11 +258,11 @@ export default function StoreDashboard() {
             </div>
           );
         })}
-      </div>
+      </div>}
 
       {/* Charts + Products */}
-      <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 glass-card-solid p-6">
+      {(showOrders || showMoney) && <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className={`${showOrders ? 'lg:col-span-2' : 'lg:col-span-3'} glass-card-solid p-6`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900">{t('dashboard.salesOverview')}</h3>
             <span className="text-xs text-gray-400">{t('storePage.last7DaysPerformance', 'Last 7 days performance')}</span>
@@ -275,14 +287,14 @@ export default function StoreDashboard() {
                 <XAxis dataKey="date" tickFormatter={v => {try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}}} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${t('storePage.dzd','DZD')}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]} />
-                <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" name="revenue" />
-                <Area type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} fill="url(#colorOrd)" name="orders" />
+                {showMoney && <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" name="revenue" />}
+                {showOrders && <Area type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} fill="url(#colorOrd)" name="orders" />}
               </AreaChart>
             </ResponsiveContainer>);
           })()}
         </div>
 
-        <div className="glass-card-solid p-6">
+        {showOrders && <div className="glass-card-solid p-6">
           <h3 className="font-bold text-gray-900 mb-4">{t('dashboard.orderStatus')}</h3>
           <div className="space-y-3">
             {(() => {
@@ -312,12 +324,12 @@ export default function StoreDashboard() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </div>}
+      </div>}
 
       {/* Products + Recent Orders */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="glass-card-solid p-6">
+      {(showProducts || showOrders) && <div className={`grid gap-6 ${showProducts && showOrders ? 'lg:grid-cols-2' : ''}`}>
+        {showProducts && <div className="glass-card-solid p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center"><Package size={20} className="text-orange-500" /></div>
@@ -342,9 +354,9 @@ export default function StoreDashboard() {
           ) : (
             <p className="text-sm text-gray-400">{t('dashboard.noProducts','No products yet')}</p>
           )}
-        </div>
+        </div>}
 
-        <div className="glass-card-solid p-6">
+        {showOrders && <div className="glass-card-solid p-6">
           <h3 className="font-bold text-gray-900 mb-4">{t('dashboard.recentOrders')}</h3>
           {dashboard?.recentOrders?.length > 0 ? (
             <div className="space-y-2">
@@ -354,16 +366,16 @@ export default function StoreDashboard() {
                     {o.first_image ? <img src={o.first_image} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 flex-shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0"><Package size={16} className="text-gray-400"/></div>}
                     <div className="min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{o.order_number}</p><p className="text-xs text-gray-400 truncate">{o.customer_name}{o.items?.length>1?` · +${o.items.length-1} more`:''}</p></div>
                   </div>
-                  <div className="text-right flex-shrink-0"><p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} {t('storePage.dzd','DZD')}</p><span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
+                  <div className="text-right flex-shrink-0">{showMoney && o.total != null && <p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} {t('storePage.dzd','DZD')}</p>}<span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
                 </div>
               ))}
             </div>
           ) : <p className="text-sm text-gray-400">{t('storePage.noOrdersYet', 'No orders yet')}</p>}
-        </div>
-      </div>
+        </div>}
+      </div>}
 
       {/* Top Products */}
-      {products.length > 0 && (
+      {showProducts && products.length > 0 && (
         <div className="mb-8 mt-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900 text-lg">{t('dashboard.topProducts', 'Top Products')}</h3>
