@@ -284,6 +284,7 @@ export const storeApi = {
   updateCustomerProfile: (slug, data) => api.put(`/store/${slug}/customers/profile`, data),
   changeCustomerPassword: (slug, data) => api.put(`/store/${slug}/customers/password`, data),
   deleteCustomerAccount: (slug) => api.delete(`/store/${slug}/customers/profile`),
+  cancelCustomerDeletion: (slug) => api.post(`/store/${slug}/customers/profile/cancel-deletion`),
   placeOrder: (slug, data) => api.post(`/store/${slug}/orders`, data),
   cancelOrder: (slug, orderId) => api.post(`/store/${slug}/orders/${orderId}/cancel`),
   deleteOrder: (slug, orderId) => api.delete(`/store/${slug}/orders/${orderId}`),

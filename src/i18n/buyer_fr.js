@@ -16,6 +16,7 @@ export default {
     securelyHidden: 'Masqué en toute sécurité', changePassword: 'Changer le mot de passe', currentPassword: 'Mot de passe actuel', newPassword: 'Nouveau mot de passe',
     cancel: 'Annuler', saving: 'Enregistrement...', savePassword: 'Enregistrer le mot de passe', newPhotoSelected: 'Nouvelle photo sélectionnée - enregistrez pour appliquer',
     fullName: 'Nom complet', email: 'E-mail', wilaya: 'Wilaya', city: 'Daïra / Commune', selectCity: 'Choisissez votre commune…', saveChanges: 'Enregistrer',
+    accountDeletionScheduled: 'Votre compte sera supprimé dans {{n}} jours. Reconnectez-vous d’ici là pour le garder.', deletionCancelledOnLogin: 'Bon retour ! La suppression de votre compte a été annulée.', deletionCancelled: 'Suppression du compte annulée', deletionScheduledOn: 'Votre compte sera supprimé le {{date}}.', cancelDeletion: 'Annuler la suppression', deleteAccountCooldownWarning: 'Votre compte sera définitivement supprimé dans {{n}} jours. Reconnectez-vous d’ici là pour annuler. La boutique conserve vos commandes passées.',
     dangerZone: 'Zone de danger', deleteAccount: 'Supprimer mon compte', deleteAccountWarning: 'Êtes-vous sûr ? Cette action est définitive et irréversible. Toutes vos données seront supprimées.',
     deleting: 'Suppression...', confirmDelete: 'Oui, supprimer', orderHistory: 'Historique des commandes', trackYourOrders: 'Suivez et gérez vos commandes',
     noOrdersYet: 'Aucune commande pour le moment', track: 'Suivre', view: 'Voir', myCart: 'Mon panier', reviewItems: 'Vérifiez les articles sélectionnés',

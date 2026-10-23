@@ -271,17 +271,32 @@ export default function CustomerProfile() {
     setSaving(false);
   };
 
+  // Deleting only schedules it: the account is removed after a cooldown, and
+  // signing in again (or the cancel button below) keeps it.
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      await storeApi.deleteCustomerAccount(storeSlug);
-      toast.success(t('store.accountDeleted', 'Account deleted'));
+      const { data } = await storeApi.deleteCustomerAccount(storeSlug);
+      toast.success(t('store.accountDeletionScheduled', 'Your account will be deleted in {{n}} days. Sign in again before then to keep it.', { n: data?.cooldown_days || 14 }), { duration: 7000 });
       logout();
       navigate(`/s/${storeSlug}`);
     } catch (e) {
       toast.error(e.response?.data?.error || t('store.deleteFailed', 'Failed to delete account'));
     }
     setDeleting(false);
+  };
+
+  const [cancellingDeletion, setCancellingDeletion] = useState(false);
+  const handleCancelDeletion = async () => {
+    setCancellingDeletion(true);
+    try {
+      await storeApi.cancelCustomerDeletion(storeSlug);
+      setProfile(p => ({ ...p, deletion_scheduled_at: null }));
+      toast.success(t('store.deletionCancelled', 'Account deletion cancelled'));
+    } catch (e) {
+      toast.error(e.response?.data?.error || t('store.updateFailed', 'Failed to update'));
+    }
+    setCancellingDeletion(false);
   };
 
   const handleRemoveCartItem = (index) => {
@@ -722,7 +737,20 @@ export default function CustomerProfile() {
                   <AlertTriangle size={12} className="text-red-400" />
                   {t('store.dangerZone', 'Danger Zone')}
                 </p>
-                {!showDeleteConfirm ? (
+                {profile?.deletion_scheduled_at ? (
+                  <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 space-y-3">
+                    <p className="text-sm text-red-300 font-semibold">
+                      {t('store.deletionScheduledOn', 'Your account is scheduled for deletion on {{date}}.', { date: new Date(profile.deletion_scheduled_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) })}
+                    </p>
+                    <button
+                      onClick={handleCancelDeletion}
+                      disabled={cancellingDeletion}
+                      className="px-4 py-2.5 rounded-xl bg-white text-gray-900 font-bold text-sm hover:bg-gray-100 transition-colors disabled:opacity-60"
+                    >
+                      {t('store.cancelDeletion', 'Cancel deletion')}
+                    </button>
+                  </div>
+                ) : !showDeleteConfirm ? (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 font-bold text-sm hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
@@ -731,7 +759,7 @@ export default function CustomerProfile() {
                   </button>
                 ) : (
                   <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 space-y-3">
-                    <p className="text-sm text-red-300 font-semibold">{t('store.deleteAccountWarning', 'Are you sure? This action is permanent and cannot be undone. All your data will be removed.')}</p>
+                    <p className="text-sm text-red-300 font-semibold">{t('store.deleteAccountCooldownWarning', 'Your account will be permanently deleted in {{n}} days. Sign in again before then to cancel. The store keeps your past orders.', { n: 14 })}</p>
                     {/* Safe choice first and prominent; deleting needs a deliberate hold. */}
                     <div className="flex flex-wrap items-start gap-3">
                       <button

@@ -55,7 +55,7 @@ export default function CustomerAuth() {
       if (mode === 'login') {
         const { data } = await storeApi.loginCustomer(storeSlug, { phone: form.phone, password: form.password });
         setAuth(data.customer, data.token, 'customer');
-        toast.success(t('store.welcomeBackShort','Welcome back!'));
+        toast.success(data.deletion_cancelled ? t('store.deletionCancelledOnLogin','Welcome back! Your account deletion was cancelled.') : t('store.welcomeBackShort','Welcome back!'));
         navigate(`/s/${storeSlug}`);
       } else {
         if (!form.name || !form.phone || !form.password) { toast.error(t('store.namePhonePasswordRequired','Name, phone, and password required')); setLoading(false); return; }

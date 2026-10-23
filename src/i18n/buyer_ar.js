@@ -16,6 +16,7 @@ export default {
     securelyHidden: 'مخفية بأمان', changePassword: 'تغيير كلمة المرور', currentPassword: 'كلمة المرور الحالية', newPassword: 'كلمة المرور الجديدة',
     cancel: 'إلغاء', saving: 'جارٍ الحفظ...', savePassword: 'حفظ كلمة المرور', newPhotoSelected: 'تم اختيار صورة جديدة - احفظ لتطبيقها',
     fullName: 'الاسم الكامل', email: 'البريد الإلكتروني', wilaya: 'الولاية', city: 'الدائرة / البلدية', selectCity: 'اختر بلديتك…', saveChanges: 'حفظ التغييرات',
+    accountDeletionScheduled: 'سيتم حذف حسابك بعد {{n}} يومًا. سجّل الدخول مجددًا قبل ذلك للاحتفاظ به.', deletionCancelledOnLogin: 'مرحبًا بعودتك! تم إلغاء حذف حسابك.', deletionCancelled: 'تم إلغاء حذف الحساب', deletionScheduledOn: 'سيتم حذف حسابك بتاريخ {{date}}.', cancelDeletion: 'إلغاء الحذف', deleteAccountCooldownWarning: 'سيتم حذف حسابك نهائيًا بعد {{n}} يومًا. سجّل الدخول مجددًا قبل ذلك للإلغاء. يحتفظ المتجر بطلباتك السابقة.',
     dangerZone: 'منطقة الخطر', deleteAccount: 'حذف حسابي', deleteAccountWarning: 'هل أنت متأكد؟ هذا الإجراء نهائي ولا يمكن التراجع عنه. سيتم حذف جميع بياناتك.',
     deleting: 'جارٍ الحذف...', confirmDelete: 'نعم، احذف', orderHistory: 'سجل الطلبات', trackYourOrders: 'تتبّع طلباتك وأدِرها',
     noOrdersYet: 'لا توجد طلبات بعد', track: 'تتبّع', view: 'عرض', myCart: 'سلتي', reviewItems: 'راجع المنتجات المختارة',
