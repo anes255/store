@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, CornerDownLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Fuzzy score: every query letter must appear in order ("stg" → "SeTtinGs").
 // Consecutive letters and letters that start a word score higher; returns
@@ -37,6 +38,7 @@ const pushRecent = (id) => { if (id === 'logout') return; try { localStorage.set
 // Ctrl/⌘ + K palette. `commands`: [{ id, label, group, icon, hint, run(), children: [...] }]
 // A command with `children` opens a nested list (Esc or Backspace on an empty box goes back).
 export default function CommandPalette({ open, onClose, commands = [], isDark = false, placeholder = 'Type a command or search…', emptyText = 'No results', emptyHint = 'Try fewer letters — e.g. “ord” for Orders.', recentLabel = 'Recent' }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [stack, setStack] = useState([]); // nested command trail
   const [active, setActive] = useState(0);
@@ -131,7 +133,7 @@ export default function CommandPalette({ open, onClose, commands = [], isDark = 
               })}
             </div>
             <div className={`hidden sm:flex items-center gap-4 px-4 py-2 border-t text-[10px] text-gray-400 ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-              <span>↑↓ navigate</span><span>↵ open</span><span>⌫ back</span><span className="ml-auto">Ctrl K</span>
+              <span>↑↓ {t('cmd.navigate', 'navigate')}</span><span>↵ {t('cmd.open', 'open')}</span><span>⌫ {t('cmd.back', 'back')}</span><span className="ml-auto">Ctrl K</span>
             </div>
           </motion.div>
         </motion.div>

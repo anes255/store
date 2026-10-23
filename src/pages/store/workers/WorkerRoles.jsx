@@ -31,7 +31,7 @@ export default function WorkerRoles() {
       const { data } = await workersApi.roles(sid); setRoles(data.roles || []);
       const pick = keep ? data.roles.find((r) => String(r.id) === String(keep)) : data.roles[0];
       if (pick) { setSel(pick); setDraft({ name: pick.name, description: pick.description || '', permissions: pick.permissions || [] }); }
-    } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); }
+    } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
   };
   useEffect(() => { if (sid) { load(); workersApi.jobTypes(sid).then((r) => setJobs(r.data.job_types || [])).catch(() => {}); } }, [sid]); // eslint-disable-line
 
@@ -42,12 +42,12 @@ export default function WorkerRoles() {
     try {
       if (sel?.new) { const { data } = await workersApi.createRole(sid, draft); toast.success(t('workers.roleCreated', 'Role created')); await load(data.role.id); }
       else { const { data } = await workersApi.updateRole(sid, sel.id, { ...draft, apply_to_workers: applyAll }); toast.success(applyAll && data.workers_updated ? t('workers.roleSavedN', 'Role saved — {{n}} worker(s) updated', { n: data.workers_updated }) : t('workers.saved', 'Saved')); await load(sel.id); }
-    } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); }
+    } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
     setSaving(false);
   };
   const del = async () => {
     if (!(await dangerConfirm({ title: t('workers.deleteRoleTitle', 'Delete this role?'), description: t('workers.deleteRoleDesc', 'Workers keep their current permissions. A role still used by workers cannot be deleted.'), holdLabel: t('workers.holdDeleteRole', 'Hold to delete role'), cancelLabel: t('workers.keepRole', 'Keep role') }))) return;
-    try { await workersApi.removeRole(sid, sel.id); toast.success(t('workers.deleted', 'Deleted')); setSel(null); await load(); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); }
+    try { await workersApi.removeRole(sid, sel.id); toast.success(t('workers.deleted', 'Deleted')); setSel(null); await load(); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
   };
   const shown = (roles || []).filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
   const notAllowed = ALL_PERMISSIONS.filter((p) => !(draft?.permissions || []).includes(p.key)).slice(0, 8);
@@ -69,7 +69,7 @@ export default function WorkerRoles() {
               {canManage && !j.is_default && <button onClick={async () => { try { await workersApi.removeJobType(sid, j.id); setJobs(jobs.filter((x) => x.id !== j.id)); } catch {} }} className="p-0.5 rounded-full hover:bg-gray-200 text-gray-400"><X size={13} /></button>}
             </span>))}</div>
           {canManage && <div className="flex gap-2"><input className="input-field text-sm" value={newJob} onChange={(e) => setNewJob(e.target.value)} placeholder={t('workers.customJob', 'Custom job…')} />
-            <button className="btn-primary text-sm shrink-0" disabled={!newJob.trim()} onClick={async () => { try { const { data } = await workersApi.addJobType(sid, newJob.trim()); setJobs((js) => js.some((x) => x.id === data.job_type.id) ? js : [...js, data.job_type]); setNewJob(''); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); } }}>{t('workers.add', 'Add')}</button></div>}
+            <button className="btn-primary text-sm shrink-0" disabled={!newJob.trim()} onClick={async () => { try { const { data } = await workersApi.addJobType(sid, newJob.trim()); setJobs((js) => js.some((x) => x.id === data.job_type.id) ? js : [...js, data.job_type]); setNewJob(''); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } }}>{t('workers.add', 'Add')}</button></div>}
         </div>
       ) : !roles ? <Skeleton className="h-96" /> : (
         <div className="grid lg:grid-cols-[320px_1fr] gap-4">

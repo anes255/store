@@ -142,7 +142,7 @@ export default function AddWorkerWizard({ open, onClose, onCreated }) {
         <button className="btn-secondary text-sm flex items-center justify-center gap-2" onClick={() => copy(loginText)}><Copy size={14} />{t('workers.copyLogin', 'Copy login information')}</button>
         {done.invite_link
           ? <button className="btn-secondary text-sm flex items-center justify-center gap-2" onClick={() => copy(done.invite_link)}><Link2 size={14} />{t('workers.copyInvite', 'Copy invitation link')}</button>
-          : <button className="btn-secondary text-sm flex items-center justify-center gap-2" onClick={async () => { try { const { data } = await workersApi.invite(sid, done.worker.id); copy(data.link); toast.success(data.sent?.length ? t('workers.inviteSent', 'Invitation sent') : t('workers.linkCopied', 'Link copied')); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); } }}><Send size={14} />{t('workers.sendInvite', 'Send invitation')}</button>}
+          : <button className="btn-secondary text-sm flex items-center justify-center gap-2" onClick={async () => { try { const { data } = await workersApi.invite(sid, done.worker.id); copy(data.link); toast.success(data.sent?.length ? t('workers.inviteSent', 'Invitation sent') : t('workers.linkCopied', 'Link copied')); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } }}><Send size={14} />{t('workers.sendInvite', 'Send invitation')}</button>}
       </div>
     </Sheet>
   );
@@ -235,7 +235,7 @@ export default function AddWorkerWizard({ open, onClose, onCreated }) {
           </div>
           <div className="flex gap-2">
             <input className="input-field text-sm" value={newJob} onChange={(e) => setNewJob(e.target.value)} placeholder={t('workers.customJob', 'Custom job…')} />
-            <button type="button" className="btn-secondary text-sm shrink-0" disabled={!newJob.trim()} onClick={async () => { try { const { data } = await workersApi.addJobType(sid, newJob.trim()); setJobs((js) => js.some((x) => x.id === data.job_type.id) ? js : [...js, data.job_type]); set({ job_type: data.job_type.name }); setNewJob(''); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); } }}>{t('workers.add', 'Add')}</button>
+            <button type="button" className="btn-secondary text-sm shrink-0" disabled={!newJob.trim()} onClick={async () => { try { const { data } = await workersApi.addJobType(sid, newJob.trim()); setJobs((js) => js.some((x) => x.id === data.job_type.id) ? js : [...js, data.job_type]); set({ job_type: data.job_type.name }); setNewJob(''); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } }}>{t('workers.add', 'Add')}</button>
           </div>
         </div>
       )}
@@ -247,7 +247,7 @@ export default function AddWorkerWizard({ open, onClose, onCreated }) {
             {roles.map((r) => (
               <button key={r.id} type="button" onClick={() => pickRole(r)} className={`text-left rounded-2xl border-2 p-3 transition-colors ${String(f.role_id) === String(r.id) ? 'border-brand-500 bg-brand-500/5' : 'border-gray-200'}`}>
                 <p className="text-sm font-bold text-gray-900">{t(`workers.roleName.${r.name}`, r.name)}</p>
-                <p className="text-[11px] text-gray-500">{r.description || ''} · {t('workers.nPerms', '{{n}} permissions', { n: (r.permissions || []).length })}</p>
+                <p className="text-[11px] text-gray-500">{r.description ? t(`workers.roleDesc.${r.name}`, r.description) : ''} · {t('workers.nPerms', '{{n}} permissions', { n: (r.permissions || []).length })}</p>
               </button>
             ))}
           </div>

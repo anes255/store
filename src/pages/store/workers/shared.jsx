@@ -10,6 +10,7 @@ import { formatMoney } from '../../../utils/money';
 // colours) so these pages follow the store's theme and dark mode.
 
 export function Avatar({ worker, size = 40, className = '' }) {
+  const { t } = useTranslation();
   const name = worker?.full_name || worker?.name || worker?.worker_name || '?';
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]).join('').toUpperCase();
   return (
@@ -17,7 +18,7 @@ export function Avatar({ worker, size = 40, className = '' }) {
       {worker?.avatar
         ? <img src={worker.avatar} alt="" className="w-full h-full rounded-full object-cover border border-gray-200" />
         : <div className="w-full h-full rounded-full bg-brand-500/15 text-brand-600 font-bold grid place-items-center" style={{ fontSize: size * 0.36 }}>{initials}</div>}
-      {worker?.online && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" title="Online" />}
+      {worker?.online && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" title={t('workers.online', 'Online')} />}
     </div>
   );
 }
@@ -195,6 +196,41 @@ export function timeAgo(d, t) {
   return t('workers.dAgo', '{{n}} d ago', { n: Math.floor(s / 86400) });
 }
 
+// Readable, translated activity details: order status changes, or
+// "field: old → new" for account and payroll changes.
+export function useActivityFormat() {
+  const { t } = useTranslation();
+  const status = (v) => { if (!v) return '—'; const m = String(v).match(/call_?(\d)$/); const k = m ? `call_failed_${m[1]}` : ({ under_preparation: 'preparing', awaiting_pickup: 'awaiting' }[v] || v); return t(`storePage.status_${k}`, String(v)); };
+  const value = (k, v) => {
+    if (v === null || v === undefined || v === '') return '—';
+    if (k === 'permissions' && Array.isArray(v)) return t('workers.nPermissions', '{{n}} permissions', { n: v.length });
+    if (k === 'sent' && Array.isArray(v)) return v.length ? v.map((c) => t(`workers.channel.${c}`, c)).join(', ') : t('workers.notSentShort', 'not sent');
+    if (k === 'compensation' && Array.isArray(v)) return t('workers.nRules', '{{n}} pay rule(s)', { n: v.length });
+    if (Array.isArray(v)) return String(v.length);
+    if (typeof v === 'boolean') return v ? t('workers.yes', 'Yes') : t('workers.no', 'No');
+    if (typeof v === 'object') return Object.entries(v).map(([a, b]) => `${a} ${b}`).join(' · ');
+    if (k === 'status') return t(`workers.${v}`, String(v));
+    if (k === 'job') return t(`workers.jobName.${v}`, String(v));
+    if (k === 'role') return /^(tpl_|st_)/.test(v) ? t('workers.customRole', 'custom role') : t(`workers.roleName.${v}`, String(v));
+    if (k === 'method') return t(`workers.method.${v}`, String(v));
+    if (['amount', 'net', 'bonuses', 'deductions'].includes(k) && !isNaN(Number(v))) return Number(v).toLocaleString();
+    return String(v);
+  };
+  const field = (k) => t(`workers.field.${k}`, k);
+  const details = (a) => {
+    if (a.kind === 'order') return a.before || a.after ? `${status(a.before)} → ${status(a.after)}` : '';
+    try {
+      const j = JSON.parse(a.after || 'null'); if (!j) return '';
+      if (Array.isArray(j.after)) return `${field('compensation')}: ${value('compensation', j.before)} → ${value('compensation', j.after)}`;
+      if (j.before && j.after && typeof j.after === 'object' && !Array.isArray(j.after)) return Object.keys(j.after).filter((k) => JSON.stringify(j.before[k]) !== JSON.stringify(j.after[k])).map((k) => `${field(k)}: ${value(k, j.before[k])} → ${value(k, j.after[k])}`).join(' · ').slice(0, 240);
+      const src = j.after && typeof j.after === 'object' && !Array.isArray(j.after) ? j.after : (j.before && !j.after ? j.before : j);
+      return Object.entries(src).filter(([k]) => !['after', 'before', 'id', 'scope', 'is_default', 'description', 'created_at', 'updated_at'].includes(k)).map(([k, v]) => `${field(k)}: ${value(k, v)}`).join(' · ').slice(0, 240);
+    } catch { const m = String(a.after || '').match(/^→\s*(\S+)$/); return m ? `→ ${status(m[1])}` : String(a.after || '').slice(0, 160); }
+  };
+  const entity = (type) => t(`workers.entityType.${type}`, type);
+  return { status, value, field, details, entity };
+}
+
 export function useActionLabel() {
   const { t } = useTranslation();
   return (a) => ({
@@ -210,6 +246,9 @@ export function useActionLabel() {
     worker_password_reset: t('workers.act.worker_password_reset', 'Password reset'), worker_password_changed: t('workers.act.worker_password_changed', 'Password changed'), worker_sessions_revoked: t('workers.act.worker_sessions_revoked', 'Logged out everywhere'),
     worker_invited: t('workers.act.worker_invited', 'Invitation sent'), worker_invite_accepted: t('workers.act.worker_invite_accepted', 'Invitation accepted'), worker_reset_link: t('workers.act.worker_reset_link', 'Reset link sent'),
     order_status_change: t('workers.act.order_status_change', 'Order status changed'), job_type_created: t('workers.act.job_type_created', 'Job type created'), worker_store_added: t('workers.act.worker_store_added', 'Access to another store'),
+    order_dispatched: t('workers.act.order_dispatched', 'Order sent to carrier'), product_create: t('workers.act.product_create', 'Product created'), product_edit: t('workers.act.product_edit', 'Product edited'),
+    product_delete: t('workers.act.product_delete', 'Product deleted'), settings_edit: t('workers.act.settings_edit', 'Settings changed'), staff_create: t('workers.act.staff_create', 'Team member added'),
+    staff_edit: t('workers.act.staff_edit', 'Team member edited'), login: t('workers.act.login', 'Logged in'), exchange_rates_updated: t('workers.act.exchange_rates_updated', 'Exchange rates changed'),
   }[a] || String(a || '').replace(/_/g, ' '));
 }
 

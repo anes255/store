@@ -259,7 +259,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       }
     } catch {}
   }, []);
-  // Restore cart from recovery link (?recover=phone)
+  // Restore cart from recovery link (?recover=<signed token>, or a phone on old links)
   useEffect(() => {
     if (!storeSlug) return;
     const params = new URLSearchParams(window.location.search);
@@ -275,7 +275,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       setForm(prev => ({
         ...prev,
         customer_name: c.customer_name || prev.customer_name,
-        customer_phone: recoverPhone,
+        customer_phone: c.customer_phone || (recoverPhone.includes('.') ? prev.customer_phone : recoverPhone),
         customer_email: c.customer_email || prev.customer_email,
         shipping_address: c.shipping_address || prev.shipping_address,
         shipping_city: c.shipping_city || prev.shipping_city,
@@ -619,7 +619,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 <div className="flex items-center justify-between"><span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('checkout.amount','Amount to Transfer')}</span><span className="font-black text-lg" style={{color: pc}}>{parseFloat(orderSuccess.subtotal || (orderSuccess.total - (orderSuccess.shipping_cost||0))).toLocaleString()} {store.currency||'DZD'}</span></div>
                 <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'} text-right`}>{t('checkout.productPriceOnly','Product price only — shipping is paid on delivery')}</p>
               </div>
-              {store.baridimob_qr && <div className={`text-center p-4 ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-xl`}><p className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-400'} uppercase mb-2`}>{t('checkout.scanToPay','Scan to Pay')}</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt="BaridiPay QR"/></div>}
+              {store.baridimob_qr && <div className={`text-center p-4 ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-xl`}><p className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-400'} uppercase mb-2`}>{t('checkout.scanToPay','Scan to Pay')}</p><img src={store.baridimob_qr} className="max-w-[200px] mx-auto rounded-xl border" alt={t('ui.shop.baridipayQr', 'BaridiPay QR')}/></div>}
               <div className={`${isDark ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-xl p-4`}><p className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>{t('checkout.steps','Steps:')}</p>
                 <ol className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'} space-y-1`}>
                   <li>1. {t('checkout.baridiStep1','Open BaridiPay app on your phone')}</li>
@@ -827,7 +827,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     }}>
                       <option value="">{t('checkout.selectWilaya','Select wilaya...')}</option>
                       {(shippingWilayas.length ? shippingWilayas.filter(w=>w.is_active!==false && !(w.home_enabled===false && w.desk_enabled===false)) :[{wilaya_name:'Adrar',wilaya_code:'01'},{wilaya_name:'Chlef',wilaya_code:'02'},{wilaya_name:'Laghouat',wilaya_code:'03'},{wilaya_name:'Oum El Bouaghi',wilaya_code:'04'},{wilaya_name:'Batna',wilaya_code:'05'},{wilaya_name:'Béjaïa',wilaya_code:'06'},{wilaya_name:'Biskra',wilaya_code:'07'},{wilaya_name:'Béchar',wilaya_code:'08'},{wilaya_name:'Blida',wilaya_code:'09'},{wilaya_name:'Bouira',wilaya_code:'10'},{wilaya_name:'Tamanrasset',wilaya_code:'11'},{wilaya_name:'Tébessa',wilaya_code:'12'},{wilaya_name:'Tlemcen',wilaya_code:'13'},{wilaya_name:'Tiaret',wilaya_code:'14'},{wilaya_name:'Tizi Ouzou',wilaya_code:'15'},{wilaya_name:'Alger',wilaya_code:'16'},{wilaya_name:'Djelfa',wilaya_code:'17'},{wilaya_name:'Jijel',wilaya_code:'18'},{wilaya_name:'Sétif',wilaya_code:'19'},{wilaya_name:'Saïda',wilaya_code:'20'},{wilaya_name:'Skikda',wilaya_code:'21'},{wilaya_name:'Sidi Bel Abbès',wilaya_code:'22'},{wilaya_name:'Annaba',wilaya_code:'23'},{wilaya_name:'Guelma',wilaya_code:'24'},{wilaya_name:'Constantine',wilaya_code:'25'},{wilaya_name:'Médéa',wilaya_code:'26'},{wilaya_name:'Mostaganem',wilaya_code:'27'},{wilaya_name:"M'Sila",wilaya_code:'28'},{wilaya_name:'Mascara',wilaya_code:'29'},{wilaya_name:'Ouargla',wilaya_code:'30'},{wilaya_name:'Oran',wilaya_code:'31'},{wilaya_name:'El Bayadh',wilaya_code:'32'},{wilaya_name:'Illizi',wilaya_code:'33'},{wilaya_name:'Bordj Bou Arréridj',wilaya_code:'34'},{wilaya_name:'Boumerdès',wilaya_code:'35'},{wilaya_name:'El Tarf',wilaya_code:'36'},{wilaya_name:'Tindouf',wilaya_code:'37'},{wilaya_name:'Tissemsilt',wilaya_code:'38'},{wilaya_name:'El Oued',wilaya_code:'39'},{wilaya_name:'Khenchela',wilaya_code:'40'},{wilaya_name:'Souk Ahras',wilaya_code:'41'},{wilaya_name:'Tipaza',wilaya_code:'42'},{wilaya_name:'Mila',wilaya_code:'43'},{wilaya_name:'Aïn Defla',wilaya_code:'44'},{wilaya_name:'Naâma',wilaya_code:'45'},{wilaya_name:'Aïn Témouchent',wilaya_code:'46'},{wilaya_name:'Ghardaïa',wilaya_code:'47'},{wilaya_name:'Relizane',wilaya_code:'48'}]).map(w => (
-                        <option key={w.wilaya_code} value={w.wilaya_name} disabled={w.is_active===false}>{w.is_active===false?'(Inactive) ':''}{w.wilaya_code} - {bilingualLabel(w.wilaya_name)}</option>
+                        <option key={w.wilaya_code} value={w.wilaya_name} disabled={w.is_active===false}>{w.is_active===false?t('ui.shop.inactive', '(Inactive) '):''}{w.wilaya_code} - {bilingualLabel(w.wilaya_name)}</option>
                       ))}
                     </select>
                   </div>
@@ -849,7 +849,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     </select>
                   </div>
                   <div>
-                    <label className="input-label">ZIP</label>
+                    <label className="input-label">{t('ui.shop.zip','ZIP')}</label>
                     <input className="input-field bg-gray-50" value={form.shipping_zip} onChange={set('shipping_zip')} placeholder={t('checkout.autoFilled','Auto-filled')}/>
                   </div>
                 </div>
@@ -956,7 +956,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         <p className="font-bold text-sm text-gray-900">{pm.label}</p>
                         <p className="text-xs text-gray-600">{pm.desc}</p>
                       </div>
-                      {pm.disabled && <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">COMING SOON</span>}
+                      {pm.disabled && <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{t('ui.shop.comingSoon', 'COMING SOON')}</span>}
                       {selected && !pm.disabled && <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{backgroundColor: pc}}><Check size={12} className="text-white"/></div>}
                     </label>
                   );
@@ -978,7 +978,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               const allowEmail = store?.checkout_email === true;
               const channels = [
                 { key:'whatsapp', label:'WhatsApp', icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785c-1.784 0-3.532-.48-5.063-1.39l-.363-.215-3.764.988.999-3.648-.236-.375A9.731 9.731 0 012.27 12.05c0-5.384 4.383-9.767 9.78-9.767a9.714 9.714 0 016.922 2.868 9.714 9.714 0 012.868 6.919c-.004 5.384-4.387 9.765-9.79 9.765zM20.52 3.449A11.917 11.917 0 0012.05 0C5.495 0 .16 5.335.157 11.892a11.852 11.852 0 001.588 5.946L0 24l6.305-1.654a11.881 11.881 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 00-3.48-8.452z"/></svg> },
-                allowEmail && { key:'email', label:'Email', icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> },
+                allowEmail && { key:'email', label:t('ui.shop.email', 'Email'), icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> },
               ].filter(Boolean);
               // If email got removed but the buyer still has it selected, snap
               // them back to WhatsApp so the order doesn't carry a dead pref.

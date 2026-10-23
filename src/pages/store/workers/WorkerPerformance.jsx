@@ -37,7 +37,7 @@ export default function WorkerPerformance() {
           <StatCard icon={Truck} tone="blue" label={t('workers.completed', 'Completed')} value={tt.completed ?? 0} />
           <StatCard icon={XCircle} tone="red" label={t('workers.cancelledRejected', 'Cancelled')} value={tt.cancelled ?? 0} />
           <StatCard icon={Percent} tone="violet" label={t('workers.confirmationRate', 'Confirmation rate')} value={d.rates?.confirmation != null ? `${d.rates.confirmation}%` : '—'} sub={d.rates?.completion != null ? t('workers.completionRateX', 'Completion {{x}}%', { x: d.rates.completion }) : null} />
-          <StatCard icon={Timer} tone="amber" label={t('workers.avgTime', 'Avg. time to confirm')} value={d.avg_processing_minutes != null ? `${d.avg_processing_minutes} min` : '—'} />
+          <StatCard icon={Timer} tone="amber" label={t('workers.avgTime', 'Avg. time to confirm')} value={d.avg_processing_minutes != null ? t('workers.nMin', '{{n}} min', { n: d.avg_processing_minutes }) : '—'} />
         </div>
         {d.earnings && Object.keys(d.earnings).length > 0 && <div className="glass-card-solid p-4 mb-4 flex flex-wrap items-center gap-4"><Wallet className="text-brand-600" size={20} /><span className="text-sm text-gray-500">{t('workers.currentEarnings', 'Current earnings this month')}:</span>{Object.entries(d.earnings).map(([c, v]) => <b key={c} className="text-lg text-gray-900">{formatMoney(v.fixed + v.commission, c)}</b>)}</div>}
         {!d.daily.length ? <EmptyState icon={ClipboardList} title={t('workers.noData', 'No activity in this period')} hint={t('workers.noDataHint', 'Numbers appear as workers confirm, prepare and deliver orders.')} /> : (

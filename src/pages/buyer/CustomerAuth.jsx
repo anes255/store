@@ -105,7 +105,7 @@ export default function CustomerAuth() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
             {store?.logo ? <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 font-bold shrink-0" style={{color:headerText}}>{store?.name?.[0]||'S'}</div>}
-            <span data-store-name className="store-header-title text-lg sm:text-2xl font-extrabold" style={{ color: headerText, WebkitTextFillColor: headerText }}>{store?.name||'Store'}</span>
+            <span data-store-name className="store-header-title text-lg sm:text-2xl font-extrabold" style={{ color: headerText, WebkitTextFillColor: headerText }}>{store?.name||t('ui.shop.store', 'Store')}</span>
           </Link>
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold hover:bg-white/20 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>

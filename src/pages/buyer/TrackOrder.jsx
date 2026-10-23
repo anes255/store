@@ -447,8 +447,8 @@ export default function TrackOrder() {
                         {store.tracking_show_address && (
                           <div className="rounded-xl bg-white/5 border border-white/5 p-3">
                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1"><MapPin size={10} />{t('store.shippingAddress', 'Shipping Address')}</p>
-                            <p className="text-xs text-white/90">{o.shipping_address || '—'}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">{[o.shipping_city, o.shipping_wilaya].filter(Boolean).join(', ')}</p>
+                            {o.shipping_address && <p className="text-xs text-white/90">{o.shipping_address}</p>}
+                            <p className="text-xs text-white/90">{[o.shipping_city, o.shipping_wilaya].filter(Boolean).join(', ')}</p>
                             {o.shipping_type && <p className="text-[11px] text-gray-400 mt-0.5">{o.shipping_type === 'home' ? t('store.homeDelivery', 'Home delivery') : t('store.deskDelivery', 'Desk delivery')}</p>}
                             {o.delivery_company && <p className="text-[11px] text-cyan-300 mt-1">{o.delivery_company}</p>}
                           </div>

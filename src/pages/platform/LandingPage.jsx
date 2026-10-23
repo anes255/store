@@ -471,7 +471,7 @@ export default function LandingPage() {
           <section key={i} style={{ backgroundColor: bg, padding: pad || '48px 24px' }}>
             <div className="max-w-4xl mx-auto">
               {block.title && <h2 className="font-extrabold text-center mb-8" style={{ color: block.textColor || '#FFF', fontSize: '30px' }}>{block.title}</h2>}
-              {ytId ? <div className="relative pb-[56.25%] rounded-2xl overflow-hidden shadow-2xl"><iframe src={`https://www.youtube.com/embed/${ytId}`} className="absolute inset-0 w-full h-full" frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen /></div> : <div className="bg-gray-800 rounded-2xl p-12 text-center"><p className="text-gray-400">Set a YouTube URL in the page builder</p></div>}
+              {ytId ? <div className="relative pb-[56.25%] rounded-2xl overflow-hidden shadow-2xl"><iframe src={`https://www.youtube.com/embed/${ytId}`} className="absolute inset-0 w-full h-full" frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen /></div> : <div className="bg-gray-800 rounded-2xl p-12 text-center"><p className="text-gray-400">{t('ui.landing.setAYoutubeUrlIn', 'Set a YouTube URL in the page builder')}</p></div>}
             </div>
           </section>
         );

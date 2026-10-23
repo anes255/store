@@ -79,7 +79,7 @@ function CreateStoreModal({ open, onClose, onCreate }) {
 }
 
 export default function StoreDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
@@ -216,7 +216,7 @@ export default function StoreDashboard() {
           <div>
             <h2 className="text-2xl font-bold text-white">{t('dashboard.welcome')} 👋</h2>
             <p className="text-white/70 mt-1">{currentStore?.name}</p>
-            <p className="text-white/50 text-sm">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-white/50 text-sm">{new Date().toLocaleDateString(({ fr: 'fr-FR', ar: 'ar-DZ' })[(i18n.language || 'en').slice(0, 2)] || 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl text-white text-sm font-medium transition-all">
             <Eye size={16} /> {t('storePage.viewStore', 'View Store')}

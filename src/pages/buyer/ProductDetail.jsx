@@ -20,6 +20,7 @@ import { useStoreFont } from '../../utils/storeFont';
 //   • Arrow keys / on-screen arrows for prev/next
 // ─────────────────────────────────────────────────────────────────────────────
 function LightboxImage({ images, index, onClose, onChange }) {
+  const { t } = useTranslation();
   const [scale, setScale] = useState(1);
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -145,11 +146,11 @@ function LightboxImage({ images, index, onClose, onChange }) {
     >
       {/* Top toolbar — hidden on mobile, shown on sm+ */}
       <div className="hidden sm:flex absolute top-3 left-1/2 -translate-x-1/2 items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-2 py-1.5 z-10" onClick={e => e.stopPropagation()}>
-        <button onClick={() => setScale(s => Math.max(1, +(s - 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Zoom out (-)"><ZoomOut size={16}/></button>
+        <button onClick={() => setScale(s => Math.max(1, +(s - 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title={t('ui.shop.zoomOut', 'Zoom out (-)')}><ZoomOut size={16}/></button>
         <span className="text-white text-xs font-bold font-mono w-12 text-center tabular-nums">{Math.round(scale * 100)}%</span>
-        <button onClick={() => setScale(s => Math.min(5, +(s + 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Zoom in (+)"><ZoomIn size={16}/></button>
+        <button onClick={() => setScale(s => Math.min(5, +(s + 0.5).toFixed(2)))} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title={t('ui.shop.zoomIn', 'Zoom in (+)')}><ZoomIn size={16}/></button>
         <span className="w-px h-5 bg-white/20"/>
-        <button onClick={() => { setScale(1); setOrigin({ x: 0, y: 0 }); }} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title="Reset (0)"><Maximize2 size={14}/></button>
+        <button onClick={() => { setScale(1); setOrigin({ x: 0, y: 0 }); }} className="w-8 h-8 rounded-full hover:bg-white/20 text-white flex items-center justify-center" title={t('ui.shop.reset0', 'Reset (0)')}><Maximize2 size={14}/></button>
       </div>
 
       <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10"><X size={20}/></button>
@@ -201,7 +202,7 @@ function LightboxImage({ images, index, onClose, onChange }) {
       )}
 
       <p className="hidden sm:block absolute bottom-16 left-1/2 -translate-x-1/2 text-[10px] text-white/50 font-mono">
-        Swipe or scroll sideways for the next image · scroll / +/- to zoom · double-click to toggle · Esc to close
+       {t('ui.shop.swipeOrScrollSidewaysFor', 'Swipe or scroll sideways for the next image · scroll / +/- to zoom · double-click to toggle · Esc to close')}e
       </p>
     </div>
   );
@@ -211,6 +212,7 @@ function LightboxImage({ images, index, onClose, onChange }) {
 // persisted in localStorage per product so it survives reloads instead of
 // resetting on each render.
 function ProductOfferCountdown({ product }) {
+  const { t } = useTranslation();
   const h = parseInt(product.offer_hours) || 0;
   const m = parseInt(product.offer_minutes) || 0;
   const key = `poffer_${product.id}_${h}_${m}`;
@@ -234,7 +236,7 @@ function ProductOfferCountdown({ product }) {
   const mm = Math.floor((diff % 3600000) / 60000);
   const ss = Math.floor((diff % 60000) / 1000);
   const pad = n => String(n).padStart(2, '0');
-  return <div className="mt-3 flex items-center gap-3 text-lg font-extrabold text-red-600"><Tag size={20}/><span className="text-base sm:text-lg">{product.offer_title || 'Limited Offer'}</span><span className="font-mono bg-red-50 px-3 py-1.5 rounded-xl border-2 border-red-200 text-base sm:text-lg tracking-wider">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
+  return <div className="mt-3 flex items-center gap-3 text-lg font-extrabold text-red-600"><Tag size={20}/><span className="text-base sm:text-lg">{product.offer_title || t('ui.shop.limitedOffer', 'Limited Offer')}</span><span className="font-mono bg-red-50 px-3 py-1.5 rounded-xl border-2 border-red-200 text-base sm:text-lg tracking-wider">{pad(hh)}:{pad(mm)}:{pad(ss)}</span></div>;
 }
 
 export default function ProductDetail() {
@@ -496,11 +498,11 @@ export default function ProductDetail() {
                 : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
               {allImages.length > 1 && (
                 <>
-                  <button aria-label="Previous image" onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
+                  <button aria-label={t('ui.shop.previousImage', 'Previous image')} onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-20 active:scale-90 shadow-xl">
                     <ArrowLeft size={18}/>
                   </button>
-                  <button aria-label="Next image" onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
+                  <button aria-label={t('ui.shop.nextImage', 'Next image')} onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-20 active:scale-90 shadow-xl">
                     <ArrowRight size={18}/>
                   </button>
@@ -536,7 +538,7 @@ export default function ProductDetail() {
                 <span className="text-lg text-gray-400 line-through">{(offerPct > 0 ? rawBasePrice : parseFloat(product.compare_at_price)).toLocaleString()}</span>
               )}
               {priceAdj !== 0 && <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-500 font-bold">{priceAdj > 0 ? '+' : ''}{priceAdj.toLocaleString()} {currency}</span>}
-              {offerPct > 0 && <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-200">{product.sale_badge_text || 'SALE'} - {product.offer_discount}</span>}
+              {offerPct > 0 && <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-200">{product.sale_badge_text || t('ui.shop.saleBadge','SALE')} - {product.offer_discount}</span>}
             </div>
             {/* Offer timer */}
             <ProductOfferCountdown product={product} />
@@ -546,7 +548,7 @@ export default function ProductDetail() {
               <div className="mt-6 space-y-5">
                 {groupTypes.map(type => {
                   const group = variantGroups[type];
-                  const typeLabel = type === 'color' ? 'Color' : type === 'size' ? 'Size' : type === 'material' ? 'Material' : type === 'style' ? 'Style' : type.charAt(0).toUpperCase() + type.slice(1);
+                  const typeLabel = type === 'color' ? t('ui.shop.color', 'Color') : type === 'size' ? t('ui.shop.size', 'Size') : type === 'material' ? t('ui.shop.material', 'Material') : type === 'style' ? t('ui.shop.style', 'Style') : type.charAt(0).toUpperCase() + type.slice(1);
                   const selectedInGroup = selectedVariants[type];
                   const selName = selectedInGroup != null ? variants[selectedInGroup]?.name : null;
 
@@ -601,7 +603,7 @@ export default function ProductDetail() {
                               >
                                 {/* Always prefer the human-readable name; fall back to value
                                     only when the admin didn't set one (and strip hex prefix). */}
-                                {v.name || (v.value && !/^#[0-9a-f]{3,8}$/i.test(v.value) ? v.value : 'Option')}
+                                {v.name || (v.value && !/^#[0-9a-f]{3,8}$/i.test(v.value) ? v.value : t('ui.shop.option', 'Option'))}
                                 {(parseFloat(v.price_adjustment) || 0) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">
                                     ({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})
@@ -683,9 +685,9 @@ export default function ProductDetail() {
             {/* Trust badges */}
             <div className="mt-8 grid grid-cols-3 gap-3">
               {[
-                {icon:Truck, label:'Fast Delivery', desc:'All 58 wilayas'},
-                {icon:Shield, label:'Secure', desc:'Multiple options'},
-                {icon:Package, label:'Returns', desc:'30-day policy'},
+                {icon:Truck, label:t('ui.shop.fastDelivery', 'Fast Delivery'), desc:t('ui.shop.all58Wilayas', 'All 58 wilayas')},
+                {icon:Shield, label:t('ui.shop.secure', 'Secure'), desc:t('ui.shop.multipleOptions', 'Multiple options')},
+                {icon:Package, label:t('ui.shop.returns', 'Returns'), desc:t('ui.shop.30DayPolicy', '30-day policy')},
               ].map((f,i) => {
                 const I = f.icon;
                 return (

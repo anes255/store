@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../i18n';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://test-dz47.onrender.com/api';
 
@@ -19,6 +20,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Show server messages in the visitor's language. The English original
+    // stays on data.error_en for code that inspects it.
+    const data = error?.response?.data;
+    if (data && typeof data.error === 'string') {
+      const tr = translateApiError(data.error);
+      if (tr !== data.error) { data.error_en = data.error; data.error = tr; }
+    }
     // A staff account that was disabled by the store admin: sign out now.
     if (error?.response?.data?.code === 'STAFF_DISABLED') {
       ['user', 'token', 'role', 'currentStoreId', 'currentStoreSlug', 'currentStore'].forEach((k) => { try { localStorage.removeItem(k); } catch {} });
@@ -32,6 +40,17 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Exact match first, then a known prefix ("API connection failed: …").
+function translateApiError(msg) {
+  const lng = (i18n.language || 'en').slice(0, 2);
+  if (lng === 'en') return msg;
+  const dict = i18n.getResource(lng, 'translation', 'apiErrors');
+  if (!dict) return msg;
+  if (dict[msg]) return dict[msg];
+  for (const k of Object.keys(dict)) if (/[:(]\s?$|\(HTTP $/.test(k) && msg.startsWith(k)) return dict[k] + msg.slice(k.length);
+  return msg;
+}
 
 // ═══ WAKE-UP PING ═══
 // Render free-tier cold-starts take ~30s. Fire an instant health-check on
@@ -303,7 +322,8 @@ export const storeApi = {
   getStatusTemplates: (storeId) => api.get(`/manage/public/stores/${storeId}/status-templates`),
   // Cart sync
   saveCart: (slug, data) => api.post(`/store/${slug}/save-cart`, data),
-  restoreCart: (slug, phone) => api.get(`/store/${slug}/restore-cart?phone=${encodeURIComponent(phone)}`),
+  // Recovery links carry a signed "<cart id>.<sig>" token; old ones a phone.
+  restoreCart: (slug, key) => api.get(`/store/${slug}/restore-cart?${String(key).includes('.') ? 'token' : 'phone'}=${encodeURIComponent(key)}`),
   // Shipping wilayas (public, for checkout)
   getShippingWilayas: (slug) => cachedGet(`sw:${slug}`, () => api.get(`/store/${slug}/shipping-wilayas`)),
   // Deliberately NOT cached: this is store configuration the owner changes from

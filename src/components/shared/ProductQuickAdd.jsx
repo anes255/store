@@ -184,7 +184,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
             {/* Sale badge + offer timer */}
             {product.is_on_sale && (
               <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <span className="inline-block px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full uppercase">{product.sale_badge_text || 'SALE'}{offerPct > 0 ? ` -${offerPct}%` : ''}</span>
+                <span className="inline-block px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full uppercase">{product.sale_badge_text || t('ui.shop.sale', 'SALE')}{offerPct > 0 ? ` -${offerPct}%` : ''}</span>
                 {product.offer_title && <span className="text-xs font-bold text-red-600">{product.offer_title}</span>}
               </div>
             )}
@@ -208,7 +208,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
             {/* Selected variant label */}
             {variantLabel && (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-gray-500">Selected:</span>
+                <span className="text-xs text-gray-500">{t('ui.shop.selected', 'Selected:')}</span>
                 <span className="text-xs font-bold text-gray-800 px-2 py-0.5 bg-gray-100 rounded-lg">{variantLabel}</span>
               </div>
             )}
@@ -220,7 +220,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
               if (!Array.isArray(qOffers) || qOffers.length === 0) return null;
               return (
                 <div className="mt-3">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Quantity Offers</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">{t('ui.shop.quantityOffers', 'Quantity Offers')}</p>
                   <div className="flex flex-wrap gap-2">
                     {qOffers.map((qo, qi) => (
                       <button key={qi} type="button" onClick={() => setQuantity(parseInt(qo.quantity) || 1)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all" style={{ borderColor: pc + '40', backgroundColor: pc + '08' }}>
@@ -238,7 +238,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
               <div className="mt-4 space-y-4 flex-1">
                 {groupTypes.map(type => {
                   const group = variantGroups[type];
-                  const typeLabel = type === 'color' ? 'Color' : type === 'size' ? 'Size' : type === 'material' ? 'Material' : type === 'style' ? 'Style' : type.charAt(0).toUpperCase() + type.slice(1);
+                  const typeLabel = type === 'color' ? t('ui.shop.color', 'Color') : type === 'size' ? t('ui.shop.size', 'Size') : type === 'material' ? t('ui.shop.material', 'Material') : type === 'style' ? t('ui.shop.style', 'Style') : type.charAt(0).toUpperCase() + type.slice(1);
                   const selectedInGroup = selectedVariants[type];
                   const selName = selectedInGroup != null ? variants[selectedInGroup]?.name : null;
 
@@ -291,7 +291,7 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
                                 }`}
                                 style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}
                               >
-                                {v.name || v.value || 'Option'}
+                                {v.name || v.value || t('ui.shop.option', 'Option')}
                                 {(parseFloat(v.price_adjustment) || 0) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">
                                     ({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})
@@ -321,10 +321,10 @@ export default function ProductQuickAdd({ show, onClose, product, storeSlug, pri
                 style={{ backgroundColor: mode === 'favorite' ? '#ef4444' : pc }}
               >
                 {mode === 'favorite'
-                  ? (<><Heart size={16} fill="white" /> Add to Favorites</>)
+                  ? (<><Heart size={16} fill="white" /> {t('ui.shop.addToFavorites', 'Add to Favorites')}</>)
                   : mode === 'buyNow'
-                  ? (<><ShoppingCart size={16} /> Order Now</>)
-                  : (<><ShoppingCart size={16} /> Add to Cart</>)}
+                  ? (<><ShoppingCart size={16} /> {t('ui.shop.orderNow', 'Order Now')}</>)
+                  : (<><ShoppingCart size={16} /> {t('ui.shop.addToCart', 'Add to Cart')}</>)}
               </button>
             </div>
           </div>

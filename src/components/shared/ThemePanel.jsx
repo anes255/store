@@ -42,8 +42,8 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
         </p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { key: 'light', label: t('theme.light', 'Light'), icon: Sun, desc: 'Clean & bright' },
-            { key: 'dark', label: t('theme.dark', 'Dark'), icon: Moon, desc: 'Easy on the eyes' },
+            { key: 'light', label: t('theme.light', 'Light'), icon: Sun, desc: t('theme.lightDesc', 'Clean & bright') },
+            { key: 'dark', label: t('theme.dark', 'Dark'), icon: Moon, desc: t('theme.darkDesc', 'Easy on the eyes') },
           ].map(m => {
             const Icon = m.icon;
             const sel = mode === m.key;
@@ -193,7 +193,7 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           <button className="px-3 py-1.5 rounded-lg text-white text-[10px] font-bold" style={{ backgroundColor: primaryColor }}>
             {t('theme.button', 'Button')}
           </button>
-          <span className="text-xs font-bold" style={{ color: primaryColor }}>Text</span>
+          <span className="text-xs font-bold" style={{ color: primaryColor }}>{t('theme.sampleText', 'Text')}</span>
         </div>
       </div>}
     </div>
@@ -251,8 +251,8 @@ export default function ThemePanel({ mode, primaryColor, onModeChange, onColorCh
           className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
             isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
-          aria-label={modeOnly?(isDark?'Switch to light mode':'Switch to dark mode'):'Theme'}
-          title={modeOnly?(isDark?'Switch to light':'Switch to dark'):'Theme'}
+          aria-label={modeOnly?(isDark?t('theme.switchToLightMode','Switch to light mode'):t('theme.switchToDarkMode','Switch to dark mode')):t('theme.title','Theme')}
+          title={modeOnly?(isDark?t('theme.switchToLight','Switch to light'):t('theme.switchToDark','Switch to dark')):t('theme.title','Theme')}
         >
           {modeOnly?(isDark?<Sun size={14}/>:<Moon size={14}/>):(<><div className="w-3.5 h-3.5 rounded-full border border-white/30" style={{ backgroundColor: primaryColor }} />
           <Palette size={13} className="hidden sm:block" />

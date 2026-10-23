@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './en';
+import pagesEn from './pages_en';
 
 // English ships in the main bundle (it is both the default and the fallback,
 // so it is always needed). French and Arabic are separate chunks that are
@@ -8,10 +9,10 @@ import en from './en';
 // tables were parsed on every single page load, for everyone.
 // Each language = its main table + the storefront strings (buyer_*.js),
 // merged so either can be edited on its own.
-const withBuyer = (main, buyer, workers) => () => Promise.all([main(), buyer(), workers()]).then(([m, b, w]) => ({ main: m.default, buyer: b.default, workers: w.default }));
+const withBuyer = (main, buyer, workers, pages) => () => Promise.all([main(), buyer(), workers(), pages()]).then(([m, b, w, p]) => ({ main: m.default, buyer: b.default, workers: w.default, pages: p.default }));
 const LOADERS = {
-  fr: withBuyer(() => import('./fr'), () => import('./buyer_fr'), () => import('./workers_fr')),
-  ar: withBuyer(() => import('./ar'), () => import('./buyer_ar'), () => import('./workers_ar')),
+  fr: withBuyer(() => import('./fr'), () => import('./buyer_fr'), () => import('./workers_fr'), () => import('./pages_fr')),
+  ar: withBuyer(() => import('./ar'), () => import('./buyer_ar'), () => import('./workers_ar'), () => import('./pages_ar')),
 };
 
 const stored = (() => { try { return localStorage.getItem('lang') || 'en'; } catch { return 'en'; } })();
@@ -22,6 +23,7 @@ i18n.use(initReactI18next).init({
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
 });
+i18n.addResourceBundle('en', 'translation', pagesEn, true, false);
 
 // Fetch a language's table and register it. Resolves immediately for a
 // language that is already loaded (or unknown, which falls back to English).
@@ -35,6 +37,7 @@ export function loadLanguage(lng) {
       i18n.addResourceBundle(code, 'translation', m.main, true, true);
       i18n.addResourceBundle(code, 'translation', m.buyer, true, true); // deep-merge storefront strings
       i18n.addResourceBundle(code, 'translation', m.workers, true, true); // workers & payroll
+      i18n.addResourceBundle(code, 'translation', m.pages, true, true); // dashboard/storefront gaps + server messages
       return code;
     })
     .catch(() => 'en');

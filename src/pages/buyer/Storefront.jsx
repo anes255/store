@@ -43,7 +43,7 @@ function OfferBanner({ store }) {
   const tc = store.offer_tc || '#ffffff';
   return (
     <div className="w-full text-center py-2 px-3 text-sm font-bold flex flex-wrap items-center justify-center gap-x-3 gap-y-1" style={{ background: bg, color: tc }}>
-      <span className="inline-flex items-center gap-1.5"><Tag size={14}/>{store.offer_title || t('store.limitedOffer','Limited Offer')} — {store.offer_discount || '40% OFF'}</span>
+      <span className="inline-flex items-center gap-1.5"><Tag size={14}/>{store.offer_title || t('store.limitedOffer','Limited Offer')} — {store.offer_discount || t('ui.shop.40Off', '40% OFF')}</span>
       <span className="opacity-80 text-xs">{store.offer_label || t('store.endsIn','Ends in:')}</span>
       <span className="font-mono tabular-nums bg-white/20 rounded px-2 py-0.5 text-xs">{pad(h)}:{pad(m)}:{pad(s)}</span>
     </div>
@@ -99,7 +99,7 @@ function AIChatbot({ store, slug }) {
 
   useEffect(() => {
     if (open && messages.length === 0)
-      setMessages([{ role:'bot', text: store.ai_chatbot_greeting || t('store.chatbotGreeting',`Welcome to ${store.name}! How can I help you today?`) }]);
+      setMessages([{ role:'bot', text: store.ai_chatbot_greeting || t('store.chatbotGreeting','Welcome to {{name}}! How can I help you today?',{name:store.name}) }]);
   }, [open]);
 
   // Auto-scroll on ANY change
@@ -303,7 +303,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
             )}
             {((product.compare_at_price && parseFloat(product.compare_at_price) > finalPrice) || modalOfferPct > 0) && (
               <span className="inline-block mt-3 px-3 py-1 bg-red-500/20 text-red-300 text-xs font-bold rounded-lg border border-red-500/30">
-                {product.sale_badge_text || 'SALE'} {modalOfferPct > 0 ? `- ${product.offer_discount || modalOfferPct+'% OFF'}` : `- Save ${(parseFloat(product.compare_at_price) - finalPrice).toLocaleString()} ${currency}`}
+                {product.sale_badge_text || t('ui.shop.saleBadge','SALE')} {modalOfferPct > 0 ? `- ${product.offer_discount || t('ui.shop.pctOff','{{n}}% OFF',{n:modalOfferPct})}` : `- ${t('ui.shop.saveAmount','Save {{amount}}',{amount:`${(parseFloat(product.compare_at_price) - finalPrice).toLocaleString()} ${currency}`})}`}
               </span>
             )}
           </div>
@@ -386,7 +386,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                             return (
                               <button key={v._idx} onClick={() => selectVariant(type, v._idx)}
                                 className={`min-w-[42px] h-[42px] px-3 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center ${isSel ? 'text-white border-white bg-white/15' : 'border-white/15 text-white/60 hover:border-white/40 bg-white/5'}`}>
-                                {v.name || v.value || 'Opt'}
+                                {v.name || v.value || t('ui.shop.opt', 'Opt')}
                               </button>
                             );
                           })}
@@ -399,7 +399,7 @@ function ProductDetailModal({ product, store, storeSlug, pc, currency, getName, 
                               <button key={v._idx} onClick={() => selectVariant(type, v._idx)}
                                 className={`px-3.5 py-2 rounded-full text-sm font-bold border transition-all ${isSel ? 'text-white shadow-md border-transparent' : 'border-white/15 text-white/60 hover:border-white/40 bg-white/5'}`}
                                 style={isSel ? { backgroundColor: pc, borderColor: pc } : {}}>
-                                {v.name || v.value || 'Option'}
+                                {v.name || v.value || t('ui.shop.option', 'Option')}
                                 {(parseFloat(v.price_adjustment) || 0) !== 0 && (
                                   <span className="ml-1.5 opacity-70 text-xs">({parseFloat(v.price_adjustment) > 0 ? '+' : ''}{parseFloat(v.price_adjustment).toLocaleString()})</span>
                                 )}
@@ -540,7 +540,7 @@ function CheckoutPreview({ items, store, pc, currency, shippingEstimate, onConfi
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex gap-2">
           <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{t('store.cancel','Cancel')}</button>
           <button onClick={onConfirm} className="flex-[1.4] py-3 rounded-xl text-white text-sm font-extrabold shadow-lg flex items-center justify-center gap-2" style={{ backgroundColor: pc }}>
-            <Check size={14}/> Continue to Checkout
+            <Check size={14}/> {t('ui.shop.continueToCheckout', 'Continue to Checkout')}
           </button>
         </div>
       </div>
@@ -558,6 +558,7 @@ function ProductOfferTimer({ product }) {
   return <ProductOfferTimerBody key={`${product.id}_${h}_${m}`} product={product} h={h} m={m} />;
 }
 function ProductOfferTimerBody({ product, h, m }) {
+  const { t } = useTranslation();
   const key = `poffer_${product.id}_${h}_${m}`;
   const [deadline] = useState(() => {
     try { const c = parseInt(localStorage.getItem(key)); if (c && c > Date.now()) return c; } catch {}
@@ -576,7 +577,7 @@ function ProductOfferTimerBody({ product, h, m }) {
   return (
     <div className="flex items-center justify-center sm:justify-start flex-wrap gap-1 sm:gap-1.5 text-[9px] sm:text-xs font-bold text-red-400 mt-0.5 sm:mt-1">
       <Tag size={10} className="sm:hidden" /><Tag size={12} className="hidden sm:block" />
-      <span className="truncate max-w-full">{product.offer_title || 'Offer'}</span>
+      <span className="truncate max-w-full">{product.offer_title || t('ui.shop.offer', 'Offer')}</span>
       <span className="font-mono bg-red-500/20 px-1.5 sm:px-2 py-0.5 rounded-md text-red-300 text-[9px] sm:text-[11px]">{pad(hh)}:{pad(mm)}:{pad(ss)}</span>
     </div>
   );
@@ -626,13 +627,13 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         {/* Favourite on LEFT top. SALE badge at BOTTOM-LEFT. Cart on top-RIGHT. */}
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleWishlist(product); }}
           className={`absolute top-1 left-1 sm:top-4 sm:left-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 touch-manipulation ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
-          aria-label="Add to favorites"><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
+          aria-label={t('ui.shop.addToFavorites', 'Add to favorites')}><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
         {onSale && discountPct > 0 && <span className="sm:hidden absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-md shadow-lg">-{discountPct}%</span>}
-        {onSale && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || 'SALE'}</span>}
+        {onSale && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || t('ui.shop.saleBadge','SALE')}</span>}
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
           className={`absolute bottom-1 right-1 sm:bottom-auto sm:top-4 sm:right-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
           style={justAdded ? { backgroundColor: '#10b981', color: '#fff', transform: 'scale(1.18)' } : undefined}
-          aria-label={inCart ? "Remove from cart" : "Add to cart"}>{justAdded ? <Check size={14} strokeWidth={3} className="animate-[pop_.35s_ease-out]" /> : inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
+          aria-label={inCart ? t('store.removeFromCart', 'Remove from cart') : t('store.addToCart', 'Add to cart')}>{justAdded ? <Check size={14} strokeWidth={3} className="animate-[pop_.35s_ease-out]" /> : inCart ? <X size={14} /> : <ShoppingCart size={14} />}</button>
         {justAdded && <span className="absolute bottom-9 right-1 sm:bottom-auto sm:top-14 sm:right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-lg animate-[pop_.35s_ease-out] pointer-events-none">{t('store.added','Added')}</span>}
       </Link>
 
@@ -1036,7 +1037,7 @@ export default function Storefront() {
         <div className="relative z-10">
           <h1 className={`text-3xl sm:text-5xl md:text-6xl font-black italic tracking-tight ${store.cover_image?'text-white':'text-gray-900'}`} style={{fontFamily:store.header_font||'"Georgia","Times New Roman",serif'}}>{store.hero_title || store.welcome_message || store.name}</h1>
           <p className={`mt-3 max-w-xl mx-auto text-xs sm:text-sm leading-relaxed ${store.cover_image?'text-white/80':'text-gray-500'}`}>
-            {store.hero_subtitle || store.description || 'See why this product stands out from the rest. Every detail is meticulously designed for your satisfaction.'}
+            {store.hero_subtitle || store.description || t('ui.shop.seeWhyThisProductStands', 'See why this product stands out from the rest. Every detail is meticulously designed for your satisfaction.')}
           </p>
           <div className="w-12 h-1 mx-auto mt-4 rounded-full" style={{backgroundColor:store.cover_image?'#fff':pc}}/>
         </div>
@@ -1240,10 +1241,10 @@ export default function Storefront() {
           {(store.contact_phone || store.support_phone) && (
             <div className="flex items-center justify-center gap-6 mb-3 flex-wrap">
               {store.contact_phone && <a href={`tel:${String(store.contact_phone).replace(/[^\d+]/g,'')}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>{store.contact_phone}</a>}
-              {store.support_phone && store.support_phone !== store.contact_phone && <a href={`tel:${String(store.support_phone).replace(/[^\d+]/g,'')}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Support: {store.support_phone}</a>}
+              {store.support_phone && store.support_phone !== store.contact_phone && <a href={`tel:${String(store.support_phone).replace(/[^\d+]/g,'')}`} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>{t('ui.shop.support', 'Support:')} {store.support_phone}</a>}
             </div>
           )}
-          <p className="text-sm text-gray-400">{store.footer_text || `© ${new Date().getFullYear()} ${store.name}. All rights reserved.`}</p>
+          <p className="text-sm text-gray-400">{store.footer_text || `© ${new Date().getFullYear()} ${store.name}. ${t('ui.shop.allRightsReserved','All rights reserved.')}`}</p>
           <p className="text-xs text-gray-300 mt-1">{t('store.poweredBy','Powered by')} MakretDZ</p>
           {(() => { const fb = store.facebook_url || store.social_facebook; const ig = store.instagram_url || store.social_instagram; const tw = store.twitter_url || store.social_twitter || store.twitter; const tk = store.tiktok_url || store.social_tiktok; const yt = store.youtube_url || store.youtube; const li = store.linkedin_url || store.social_linkedin || store.linkedin; const sn = store.snapchat || store.social_snapchat; const pin = store.pinterest || store.social_pinterest; return (fb||ig||tw||tk||yt||li||sn||pin) ? (
             <div className="flex items-center justify-center gap-4 mt-4">
@@ -1277,8 +1278,8 @@ export default function Storefront() {
             rel="noopener noreferrer"
             className="fixed bottom-[calc(160px+env(safe-area-inset-bottom))] md:bottom-24 right-4 md:right-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"
             style={{background:'linear-gradient(135deg, #25D366, #128C7E)'}}
-            title="Chat on WhatsApp"
-            aria-label="Chat on WhatsApp"
+            title={t('ui.shop.chatOnWhatsapp', 'Chat on WhatsApp')}
+            aria-label={t('ui.shop.chatOnWhatsapp', 'Chat on WhatsApp')}
           >
             <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.464 3.488"/></svg>
           </a>
@@ -1289,7 +1290,7 @@ export default function Storefront() {
       {store.support_phone && (() => {
         const cleanPhone = String(store.support_phone).replace(/[^\d+]/g,'');
         return (
-          <a href={`tel:${cleanPhone}`} className="fixed bottom-[calc(90px+env(safe-area-inset-bottom))] md:bottom-6 left-4 md:left-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform" style={{background:'linear-gradient(135deg, #3b82f6, #1d4ed8)'}} title="Call support" aria-label="Call support">
+          <a href={`tel:${cleanPhone}`} className="fixed bottom-[calc(90px+env(safe-area-inset-bottom))] md:bottom-6 left-4 md:left-6 z-40 w-14 h-14 rounded-2xl text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform" style={{background:'linear-gradient(135deg, #3b82f6, #1d4ed8)'}} title={t('ui.shop.callSupport', 'Call support')} aria-label={t('ui.shop.callSupport', 'Call support')}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </a>
         );
@@ -1372,10 +1373,10 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
           <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:20}}>
             {shown.map(product=>{const thumb=getThumb(product);const inW=wishlist.includes(product.id);return(
               <div key={product.id} className={`bg-white rounded-2xl overflow-hidden ${cardClass} group relative transition-all`}>
-                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute bottom-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">SALE</span>}</div></Link>
+                <Link to={`/s/${storeSlug}/product/${product.slug}`}><div className="aspect-square bg-gray-100 relative overflow-hidden">{thumb?<img src={thumb} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt=""/>:<div className="w-full h-full flex items-center justify-center"><Package size={32} style={{color:'#d1d5db'}}/></div>}{product.compare_at_price&&<span className="absolute bottom-2 left-2 px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg">{t('ui.shop.sale','SALE')}</span>}</div></Link>
                 {/* Favourite on the LEFT (top), cart on the RIGHT. SALE is at bottom-left of image. */}
-                <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`absolute left-3 top-3 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-gray-900 text-white hover:bg-black hover:text-red-300'}`} aria-label="Add to favorites"><Heart size={14} fill={inW?'white':'none'}/></button>
-                {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-gray-900 hover:bg-black" aria-label="Add to cart"><ShoppingCart size={14}/></button>}
+                <button onClick={(e)=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}} className={`absolute left-3 top-3 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform ${inW?'bg-red-500 text-white':'bg-gray-900 text-white hover:bg-black hover:text-red-300'}`} aria-label={t('ui.shop.addToFavorites', 'Add to favorites')}><Heart size={14} fill={inW?'white':'none'}/></button>
+                {c.showBtn!==false&&<button onClick={(e)=>{e.preventDefault();e.stopPropagation();openQuickAdd(product);}} className="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform bg-gray-900 hover:bg-black" aria-label={t('ui.shop.addToCart', 'Add to cart')}><ShoppingCart size={14}/></button>}
                 <div className="p-3.5">{c.showName!==false&&<Link to={`/s/${storeSlug}/product/${product.slug}`}><h3 className="font-semibold text-sm text-gray-800 truncate">{getName(product)}</h3></Link>}{c.showPrice!==false&&<div className="flex items-baseline gap-2 mt-2"><span className="text-lg font-extrabold" style={{color:pc}}>{parseFloat(product.price).toLocaleString()}</span><span className="text-xs text-gray-400">{store.currency||'DZD'}</span>{product.compare_at_price&&<span className="text-xs text-gray-400 line-through">{parseFloat(product.compare_at_price).toLocaleString()}</span>}</div>}</div>
               </div>);})}
           </div>}
@@ -1389,7 +1390,7 @@ function BuilderSections({sections,products,categories,store,storeSlug,pc,getNam
 
     if(sec.type==='image')return(
       <section key={sec.id} style={{...wrap,textAlign:c.align||'center'}}><div style={inner}>
-        {c.src?<a href={c.link||undefined} target={c.link?'_blank':undefined}><img src={c.src} style={{width:`${c.width||100}%`,borderRadius:`${c.rounded||12}px`,maxWidth:'100%',display:'inline-block'}} alt={c.alt||''}/></a>:<div style={{height:200,backgroundColor:'#f3f4f6',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',color:'#9ca3af'}}>No image set</div>}
+        {c.src?<a href={c.link||undefined} target={c.link?'_blank':undefined}><img src={c.src} style={{width:`${c.width||100}%`,borderRadius:`${c.rounded||12}px`,maxWidth:'100%',display:'inline-block'}} alt={c.alt||''}/></a>:<div style={{height:200,backgroundColor:'#f3f4f6',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',color:'#9ca3af'}}>{t('ui.shop.noImageSet', 'No image set')}</div>}
       </div></section>);
 
     if(sec.type==='banner')return(

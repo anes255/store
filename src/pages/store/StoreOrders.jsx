@@ -55,21 +55,21 @@ const DEFAULT_COLUMNS = ['order','products','customer_name','phone','status','tr
 const PREPARING_COLUMNS = ['order', 'products', 'customer_name', 'phone', 'status'];
 
 const statusConfig = {
-  new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.status.new' },
-  pending:        { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.status.new' },
-  confirmed:      { color: 'bg-blue-500',    bg: 'bg-blue-500',    text: 'text-white', label: 'CONFIRMED',     tKey: 'orders.status.confirmed' },
-  preparing:      { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING',     tKey: 'orders.status.preparing' },
-  under_preparation: { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING',  tKey: 'orders.status.preparing' },
-  ready:          { color: 'bg-teal-500',    bg: 'bg-teal-500',    text: 'text-white', label: 'READY',         tKey: 'orders.status.ready' },
-  shipped:        { color: 'bg-blue-600',    bg: 'bg-blue-600',    text: 'text-white', label: 'SHIPPED',       tKey: 'orders.status.shipped' },
-  delivered:      { color: 'bg-emerald-500', bg: 'bg-emerald-500', text: 'text-white', label: 'DELIVERED',     tKey: 'orders.status.delivered' },
-  cancelled:      { color: 'bg-red-500',     bg: 'bg-red-500',     text: 'text-white', label: 'CANCELLED',     tKey: 'orders.status.cancelled' },
-  failed_call_1:  { color: 'bg-yellow-500',  bg: 'bg-yellow-500',  text: 'text-white', label: 'CALL FAILED 1', tKey: 'orders.status.callFailed1' },
-  failed_call_2:  { color: 'bg-orange-400',  bg: 'bg-orange-400',  text: 'text-white', label: 'CALL FAILED 2', tKey: 'orders.status.callFailed2' },
-  failed_call_3:  { color: 'bg-rose-400',    bg: 'bg-rose-400',    text: 'text-white', label: 'CALL FAILED 3', tKey: 'orders.status.callFailed3' },
-  returned:       { color: 'bg-gray-500',    bg: 'bg-gray-500',    text: 'text-white', label: 'RETURNED',      tKey: 'orders.status.returned' },
-  awaiting_pickup:{ color: 'bg-amber-500',   bg: 'bg-amber-500',   text: 'text-white', label: 'AWAITING',      tKey: 'orders.status.awaiting' },
-  archived:       { color: 'bg-slate-500',   bg: 'bg-slate-500',   text: 'text-white', label: 'ARCHIVED',      tKey: 'orders.status.archived' },
+  new_order:      { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.statusBadge.new' },
+  pending:        { color: 'bg-violet-500',  bg: 'bg-violet-500',  text: 'text-white', label: 'NEW',           tKey: 'orders.statusBadge.new' },
+  confirmed:      { color: 'bg-blue-500',    bg: 'bg-blue-500',    text: 'text-white', label: 'CONFIRMED',     tKey: 'orders.statusBadge.confirmed' },
+  preparing:      { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING',     tKey: 'orders.statusBadge.preparing' },
+  under_preparation: { color: 'bg-fuchsia-500', bg: 'bg-fuchsia-500', text: 'text-white', label: 'PREPARING',  tKey: 'orders.statusBadge.preparing' },
+  ready:          { color: 'bg-teal-500',    bg: 'bg-teal-500',    text: 'text-white', label: 'READY',         tKey: 'orders.statusBadge.ready' },
+  shipped:        { color: 'bg-blue-600',    bg: 'bg-blue-600',    text: 'text-white', label: 'SHIPPED',       tKey: 'orders.statusBadge.shipped' },
+  delivered:      { color: 'bg-emerald-500', bg: 'bg-emerald-500', text: 'text-white', label: 'DELIVERED',     tKey: 'orders.statusBadge.delivered' },
+  cancelled:      { color: 'bg-red-500',     bg: 'bg-red-500',     text: 'text-white', label: 'CANCELLED',     tKey: 'orders.statusBadge.cancelled' },
+  failed_call_1:  { color: 'bg-yellow-500',  bg: 'bg-yellow-500',  text: 'text-white', label: 'CALL FAILED 1', tKey: 'orders.statusBadge.callFailed1' },
+  failed_call_2:  { color: 'bg-orange-400',  bg: 'bg-orange-400',  text: 'text-white', label: 'CALL FAILED 2', tKey: 'orders.statusBadge.callFailed2' },
+  failed_call_3:  { color: 'bg-rose-400',    bg: 'bg-rose-400',    text: 'text-white', label: 'CALL FAILED 3', tKey: 'orders.statusBadge.callFailed3' },
+  returned:       { color: 'bg-gray-500',    bg: 'bg-gray-500',    text: 'text-white', label: 'RETURNED',      tKey: 'orders.statusBadge.returned' },
+  awaiting_pickup:{ color: 'bg-amber-500',   bg: 'bg-amber-500',   text: 'text-white', label: 'AWAITING',      tKey: 'orders.statusBadge.awaiting' },
+  archived:       { color: 'bg-slate-500',   bg: 'bg-slate-500',   text: 'text-white', label: 'ARCHIVED',      tKey: 'orders.statusBadge.archived' },
 };
 const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','awaiting_pickup','archived'];
 
@@ -100,7 +100,7 @@ function waLink(phone) { if (!phone) return null; const clean = String(phone).re
 function copy(text) { try { navigator.clipboard.writeText(text); toast.success('✓'); } catch { toast.error('✗'); } }
 
 export default function StoreOrders() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Staff: only the actions their store admin allowed (server enforces it too).
   const { can, canAny, isStaff } = useStaffAccess();
   const canStatus = canAny('orders_edit', 'orders_confirm', 'orders_prepare');
@@ -109,6 +109,7 @@ export default function StoreOrders() {
   const canDispatch = canAny('orders_edit', 'orders_prepare');
   // Resolve status label via translation key, falling back to the hardcoded English label
   const sl = (sc) => sc?.tKey ? t(sc.tKey, sc.label) : (sc?.label || '');
+  const payLabel = (m) => ({ cod: t('ui.orders.codShort', 'COD'), ccp: 'CCP', baridimob: 'BaridiPay', bank_transfer: t('ui.settings.bankTransfer', 'Bank Transfer'), chargily: 'Chargily' }[m || 'cod'] || String(m).replace(/_/g, ' '));
   const { currentStore } = useStoreManagement();
   const location = useLocation();
 
@@ -511,7 +512,7 @@ export default function StoreOrders() {
         const qty = parseInt(i.quantity) || 1;
         const unit = parseFloat(i.unit_price ?? i.price) || 0;
         return `<tr>
-          <td><div class="pname">${esc(i.product_name || i.name || '')}${i.is_fragile ? '<span class="fragile">FRAGILE</span>' : ''}</div>${vt ? `<div class="pvar">${esc(vt)}</div>` : ''}${i.sku ? `<div class="psku">SKU: ${esc(i.sku)}</div>` : ''}</td>
+          <td><div class="pname">${esc(i.product_name || i.name || '')}${i.is_fragile ? `<span class="fragile">${esc(t('ui.print.fragile', 'FRAGILE'))}</span>` : ''}</div>${vt ? `<div class="pvar">${esc(vt)}</div>` : ''}${i.sku ? `<div class="psku">${esc(t('ui.print.sku', 'SKU:'))} ${esc(i.sku)}</div>` : ''}</td>
           <td style="text-align:center">${qty}</td>
           <td style="text-align:right">${fmtMoney(unit, o.currency)}</td>
           <td style="text-align:right"><b>${fmtMoney(unit * qty, o.currency)}</b></td>
@@ -523,42 +524,42 @@ export default function StoreOrders() {
           <header class="hdr">
             <div>
               <div class="store">${esc(currentStore?.name || '')}</div>
-              <div class="meta">Order <b>${esc(o.order_number)}</b> · ${esc(new Date(o.created_at).toLocaleString())} · ${idx + 1}/${total}</div>
+              <div class="meta">${esc(t('ui.print.order', 'Order'))} <b>${esc(o.order_number)}</b> · ${esc(new Date(o.created_at).toLocaleString())} · ${idx + 1}/${total}</div>
             </div>
-            <div class="status">${esc(statusConfig[o.status]?.label || o.status)}</div>
+            <div class="status">${esc(statusConfig[o.status] ? sl(statusConfig[o.status]) : o.status)}</div>
           </header>
           <div class="cols">
             <div class="cust">
-              <p class="lbl">Buyer</p>
+              <p class="lbl">${esc(t('ui.print.buyer', 'Buyer'))}</p>
               <div><b>${esc(o.customer_name || '')}</b></div>
               <div>${esc(o.customer_phone || '')}</div>
               ${o.customer_email ? `<div>${esc(o.customer_email)}</div>` : ''}
             </div>
             <div class="ship">
-              <p class="lbl">Shipping</p>
+              <p class="lbl">${esc(t('ui.print.shipping', 'Shipping'))}</p>
               <div>${esc(o.shipping_wilaya || '')}${wn}${o.shipping_city ? ', ' + esc(o.shipping_city) : ''}</div>
               ${o.shipping_address ? `<div>${esc(o.shipping_address)}</div>` : ''}
-              ${o.shipping_zip ? `<div class="meta">Zip: ${esc(o.shipping_zip)}</div>` : ''}
-              <div class="meta">${esc(o.shipping_type || 'home')} delivery${o.delivery_company_name ? ' · ' + esc(o.delivery_company_name) : ''}</div>
+              ${o.shipping_zip ? `<div class="meta">${esc(t('ui.print.zip', 'Zip:'))} ${esc(o.shipping_zip)}</div>` : ''}
+              <div class="meta">${esc((o.shipping_type || 'home') === 'desk' ? t('store.deskDelivery', 'Desk delivery') : t('store.homeDelivery', 'Home delivery'))}${o.delivery_company_name ? ' · ' + esc(o.delivery_company_name) : ''}</div>
             </div>
           </div>
           <table class="items">
-            <thead><tr><th>Product / Variant</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
-            <tbody>${itemsHtml || '<tr><td colspan="4" style="text-align:center;color:#999">No items</td></tr>'}</tbody>
+            <thead><tr><th>${esc(t('ui.print.productVariant', 'Product / Variant'))}</th><th>${esc(t('ui.print.qty', 'Qty'))}</th><th>${esc(t('ui.print.unit', 'Unit'))}</th><th>${esc(t('ui.print.total', 'Total'))}</th></tr></thead>
+            <tbody>${itemsHtml || `<tr><td colspan="4" style="text-align:center;color:#999">${esc(t('ui.print.noItems', 'No items'))}</td></tr>`}</tbody>
           </table>
           <div class="totals">
-            <div><span>Subtotal</span><b>${fmtMoney(o.subtotal ?? (o.total - (o.shipping_cost || 0)), o.currency)}</b></div>
-            <div><span>Shipping</span><b>${fmtMoney(o.shipping_cost, o.currency)}</b></div>
-            ${(() => { const tw = items.reduce((s,i)=>s+(parseFloat(i.weight)||0),0); return tw>0 ? `<div><span>Weight</span><b>${tw} kg</b></div>` : ''; })()}
-            ${o.discount > 0 ? `<div><span>Discount</span><b>-${fmtMoney(o.discount, o.currency)}</b></div>` : ''}
-            <div class="total"><span>TOTAL</span><b>${fmtMoney(o.total, o.currency)}</b></div>
-            <div class="meta">Payment: ${esc((o.payment_method || 'cod').toUpperCase())}</div>
+            <div><span>${esc(t('ui.print.subtotal', 'Subtotal'))}</span><b>${fmtMoney(o.subtotal ?? (o.total - (o.shipping_cost || 0)), o.currency)}</b></div>
+            <div><span>${esc(t('ui.print.shipping', 'Shipping'))}</span><b>${fmtMoney(o.shipping_cost, o.currency)}</b></div>
+            ${(() => { const tw = items.reduce((s,i)=>s+(parseFloat(i.weight)||0),0); return tw>0 ? `<div><span>${esc(t('ui.print.weight', 'Weight'))}</span><b>${tw} kg</b></div>` : ''; })()}
+            ${o.discount > 0 ? `<div><span>${esc(t('ui.print.discount', 'Discount'))}</span><b>-${fmtMoney(o.discount, o.currency)}</b></div>` : ''}
+            <div class="total"><span>${esc(t('ui.print.grandTotal', 'TOTAL'))}</span><b>${fmtMoney(o.total, o.currency)}</b></div>
+            <div class="meta">${esc(t('ui.print.payment', 'Payment:'))} ${esc(payLabel(o.payment_method))}</div>
           </div>
-          ${o.tracking_number ? `<div class="track">Tracking: <b>${esc(o.tracking_number)}</b>${o.delivery_company_name ? ` · ${esc(o.delivery_company_name)}` : ''}</div>` : ''}
-          ${o.notes ? `<div class="notes">Notes: ${esc(o.notes)}</div>` : ''}
+          ${o.tracking_number ? `<div class="track">${esc(t('ui.print.tracking', 'Tracking:'))} <b>${esc(o.tracking_number)}</b>${o.delivery_company_name ? ` · ${esc(o.delivery_company_name)}` : ''}</div>` : ''}
+          ${o.notes ? `<div class="notes">${esc(t('ui.print.notes', 'Notes:'))} ${esc(o.notes)}</div>` : ''}
         </section>`;
     };
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Orders — Print (${hydrated.length})</title>
+    const html = `<!doctype html><html lang="${esc(i18n.language || 'en')}" dir="${(i18n.language || '').startsWith('ar') ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><title>${esc(t('ui.print.docTitle', 'Orders — Print ({{n}})', { n: hydrated.length }))}</title>
       <style>
         *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0;padding:0}
         body{margin:0;padding:0;background:#fff}
@@ -600,7 +601,7 @@ export default function StoreOrders() {
         @media print{body{padding:0}.ticket{border:1px solid #999}h1.title{display:none}}
       </style>
       </head><body>
-        <h1 class="title">${hydrated.length} order${hydrated.length === 1 ? '' : 's'} · ${esc(currentStore?.name || '')} · ${esc(new Date().toLocaleString())}</h1>
+        <h1 class="title">${esc(t('ui.print.nOrders', '{{n}} order(s)', { n: hydrated.length }))} · ${esc(currentStore?.name || '')} · ${esc(new Date().toLocaleString())}</h1>
         ${(() => {
           const tickets = hydrated.map((o, i) => ticket(o, i, hydrated.length));
           const pages = [];
@@ -710,7 +711,7 @@ export default function StoreOrders() {
                     <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">{first.quantity}x</span>
                     <span className="text-xs font-semibold truncate max-w-[120px]">{first.product_name || first.name}</span>
                   </div>
-                  {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">+{items.length-1} more</p>}
+                  {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">{t('ui.orders.plusMore','+{{n}} more',{n:items.length-1})}</p>}
                 </div>
               ) : <span className="text-xs text-gray-400">—</span>}
             </div>
@@ -754,7 +755,7 @@ export default function StoreOrders() {
 
       case 'status':
         return <td className="px-3 py-3">{cellBtn(o, 'status',
-          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm ${sc.bg} ${sc.text}`}>{sc.label} <ChevronDown size={10} className="ml-1 opacity-60"/></span>
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-bold shadow-sm ${sc.bg} ${sc.text}`}>{sc.tKey ? t(sc.tKey, sc.label) : sc.label} <ChevronDown size={10} className="ml-1 opacity-60"/></span>
         )}</td>;
 
       case 'shipping_method':
@@ -771,7 +772,7 @@ export default function StoreOrders() {
         return <td className="px-3 py-3 text-right whitespace-nowrap">{cellBtn(o, 'totals',
           <>
             <p className="text-xs font-black">{fmtMoney(o.total, o.currency)}</p>
-            {o.shipping_cost ? <p className="text-[9px] text-gray-400">+ {fmtMoney(o.shipping_cost, o.currency)} shipping</p> : null}
+            {o.shipping_cost ? <p className="text-[9px] text-gray-400">{t('ui.orders.plusShipping','+ {{amount}} shipping',{amount:fmtMoney(o.shipping_cost, o.currency)})}</p> : null}
           </>
         )}</td>;
 
@@ -823,11 +824,11 @@ export default function StoreOrders() {
         return <td className="px-3 py-3">{cellBtn(o, 'discount',
           o.discount_code
             ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-pink-50 text-pink-700 border border-pink-200"><Tag size={10}/>{o.discount_code}</span>
-            : <span className="text-[10px] text-gray-400">None</span>
+            : <span className="text-[10px] text-gray-400">{t('ui.orders.none', 'None')}</span>
         )}</td>;
 
       case 'created_via':
-        return <td className="px-3 py-3">{cellBtn(o, 'source', <span className="text-[10px] uppercase font-bold text-gray-600">{o.source || o.created_via || 'Storefront'}</span>)}</td>;
+        return <td className="px-3 py-3">{cellBtn(o, 'source', <span className="text-[10px] uppercase font-bold text-gray-600">{o.source || o.created_via || t('ui.orders.storefront', 'Storefront')}</span>)}</td>;
 
       case 'email':
         return (
@@ -858,14 +859,14 @@ export default function StoreOrders() {
         return <td className="px-3 py-3">{cellBtn(o, 'tracking',
           o.tracking_number
             ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200 font-mono"><Truck size={10}/>{o.tracking_number}</span>
-            : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>Add</span>
+            : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500"><Plus size={10}/>{t('ui.orders.add', 'Add')}</span>
         )}</td>;
 
       case 'company_name': {
         const dcName = o.delivery_company_name || o.preferred_delivery_company_name;
         return <td className="px-3 py-3">
           {dcName
-            ? <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border ${o.delivery_company_name ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}><Building2 size={10}/>{dcName}{!o.delivery_company_name && o.preferred_delivery_company_name ? ' (buyer)' : ''}</span>
+            ? <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border ${o.delivery_company_name ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}><Building2 size={10}/>{dcName}{!o.delivery_company_name && o.preferred_delivery_company_name ? t('ui.orders.buyer', ' (buyer)') : ''}</span>
             : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500">—</span>}
         </td>;
       }
@@ -881,7 +882,7 @@ export default function StoreOrders() {
         return <td className="px-3 py-3">{cellBtn(o, 'notes',
           o.notes
             ? <span className="text-xs text-gray-700 truncate block max-w-[180px]">{o.notes}</span>
-            : <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><FileText size={10}/>Add note</span>
+            : <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><FileText size={10}/>{t('ui.orders.addNote', 'Add note')}</span>
         )}</td>;
 
       case 'payment_method':
@@ -892,9 +893,9 @@ export default function StoreOrders() {
               o.payment_method === 'ccp' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
               o.payment_method === 'baridimob' ? 'bg-green-50 text-green-700 border border-green-200' :
               'bg-gray-50 text-gray-700 border border-gray-200'
-            }`}><CreditCard size={10}/>{(o.payment_method || 'cod').replace(/_/g, ' ')}</span>
+            }`}><CreditCard size={10}/>{payLabel(o.payment_method)}</span>
             {o.receipt_image && (o.payment_method === 'ccp' || o.payment_method === 'baridimob') && (
-              <img src={o.receipt_image} alt="Receipt" className="w-8 h-8 rounded object-cover border border-gray-200 cursor-pointer" title="View receipt"/>
+              <img src={o.receipt_image} alt={t('ui.orders.receipt', 'Receipt')} className="w-8 h-8 rounded object-cover border border-gray-200 cursor-pointer" title={t('ui.orders.viewReceipt', 'View receipt')}/>
             )}
           </div>
         )}</td>;
@@ -909,10 +910,10 @@ export default function StoreOrders() {
       {isPreparingPage ? (
         <div className="mb-3 flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-purple-500 text-white shadow flex items-center gap-1.5">
-            <Hourglass size={11} /> Preparing
+            <Hourglass size={11} /> {t('ui.orders.preparing', 'Preparing')}
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/25">({orders.length})</span>
           </span>
-          <span className="text-[11px] text-gray-400">Showing only orders currently being prepared.</span>
+          <span className="text-[11px] text-gray-400">{t('ui.orders.showingOnlyOrdersCurrentlyBeing', 'Showing only orders currently being prepared.')}</span>
         </div>
       ) : (
         <div className="mb-3 overflow-x-auto -mx-1 px-1">
@@ -962,8 +963,8 @@ export default function StoreOrders() {
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.rowsPerPage','Rows per page')}</label>
             <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="input-field !py-2 text-sm w-full">
-              {[10,20,25,50,100].map(n => <option key={n} value={n}>{n} results</option>)}
-              <option value={0}>All</option>
+              {[10,20,25,50,100].map(n => <option key={n} value={n}>{t('ui.orders.nResults','{{n}} results',{n})}</option>)}
+              <option value={0}>{t('ui.orders.all', 'All')}</option>
             </select>
           </div>
         </div>
@@ -984,7 +985,7 @@ export default function StoreOrders() {
           {(!isStaff || can('staff_manage')) && <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <BarChart3 size={13}/>{t('orders.adminStats','Admin Stats')}
           </button>}
-          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Order row size">
+          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title={t('ui.orders.orderRowSize', 'Order row size')}>
             {[['compact','S'],['normal','M'],['large','L']].map(([k,lbl]) => (
               <button key={k} onClick={() => setDensity(k)}
                 className={`px-2 py-1 rounded-lg text-[11px] font-bold uppercase ${density===k?'bg-gray-900 text-white':'text-gray-600 hover:bg-white'}`}>
@@ -992,7 +993,7 @@ export default function StoreOrders() {
               </button>
             ))}
           </div>
-          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title="Column width">
+          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title={t('ui.orders.columnWidth', 'Column width')}>
             <button onClick={() => setColScale(Math.max(0.5, +(colScale-0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">−</button>
             <span className="px-1 text-[10px] font-bold text-gray-500 tabular-nums">{Math.round(colScale*100)}%</span>
             <button onClick={() => setColScale(Math.min(1.5, +(colScale+0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">+</button>
@@ -1098,7 +1099,7 @@ export default function StoreOrders() {
                         onDragEnd={() => { setDraggedCol(null); setDragOverCol(null); }}
                         className={`relative px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap select-none cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'opacity-40' : ''} ${isOver ? 'bg-brand-50 border-l-2 border-brand-500' : ''}`}
                         style={w ? { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` } : undefined}
-                        title="Drag header to reorder · drag right edge to resize"
+                        title={t('ui.orders.dragHeaderToReorderDrag', 'Drag header to reorder · drag right edge to resize')}
                       >
                         <span className="flex items-center gap-1.5">
                           <GripVertical size={10} className="text-gray-300 group-hover:text-gray-500"/>
@@ -1136,7 +1137,7 @@ export default function StoreOrders() {
       {/* Floating bulk bar */}
       {selectedItems.size > 0 && (
         <div className="fixed bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap sm:max-w-[96vw] overflow-x-auto overscroll-x-contain" style={{scrollbarWidth:'thin',WebkitOverflowScrolling:'touch'}}>
-          <span className="text-xs sm:text-sm font-bold shrink-0">{selectedItems.size} sel.</span>
+          <span className="text-xs sm:text-sm font-bold shrink-0">{t('ui.orders.nSel','{{n}} sel.',{n:selectedItems.size})}</span>
           <div className="w-px h-5 bg-gray-600 shrink-0"/>
           {/* Bulk assign to a worker */}
           {canAssign && assignables.length > 0 && <div className="shrink-0">
@@ -1144,16 +1145,16 @@ export default function StoreOrders() {
           </div>}
           {/* Bulk status change */}
           {canStatus && <div className="shrink-0">
-            <button type="button" onClick={()=>setBulkMenu(m=>m==='status'?null:'status')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
+            <button type="button" onClick={()=>setBulkMenu(m=>m==='status'?null:'status')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">{t('ui.orders.status', 'Status')}</span> <ChevronDown size={10}/></button>
           </div>}
           {/* On the Preparing page only Status + Print are allowed */}
           {!isPreparingPage && (<>
           {/* Bulk financial status change */}
           {canEdit && <div className="shrink-0">
-            <button type="button" onClick={()=>setBulkMenu(m=>m==='payment'?null:'payment')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">Payment</span> <ChevronDown size={10}/></button>
+            <button type="button" onClick={()=>setBulkMenu(m=>m==='payment'?null:'payment')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">{t('ui.orders.payment', 'Payment')}</span> <ChevronDown size={10}/></button>
           </div>}
           {/* Auto transfer – uses each order's preferred delivery company */}
-          {canDispatch && <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred',`${alreadyTransferred.length} order(s) already transferred, rest have no preferred company`));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>}
+          {canDispatch && <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred','{{n}} order(s) already transferred, rest have no preferred company',{n:alreadyTransferred.length}));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>}
           {/* Bulk transfer to delivery company */}
           {canDispatch && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='carrier'?null:'carrier')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
@@ -1186,9 +1187,9 @@ export default function StoreOrders() {
           <div className="bg-white rounded-xl shadow-2xl border p-2 max-h-[50vh] overflow-y-auto">
             {bulkMenu==='status'&&(<>
               {(isPreparingPage?['ready','cancelled']:allStatuses.filter(s=>s!=='archived')).map(s=>{const sc2=statusConfig[s];return(
-                <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.label}`);clearSelection();loadOrders();}}
+                <button key={s} onClick={async()=>{const ids=Array.from(selectedItems);const tid=toast.loading(`Updating ${ids.length} orders...`);let ok=0;for(const id of ids){try{await orderApi.updateStatus(currentStore.id,id,{status:s});ok++;}catch{}}toast.dismiss(tid);toast.success(`${ok}/${ids.length} → ${sc2.tKey ? t(sc2.tKey, sc2.label) : sc2.label}`);clearSelection();loadOrders();}}
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700`}>
-                  <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.label}
+                  <span className={`w-2.5 h-2.5 rounded-full ${sc2.color}`}/>{sc2.tKey ? t(sc2.tKey, sc2.label) : sc2.label}
                 </button>
               );})}
             </>)}
@@ -1216,7 +1217,7 @@ export default function StoreOrders() {
                   className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
                   <Truck size={10} className="text-emerald-500"/>{c.name}
                 </button>
-              )):<p className="text-[11px] text-gray-400 px-3 py-2">No delivery companies</p>}
+              )):<p className="text-[11px] text-gray-400 px-3 py-2">{t('ui.orders.noDeliveryCompanies', 'No delivery companies')}</p>}
             </>)}
           </div>
         </div>
@@ -1228,15 +1229,15 @@ export default function StoreOrders() {
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0"><Trash2 size={18}/></div>
               <div>
-                <h2 className="text-lg font-black text-gray-900">Delete {deleteConfirm.ids.length} order{deleteConfirm.ids.length>1?'s':''}?</h2>
-                <p className="text-sm text-gray-500 mt-1">Do you want to archive {deleteConfirm.ids.length>1?'them':'it'} before deleting? Archived orders can be restored from the vault.</p>
+                <h2 className="text-lg font-black text-gray-900">{deleteConfirm.ids.length>1?t('ui.orders.deleteNOrders','Delete {{n}} orders?',{n:deleteConfirm.ids.length}):t('ui.orders.deleteOneOrder','Delete 1 order?')}</h2>
+                <p className="text-sm text-gray-500 mt-1">{deleteConfirm.ids.length>1?t('ui.orders.archiveBeforeDeleteMany','Do you want to archive them before deleting? Archived orders can be restored from the vault.'):t('ui.orders.archiveBeforeDeleteOne','Do you want to archive it before deleting? Archived orders can be restored from the vault.')}</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 mt-5">
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
-                  const tid = toast.loading('Archiving & deleting...');
+                  const tid = toast.loading(t('ui.orders.archivingDeleting', 'Archiving & deleting...'));
                   try { await orderApi.bulkArchive(currentStore.id, ids, true); } catch (e) { console.error('Archive failed:', e); }
                   try { await orderApi.bulkDelete(currentStore.id, ids); } catch (e) { console.error('Delete failed:', e); }
                   toast.dismiss(tid);
@@ -1245,12 +1246,12 @@ export default function StoreOrders() {
                 }}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-2"
               >
-                Archive & Delete
+               {t('ui.orders.archiveDelete', 'Archive & Delete')}e
               </button>
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
-                  const tid = toast.loading('Deleting...');
+                  const tid = toast.loading(t('ui.orders.deleting', 'Deleting...'));
                   try { await orderApi.bulkDelete(currentStore.id, ids); } catch (e) { console.error('Delete failed:', e); }
                   toast.dismiss(tid);
                   toast.success(`${ids.length} order(s) deleted`);
@@ -1258,9 +1259,9 @@ export default function StoreOrders() {
                 }}
                 className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm"
               >
-                Delete without archiving
+               {t('ui.orders.deleteWithoutArchiving', 'Delete without archiving')}g
               </button>
-              <button onClick={() => setDeleteConfirm(null)} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm">Cancel</button>
+              <button onClick={() => setDeleteConfirm(null)} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm">{t('ui.orders.cancel', 'Cancel')}</button>
             </div>
           </div>
         </div>
@@ -1321,7 +1322,7 @@ export default function StoreOrders() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xl font-black">{selectedOrder.order_number}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${sc.bg} ${sc.text} uppercase`}>{sc.label}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${sc.bg} ${sc.text} uppercase`}>{sc.tKey ? t(sc.tKey, sc.label) : sc.label}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar size={12}/>{new Date(selectedOrder.created_at).toLocaleString()}</p>
                 </div>
@@ -1424,13 +1425,13 @@ export default function StoreOrders() {
 
               {(selectedOrder.status === 'shipped' || selectedOrder.status === 'confirmed' || selectedOrder.status === 'preparing' || selectedOrder.status === 'under_preparation') && (
                 <div className="p-4 bg-cyan-50 rounded-2xl space-y-3">
-                  <p className="text-[10px] font-bold text-cyan-600 uppercase">Tracking</p>
+                  <p className="text-[10px] font-bold text-cyan-600 uppercase">{t('ui.orders.tracking', 'Tracking')}</p>
                   {selectedOrder.tracking_number ? (
                     <div className="flex items-center gap-3"><Truck size={16} className="text-cyan-600"/><div className="flex-1">{(() => { const dc = companies.find(c => c.id === selectedOrder.delivery_company_id); const tUrl = dc?.tracking_url ? dc.tracking_url.replace('{tracking_number}', selectedOrder.tracking_number).replace('{trackingNumber}', selectedOrder.tracking_number) : null; return tUrl ? <a href={tUrl} target="_blank" rel="noopener noreferrer" className="font-mono font-bold text-sm text-cyan-700 hover:underline flex items-center gap-1">{selectedOrder.tracking_number} <ExternalLink size={12}/></a> : <p className="font-mono font-bold text-sm">{selectedOrder.tracking_number}</p>; })()}{selectedOrder.tracking_status && <p className="text-xs text-cyan-600 capitalize">{selectedOrder.tracking_status.replace(/_/g,' ')}</p>}</div></div>
                   ) : (
                     <div className="space-y-2">
                       <select className="input-field !py-2 text-sm" value={trackingForm.delivery_company_id} onChange={e => setTrackingForm({...trackingForm, delivery_company_id: e.target.value})}>
-                        <option value="">Select delivery company</option>
+                        <option value="">{t('ui.orders.selectDeliveryCompany', 'Select delivery company')}</option>
                         {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                       <div className="flex gap-2">
@@ -1440,7 +1441,7 @@ export default function StoreOrders() {
                           try { await api.patch(`/manage/stores/${currentStore.id}/orders/${selectedOrder.id}/tracking`, trackingForm); toast.success(t('store.saved','Saved')); setTrackingForm({tracking_number:'',delivery_company_id:''}); const { data } = await orderApi.getOne(currentStore.id, selectedOrder.id); setSelectedOrder(data); loadOrders(); }
                           catch { toast.error(t('store.failed','Failed')); }
                           setSavingTracking(false);
-                        }} className="px-4 py-2 bg-cyan-600 text-white rounded-xl text-xs font-bold disabled:opacity-50 flex items-center gap-1 shrink-0">{savingTracking ? <Loader2 size={12} className="animate-spin"/> : <Truck size={12}/>}Save</button>
+                        }} className="px-4 py-2 bg-cyan-600 text-white rounded-xl text-xs font-bold disabled:opacity-50 flex items-center gap-1 shrink-0">{savingTracking ? <Loader2 size={12} className="animate-spin"/> : <Truck size={12}/>}{t('ui.orders.save', 'Save')}</button>
                       </div>
                     </div>
                   )}
@@ -1448,7 +1449,7 @@ export default function StoreOrders() {
               )}
 
               {canStatus && <div className="space-y-2">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Update Status</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase">{t('ui.orders.updateStatus', 'Update Status')}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(isPreparingPage ? ['ready','cancelled'] : allStatuses).filter(s => s !== selectedOrder.status && s !== 'archived').map(s => {
 
@@ -1456,7 +1457,7 @@ export default function StoreOrders() {
                     return (
                       <button key={s} onClick={() => updateStatus(selectedOrder.id, s)}
                         className={`py-2.5 rounded-xl font-bold text-xs ${sc2.color} text-white hover:opacity-90 flex items-center justify-center gap-1.5`}>
-                        {sc2.label}
+                        {sc2.tKey ? t(sc2.tKey, sc2.label) : sc2.label}
                       </button>
                     );
                   })}
@@ -1470,17 +1471,17 @@ export default function StoreOrders() {
       )}
       {lastDispatchDebug&&<div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-0 sm:p-4" onClick={()=>setLastDispatchDebug(null)}><div className="bg-white rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 w-full sm:max-w-xl max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-sm">{lastDispatchDebug.ok?'✅ Dispatch Result':'❌ Dispatch Failed'}</h3>
+          <h3 className="font-bold text-sm">{lastDispatchDebug.ok?t('ui.orders.dispatchResult', '✅ Dispatch Result'):t('ui.orders.dispatchFailed', '❌ Dispatch Failed')}</h3>
           <button onClick={()=>setLastDispatchDebug(null)} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
         </div>
         {lastDispatchDebug.message&&<p className="text-sm font-medium text-gray-700 mb-2">{lastDispatchDebug.message}</p>}
         {lastDispatchDebug.error&&<p className="text-sm font-bold text-red-600 mb-2">{lastDispatchDebug.error}</p>}
-        {lastDispatchDebug.tracking_number&&<p className="text-sm mb-2">Tracking: <span className="font-mono font-bold text-emerald-700">{lastDispatchDebug.tracking_number}</span></p>}
-        {lastDispatchDebug.carrier_response&&<details open><summary className="text-[10px] text-gray-500 cursor-pointer mb-1">Carrier response</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{typeof lastDispatchDebug.carrier_response==='string'?lastDispatchDebug.carrier_response:JSON.stringify(lastDispatchDebug.carrier_response,null,2)}</pre></details>}
+        {lastDispatchDebug.tracking_number&&<p className="text-sm mb-2">{t('ui.orders.tracking2', 'Tracking:')} <span className="font-mono font-bold text-emerald-700">{lastDispatchDebug.tracking_number}</span></p>}
+        {lastDispatchDebug.carrier_response&&<details open><summary className="text-[10px] text-gray-500 cursor-pointer mb-1">{t('ui.orders.carrierResponse', 'Carrier response')}</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{typeof lastDispatchDebug.carrier_response==='string'?lastDispatchDebug.carrier_response:JSON.stringify(lastDispatchDebug.carrier_response,null,2)}</pre></details>}
         {lastDispatchDebug.debug&&<>
           {lastDispatchDebug.debug.request_url&&<p className="text-[10px] text-gray-500 mt-2 break-all">URL: <span className="font-mono">{lastDispatchDebug.debug.request_url}</span></p>}
-          {lastDispatchDebug.debug.request_body&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request body sent</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(lastDispatchDebug.debug.request_body), null, 2); } catch { return lastDispatchDebug.debug.request_body; } })()}</pre></details>}
-          {lastDispatchDebug.debug.tried&&lastDispatchDebug.debug.tried.length>0&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">URLs tried ({lastDispatchDebug.debug.tried.length})</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{JSON.stringify(lastDispatchDebug.debug.tried,null,2)}</pre></details>}
+          {lastDispatchDebug.debug.request_body&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">{t('ui.orders.requestBodySent', 'Request body sent')}</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(lastDispatchDebug.debug.request_body), null, 2); } catch { return lastDispatchDebug.debug.request_body; } })()}</pre></details>}
+          {lastDispatchDebug.debug.tried&&lastDispatchDebug.debug.tried.length>0&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">{t('ui.orders.urlsTried', 'URLs tried (')}{lastDispatchDebug.debug.tried.length})</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{JSON.stringify(lastDispatchDebug.debug.tried,null,2)}</pre></details>}
         </>}
       </div></div>}
     </DashboardLayout>
@@ -1620,7 +1621,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
             return (
               <button key={s} onClick={() => { onUpdateStatus(s); onClose(); }}
                 className={`py-2.5 rounded-xl text-xs font-bold ${active ? `${sc.color} text-white ring-2 ring-offset-2 ring-gray-300` : `${sc.bg} ${sc.text} hover:opacity-80`}`}>
-                {sc.label}
+                {sc.tKey ? t(sc.tKey, sc.label) : sc.label}
               </button>
             );
           })}
@@ -1912,7 +1913,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         {o.receipt_image && (
           <div className="space-y-2">
             <p className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.paymentReceipt','Payment Receipt')}</p>
-            <img src={o.receipt_image} alt="Receipt" className="w-full rounded-2xl border border-gray-200 max-h-96 object-contain bg-white"/>
+            <img src={o.receipt_image} alt={t('ui.orders.receipt', 'Receipt')} className="w-full rounded-2xl border border-gray-200 max-h-96 object-contain bg-white"/>
           </div>
         )}
         {o.payment_reference && row(t('orders.qa.reference','Reference'), o.payment_reference)}
@@ -2072,7 +2073,7 @@ function CreateOrderModal({ storeId, onClose, onCreated, companies }) {
           </select>
           <input type="number" className="input-field" placeholder={t('orders.shippingCost', 'Shipping cost')} value={form.shipping_cost} onChange={e => setForm({ ...form, shipping_cost: e.target.value })} />
           <select className="input-field" value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value })}>
-            <option value="cod">COD</option>
+            <option value="cod">{t('ui.orders.codShort','COD')}</option>
             <option value="ccp">CCP</option>
             <option value="baridimob">BaridiPay</option>
           </select>
@@ -2155,7 +2156,7 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
                     <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={12} /></button>
                     <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={12} /></button>
                     <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{t(col.tKey, col.label)}</span>
-                    <button onClick={() => toggleColumn(key)} title="Hide" className="w-7 h-7 flex items-center justify-center rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Eye size={13} /></button>
+                    <button onClick={() => toggleColumn(key)} title={t('ui.orders.hide', 'Hide')} className="w-7 h-7 flex items-center justify-center rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Eye size={13} /></button>
                   </div>
                 );
               })}

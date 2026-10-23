@@ -5,7 +5,7 @@ import { Activity, Download } from 'lucide-react';
 import DashboardLayout from '../../../components/shared/DashboardLayout';
 import { useStoreManagement } from '../../../hooks/useStore';
 import { workersApi } from '../../../utils/api';
-import { Skeleton, EmptyState, useActionLabel } from './shared';
+import { Skeleton, EmptyState, useActionLabel, useActivityFormat } from './shared';
 
 // Who did what, when — order actions and account / admin actions together.
 export default function WorkerActivity() {
@@ -26,13 +26,10 @@ export default function WorkerActivity() {
     } catch { setRows([]); }
   };
   useEffect(() => { if (sid) { setRows(null); load(0); } }, [sid, f]); // eslint-disable-line
-  const details = (a) => {
-    if (a.kind === 'order') return a.before || a.after ? `${a.before || '—'} → ${a.after || '—'}` : '';
-    try { const j = JSON.parse(a.after || 'null'); if (!j) return ''; if (j.before && j.after) return Object.keys(j.after).filter((k) => JSON.stringify(j.before[k]) !== JSON.stringify(j.after[k])).map((k) => `${k}: ${JSON.stringify(j.before[k]) ?? '—'} → ${JSON.stringify(j.after[k])}`).join(' · ').slice(0, 200); return JSON.stringify(j).slice(0, 160); } catch { return String(a.after || '').slice(0, 160); }
-  };
+  const { details, entity } = useActivityFormat();
   const exportCsv = () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = [['When', 'Who', 'What', 'Entity', 'Details'].map(esc).join(',')].concat((rows || []).map((a) => [new Date(a.created_at).toISOString(), a.actor_name, actionLabel(a.action), a.target_type ? `${a.target_type} ${a.target || ''}` : '', details(a)].map(esc).join(','))).join('\n');
+    const csv = [[t('workers.when', 'Date & time'), t('workers.who', 'Who'), t('workers.what', 'Action'), t('workers.entity', 'Entity'), t('workers.details', 'Details')].map(esc).join(',')].concat((rows || []).map((a) => [new Date(a.created_at).toISOString(), a.actor_name, actionLabel(a.action), a.target_type ? `${entity(a.target_type)} ${a.target || ''}` : '', details(a)].map(esc).join(','))).join('\n');
     const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); el.download = 'worker-activity.csv'; el.click();
   };
 
@@ -56,9 +53,9 @@ export default function WorkerActivity() {
             <tbody>{rows.map((a, i) => (
               <tr key={i} className="border-b border-gray-50 align-top">
                 <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap text-[12px]">{new Date(a.created_at).toLocaleString()}</td>
-                <td className="px-3 py-2.5 font-semibold text-gray-900 whitespace-nowrap">{a.actor_id && a.kind === 'order' ? <Link to={`/dashboard/workers/${a.actor_id}`} className="hover:text-brand-600">{a.actor_name}</Link> : (a.actor_name || '—')}</td>
+                <td className="px-3 py-2.5 font-semibold text-gray-900 whitespace-nowrap">{a.actor_id && a.kind === 'order' ? <Link to={`/dashboard/workers/${a.actor_id}`} className="hover:text-brand-600">{a.actor_name}</Link> : (['Owner', 'Staff'].includes(a.actor_name) ? t(`workers.jobName.${a.actor_name}`, a.actor_name) : (a.actor_name || '—'))}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap"><span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${a.kind === 'order' ? 'bg-brand-500/10 text-brand-700' : 'bg-gray-100 text-gray-600'}`}>{actionLabel(a.action)}</span></td>
-                <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{a.kind === 'order' ? <Link to={`/dashboard/orders?highlight=${a.target_id}`} className="hover:text-brand-600">#{a.target}</Link> : (a.target_type ? `${a.target_type}` : '—')}</td>
+                <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{a.kind === 'order' ? <Link to={`/dashboard/orders?highlight=${a.target_id}`} className="hover:text-brand-600">#{a.target}</Link> : (a.target_type ? `${entity(a.target_type)}${a.target_type === 'order' && a.target ? ` #${a.target}` : ''}` : '—')}</td>
                 <td className="px-3 py-2.5 text-gray-500 text-[12px] max-w-[360px] break-words">{details(a)}</td>
               </tr>))}</tbody>
           </table>

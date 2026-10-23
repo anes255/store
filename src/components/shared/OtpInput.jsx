@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 // One box per digit: typing moves to the next box, Backspace goes back,
 // arrows move, and pasting a whole code fills every box. `status`
 // ('error' | 'success') colours the boxes; 'error' also shakes them.
 export default function OtpInput({ value = '', onChange, length = 6, status = 'idle', onComplete, autoFocus = true, disabled = false }) {
+  const { t } = useTranslation();
   const refs = useRef([]);
   const digits = Array.from({ length }, (_, i) => value[i] || '');
 
@@ -55,7 +57,7 @@ export default function OtpInput({ value = '', onChange, length = 6, status = 'i
         <motion.input key={i} ref={el => (refs.current[i] = el)}
           type="text" inputMode="numeric" autoComplete={i === 0 ? 'one-time-code' : 'off'} maxLength={length} disabled={disabled}
           value={d} onChange={e => handleChange(i, e)} onKeyDown={e => handleKey(i, e)} onPaste={handlePaste} onFocus={e => e.target.select()}
-          aria-label={`Digit ${i + 1}`}
+          aria-label={t('otp.digitN', 'Digit {{n}}', { n: i + 1 })}
           className="w-11 h-14 sm:w-12 sm:h-14 rounded-xl border-2 text-center text-2xl font-black font-mono bg-white text-gray-900 outline-none transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15"
           style={color ? { borderColor: color, backgroundColor: color + '10' } : d ? { borderColor: '#a78bfa' } : undefined}
           animate={d ? { scale: [1, 1.08, 1] } : { scale: 1 }} transition={{ duration: 0.18 }} />

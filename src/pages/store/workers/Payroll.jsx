@@ -32,7 +32,7 @@ export default function Payroll() {
 
   const load = async () => {
     setD(null);
-    try { const { data } = await workersApi.payroll(sid, year, month); setD(data); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); setD({ items: [], totals: {} }); }
+    try { const { data } = await workersApi.payroll(sid, year, month); setD(data); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); setD({ items: [], totals: {} }); }
   };
   useEffect(() => { if (sid) load(); }, [sid, year, month]); // eslint-disable-line
 
@@ -45,13 +45,13 @@ export default function Payroll() {
   const c = (i, a) => (Array.isArray(i.breakdown) ? i.breakdown : []).filter((l) => l.action === a).reduce((s, l) => s + (l.amount || 0), 0);
   const months = MONTHS(i18n.language);
 
-  const recalc = async () => { setBusy(true); try { const { data } = await workersApi.calculatePayroll(sid, year, month); setD(data); toast.success(t('workers.recalculated', 'Payroll recalculated (approved lines unchanged)')); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); } setBusy(false); };
+  const recalc = async () => { setBusy(true); try { const { data } = await workersApi.calculatePayroll(sid, year, month); setD(data); toast.success(t('workers.recalculated', 'Payroll recalculated (approved lines unchanged)')); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } setBusy(false); };
   const approveAll = async () => {
     if (!(await dangerConfirm({ title: t('workers.approveAllTitle', 'Approve this month\'s payroll?'), description: t('workers.approveAllDesc', 'Approved lines are locked: later order changes go into adjustments instead of changing them.'), holdLabel: t('workers.holdApprove', 'Hold to approve'), cancelLabel: t('workers.notYet', 'Not yet') }))) return;
-    try { const { data } = await workersApi.approveAllPayroll(sid, year, month); toast.success(t('workers.approvedN', '{{n}} line(s) approved', { n: data.approved })); load(); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); }
+    try { const { data } = await workersApi.approveAllPayroll(sid, year, month); toast.success(t('workers.approvedN', '{{n}} line(s) approved', { n: data.approved })); load(); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
   };
   const exportCsv = async () => {
-    try { const r = await workersApi.exportPayroll(sid, year, month); const a = document.createElement('a'); a.href = URL.createObjectURL(r.data); a.download = `payroll-${year}-${String(month).padStart(2, '0')}.csv`; a.click(); URL.revokeObjectURL(a.href); } catch { toast.error('Failed'); }
+    try { const r = await workersApi.exportPayroll(sid, year, month); const a = document.createElement('a'); a.href = URL.createObjectURL(r.data); a.download = `payroll-${year}-${String(month).padStart(2, '0')}.csv`; a.click(); URL.revokeObjectURL(a.href); } catch { toast.error(t('workers.failed', 'Failed')); }
   };
 
   return (
@@ -127,7 +127,7 @@ function PayrollItemSheet({ sid, id, onClose, onChanged, canManage, canPay }) {
   const [pay, setPay] = useState(null);
   const [adj, setAdj] = useState(null);
   const [orders, setOrders] = useState(null);
-  const load = async () => { try { const { data } = await workersApi.payrollItem(sid, id); setD(data); setEdit({ bonuses: String(parseFloat(data.item.bonuses) || ''), deductions: String(parseFloat(data.item.deductions) || ''), notes: data.item.notes || '' }); } catch (e) { toast.error('Failed'); } };
+  const load = async () => { try { const { data } = await workersApi.payrollItem(sid, id); setD(data); setEdit({ bonuses: String(parseFloat(data.item.bonuses) || ''), deductions: String(parseFloat(data.item.deductions) || ''), notes: data.item.notes || '' }); } catch (e) { toast.error(t('workers.failed', 'Failed')); } };
   useEffect(() => { setD(null); setPay(null); setAdj(null); setOrders(null); if (id) load(); }, [id]); // eslint-disable-line
   if (!id) return null;
   const it = d?.item;
@@ -135,7 +135,7 @@ function PayrollItemSheet({ sid, id, onClose, onChanged, canManage, canPay }) {
   const adjTotal = (d?.adjustments || []).reduce((s, a) => s + parseFloat(a.amount), 0);
   const paid = (d?.payments || []).reduce((s, p) => s + parseFloat(p.amount), 0);
   const total = it ? (parseFloat(it.net_amount) || 0) + adjTotal : 0;
-  const act = async (fn, msg) => { try { await fn(); toast.success(msg); await load(); onChanged(); } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); } };
+  const act = async (fn, msg) => { try { await fn(); toast.success(msg); await load(); onChanged(); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } };
   const conv = it ? approxConversions(total, cur, d.fx_rates) : [];
 
   return (
@@ -220,7 +220,7 @@ function FxSheet({ open, onClose, sid, rates, onSaved }) {
   useEffect(() => { if (open) setFx({ USD: rates?.USD || '', EUR: rates?.EUR || '' }); }, [open, rates]);
   return (
     <Sheet open={open} onClose={onClose} title={t('workers.exchangeRates', 'Exchange rates')}
-      footer={<button className="btn-primary text-sm" onClick={async () => { try { await workersApi.savePayrollSettings(sid, { fx_rates: fx }); toast.success(t('workers.saved', 'Saved')); onClose(); onSaved(); } catch { toast.error('Failed'); } }}>{t('workers.save', 'Save')}</button>}>
+      footer={<button className="btn-primary text-sm" onClick={async () => { try { await workersApi.savePayrollSettings(sid, { fx_rates: fx }); toast.success(t('workers.saved', 'Saved')); onClose(); onSaved(); } catch { toast.error(t('workers.failed', 'Failed')); } }}>{t('workers.save', 'Save')}</button>}>
       <p className="text-sm text-gray-500 mb-3">{t('workers.fxHint', 'Only used to show approximate conversions next to totals. Salaries are always paid and stored in their own currency.')}</p>
       {['USD', 'EUR'].map((c) => <div key={c} className="mb-2"><label className="input-label">1 {c} = … DZD</label><input type="number" min="0" step="any" className="input-field" value={fx[c]} onChange={(e) => setFx({ ...fx, [c]: e.target.value })} /></div>)}
     </Sheet>

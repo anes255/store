@@ -409,7 +409,7 @@ function DirectCheckoutModalBody({ product, store, pc, currency, getName, getThu
                                         }`}
                                         style={isSel ? { backgroundColor: pColor, borderColor: pColor } : {}}
                                       >
-                                        {v.name || v.value || 'Option'}
+                                        {v.name || v.value || t('ui.shop.option', 'Option')}
                                       </button>
                                     );
                                   })}

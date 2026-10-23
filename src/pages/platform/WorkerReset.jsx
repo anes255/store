@@ -23,7 +23,7 @@ export default function WorkerReset() {
     e.preventDefault();
     if (pw.a !== pw.b) return toast.error(t('auth.passwordsDontMatch', 'Passwords do not match'));
     setLoading(true);
-    try { const { data } = await workersApi.resetPassword(token, pw.a); setDone(data); } catch (e2) { toast.error(e2?.response?.data?.error || 'Failed'); }
+    try { const { data } = await workersApi.resetPassword(token, pw.a); setDone(data); } catch (e2) { toast.error(e2?.response?.data?.error || t('workers.failed', 'Failed')); }
     setLoading(false);
   };
   const invite = info?.kind === 'invite';

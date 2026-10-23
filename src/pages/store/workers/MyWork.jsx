@@ -49,14 +49,14 @@ export default function MyWork() {
       if (p.language && p.language !== i18n.language) { try { useLangStore.getState().setLang?.(p.language); } catch {} i18n.changeLanguage(p.language); }
       setAuth({ ...user, name: `${p.first_name} ${p.last_name}`.trim(), avatar: p.avatar }, localStorage.getItem('token'), 'store_owner');
       toast.success(t('workers.saved', 'Saved')); load();
-    } catch (e) { toast.error(e?.response?.data?.error || 'Failed'); }
+    } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
     setSaving(false);
   };
   const changePassword = async () => {
     if (pw.new_password !== pw.confirm) return toast.error(t('auth.passwordsDontMatch', 'Passwords do not match'));
     setSaving(true);
     try { const { data } = await workersApi.changeMyPassword(pw); setAuth(data.owner, data.token, 'store_owner'); setPw({ current_password: '', new_password: '', confirm: '' }); toast.success(t('workers.pwChanged', 'Password changed — other devices were logged out')); }
-    catch (e) { toast.error(e?.response?.data?.error || 'Failed'); }
+    catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
     setSaving(false);
   };
 

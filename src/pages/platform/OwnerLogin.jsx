@@ -71,7 +71,7 @@ export default function OwnerLogin() {
         setForgotResetToken(data.reset_token); setForgotStep('newpw');
         setForgotLoading(false); return;
       } catch (e) {
-        if (e.response?.status === 401 && e.response?.data?.error?.includes('Invalid')) throw e;
+        if (e.response?.status === 401 && (e.response?.data?.error_en || e.response?.data?.error)?.includes('Invalid')) throw e;
         // Try admin verify
       }
       const { data } = await api.post('/admin/forgot-password/verify', { otp_token: forgotOtp, code: forgotCode });
@@ -91,7 +91,7 @@ export default function OwnerLogin() {
         toast.success(t('auth.pwResetSuccess', 'Password reset successfully! You can now sign in.'));
         closeForgot(); setForgotLoading(false); return;
       } catch (e) {
-        if (e.response?.status === 401 && e.response?.data?.error?.includes('Invalid')) {
+        if (e.response?.status === 401 && (e.response?.data?.error_en || e.response?.data?.error)?.includes('Invalid')) {
           // Try admin reset
         } else throw e;
       }
@@ -122,7 +122,7 @@ export default function OwnerLogin() {
       const { data } = await ownerApi.login({ identifier, password });
       if (data.requires_2fa) {
         setTwoFa({ otp_token: data.otp_token, method: data.method, masked: data.masked });
-        toast.success(data.message || t('auth.codeSentMethod',`Code sent to your ${data.method === 'email' ? 'email' : 'WhatsApp'}`));
+        toast.success(data.message || (data.method === 'email' ? t('auth.codeSentEmail','Code sent to your email') : t('auth.codeSentWhatsapp','Code sent to your WhatsApp')));
         setLoading(false);
         return;
       }
@@ -386,7 +386,7 @@ export default function OwnerLogin() {
                   {st.logo ? <img src={st.logo} className="w-12 h-12 rounded-full object-cover shrink-0" /> : <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold shrink-0">{(st.name || 'S')[0]}</div>}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 truncate">{st.name}</p>
-                    <p className="text-xs text-gray-400 truncate">/{st.slug}{st.is_live !== false ? ' · Live' : ' · Draft'}</p>
+                    <p className="text-xs text-gray-400 truncate">/{st.slug}{' · '}{st.is_live !== false ? t('storePage.live', 'Live') : t('storePage.draft', 'Draft')}</p>
                   </div>
                   <ArrowRight size={18} className="text-gray-300" />
                 </button>

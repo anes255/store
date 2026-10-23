@@ -137,7 +137,7 @@ export default function WorkerProfile() {
               <p className="font-black text-gray-900 mb-2 flex items-center gap-2"><StoreIcon size={15} />{t('workers.storeAccess', 'Store access')}</p>
               {d.stores.map((s) => <div key={s.worker_id} className="flex items-center justify-between text-sm py-1.5"><span className="font-semibold text-gray-800 truncate">{s.store_name}</span><StatusBadge status={s.status} /></div>)}
               {canManage && !user?.is_staff && otherStores.length > 0 && (
-                <select className="input-field text-sm mt-2" value="" onChange={async (ev) => { if (!ev.target.value) return; try { await workersApi.addToStore(sid, id, ev.target.value); toast.success(t('workers.saved', 'Saved')); load(); } catch (er) { toast.error(er?.response?.data?.error || 'Failed'); } }}>
+                <select className="input-field text-sm mt-2" value="" onChange={async (ev) => { if (!ev.target.value) return; try { await workersApi.addToStore(sid, id, ev.target.value); toast.success(t('workers.saved', 'Saved')); load(); } catch (er) { toast.error(er?.response?.data?.error || t('workers.failed', 'Failed')); } }}>
                   <option value="">+ {t('workers.addToStore', 'Give access to another store…')}</option>{otherStores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               )}
@@ -157,7 +157,7 @@ export default function WorkerProfile() {
             <StatCard label={t('workers.completed', 'Completed')} value={perf.totals.completed} tone="blue" />
             <StatCard label={t('workers.cancelledRejected', 'Cancelled')} value={perf.totals.cancelled} tone="red" />
             <StatCard label={t('workers.confirmationRate', 'Confirmation rate')} value={perf.rates.confirmation != null ? perf.rates.confirmation + '%' : '—'} tone="violet" />
-            <StatCard label={t('workers.avgTime', 'Avg. time to confirm')} value={perf.avg_processing_minutes != null ? `${perf.avg_processing_minutes} min` : '—'} tone="amber" />
+            <StatCard label={t('workers.avgTime', 'Avg. time to confirm')} value={perf.avg_processing_minutes != null ? t('workers.nMin', '{{n}} min', { n: perf.avg_processing_minutes }) : '—'} tone="amber" />
           </div>
           <div className="glass-card-solid p-4"><p className="font-black text-gray-900 mb-3">{t('workers.dailyPerformance', 'Daily performance (30 days)')}</p>
             <div className="h-64"><ResponsiveContainer><BarChart data={perf.daily}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" /><XAxis dataKey="day" tickFormatter={(v) => v.slice(5)} fontSize={11} /><YAxis allowDecimals={false} fontSize={11} width={30} /><Tooltip /><Bar dataKey="confirmed" name={t('workers.confirmed', 'Confirmed')} fill="#10b981" radius={[4, 4, 0, 0]} /><Bar dataKey="completed" name={t('workers.completed', 'Completed')} fill="#3b82f6" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
@@ -171,7 +171,7 @@ export default function WorkerProfile() {
             <p className="font-black text-gray-900 mb-3">{t('workers.payRules', 'Pay rules')}</p>
             {canPay ? <>
               <RulesEditor rules={rules} onChange={setRules} defaultCurrency={currentStore?.currency || 'DZD'} />
-              <div className="flex justify-end mt-3"><button className="btn-primary text-sm flex items-center gap-1.5" disabled={saving} onClick={async () => { setSaving(true); try { await workersApi.setCompensation(sid, id, rules.filter((r) => Number(r.amount) > 0)); toast.success(t('workers.saved', 'Saved')); load(); } catch (er) { toast.error(er?.response?.data?.error || 'Failed'); } setSaving(false); }}><Save size={14} />{t('workers.save', 'Save')}</button></div>
+              <div className="flex justify-end mt-3"><button className="btn-primary text-sm flex items-center gap-1.5" disabled={saving} onClick={async () => { setSaving(true); try { await workersApi.setCompensation(sid, id, rules.filter((r) => Number(r.amount) > 0)); toast.success(t('workers.saved', 'Saved')); load(); } catch (er) { toast.error(er?.response?.data?.error || t('workers.failed', 'Failed')); } setSaving(false); }}><Save size={14} />{t('workers.save', 'Save')}</button></div>
               <p className="text-[11px] text-gray-400 mt-2">{t('workers.rulesHistoryNote', 'Changes apply from now on. Approved payrolls are never changed.')}</p>
             </> : d.rules.map((r) => <div key={r.id} className="flex justify-between text-sm py-1.5"><span className="text-gray-500">{ruleLabel(r.rule_type)}</span><b>{formatMoney(r.amount, r.currency)}</b></div>)}
           </div>
@@ -219,8 +219,8 @@ export default function WorkerProfile() {
               {['active', 'inactive', 'suspended'].concat(w.status === 'pending' ? ['pending'] : []).map((s) => <option key={s} value={s}>{s === 'pending' ? t('workers.pendingInvite', 'Pending invitation') : t(`workers.${s}`, s)}</option>)}
             </select>
             <p className="text-[11px] text-gray-400">{t('workers.statusNote', 'Inactive or suspended workers are logged out at once and cannot log in.')}</p>
-            <button className="btn-secondary w-full text-sm flex items-center justify-center gap-1.5" onClick={async () => { try { await workersApi.revokeSessions(sid, id); toast.success(t('workers.loggedOut', 'Worker logged out everywhere')); } catch (er) { toast.error('Failed'); } }}><LogOut size={14} />{t('workers.logoutEverywhere', 'Log out everywhere')}</button>
-            <button className="btn-secondary w-full text-sm flex items-center justify-center gap-1.5" onClick={async () => { try { const { data } = await workersApi.resetWorkerPassword(sid, id, 'link'); await navigator.clipboard?.writeText(data.link); toast.success(data.sent?.length ? t('workers.resetLinkSent', 'Reset link sent and copied') : t('workers.linkCopied', 'Link copied')); } catch (er) { toast.error(er?.response?.data?.error || 'Failed'); } }}><KeyRound size={14} />{t('workers.sendResetLink', 'Send password reset link')}</button>
+            <button className="btn-secondary w-full text-sm flex items-center justify-center gap-1.5" onClick={async () => { try { await workersApi.revokeSessions(sid, id); toast.success(t('workers.loggedOut', 'Worker logged out everywhere')); } catch (er) { toast.error(t('workers.failed', 'Failed')); } }}><LogOut size={14} />{t('workers.logoutEverywhere', 'Log out everywhere')}</button>
+            <button className="btn-secondary w-full text-sm flex items-center justify-center gap-1.5" onClick={async () => { try { const { data } = await workersApi.resetWorkerPassword(sid, id, 'link'); await navigator.clipboard?.writeText(data.link); toast.success(data.sent?.length ? t('workers.resetLinkSent', 'Reset link sent and copied') : t('workers.linkCopied', 'Link copied')); } catch (er) { toast.error(er?.response?.data?.error || t('workers.failed', 'Failed')); } }}><KeyRound size={14} />{t('workers.sendResetLink', 'Send password reset link')}</button>
           </div>}
         </div>
       )}

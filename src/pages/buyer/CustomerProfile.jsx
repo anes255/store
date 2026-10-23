@@ -513,7 +513,7 @@ export default function CustomerProfile() {
                 </div>
                 <div>
                   <h1 className="text-3xl sm:text-5xl font-extrabold text-white italic" style={{ letterSpacing: '-0.03em', fontFamily: "Arial, sans-serif" }}>
-                    {t('store.welcomeBack', 'Welcome back,')} <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${pc}, #818cf8)` }}>{firstName || 'Customer'}!</span>
+                    {t('store.welcomeBack', 'Welcome back,')} <span className="bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, ${pc}, #818cf8)` }}>{firstName || t('ui.shop.customer', 'Customer')}!</span>
                   </h1>
                   <p className="text-sm text-gray-300/80 mt-2 font-light tracking-[0.2em] uppercase">{t('store.manageProfile', 'Manage your profile and preferences')}</p>
                 </div>

@@ -83,7 +83,7 @@ function LiveBadge({storeId}){
     return ()=>{ mounted = false; clearInterval(id); };
   },[storeId]);
   return (
-    <span className="badge badge-success text-[10px] flex items-center gap-1 sm:gap-1.5 !px-1.5 sm:!px-2.5" title={count!=null?`${count} buyer${count===1?'':'s'} browsing now`:''}>
+    <span className="badge badge-success text-[10px] flex items-center gap-1 sm:gap-1.5 !px-1.5 sm:!px-2.5" title={count!=null?t('ui.layout.buyersBrowsing','{{count}} buyer(s) browsing now',{count}):''}>
       <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"/>
         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"/>
@@ -208,14 +208,14 @@ function NotifBell(){
 
   const enablePush=async()=>{
     try{
-      if(!('serviceWorker' in navigator)||!('PushManager' in window)){alert('Push notifications not supported on this browser');return;}
+      if(!('serviceWorker' in navigator)||!('PushManager' in window)){alert(t('ui.layout.pushUnsupported','Push notifications not supported on this browser'));return;}
       const perm=await Notification.requestPermission();
-      if(perm!=='granted'){alert('Notifications blocked. Go to browser Settings → Site Settings → Notifications → Allow');return;}
+      if(perm!=='granted'){alert(t('ui.layout.pushBlocked','Notifications blocked. Go to browser Settings → Site Settings → Notifications → Allow'));return;}
       const reg=await navigator.serviceWorker.register('/sw-notif.js');
       await navigator.serviceWorker.ready;
       const{ownerApi}=await import('../../utils/api');
       const{data}=await ownerApi.getVapidKey();
-      if(!data.publicKey){alert('Push not configured on server');return;}
+      if(!data.publicKey){alert(t('ui.layout.pushNotConfigured','Push not configured on server'));return;}
       let sub=await reg.pushManager.getSubscription();
       if(!sub){
         const raw=atob(data.publicKey.replace(/-/g,'+').replace(/_/g,'/'));
@@ -224,8 +224,8 @@ function NotifBell(){
       }
       await ownerApi.subscribePush({subscription:sub.toJSON(),storeId:currentStore.id});
       setPushOk(true);
-      alert('Push notifications enabled! You will receive alerts for new orders.');
-    }catch(e){alert('Push setup failed: '+e.message);}
+      alert(t('ui.layout.pushEnabled','Push notifications enabled! You will receive alerts for new orders.'));
+    }catch(e){alert(t('ui.layout.pushFailed','Push setup failed: {{msg}}',{msg:e.message}));}
   };
 
   // Check if already subscribed
@@ -282,24 +282,24 @@ function NotifBell(){
     {/* On phones this shrinks to the bell alone — with the word it was 102px
         of a 240px action row, which is what pushed the other icons out of
         view on every page whose title is longer than "Dashboard". */}
-    {!pushOk&&<button onClick={enablePush} title={t('notifications.enable','Enable notifications')} className="px-1.5 sm:px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse whitespace-nowrap" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔<span className="hidden sm:inline"> Enable</span></button>}
+    {!pushOk&&<button onClick={enablePush} title={t('notifications.enable','Enable notifications')} className="px-1.5 sm:px-2 py-1 text-white text-[10px] font-bold rounded-lg animate-pulse whitespace-nowrap" style={{backgroundColor:useAdminTheme.getState().primaryColor}}>🔔<span className="hidden sm:inline"> {t('ui.layout.enable', 'Enable')}</span></button>}
     <button ref={btnRef} onClick={()=>{if(!open){load();if(unread>0&&currentStore?.id){import('../../utils/api').then(({ownerApi})=>{ownerApi.markAllRead(currentStore.id).then(()=>{setUnread(0);setNotifs(prev=>prev.map(n=>({...n,is_read:true})));}).catch(()=>{});});}}setOpen(!open);}} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 relative"><Bell size={18}/>{unread>0&&<span className="notif-badge">{unread>9?'9+':unread}</span>}</button>
     {open&&anchor&&createPortal(<>
       <div className="fixed inset-0 z-[100]" onClick={()=>setOpen(false)}/>
       <div className="fixed w-[min(92vw,22rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[101] overflow-hidden" style={{top:anchor.top,...(anchor.left!=null?{left:anchor.left}:{right:anchor.right})}}>
         <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-          <h3 className="font-bold text-sm flex-1">Notifications</h3>
+          <h3 className="font-bold text-sm flex-1">{t('ui.layout.notifications', 'Notifications')}</h3>
           {selectMode?(<>
-            <button onClick={()=>{setSelected(new Set(notifs.map(n=>n.id)));}} className="text-[11px] text-gray-500 hover:underline">All</button>
-            <button onClick={removeSelected} disabled={!selected.size} className="text-[11px] font-bold text-red-500 disabled:text-gray-300 hover:underline">Delete{selected.size?` (${selected.size})`:''}</button>
-            <button onClick={()=>{setSelectMode(false);setSelected(new Set());}} className="text-[11px] text-gray-500 hover:underline">Cancel</button>
+            <button onClick={()=>{setSelected(new Set(notifs.map(n=>n.id)));}} className="text-[11px] text-gray-500 hover:underline">{t('ui.layout.all', 'All')}</button>
+            <button onClick={removeSelected} disabled={!selected.size} className="text-[11px] font-bold text-red-500 disabled:text-gray-300 hover:underline">{t('ui.layout.delete', 'Delete')}{selected.size?` (${selected.size})`:''}</button>
+            <button onClick={()=>{setSelectMode(false);setSelected(new Set());}} className="text-[11px] text-gray-500 hover:underline">{t('ui.layout.cancel', 'Cancel')}</button>
           </>):(<>
-            {notifs.length>0&&<button onClick={()=>setSelectMode(true)} className="text-[11px] text-gray-500 hover:underline">Select</button>}
-            {unread>0&&<button onClick={markAll} className="text-[11px] text-brand-500 hover:underline">Mark read</button>}
-            {notifs.length>0&&<button onClick={removeAll} className="text-[11px] text-red-500 hover:underline">Clear</button>}
+            {notifs.length>0&&<button onClick={()=>setSelectMode(true)} className="text-[11px] text-gray-500 hover:underline">{t('ui.layout.select', 'Select')}</button>}
+            {unread>0&&<button onClick={markAll} className="text-[11px] text-brand-500 hover:underline">{t('ui.layout.markRead', 'Mark read')}</button>}
+            {notifs.length>0&&<button onClick={removeAll} className="text-[11px] text-red-500 hover:underline">{t('ui.layout.clear', 'Clear')}</button>}
           </>)}
         </div>
-        <div className="max-h-80 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">No notifications yet</p>:notifs.slice(0,30).map(n=>(
+        <div className="max-h-80 overflow-y-auto">{notifs.length===0?<p className="p-6 text-center text-gray-400 text-sm">{t('ui.layout.noNotificationsYet', 'No notifications yet')}</p>:notifs.slice(0,30).map(n=>(
           <div key={n.id} className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer flex items-start gap-2 ${!n.is_read?'bg-brand-50/30':''}`} onClick={()=>{if(selectMode){toggleSelected(n.id);return;}openNotif(n);}}>
             {selectMode && <input type="checkbox" checked={selected.has(n.id)} onChange={()=>toggleSelected(n.id)} onClick={e=>e.stopPropagation()} className="mt-1 w-4 h-4 rounded border-gray-300 text-brand-500"/>}
             {n.image
@@ -307,10 +307,10 @@ function NotifBell(){
               : <span className="text-sm mt-0.5">{typeIcon[n.type]||'📌'}</span>}
             <div className="flex-1 min-w-0"><p className="text-sm text-gray-800 font-medium truncate">{n.title}</p>{n.message&&<p className="text-xs text-gray-400 truncate">{n.message}</p>}<p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(n.created_at)}</p></div>
             {!n.is_read&&<span className="w-2 h-2 bg-brand-500 rounded-full mt-1.5 shrink-0"/>}
-            {!selectMode && <button onClick={(e)=>{e.stopPropagation();removeOne(n.id);}} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 shrink-0" title="Remove"><X size={14}/></button>}
+            {!selectMode && <button onClick={(e)=>{e.stopPropagation();removeOne(n.id);}} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 shrink-0" title={t('ui.layout.remove', 'Remove')}><X size={14}/></button>}
           </div>
         ))}</div>
-        <button onClick={()=>setOpen(false)} className="w-full p-3 text-center text-xs text-gray-400 hover:bg-gray-50 border-t">Close</button>
+        <button onClick={()=>setOpen(false)} className="w-full p-3 text-center text-xs text-gray-400 hover:bg-gray-50 border-t">{t('ui.layout.close', 'Close')}</button>
       </div>
     </>,document.body)}
   </div>);
@@ -683,7 +683,7 @@ export default function DashboardLayout({children}){
         })()}
       </nav>
       <div className={`border-t shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sidebarOpen?'p-3':'p-2'} ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className={`flex items-center ${sidebarOpen?'gap-2 rounded-xl p-2.5':'justify-center rounded-lg p-2'} mb-2`} style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||'User'}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
+        <div className={`flex items-center ${sidebarOpen?'gap-2 rounded-xl p-2.5':'justify-center rounded-lg p-2'} mb-2`} style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('ui.layout.user', 'User')}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center ${sidebarOpen?'gap-3 px-4':'justify-center px-0'} py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
@@ -757,7 +757,7 @@ export default function DashboardLayout({children}){
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor} buttonColor={theme.buttonColor} onButtonColorChange={theme.setButtonColor} backgroundColor={theme.backgroundColor} onBackgroundColorChange={theme.setBackgroundColor}/>
           <LanguageSwitcher/>
-          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?(user.staff_role_label||user.staff_role||'Staff'):'Admin'}>{user?.is_staff?(user.staff_role_label||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
+          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||user.staff_role||t('ui.layout.staff', 'Staff')):t('ui.layout.admin', 'Admin')}>{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
           {currentStore?.is_live!==false&&<span className="md:hidden"><LiveBadge storeId={currentStore?.id}/></span>}
         </div>
         </div>

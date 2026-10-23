@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useEffect,useState,useRef}from'react';import{Routes,Route,Navigate,useNavigate,useParams,useLocation}from'react-router-dom';import{Toaster}from'react-hot-toast';import{useAuthStore}from'./hooks/useStore';import{getPlatformInfo,storeApi}from'./utils/api';
+import{useTranslation}from'react-i18next';
 import DangerConfirmHost from './components/shared/DangerConfirm';
 
 // The platform brand name is permanently "MakretDZ". The document title is
@@ -133,7 +134,7 @@ const TrackOrder=lazy(()=>import('./pages/buyer/TrackOrder'));
 const StoreFAQ=lazy(()=>import('./pages/buyer/StoreFAQ'));
 const BuyerLandingPage=lazy(()=>import('./pages/buyer/BuyerLandingPage'));
 
-const Loading=()=>(<div className="min-h-screen flex items-center justify-center bg-white"><div className="flex flex-col items-center gap-3"><div className="w-10 h-10 rounded-full border-[3px] border-gray-200 border-t-[#7C3AED] animate-spin"/><p className="text-xs text-gray-400 font-medium animate-pulse">Loading...</p></div></div>);
+const Loading=()=>{const{t}=useTranslation();return(<div className="min-h-screen flex items-center justify-center bg-white"><div className="flex flex-col items-center gap-3"><div className="w-10 h-10 rounded-full border-[3px] border-gray-200 border-t-[#7C3AED] animate-spin"/><p className="text-xs text-gray-400 font-medium animate-pulse">{t('common.loading','Loading...')}</p></div></div>);};
 const ProtectedRoute=({children,allowedRoles})=>{const{token,role}=useAuthStore();const isAdminArea=(allowedRoles&&allowedRoles.includes('platform_admin'))||(typeof window!=='undefined'&&window.location.pathname.startsWith('/admin'));const loginPath=isAdminArea?'/admin/login':'/login';if(!token)return<Navigate to={loginPath} replace/>;if(allowedRoles&&!allowedRoles.includes(role))return<Navigate to={loginPath} replace/>;return children;};
 const RESERVED_SLUGS=new Set(['admin','dashboard','login','register','s','api','platform','owner','profile','favorites','checkout','auth','product']);
 const SlugGuard=({children})=>{const{storeSlug}=useParams();if(RESERVED_SLUGS.has((storeSlug||'').toLowerCase()))return null;return children;};

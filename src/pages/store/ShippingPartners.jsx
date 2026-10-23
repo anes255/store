@@ -82,7 +82,7 @@ const PRESETS=[
   ].map(([name,sub,color])=>({name,logo:name[0],color,ecotrack:true,
     api_base_url:`https://${sub}.ecotrack.dz/api/v1`,api_auth_type:'bearer',
     api_tracking_endpoint:'/get/tracking/info?tracking={tracking_number}',api_status_path:'data.activity.0.event',
-    headers:[],query_params:[],verified:true,
+    headers:[],query_params:[],verified:true,helpKey:'ecotrackFamily',helpVars:{name,sub},
     help:`${name} runs on EcoTrack (${sub}.ecotrack.dz) → API → copy your Bearer token. Supports create orders, track, labels, returns. If the company gave you a different platform address, change "Company platform URL" below.`,
     create_endpoint:'/create/order',create_method:'POST',create_tracking_path:'tracking',create_body_template:''})),
 ];
@@ -238,8 +238,9 @@ export default function ShippingPartners(){
 
   const copyWebhookUrl=async(c)=>{
     const base=import.meta.env.VITE_API_URL||'https://test-dz47.onrender.com/api';
-    const url=`${base}/webhook/carrier/${currentStore.id}/${c.id}`;
-    try{await navigator.clipboard.writeText(url);toast.success(t('storePage.copied','Copied!'));}catch{toast.error(t('storePage.failed','Failed'));}
+    try{const{data}=await api.get(`/manage/stores/${currentStore.id}/delivery-companies/${c.id}/webhook-key`);
+      const url=`${base}/webhook/carrier/${currentStore.id}/${c.id}/${data.key}`;
+      await navigator.clipboard.writeText(url);toast.success(t('storePage.copied','Copied!'));}catch{toast.error(t('storePage.failed','Failed'));}
   };
 
   const[diagnosing,setDiagnosing]=useState(null);
@@ -286,8 +287,8 @@ export default function ShippingPartners(){
       <div><h1 className="text-xl sm:text-2xl font-bold">{t('storePage.shippingPartners','Shipping Partners')}</h1><p className="text-xs sm:text-sm text-gray-400 mt-1">{t('storePage.addYourDeliveryCompanies','Add your delivery companies')}</p></div>
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title="List view"><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
-          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title="Grid view"><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title={t('ui.shipping.listView', 'List view')}><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
+          <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title={t('ui.shipping.gridView', 'Grid view')}><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
         </div>
         <button onClick={()=>{setEditing(null);setForm({...EMPTY});setStep('pick');setTestResult(null);setShowModal(true);}} className="btn-primary flex items-center gap-2 text-xs sm:text-sm"><Plus size={16}/>{t('storePage.addCompany','Add Company')}</button>
       </div>
@@ -321,8 +322,8 @@ export default function ShippingPartners(){
             <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100 flex-wrap">
               <span className="inline-flex items-center rounded-lg border border-gray-200 overflow-hidden shrink-0" title={t('storePage.checkoutOrder','Order at checkout')}><span className="px-1.5 text-[10px] font-bold text-gray-400">#{companies.findIndex(x=>x.id===c.id)+1}</span><button onClick={()=>moveCompany(c,-1)} disabled={companies[0]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveUp','Move up')}><ArrowUp size={14}/></button><button onClick={()=>moveCompany(c,1)} disabled={companies[companies.length-1]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveDown','Move down')}><ArrowDown size={14}/></button></span>
               <button onClick={()=>setDefaultCompany(c)} disabled={settingDefault===c.id} className={`p-2 rounded-lg ${c.is_default?'text-amber-500 bg-amber-50':'text-gray-300 hover:text-amber-500 hover:bg-amber-50'}`} title={c.is_default?t('storePage.defaultOnHint','Default company — buyers get it pre-selected at checkout. Click to clear.'):t('storePage.defaultOffHint','Make this the default company at checkout')}>{settingDefault===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Star size={14} fill={c.is_default?'currentColor':'none'}/>}</button>
-              {c.api_base_url&&<button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 hover:bg-amber-50 rounded-lg text-gray-400 hover:text-amber-600" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>}
-              {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title="Copy webhook URL"><Link2 size={14}/></button>}
+              {c.api_base_url&&<button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 hover:bg-amber-50 rounded-lg text-gray-400 hover:text-amber-600" title={t('ui.shipping.diagnoseRawApiTest', 'Diagnose — raw API test')}>{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>}
+              {c.api_base_url&&<button onClick={()=>copyWebhookUrl(c)} className="p-2 hover:bg-purple-50 rounded-lg text-gray-400 hover:text-purple-500" title={t('ui.shipping.copyWebhookUrl', 'Copy webhook URL')}><Link2 size={14}/></button>}
               <button onClick={()=>openEdit(c)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-brand-500"><Edit size={14}/></button>
               <button onClick={()=>del(c.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14}/></button>
               <button onClick={()=>setExpandedPricing(expandedPricing===c.id?null:c.id)} className={`p-2 rounded-lg text-[10px] font-bold flex items-center gap-1 ${expandedPricing===c.id?'bg-brand-100 text-brand-700':'hover:bg-gray-100 text-gray-400'}`}><DollarSign size={14}/></button>
@@ -340,7 +341,7 @@ export default function ShippingPartners(){
                     return(
                       <div key={w.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                         <span className="text-[10px] font-mono font-bold text-gray-400 w-6 shrink-0">{w.wilaya_code}</span>
-                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate min-w-0">{t(`wilayas.${w.wilaya_code}`,w.wilaya_name)}</span>
+                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate min-w-0">{t(`wilayas.${String(w.wilaya_code).padStart(2,"0")}`,w.wilaya_name)}</span>
                         <input type="number" placeholder={t('storePage.deskShort','Desk')} value={cur.desk||''} onChange={e=>updateCompanyPrice(w.id,c.id,'desk',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
                         <input type="number" placeholder={t('storePage.homeShort','Home')} value={cur.home||''} onChange={e=>updateCompanyPrice(w.id,c.id,'home',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
                         <span className="text-[9px] text-gray-400">DA</span>
@@ -374,8 +375,8 @@ export default function ShippingPartners(){
               </div>
               <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap sm:shrink-0 -mx-1 sm:mx-0 overflow-x-auto sm:overflow-visible">
                 {c.api_base_url&&<>
-                  <button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 sm:p-2.5 hover:bg-amber-50 rounded-xl text-gray-400 hover:text-amber-600 shrink-0" title="Diagnose — raw API test">{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>
-                  <button onClick={()=>copyWebhookUrl(c)} className="p-2 sm:p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500 shrink-0" title="Copy webhook URL"><Link2 size={14}/></button>
+                  <button onClick={()=>diagnoseCarrier(c.id)} disabled={diagnosing===c.id} className="p-2 sm:p-2.5 hover:bg-amber-50 rounded-xl text-gray-400 hover:text-amber-600 shrink-0" title={t('ui.shipping.diagnoseRawApiTest', 'Diagnose — raw API test')}>{diagnosing===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Stethoscope size={14}/>}</button>
+                  <button onClick={()=>copyWebhookUrl(c)} className="p-2 sm:p-2.5 hover:bg-purple-50 rounded-xl text-gray-400 hover:text-purple-500 shrink-0" title={t('ui.shipping.copyWebhookUrl', 'Copy webhook URL')}><Link2 size={14}/></button>
                 </>}
                 <span className="inline-flex items-center rounded-lg border border-gray-200 overflow-hidden shrink-0" title={t('storePage.checkoutOrder','Order at checkout')}><span className="px-1.5 text-[10px] font-bold text-gray-400">#{companies.findIndex(x=>x.id===c.id)+1}</span><button onClick={()=>moveCompany(c,-1)} disabled={companies[0]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveUp','Move up')}><ArrowUp size={14}/></button><button onClick={()=>moveCompany(c,1)} disabled={companies[companies.length-1]?.id===c.id} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-brand-500 disabled:opacity-30" title={t('storePage.moveDown','Move down')}><ArrowDown size={14}/></button></span>
                 <button onClick={()=>setDefaultCompany(c)} disabled={settingDefault===c.id} className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${c.is_default?'text-amber-500 bg-amber-50':'text-gray-400 hover:text-amber-500 hover:bg-amber-50'}`} title={c.is_default?t('storePage.defaultOnHint','Default company — buyers get it pre-selected at checkout. Click to clear.'):t('storePage.defaultOffHint','Make this the default company at checkout')}>{settingDefault===c.id?<div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin"/>:<Star size={14} fill={c.is_default?'currentColor':'none'}/>}</button>
@@ -397,7 +398,7 @@ export default function ShippingPartners(){
                     return(
                       <div key={w.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                         <span className="text-[10px] font-mono font-bold text-gray-400 w-6 shrink-0">{w.wilaya_code}</span>
-                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate min-w-0">{t(`wilayas.${w.wilaya_code}`,w.wilaya_name)}</span>
+                        <span className="text-xs font-semibold text-gray-700 flex-1 truncate min-w-0">{t(`wilayas.${String(w.wilaya_code).padStart(2,"0")}`,w.wilaya_name)}</span>
                         <input type="number" placeholder={t('storePage.deskShort','Desk')} value={cur.desk||''} onChange={e=>updateCompanyPrice(w.id,c.id,'desk',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
                         <input type="number" placeholder={t('storePage.homeShort','Home')} value={cur.home||''} onChange={e=>updateCompanyPrice(w.id,c.id,'home',e.target.value)} className="input-field !w-20 !py-1 text-xs text-center"/>
                         <span className="text-[9px] text-gray-400">DA</span>
@@ -448,7 +449,7 @@ export default function ShippingPartners(){
         </div>
 
         {/* Help tip for preset companies */}
-        {PRESETS.filter(p=>p.name===form.name).map(p=>(<div key={p.name} className="p-3 bg-blue-50 border border-blue-200 rounded-xl mb-4 flex items-start gap-2"><HelpCircle size={14} className="text-blue-500 shrink-0 mt-0.5"/><p className="text-xs text-blue-700">{p.help}</p></div>))}
+        {PRESETS.filter(p=>p.name===form.name).map(p=>(<div key={p.name} className="p-3 bg-blue-50 border border-blue-200 rounded-xl mb-4 flex items-start gap-2"><HelpCircle size={14} className="text-blue-500 shrink-0 mt-0.5"/><p className="text-xs text-blue-700">{t(`ui.shipping.help.${p.helpKey||p.name.replace(/[^A-Za-z0-9]/g,'')}`,p.help,p.helpVars||{})}</p></div>))}
 
         <div className="space-y-4">
           {/* Company logo: shown on the partner cards and in the checkout
@@ -496,39 +497,39 @@ export default function ShippingPartners(){
             <div><label className="text-xs font-bold text-emerald-700">{t('storePage.platformUrl','Company platform URL')}</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>{setForm({...form,api_base_url:e.target.value});setTestResult(null);}} placeholder="https://company.ecotrack.dz/api/v1"/><p className="text-[10px] text-emerald-700 mt-1">{t('storePage.platformUrlHint','Change it if the company moved to a new address.')}</p></div>
 
             {form.api_auth_type==='bearer'&&(
-              <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/><p className="text-[10px] text-emerald-700 mt-1">Sent as: Authorization: Bearer &lt;token&gt;</p></div>
+              <div><label className="text-xs font-bold text-emerald-700">{t('ui.shipping.apiToken', 'API Token *')}</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder={t('ui.shipping.pasteYourApiTokenHere', 'Paste your API token here')}/><p className="text-[10px] text-emerald-700 mt-1">{t('ui.shipping.sentAsAuthorizationBearerToken', 'Sent as: Authorization: Bearer <token>')}</p></div>
             )}
 
             {form.api_auth_type==='token_prefix'&&(
-              <div><label className="text-xs font-bold text-emerald-700">API Token *</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder="Paste your API token here"/><p className="text-[10px] text-emerald-700 mt-1">Sent as: Authorization: Token &lt;token&gt;</p></div>
+              <div><label className="text-xs font-bold text-emerald-700">{t('ui.shipping.apiToken', 'API Token *')}</label><input className="input-field font-mono text-sm" value={form.api_key} onChange={e=>setForm({...form,api_key:e.target.value})} placeholder={t('ui.shipping.pasteYourApiTokenHere', 'Paste your API token here')}/><p className="text-[10px] text-emerald-700 mt-1">{t('ui.shipping.sentAsAuthorizationTokenToken', 'Sent as: Authorization: Token <token>')}</p></div>
             )}
 
             {form.api_auth_type==='custom_headers'&&Object.keys(form.api_headers).length>0&&(
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-emerald-700 uppercase">Required headers (all must be filled):</p>
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">{t('ui.shipping.requiredHeadersAllMustBe', 'Required headers (all must be filled):')}</p>
                 {Object.entries(form.api_headers).map(([key],i)=>(
-                  <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${key}`} value={form.api_headers[key]} onChange={e=>setForm({...form,api_headers:{...form.api_headers,[key]:e.target.value}})}/></div>
+                  <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={t('ui.shipping.pasteYour', 'Paste your {{v0}}', { v0: key })} value={form.api_headers[key]} onChange={e=>setForm({...form,api_headers:{...form.api_headers,[key]:e.target.value}})}/></div>
                 ))}
               </div>
             )}
 
             {(form.api_auth_type==='query_params'||(form.api_auth_type==='bearer'&&Object.keys(form.api_query_params||{}).length>0))&&Object.keys(form.api_query_params||{}).length>0&&(
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-emerald-700 uppercase">Required query parameters (all must be filled):</p>
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">{t('ui.shipping.requiredQueryParametersAllMust', 'Required query parameters (all must be filled):')}</p>
                 {Object.entries(form.api_query_params).map(([key],i)=>(
-                  <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${key}`} value={form.api_query_params[key]} onChange={e=>setForm({...form,api_query_params:{...form.api_query_params,[key]:e.target.value}})}/></div>
+                  <div key={i}><label className="text-xs font-bold text-emerald-700">{key} *</label><input className="input-field font-mono text-sm" placeholder={t('ui.shipping.pasteYour', 'Paste your {{v0}}', { v0: key })} value={form.api_query_params[key]} onChange={e=>setForm({...form,api_query_params:{...form.api_query_params,[key]:e.target.value}})}/></div>
                 ))}
-                <p className="text-[10px] text-emerald-600">These are appended to every request URL.</p>
+                <p className="text-[10px] text-emerald-600">{t('ui.shipping.theseAreAppendedToEvery', 'These are appended to every request URL.')}</p>
               </div>
             )}
 
             {form.api_auth_type==='oauth2'&&(
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-emerald-700 uppercase">OAuth2 client credentials (system fetches the token automatically):</p>
+                <p className="text-[10px] font-bold text-emerald-700 uppercase">{t('ui.shipping.oauth2ClientCredentialsSystemFetches', 'OAuth2 client credentials (system fetches the token automatically):')}</p>
                 {['client_id','client_secret'].map(k=>(
-                  <div key={k}><label className="text-xs font-bold text-emerald-700">{k} *</label><input className="input-field font-mono text-sm" placeholder={`Paste your ${k}`} value={form.oauth2_credentials?.[k]||''} onChange={e=>setForm({...form,oauth2_credentials:{...(form.oauth2_credentials||{}),[k]:e.target.value}})}/></div>
+                  <div key={k}><label className="text-xs font-bold text-emerald-700">{k} *</label><input className="input-field font-mono text-sm" placeholder={t('ui.shipping.pasteYour', 'Paste your {{v0}}', { v0: k })} value={form.oauth2_credentials?.[k]||''} onChange={e=>setForm({...form,oauth2_credentials:{...(form.oauth2_credentials||{}),[k]:e.target.value}})}/></div>
                 ))}
-                {form.oauth2_token_url&&<p className="text-[10px] text-emerald-600 break-all">Token URL: {form.oauth2_token_url}</p>}
+                {form.oauth2_token_url&&<p className="text-[10px] text-emerald-600 break-all">{t('ui.shipping.tokenUrl', 'Token URL:')} {form.oauth2_token_url}</p>}
               </div>
             )}
 
@@ -548,27 +549,27 @@ export default function ShippingPartners(){
               }`}>
                 <p className="font-bold">
                   {testResult.ok && testResult.unverified
-                    ? '⚠️ ' + (testResult.message || 'Configuration saved — verify by dispatching a real order.')
+                    ? '⚠️ ' + (testResult.message || t('ui.shipping.configurationSavedVerifyByDispatching', 'Configuration saved — verify by dispatching a real order.'))
                     : testResult.ok
-                      ? '✅ ' + (testResult.message || 'Connection verified')
-                      : '❌ ' + (testResult.error || 'Connection failed')}
+                      ? '✅ ' + (testResult.message || t('ui.shipping.connectionVerified', 'Connection verified'))
+                      : '❌ ' + (testResult.error || t('ui.shipping.connectionFailed', 'Connection failed'))}
                 </p>
                 {testResult.url && <p className="text-[10px] font-mono opacity-70 break-all">URL: {testResult.url}</p>}
                 {testResult.results?.status_extraction?.message && <p className="text-[11px] opacity-80">📍 {testResult.results.status_extraction.message}</p>}
                 {testResult.sample && (
                   <details className="text-[11px] opacity-80">
-                    <summary className="cursor-pointer">Show carrier response (first 240 chars)</summary>
+                    <summary className="cursor-pointer">{t('ui.shipping.showCarrierResponseFirst240', 'Show carrier response (first 240 chars)')}</summary>
                     <pre className="mt-1 p-2 bg-white/60 rounded text-[10px] font-mono whitespace-pre-wrap break-all">{testResult.sample}</pre>
                   </details>
                 )}
                 {testResult.differential && (
                   <details className="text-[11px] opacity-80">
-                    <summary className="cursor-pointer">Show differential probe (real vs fake credentials)</summary>
+                    <summary className="cursor-pointer">{t('ui.shipping.showDifferentialProbeRealVs', 'Show differential probe (real vs fake credentials)')}</summary>
                     <div className="mt-1 p-2 bg-white/60 rounded text-[10px] font-mono whitespace-pre-wrap break-all">
-                      <p className="font-bold mb-1">Real creds (HTTP {testResult.differential.real_status}):</p>
-                      <p className="mb-2">{testResult.differential.real_sample || '(empty)'}</p>
-                      <p className="font-bold mb-1">Fake creds (HTTP {testResult.differential.fake_status}):</p>
-                      <p>{testResult.differential.fake_sample || '(empty)'}</p>
+                      <p className="font-bold mb-1">{t('ui.shipping.realCredsHttp', 'Real creds (HTTP')} {testResult.differential.real_status}):</p>
+                      <p className="mb-2">{testResult.differential.real_sample || t('ui.shipping.empty', '(empty)')}</p>
+                      <p className="font-bold mb-1">{t('ui.shipping.fakeCredsHttp', 'Fake creds (HTTP')} {testResult.differential.fake_status}):</p>
+                      <p>{testResult.differential.fake_sample || t('ui.shipping.empty', '(empty)')}</p>
                     </div>
                   </details>
                 )}
@@ -578,7 +579,7 @@ export default function ShippingPartners(){
                     <div className="mt-1 p-2 bg-white/60 rounded text-[10px] font-mono whitespace-pre-wrap break-all">
                       <p className="font-bold mb-1">URL:</p>
                       <p className="mb-2">{testResult.url}</p>
-                      <p className="font-bold mb-1">Body sent:</p>
+                      <p className="font-bold mb-1">{t('ui.shipping.bodySent', 'Body sent:')}</p>
                       <p>{testResult.request_body}</p>
                     </div>
                   </details>
@@ -600,28 +601,28 @@ export default function ShippingPartners(){
                 <button onClick={()=>{setForm({...form,use_api:!form.use_api});setTestResult(null);}} className={`w-11 h-6 rounded-full transition-colors relative ${form.use_api?'bg-brand-500':'bg-gray-300'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.use_api?'translate-x-5':'translate-x-0.5'}`}/></button>
               </div>
               {form.use_api&&<>
-                <div><label className="text-xs font-bold text-gray-600">API Base URL</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>setForm({...form,api_base_url:e.target.value})} placeholder="https://api.company.com/v1"/></div>
-                <div><label className="text-xs font-bold text-gray-600">Auth Type</label>
+                <div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.apiBaseUrl', 'API Base URL')}</label><input className="input-field font-mono text-sm" value={form.api_base_url} onChange={e=>setForm({...form,api_base_url:e.target.value})} placeholder="https://api.company.com/v1"/></div>
+                <div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.authType', 'Auth Type')}</label>
                   <select className="input-field text-sm" value={form.api_auth_type} onChange={e=>setForm({...form,api_auth_type:e.target.value})}>
-                    <option value="none">None</option>
-                    <option value="bearer">Bearer Token (Authorization: Bearer …)</option>
-                    <option value="token_prefix">Token Prefix (Authorization: Token …)</option>
-                    <option value="custom_headers">Custom Headers (multi-key)</option>
-                    <option value="query_params">Query Parameters (?api_token=…&user_guid=…)</option>
-                    <option value="oauth2">OAuth2 Client Credentials (auto token)</option>
+                    <option value="none">{t('ui.shipping.none', 'None')}</option>
+                    <option value="bearer">{t('ui.shipping.bearerTokenAuthorizationBearer', 'Bearer Token (Authorization: Bearer …)')}</option>
+                    <option value="token_prefix">{t('ui.shipping.tokenPrefixAuthorizationToken', 'Token Prefix (Authorization: Token …)')}</option>
+                    <option value="custom_headers">{t('ui.shipping.customHeadersMultiKey', 'Custom Headers (multi-key)')}</option>
+                    <option value="query_params">{t('ui.shipping.queryParametersApiTokenUser', 'Query Parameters (?api_token=…&user_guid=…)')}</option>
+                    <option value="oauth2">{t('ui.shipping.oauth2ClientCredentialsAutoToken', 'OAuth2 Client Credentials (auto token)')}</option>
                   </select>
                 </div>
-                <div><label className="text-xs font-bold text-gray-600">HTTP Method</label>
+                <div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.httpMethod', 'HTTP Method')}</label>
                   <select className="input-field text-sm" value={form.api_method||'GET'} onChange={e=>setForm({...form,api_method:e.target.value})}>
                     <option value="GET">GET</option><option value="POST">POST</option>
                   </select>
                 </div>
-                {form.api_method==='POST'&&<div><label className="text-xs font-bold text-gray-600">Request Body Template (JSON)</label><textarea className="input-field font-mono text-xs" rows={3} value={form.api_body_template||''} onChange={e=>setForm({...form,api_body_template:e.target.value})} placeholder='{"Colis":[{"Tracking":"{tracking_number}"}]}'/></div>}
-                {form.api_auth_type==='oauth2'&&<div><label className="text-xs font-bold text-gray-600">OAuth2 Token URL</label><input className="input-field font-mono text-sm" value={form.oauth2_token_url||''} onChange={e=>setForm({...form,oauth2_token_url:e.target.value})} placeholder="https://api.example.com/oauth/token"/></div>}
-                <div><label className="text-xs font-bold text-gray-600">Tracking Endpoint</label><input className="input-field font-mono text-sm" value={form.api_tracking_endpoint} onChange={e=>setForm({...form,api_tracking_endpoint:e.target.value})} placeholder="/parcels/?tracking={tracking_number}"/></div>
-                <div><label className="text-xs font-bold text-gray-600">Status Path</label><input className="input-field font-mono text-sm" value={form.api_status_path} onChange={e=>setForm({...form,api_status_path:e.target.value})} placeholder="data.0.last_status"/></div>
+                {form.api_method==='POST'&&<div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.requestBodyTemplateJson', 'Request Body Template (JSON)')}</label><textarea className="input-field font-mono text-xs" rows={3} value={form.api_body_template||''} onChange={e=>setForm({...form,api_body_template:e.target.value})} placeholder='{"Colis":[{"Tracking":"{tracking_number}"}]}'/></div>}
+                {form.api_auth_type==='oauth2'&&<div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.oauth2TokenUrl', 'OAuth2 Token URL')}</label><input className="input-field font-mono text-sm" value={form.oauth2_token_url||''} onChange={e=>setForm({...form,oauth2_token_url:e.target.value})} placeholder="https://api.example.com/oauth/token"/></div>}
+                <div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.trackingEndpoint', 'Tracking Endpoint')}</label><input className="input-field font-mono text-sm" value={form.api_tracking_endpoint} onChange={e=>setForm({...form,api_tracking_endpoint:e.target.value})} placeholder="/parcels/?tracking={tracking_number}"/></div>
+                <div><label className="text-xs font-bold text-gray-600">{t('ui.shipping.statusPath', 'Status Path')}</label><input className="input-field font-mono text-sm" value={form.api_status_path} onChange={e=>setForm({...form,api_status_path:e.target.value})} placeholder="data.0.last_status"/></div>
                 {form.api_auth_type==='custom_headers'&&<div>
-                  <div className="flex items-center justify-between mb-1"><label className="text-xs font-bold text-gray-600">Headers</label><button onClick={addHeader} className="text-xs text-brand-500 font-bold">+ Add</button></div>
+                  <div className="flex items-center justify-between mb-1"><label className="text-xs font-bold text-gray-600">{t('ui.shipping.headers', 'Headers')}</label><button onClick={addHeader} className="text-xs text-brand-500 font-bold">{t('ui.shipping.add', '+ Add')}</button></div>
                   {Object.entries(form.api_headers).map(([key,val],i)=>(
                     <div key={i} className="flex gap-2 mb-1">
                       <input className="input-field text-xs font-mono flex-1 !py-1.5" placeholder="Header-Name" value={key} onChange={e=>{const h={...form.api_headers};delete h[key];h[e.target.value]=val;setForm({...form,api_headers:h});}}/>
@@ -650,7 +651,7 @@ export default function ShippingPartners(){
         <button onClick={()=>setDiagnoseResult(null)}><X size={20}/></button>
       </div>
       {diagnoseResult.error&&<div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">{diagnoseResult.error}</div>}
-      {diagnoseResult.carrier&&<div className="text-xs text-gray-500 mb-3">Carrier: <span className="font-bold text-gray-700">{diagnoseResult.carrier}</span> | Base URL: <span className="font-mono text-[10px]">{diagnoseResult.api_base_url}</span> | Auth: {diagnoseResult.api_auth_type} | Key: {diagnoseResult.has_api_key?'✅ present':'❌ missing'}{diagnoseResult.working_base&&diagnoseResult.working_base!==diagnoseResult.api_base_url&&<span className="ml-2 text-emerald-600 font-bold">Working base: <span className="font-mono">{diagnoseResult.working_base}</span></span>}</div>}
+      {diagnoseResult.carrier&&<div className="text-xs text-gray-500 mb-3">{t('ui.shipping.carrier', 'Carrier:')} <span className="font-bold text-gray-700">{diagnoseResult.carrier}</span> {t('ui.shipping.baseUrl', '| Base URL:')} <span className="font-mono text-[10px]">{diagnoseResult.api_base_url}</span> {t('ui.shipping.auth', '| Auth:')} {diagnoseResult.api_auth_type} {t('ui.shipping.key', '| Key:')} {diagnoseResult.has_api_key?t('ui.shipping.present', '✅ present'):t('ui.shipping.missing', '❌ missing')}{diagnoseResult.working_base&&diagnoseResult.working_base!==diagnoseResult.api_base_url&&<span className="ml-2 text-emerald-600 font-bold">{t('ui.shipping.workingBase', 'Working base:')} <span className="font-mono">{diagnoseResult.working_base}</span></span>}</div>}
       {diagnoseResult.summary&&<div className={`p-3 rounded-xl border mb-3 text-sm font-semibold whitespace-pre-wrap ${diagnoseResult.summary.startsWith('✅')?'bg-emerald-50 border-emerald-200 text-emerald-700':diagnoseResult.summary.startsWith('❌')?'bg-red-50 border-red-200 text-red-700':'bg-amber-50 border-amber-200 text-amber-700'}`}>{diagnoseResult.summary}</div>}
       {diagnoseResult.steps&&diagnoseResult.steps.map((s,i)=>{
         const diagOk=s.diagnosis&&(s.diagnosis.includes('✅')||s.diagnosis.includes('SUCCEEDED'));
@@ -661,19 +662,19 @@ export default function ShippingPartners(){
         <div key={i} className={`p-3 rounded-xl border mb-2 ${stepColor}`}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">{(s.step||'').replace(/_/g,' ')}</span>
-            {s.error?<span className="text-[10px] text-red-600 font-bold">ERROR</span>:s.status?<span className={`text-[10px] font-bold ${s.status>=200&&s.status<300?'text-emerald-600':s.status>=400?'text-red-600':'text-amber-600'}`}>HTTP {s.status}</span>:s.ok===true?<span className="text-[10px] font-bold text-emerald-600">OK</span>:s.ok===false?<span className="text-[10px] font-bold text-red-600">FAIL</span>:null}
+            {s.error?<span className="text-[10px] text-red-600 font-bold">{t('ui.shipping.error', 'ERROR')}</span>:s.status?<span className={`text-[10px] font-bold ${s.status>=200&&s.status<300?'text-emerald-600':s.status>=400?'text-red-600':'text-amber-600'}`}>HTTP {s.status}</span>:s.ok===true?<span className="text-[10px] font-bold text-emerald-600">{t('ui.shipping.ok', 'OK')}</span>:s.ok===false?<span className="text-[10px] font-bold text-red-600">{t('ui.shipping.fail', 'FAIL')}</span>:null}
           </div>
           {s.diagnosis&&<p className={`text-xs font-semibold mb-1 whitespace-pre-wrap ${diagTextColor}`}>{s.diagnosis}</p>}
-          {s.redirect&&<p className="text-[10px] text-amber-600 font-mono mb-1">Redirected ({s.redirect.code}): {s.redirect.from} → {s.redirect.to}</p>}
+          {s.redirect&&<p className="text-[10px] text-amber-600 font-mono mb-1">{t('ui.shipping.redirected', 'Redirected (')}{s.redirect.code}): {s.redirect.from} → {s.redirect.to}</p>}
           {s.url&&<p className="text-[10px] font-mono text-gray-500 break-all mb-1">{s.method?s.method+' ':'GET '}{s.url}</p>}
           {s.request_url&&!s.url&&<p className="text-[10px] font-mono text-gray-500 break-all mb-1">POST {s.request_url}</p>}
-          {s.headers_sent&&typeof s.headers_sent==='object'&&!Array.isArray(s.headers_sent)&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request headers</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-32 overflow-auto">{JSON.stringify(Object.fromEntries(Object.entries(s.headers_sent).map(([k,v])=>[k,k.toLowerCase().includes('auth')||k.toLowerCase().includes('token')?v.slice(0,10)+'…':v])),null,2)}</pre></details>}
-          {(s.body_sent||s.form_body_sent||s.request_body)&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">Request body</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { const b=s.body_sent||s.form_body_sent||s.request_body||''; try { return JSON.stringify(JSON.parse(b), null, 2); } catch { return b; } })()}</pre></details>}
+          {s.headers_sent&&typeof s.headers_sent==='object'&&!Array.isArray(s.headers_sent)&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">{t('ui.shipping.requestHeaders', 'Request headers')}</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-32 overflow-auto">{JSON.stringify(Object.fromEntries(Object.entries(s.headers_sent).map(([k,v])=>[k,k.toLowerCase().includes('auth')||k.toLowerCase().includes('token')?v.slice(0,10)+'…':v])),null,2)}</pre></details>}
+          {(s.body_sent||s.form_body_sent||s.request_body)&&<details className="mb-1"><summary className="text-[10px] text-gray-500 cursor-pointer">{t('ui.shipping.requestBody', 'Request body')}</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{(() => { const b=s.body_sent||s.form_body_sent||s.request_body||''; try { return JSON.stringify(JSON.parse(b), null, 2); } catch { return b; } })()}</pre></details>}
           {s.error&&<p className="text-xs text-red-600">{s.error}</p>}
-          {s.response&&<details open={s.step?.includes('create')||s.step?.includes('dispatch')}><summary className="text-[10px] text-gray-500 cursor-pointer">Response</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-60 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.response), null, 2); } catch { return s.response; } })()}</pre></details>}
-          {s.tracking_number&&<p className="text-[10px] text-gray-500">Tracking: <span className="font-mono font-bold">{s.tracking_number}</span></p>}
-          {s.tracking&&<p className="text-[10px] text-gray-500">Tracking: <span className="font-mono font-bold">{s.tracking}</span></p>}
-          {(s.tried||s.trials)&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer font-bold">{(s.tried||s.trials).length} endpoint(s) tried</summary><div className="mt-1 space-y-1">{(s.tried||s.trials).map((t,j)=>(
+          {s.response&&<details open={s.step?.includes('create')||s.step?.includes('dispatch')}><summary className="text-[10px] text-gray-500 cursor-pointer">{t('ui.shipping.response', 'Response')}</summary><pre className="mt-1 p-2 bg-white/80 rounded text-[10px] font-mono whitespace-pre-wrap break-all max-h-60 overflow-auto">{(() => { try { return JSON.stringify(JSON.parse(s.response), null, 2); } catch { return s.response; } })()}</pre></details>}
+          {s.tracking_number&&<p className="text-[10px] text-gray-500">{t('ui.shipping.tracking', 'Tracking:')} <span className="font-mono font-bold">{s.tracking_number}</span></p>}
+          {s.tracking&&<p className="text-[10px] text-gray-500">{t('ui.shipping.tracking', 'Tracking:')} <span className="font-mono font-bold">{s.tracking}</span></p>}
+          {(s.tried||s.trials)&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer font-bold">{(s.tried||s.trials).length} {t('ui.shipping.endpointSTried', 'endpoint(s) tried')}</summary><div className="mt-1 space-y-1">{(s.tried||s.trials).map((t,j)=>(
             <div key={j} className={`p-2 rounded-lg text-[10px] border ${t.status===200?'bg-emerald-50/50 border-emerald-200':t.status===404?'bg-gray-50 border-gray-200':'bg-amber-50/50 border-amber-200'}`}>
               <div className="flex items-center justify-between"><span className="font-mono break-all">{t.url||t.base||''}</span>{t.status&&<span className={`font-bold ${t.status===200?'text-emerald-600':t.status===404?'text-gray-400':'text-amber-600'}`}>{t.status}</span>}</div>
               {t.diagnosis&&<p className={`font-semibold mt-0.5 ${t.diagnosis.includes('✅')?'text-emerald-700':t.diagnosis.includes('❌')?'text-red-600':'text-gray-600'}`}>{t.diagnosis}</p>}
@@ -681,7 +682,7 @@ export default function ShippingPartners(){
               {t.error&&<p className="text-red-600">{t.error}</p>}
             </div>
           ))}</div></details>}
-          {s.working_base&&<p className="text-[10px] mt-1 text-emerald-600 font-bold">Recommended base URL: <span className="font-mono">{s.working_base}</span></p>}
+          {s.working_base&&<p className="text-[10px] mt-1 text-emerald-600 font-bold">{t('ui.shipping.recommendedBaseUrl', 'Recommended base URL:')} <span className="font-mono">{s.working_base}</span></p>}
         </div>
         );
       })}
