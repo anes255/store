@@ -8,10 +8,10 @@ import en from './en';
 // tables were parsed on every single page load, for everyone.
 // Each language = its main table + the storefront strings (buyer_*.js),
 // merged so either can be edited on its own.
-const withBuyer = (main, buyer) => () => Promise.all([main(), buyer()]).then(([m, b]) => ({ main: m.default, buyer: b.default }));
+const withBuyer = (main, buyer, workers) => () => Promise.all([main(), buyer(), workers()]).then(([m, b, w]) => ({ main: m.default, buyer: b.default, workers: w.default }));
 const LOADERS = {
-  fr: withBuyer(() => import('./fr'), () => import('./buyer_fr')),
-  ar: withBuyer(() => import('./ar'), () => import('./buyer_ar')),
+  fr: withBuyer(() => import('./fr'), () => import('./buyer_fr'), () => import('./workers_fr')),
+  ar: withBuyer(() => import('./ar'), () => import('./buyer_ar'), () => import('./workers_ar')),
 };
 
 const stored = (() => { try { return localStorage.getItem('lang') || 'en'; } catch { return 'en'; } })();
@@ -34,6 +34,7 @@ export function loadLanguage(lng) {
     .then(m => {
       i18n.addResourceBundle(code, 'translation', m.main, true, true);
       i18n.addResourceBundle(code, 'translation', m.buyer, true, true); // deep-merge storefront strings
+      i18n.addResourceBundle(code, 'translation', m.workers, true, true); // workers & payroll
       return code;
     })
     .catch(() => 'en');

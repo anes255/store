@@ -90,6 +90,15 @@ const StoreProducts=lazy(()=>import('./pages/store/StoreProducts'));
 const StoreSettings=lazy(()=>import('./pages/store/StoreSettings'));
 const StoreApps=lazy(()=>import('./pages/store/StoreApps'));
 const StoreStaff=lazy(()=>import('./pages/store/StoreStaff'));
+const WorkersPage=lazy(()=>import('./pages/store/workers/WorkersPage'));
+const WorkerProfile=lazy(()=>import('./pages/store/workers/WorkerProfile'));
+const WorkerRoles=lazy(()=>import('./pages/store/workers/WorkerRoles'));
+const Payroll=lazy(()=>import('./pages/store/workers/Payroll'));
+const WorkerPerformance=lazy(()=>import('./pages/store/workers/WorkerPerformance'));
+const WorkerActivity=lazy(()=>import('./pages/store/workers/WorkerActivity'));
+const MyWork=lazy(()=>import('./pages/store/workers/MyWork'));
+const WorkerLogin=lazy(()=>import('./pages/platform/WorkerLogin'));
+const WorkerReset=lazy(()=>import('./pages/platform/WorkerReset'));
 const StoreCustomers=lazy(()=>import('./pages/store/StoreCustomers'));
 const CartRecovery=lazy(()=>import('./pages/store/CartRecovery'));
 const StoreDomains=lazy(()=>import('./pages/store/StoreDomains'));
@@ -133,6 +142,8 @@ const P=({children})=>(<ProtectedRoute allowedRoles={['store_owner']}>{children}
 export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><DangerConfirmHost/><Toaster position="top-center" toastOptions={{style:{borderRadius:'12px',background:'#1f2937',color:'#fff',fontSize:'14px',fontWeight:500},success:{iconTheme:{primary:'#10b981',secondary:'#fff'}},error:{iconTheme:{primary:'#ef4444',secondary:'#fff'}}}}/><Suspense fallback={<Loading/>}><Routes>
 <Route path="/" element={<LandingPage/>}/>
 <Route path="/login" element={<OwnerLogin/>}/>
+<Route path="/worker/login" element={<WorkerLogin/>}/>
+<Route path="/worker/reset" element={<WorkerReset/>}/>
 <Route path="/register" element={<OwnerRegister/>}/>
 <Route path="/admin/login" element={<OwnerLogin/>}/>
 <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['platform_admin']}><PlatformAdminDashboard/></ProtectedRoute>}/>
@@ -147,7 +158,15 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><Da
 <Route path="/dashboard/settings" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/store-settings" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/apps" element={<P><StoreApps/></P>}/>
-<Route path="/dashboard/staff" element={<P><StoreStaff/></P>}/>
+<Route path="/dashboard/staff" element={<Navigate to="/dashboard/workers" replace/>}/>
+<Route path="/dashboard/staff-legacy" element={<P><StoreStaff/></P>}/>
+<Route path="/dashboard/workers" element={<P><WorkersPage/></P>}/>
+<Route path="/dashboard/workers/roles" element={<P><WorkerRoles/></P>}/>
+<Route path="/dashboard/workers/payroll" element={<P><Payroll/></P>}/>
+<Route path="/dashboard/workers/performance" element={<P><WorkerPerformance/></P>}/>
+<Route path="/dashboard/workers/activity" element={<P><WorkerActivity/></P>}/>
+<Route path="/dashboard/workers/:id" element={<P><WorkerProfile/></P>}/>
+<Route path="/dashboard/me" element={<P><MyWork/></P>}/>
 <Route path="/dashboard/customers" element={<P><StoreCustomers/></P>}/>
 <Route path="/dashboard/blacklist" element={<P><Blacklist/></P>}/>
 <Route path="/dashboard/auto-blacklist" element={<P><AutoBlacklist/></P>}/>

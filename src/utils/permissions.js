@@ -5,6 +5,8 @@ export const ALL_PERMISSIONS = [
   { key: 'analytics_view', label: 'View Analytics', group: 'Dashboard' },
   { key: 'apps_view', label: 'View Apps', group: 'Dashboard' },
   { key: 'orders_view', label: 'View Orders', group: 'Orders' },
+  { key: 'orders_view_assigned', label: 'View Assigned Orders Only', group: 'Orders' },
+  { key: 'orders_assign', label: 'Assign Orders to Workers', group: 'Orders' },
   { key: 'orders_edit', label: 'Edit / Update Orders', group: 'Orders' },
   { key: 'orders_confirm', label: 'Confirm Orders', group: 'Orders' },
   { key: 'orders_prepare', label: 'Prepare Orders', group: 'Orders' },
@@ -32,6 +34,11 @@ export const ALL_PERMISSIONS = [
   { key: 'settings_view', label: 'View Settings', group: 'Settings' },
   { key: 'settings_edit', label: 'Edit Store Settings', group: 'Settings' },
   { key: 'staff_manage', label: 'Manage Staff', group: 'Settings' },
+  { key: 'workers_view', label: 'View Workers & Performance', group: 'Workers' },
+  { key: 'workers_manage', label: 'Add / Edit Workers & Roles', group: 'Workers' },
+  { key: 'payroll_view', label: 'View Payroll', group: 'Payroll' },
+  { key: 'payroll_manage', label: 'Calculate & Approve Payroll', group: 'Payroll' },
+  { key: 'payroll_pay', label: 'Record Salary Payments', group: 'Payroll' },
   { key: 'builder_edit', label: 'Edit Page Builder', group: 'Settings' },
   { key: 'domains_manage', label: 'Manage Domains', group: 'Settings' },
 ];
@@ -46,7 +53,8 @@ const ALIASES = {
   view_products: ['products_view'], manage_products: ['products_view', 'products_edit', 'stock_manage'],
   view_customers: ['customers_view'], manage_customers: ['customers_view', 'customers_edit'],
   view_analytics: ['analytics_view', 'dashboard_view'], manage_settings: ['settings_view', 'settings_edit'],
-  manage_staff: ['staff_manage'], confirm_orders: ['orders_confirm'], prepare_orders: ['orders_prepare'],
+  manage_staff: ['staff_manage', 'workers_view', 'workers_manage'], confirm_orders: ['orders_confirm'], prepare_orders: ['orders_prepare'],
+  staff_manage: ['workers_view', 'workers_manage'], workers_manage: ['workers_view'], payroll_manage: ['payroll_view', 'payroll_pay'], payroll_pay: ['payroll_view'],
 };
 export function normalizePerms(raw) {
   let p = raw;

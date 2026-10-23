@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
 import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer } from 'lucide-react';
 import useStaffAccess from '../../hooks/useStaffAccess';
+import { workersApi } from '../../utils/api';
 
 // All columns available to toggle / reorder.
 const ALL_COLUMNS = [
@@ -143,6 +144,19 @@ export default function StoreOrders() {
   const [pageSize, setPageSize] = useState(() => Number(localStorage.getItem('orders.pageSize') || 25));
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  // Order assignment to workers (who confirms / prepares which order).
+  const canAssign = can('orders_assign');
+  const [assignables, setAssignables] = useState([]);
+  useEffect(() => { if (canAssign && currentStore?.id) workersApi.assignableWorkers(currentStore.id).then((r) => setAssignables(r.data.workers || [])).catch(() => {}); }, [canAssign, currentStore?.id]); // eslint-disable-line
+  const workerName = (id) => assignables.find((w) => String(w.id) === String(id))?.name;
+  const assignOrders = async (ids, staffId) => {
+    try {
+      await workersApi.assignOrders(currentStore.id, ids, staffId);
+      setOrders((prev) => prev.map((o) => ids.includes(o.id) ? { ...o, assigned_staff_id: staffId } : o));
+      setSelectedOrder((so) => (so && ids.includes(so.id) ? { ...so, assigned_staff_id: staffId } : so));
+      toast.success(staffId ? t('orders.assignedTo', 'Assigned to {{n}}', { n: workerName(staffId) || '' }) : t('orders.unassigned', 'Unassigned'));
+    } catch (e) { toast.error(e?.response?.data?.error || t('orders.failed', 'Failed')); }
+  };
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [companies, setCompanies] = useState([]);
   const [trackingForm, setTrackingForm] = useState({ tracking_number: '', delivery_company_id: '' });
@@ -1124,6 +1138,10 @@ export default function StoreOrders() {
         <div className="fixed bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 bg-gray-900 text-white rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-2xl z-50 whitespace-nowrap sm:max-w-[96vw] overflow-x-auto overscroll-x-contain" style={{scrollbarWidth:'thin',WebkitOverflowScrolling:'touch'}}>
           <span className="text-xs sm:text-sm font-bold shrink-0">{selectedItems.size} sel.</span>
           <div className="w-px h-5 bg-gray-600 shrink-0"/>
+          {/* Bulk assign to a worker */}
+          {canAssign && assignables.length > 0 && <div className="shrink-0">
+            <button type="button" onClick={()=>setBulkMenu(m=>m==='assign'?null:'assign')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 rounded-lg text-xs font-bold"><User size={12}/><span className="hidden sm:inline">{t('orders.assign','Assign')}</span> <ChevronDown size={10}/></button>
+          </div>}
           {/* Bulk status change */}
           {canStatus && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='status'?null:'status')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">Status</span> <ChevronDown size={10}/></button>
@@ -1184,6 +1202,13 @@ export default function StoreOrders() {
                   <span className={`w-2.5 h-2.5 rounded-full ${dot}`}/>{label}
                 </button>
               );})}
+            </>)}
+            {bulkMenu==='assign'&&(<>
+              {assignables.map(w=>(
+                <button key={w.id} onClick={()=>{assignOrders(Array.from(selectedItems),w.id);clearSelection();}} className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 hover:bg-gray-50 text-gray-700">
+                  <User size={10} className="text-fuchsia-500"/>{w.name}{w.job_type&&<span className="text-gray-400 font-normal">· {w.job_type}</span>}
+                </button>))}
+              <button onClick={()=>{assignOrders(Array.from(selectedItems),null);clearSelection();}} className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-400 hover:bg-gray-50">{t('orders.unassign','Unassign')}</button>
             </>)}
             {bulkMenu==='carrier'&&(<>
               {companies.length?companies.map(c=>(
@@ -1308,8 +1333,15 @@ export default function StoreOrders() {
                 <div className="p-4 bg-gray-50 rounded-2xl">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('orders.customer','Customer')}</p>
                   <p className="font-bold flex items-center gap-2"><User size={14} className="text-gray-400"/>{selectedOrder.customer_name}</p>
-                  <p className="text-sm text-gray-500 flex items-center gap-2 mt-1"><Phone size={14} className="text-gray-400"/>{selectedOrder.customer_phone}</p>
+                  <a href={`tel:${selectedOrder.customer_phone}`} onClick={() => workersApi.logOrderAction(currentStore.id, selectedOrder.id, 'called').catch(() => {})} className="text-sm text-gray-500 hover:text-brand-600 flex items-center gap-2 mt-1" dir="ltr"><Phone size={14} className="text-gray-400"/>{selectedOrder.customer_phone}</a>
                   {selectedOrder.customer_email && <p className="text-sm text-gray-500 flex items-center gap-2 mt-1"><Mail size={14} className="text-gray-400"/>{selectedOrder.customer_email}</p>}
+                  {/* which worker handles this order */}
+                  {canAssign && assignables.length > 0 ? (
+                    <select className="mt-2 w-full text-xs rounded-lg border border-gray-200 bg-white px-2 py-1.5" value={selectedOrder.assigned_staff_id || ''} onChange={(e) => assignOrders([selectedOrder.id], e.target.value || null)}>
+                      <option value="">{t('orders.notAssigned', 'Not assigned to a worker')}</option>
+                      {assignables.map((w) => <option key={w.id} value={w.id}>{t('orders.assignedToShort', 'Worker')}: {w.name}</option>)}
+                    </select>
+                  ) : selectedOrder.assigned_staff_id && workerName(selectedOrder.assigned_staff_id) ? <p className="text-xs text-gray-400 mt-2">{t('orders.assignedTo', 'Assigned to {{n}}', { n: workerName(selectedOrder.assigned_staff_id) })}</p> : null}
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('orders.delivery','Delivery')}</p>
@@ -1459,6 +1491,8 @@ export default function StoreOrders() {
 // Quick Action Drawer — one modal that switches on column type.
 // ==========================================================================
 function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, onSaveField, onDispatch, autoDispatch, companies, statusConfig, allStatuses, isPreparingPage }) {
+  const qaStoreId = useStoreManagement().currentStore?.id;
+  const logCall = (oid) => { if (qaStoreId && oid) workersApi.logOrderAction(qaStoreId, oid, 'called').catch(() => {}); };
   const { t } = useTranslation();
   const { type, order: o } = action;
   const [localPatch, setLocalPatch] = useState({});
@@ -1676,7 +1710,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.email','Email')}</label>
         <input defaultValue={o.customer_email || ''} onChange={set('customer_email')} className="input-field w-full"/>
         <div className="flex gap-2 pt-2">
-          {o.customer_phone && <a href={`tel:${o.customer_phone}`} className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><Phone size={12}/>{t('orders.qa.call','Call')}</a>}
+          {o.customer_phone && <a href={`tel:${o.customer_phone}`} onClick={() => logCall(o.id)} className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><Phone size={12}/>{t('orders.qa.call','Call')}</a>}
           {waLink(o.customer_phone) && <a href={waLink(o.customer_phone)} target="_blank" rel="noreferrer" className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"><MessageCircle size={12}/>{t('orders.qa.whatsapp','WhatsApp')}</a>}
         </div>
         <button onClick={save} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-black text-white font-bold text-sm">{t('common.save','Save')}</button>
@@ -1693,7 +1727,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
           <p className="font-mono text-2xl font-black">{o.customer_phone || '—'}</p>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <a href={`tel:${o.customer_phone}`} className="py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex flex-col items-center gap-1"><Phone size={14}/>{t('orders.qa.call','Call')}</a>
+          <a href={`tel:${o.customer_phone}`} onClick={() => logCall(o.id)} className="py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex flex-col items-center gap-1"><Phone size={14}/>{t('orders.qa.call','Call')}</a>
           {link && <a href={link} target="_blank" rel="noreferrer" className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex flex-col items-center gap-1"><MessageCircle size={14}/>{t('orders.qa.whatsapp','WhatsApp')}</a>}
           <button onClick={() => copy(o.customer_phone || '')} className="py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex flex-col items-center gap-1"><Copy size={14}/>{t('orders.qa.copy','Copy')}</button>
         </div>

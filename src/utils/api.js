@@ -363,4 +363,51 @@ export const paymentApi = {
 // Platform public info
 export const getPlatformInfo = () => api.get('/platform-info');
 
+// Workers & payroll (backend routes/workers.js)
+const W = (sid) => `/workers/stores/${sid}`;
+export const workersApi = {
+  login: (data) => api.post('/workers/login', data),
+  forgot: (identifier) => api.post('/workers/forgot-password', { identifier }),
+  tokenInfo: (token) => api.get('/workers/token-info', { params: { token } }),
+  resetPassword: (token, password) => api.post('/workers/reset-password', { token, password }),
+  me: (sid) => api.get(`${W(sid)}/me`),
+  updateMyProfile: (data) => api.patch('/workers/me/profile', data),
+  changeMyPassword: (data) => api.put('/workers/me/password', data),
+  list: (sid, params) => api.get(`${W(sid)}/workers`, { params }),
+  get: (sid, wid) => api.get(`${W(sid)}/workers/${wid}`),
+  create: (sid, data) => api.post(`${W(sid)}/workers`, data),
+  update: (sid, wid, data) => api.patch(`${W(sid)}/workers/${wid}`, data),
+  remove: (sid, wid) => api.delete(`${W(sid)}/workers/${wid}`),
+  setCompensation: (sid, wid, rules) => api.put(`${W(sid)}/workers/${wid}/compensation`, { rules }),
+  resetWorkerPassword: (sid, wid, mode) => api.post(`${W(sid)}/workers/${wid}/reset-password`, { mode }),
+  revokeSessions: (sid, wid) => api.post(`${W(sid)}/workers/${wid}/revoke-sessions`),
+  invite: (sid, wid, send = true) => api.post(`${W(sid)}/workers/${wid}/invite`, { send }),
+  addToStore: (sid, wid, storeId) => api.post(`${W(sid)}/workers/${wid}/stores`, { store_id: storeId }),
+  jobTypes: (sid) => api.get(`${W(sid)}/job-types`),
+  addJobType: (sid, name) => api.post(`${W(sid)}/job-types`, { name }),
+  removeJobType: (sid, jid) => api.delete(`${W(sid)}/job-types/${jid}`),
+  roles: (sid) => api.get(`${W(sid)}/worker-roles`),
+  createRole: (sid, data) => api.post(`${W(sid)}/worker-roles`, data),
+  updateRole: (sid, rid, data) => api.put(`${W(sid)}/worker-roles/${rid}`, data),
+  removeRole: (sid, rid) => api.delete(`${W(sid)}/worker-roles/${rid}`),
+  assignableWorkers: (sid) => api.get(`${W(sid)}/assignable-workers`),
+  assignOrders: (sid, orderIds, staffId) => api.post(`${W(sid)}/orders/assign`, { order_ids: orderIds, staff_id: staffId }),
+  logOrderAction: (sid, oid, action) => api.post(`${W(sid)}/orders/${oid}/log-action`, { action }),
+  orderTimeline: (sid, oid) => api.get(`${W(sid)}/orders/${oid}/timeline`),
+  performance: (sid, params) => api.get(`${W(sid)}/performance`, { params }),
+  activity: (sid, params) => api.get(`${W(sid)}/worker-activity`, { params }),
+  payroll: (sid, year, month) => api.get(`${W(sid)}/payroll`, { params: { year, month } }),
+  calculatePayroll: (sid, year, month) => api.post(`${W(sid)}/payroll/calculate`, { year, month }),
+  approveAllPayroll: (sid, year, month) => api.post(`${W(sid)}/payroll/approve`, { year, month }),
+  payrollItem: (sid, iid) => api.get(`${W(sid)}/payroll/items/${iid}`),
+  payrollItemOrders: (sid, iid, params) => api.get(`${W(sid)}/payroll/items/${iid}/orders`, { params }),
+  updatePayrollItem: (sid, iid, data) => api.patch(`${W(sid)}/payroll/items/${iid}`, data),
+  approvePayrollItem: (sid, iid) => api.post(`${W(sid)}/payroll/items/${iid}/approve`),
+  payPayrollItem: (sid, iid, data) => api.post(`${W(sid)}/payroll/items/${iid}/pay`, data),
+  adjustPayrollItem: (sid, iid, data) => api.post(`${W(sid)}/payroll/items/${iid}/adjust`, data),
+  cancelPayrollItem: (sid, iid) => api.post(`${W(sid)}/payroll/items/${iid}/cancel`),
+  exportPayroll: (sid, year, month) => api.get(`${W(sid)}/payroll/export`, { params: { year, month }, responseType: 'blob' }),
+  savePayrollSettings: (sid, data) => api.put(`${W(sid)}/payroll/settings`, data),
+};
+
 export default api;

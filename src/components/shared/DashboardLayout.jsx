@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{Briefcase,Home as House,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 import CommandPalette from './CommandPalette';
 import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
@@ -45,6 +45,11 @@ const PERM_GATE_MAP = {
   '/dashboard/apps': ['apps_view','settings_view'],
   '/dashboard/staff': 'staff_manage',
   '/dashboard/domains': 'domains_manage',
+  '/dashboard/workers': ['workers_view','workers_manage','staff_manage'],
+  '/dashboard/workers/roles': ['workers_view','workers_manage','staff_manage'],
+  '/dashboard/workers/payroll': ['payroll_view','payroll_manage','payroll_pay'],
+  '/dashboard/workers/performance': ['workers_view','workers_manage','staff_manage'],
+  '/dashboard/workers/activity': ['workers_view','workers_manage','staff_manage'],
   '/dashboard/landing-pages': 'builder_edit',
   '/dashboard/offers': 'offers_manage',
   '/dashboard/order-tracking': ['tracking_view','orders_view'],
@@ -313,6 +318,7 @@ function NotifBell(){
 
 // Default sidebar order
 const DEFAULT_ITEMS = [
+  {id:'mywork',type:'link',to:'/dashboard/me',icon:'House',label:'sidebar.myWork',staffOnly:true},
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
@@ -325,13 +331,15 @@ const DEFAULT_ITEMS = [
     {to:'/dashboard/shipping-partners',label:'sidebar.shippingPartners'},{to:'/dashboard/shipping-wilayas',label:'sidebar.shippingWilayas'},{to:'/dashboard/how-to-connect',label:'sidebar.howToConnect'},{to:'/dashboard/tracking-orders',label:'sidebar.trackingOrders'}]},
   {id:'customers',type:'group',icon:'Users',label:'sidebar.customers',children:[
     {to:'/dashboard/customers',label:'sidebar.customersList'},{to:'/dashboard/blacklist',label:'sidebar.blacklist'},{to:'/dashboard/auto-blacklist',label:'sidebar.autoBlacklist'}]},
+  {id:'workers',type:'group',icon:'Briefcase',label:'sidebar.workers',children:[
+    {to:'/dashboard/workers',label:'sidebar.workersList'},{to:'/dashboard/workers/roles',label:'sidebar.workerRoles'},{to:'/dashboard/workers/payroll',label:'sidebar.payroll'},{to:'/dashboard/workers/performance',label:'sidebar.workerPerformance'},{to:'/dashboard/workers/activity',label:'sidebar.workerActivity'}]},
   {id:'analytics',type:'link',to:'/dashboard/analytics',icon:'BarChart3',label:'sidebar.analytics'},
   {id:'costs',type:'link',to:'/dashboard/costs',icon:'DollarSign',label:'sidebar.costs'},
   {id:'taxes',type:'link',to:'/dashboard/taxes',icon:'Percent',label:'sidebar.taxes'},
   {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'sidebar.billing'},
 ];
 
-const ICONS = {LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target};
+const ICONS = {House,Briefcase,LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target};
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
@@ -381,6 +389,7 @@ export default function DashboardLayout({children}){
       if (it.children) { const c = it.children.find(c => c.to === path); if (c) return { main: t(it.label), sub: t(c.label) }; }
     }
     if (path.startsWith('/dashboard/settings')) return { main: t('sidebar.settings', 'Settings'), sub: '' };
+    if (path.startsWith('/dashboard/workers/')) return { main: t('sidebar.workers', 'Workers'), sub: t('workers.tab.overview', 'Profile') };
     const last = path.split('/').pop();
     return { main: last ? last.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : t('sidebar.dashboard', 'Dashboard'), sub: '' };
   })();
@@ -443,7 +452,7 @@ export default function DashboardLayout({children}){
 
   // Draggable sidebar order
   const[items,setItems]=useState(()=>{
-    try{const saved=localStorage.getItem('sidebar_order');if(saved){const ids=JSON.parse(saved);const mapped=ids.map(id=>DEFAULT_ITEMS.find(i=>i.id===id)).filter(Boolean);const missing=DEFAULT_ITEMS.filter(d=>!ids.includes(d.id));return[...mapped,...missing];}}catch{}
+    try{const saved=localStorage.getItem('sidebar_order');if(saved){const ids=JSON.parse(saved);const out=ids.map(id=>DEFAULT_ITEMS.find(i=>i.id===id)).filter(Boolean);/* new menu items go to their default spot (e.g. Workers after Customers), not the end */DEFAULT_ITEMS.forEach((d,di)=>{if(ids.includes(d.id))return;const prev=DEFAULT_ITEMS.slice(0,di).reverse().find(p=>out.some(o=>o.id===p.id));out.splice(prev?out.findIndex(o=>o.id===prev.id)+1:0,0,d);});return out;}}catch{}
     return DEFAULT_ITEMS;
   });
   const[dragIdx,setDragIdx]=useState(null);
@@ -520,6 +529,8 @@ export default function DashboardLayout({children}){
 
     // For link items: hide entirely if staff-blocked
     if(item.type==='link'&&isStaffBlocked(item.to))return null;
+    // "My work" is the worker's own page — owners don't have one
+    if(item.staffOnly&&!user?.is_staff)return null;
     // Hide taxes when tax_enabled is off in store config
     if(item.id==='taxes'&&!currentStore?.config?.tax_enabled)return null;
 
@@ -570,7 +581,7 @@ export default function DashboardLayout({children}){
     const lbl = (x) => typeof x === 'string' && x.startsWith('sidebar.') ? t(x) : x;
     const out = [];
     items.forEach(it => {
-      if (it.type === 'link') { if (!isStaffBlocked(it.to)) out.push({ id: 'p' + it.to, label: lbl(it.label), group: t('sidebar.cmdPages', 'Pages'), icon: ICONS[it.icon], run: () => navigate(it.to) }); }
+      if (it.type === 'link') { if (!isStaffBlocked(it.to) && !(it.staffOnly && !user?.is_staff)) out.push({ id: 'p' + it.to, label: lbl(it.label), group: t('sidebar.cmdPages', 'Pages'), icon: ICONS[it.icon], run: () => navigate(it.to) }); }
       else (it.children || []).forEach(c => { if (!isStaffBlocked(c.to)) out.push({ id: 'p' + c.to, label: `${lbl(c.label)}`, hint: lbl(it.label), keywords: lbl(it.label), group: t('sidebar.cmdPages', 'Pages'), icon: ICONS[it.icon], run: () => navigate(c.to) }); });
     });
     out.push({ id: 'theme', label: t('sidebar.cmdTheme', 'Change theme'), group: t('sidebar.cmdActions', 'Actions'), icon: PaletteIcon, placeholder: t('sidebar.cmdPickTheme', 'Pick a theme…'), children: [
