@@ -28,6 +28,24 @@ function useStoreNavData(storeSlug, onCart) {
   return { t, cartCount, favCount, loggedIn, openCart };
 }
 
+// The store's logo and name, identical on every storefront page (home,
+// product, sign-in, checkout, tracking, FAQ…). It always shows the store's
+// name — never the title of the current page — at one fixed size.
+// onLight: the header is white (checkout), so skip the dark-mode rule that
+// forces store names in coloured headers to white.
+export function StoreBrand({ store, storeSlug, color = '#ffffff', logoBg = 'rgba(255,255,255,0.2)', onLight = false }) {
+  const name = store?.name || storeSlug || '';
+  const font = store?.header_font || 'Arial, sans-serif';
+  return (
+    <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{ color }}>
+      {store?.logo
+        ? <img src={store.logo} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover shrink-0" style={{ backgroundColor: logoBg }} alt="" />
+        : <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center font-bold text-lg sm:text-2xl shrink-0" style={{ color, backgroundColor: logoBg }}>{(name[0] || 'S').toUpperCase()}</div>}
+      <span {...(onLight ? {} : { 'data-store-name': true })} className={`${onLight ? '' : 'store-header-title '}text-lg sm:text-3xl font-extrabold truncate`} style={{ color, WebkitTextFillColor: color, fontFamily: font }}>{name}</span>
+    </Link>
+  );
+}
+
 // Each buyer page mounts its own bar, so remember where the bubble was to
 // let it glide from the previous tab after navigation.
 let lastActive = { idx: -1, n: 0 };

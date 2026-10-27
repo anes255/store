@@ -421,7 +421,7 @@ export default function ShippingPartners(){
         <div className="flex items-center justify-between mb-5"><h2 className="text-xl font-bold">{t('storePage.addDeliveryCompany','Add Delivery Company')}</h2><button onClick={()=>setShowModal(false)}><X size={20}/></button></div>
         <p className="text-sm text-gray-500 mb-4">{t('storePage.quickSetup','Quick setup or add any company you want.')}</p>
         <div className="space-y-2 mb-4">
-          {PRESETS.map(p=>(
+          {[...PRESETS].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true})).map(p=>(
             <button key={p.name} onClick={()=>pickPreset(p)} className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-brand-400 text-left flex items-center gap-4 transition-all">
               <CarrierLogo name={p.name} className="w-12 h-12 rounded-xl text-lg"/>
               <div className="flex-1 min-w-0"><p className="font-bold text-gray-900">{p.name}</p><p className="text-xs text-gray-400">{p.ecotrack?t('storePage.ecotrackBased','EcoTrack platform — just paste your token'):t('storePage.preConfigured','Pre-configured — just paste credentials')}</p></div>

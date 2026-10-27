@@ -118,5 +118,5 @@ const O = {
 };
 export default {
   workers: nest(W), orders: O,
-  sidebar: { workers: 'العمال', workersList: 'العمال', workerRoles: 'الأدوار والصلاحيات', payroll: 'الرواتب', workerPerformance: 'الأداء', workerActivity: 'سجل النشاط', myWork: 'عملي' },
+  sidebar: { workers: 'العمال', workersList: 'العمال', workerRoles: 'الأدوار والصلاحيات', payroll: 'الرواتب', workerPerformance: 'الأداء', workerActivity: 'سجل النشاط', myWork: 'عملي', myProfile: 'ملفي الشخصي' },
 };

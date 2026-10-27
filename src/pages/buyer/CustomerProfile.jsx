@@ -3,7 +3,7 @@ import HoldToConfirm from '../../components/shared/HoldToConfirm';
 import PasswordInput from '../../components/shared/PasswordInput';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { isValidAlgerianPhone } from '../../utils/phone';
-import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
+import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { storeCanvas } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -145,7 +145,7 @@ export default function CustomerProfile() {
 
   // Profile editing
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', wilaya: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', wilaya: '', extra_phones: [], saved_addresses: [] });
   const [saving, setSaving] = useState(false);
 
   // Avatar
@@ -178,6 +178,8 @@ export default function CustomerProfile() {
         setForm({
           name: r.data.name || '', email: r.data.email || '', phone: r.data.phone || '',
           address: r.data.address || '', city: r.data.city || '', wilaya: r.data.wilaya || '',
+          extra_phones: Array.isArray(r.data.extra_phones) ? r.data.extra_phones : [],
+          saved_addresses: Array.isArray(r.data.saved_addresses) ? r.data.saved_addresses : [],
         });
         if (r.data.profile_picture) setAvatarPreview(r.data.profile_picture);
       })
@@ -238,9 +240,11 @@ export default function CustomerProfile() {
   const saveProfile = async () => {
     if (!form.name || !form.phone) return toast.error(t('store.nameAndPhoneRequired', 'Name and phone are required'));
     if (!isValidAlgerianPhone(form.phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
+    const extras = (form.extra_phones || []).map((v) => v.trim()).filter(Boolean);
+    if (extras.some((v) => !isValidAlgerianPhone(v))) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
     setSaving(true);
     try {
-      const payload = { ...form };
+      const payload = { ...form, extra_phones: extras, saved_addresses: (form.saved_addresses || []).filter((a) => a.wilaya || a.city || a.address) };
       if (avatarBase64) payload.profile_picture = avatarBase64;
       const { data } = await storeApi.updateCustomerProfile(storeSlug, payload);
       setProfile(p => ({ ...p, ...data }));
@@ -370,12 +374,7 @@ export default function CustomerProfile() {
       {/* ==================== MOBILE TOP BAR ==================== */}
       <div className="lg:hidden sticky top-0 z-30 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center justify-between px-4 py-3">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-3 text-white">
-            {store.logo
-              ? <img src={store.logo} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
-              : <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
-            <span className="font-bold text-sm">{store.name}</span>
-          </Link>
+          <div className="min-w-0 flex-1"><StoreBrand store={store} storeSlug={storeSlug} color="#ffffff" logoBg={pc} /></div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
@@ -400,12 +399,7 @@ export default function CustomerProfile() {
         `}>
           {/* Store branding */}
           <div className="px-5 pt-6 pb-2">
-            <Link to={`/s/${storeSlug}`} className="flex items-center gap-3 group">
-              {store.logo
-                ? <img src={store.logo} className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10 shrink-0" alt="" />
-                : <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ring-2 ring-white/10 shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0]}</div>}
-              <span className="font-bold text-white text-sm group-hover:opacity-80 transition-opacity">{store.name}</span>
-            </Link>
+            <StoreBrand store={store} storeSlug={storeSlug} color="#ffffff" logoBg={pc} />
           </div>
 
           {/* Avatar section */}
@@ -620,6 +614,12 @@ export default function CustomerProfile() {
                         </p>
                       </div>
                     )}
+                    {((profile?.extra_phones || []).length > 0 || (profile?.saved_addresses || []).length > 0) && (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm">
+                        {(profile.extra_phones || []).length > 0 && <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{t('store.otherPhones', 'Other phone numbers')}</p><p className="text-white/90">{profile.extra_phones.join(' · ')}</p></div>}
+                        {(profile.saved_addresses || []).map((ad, i) => <div key={i}><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{ad.label || t('store.otherAddresses', 'Other addresses')}</p><p className="text-white/90">{[ad.address, ad.city, ad.wilaya].filter(Boolean).join(', ')}</p></div>)}
+                      </div>
+                    )}
                     {passwordSection}
                   </div>
                 ) : (
@@ -716,6 +716,50 @@ export default function CustomerProfile() {
                             <option key={c} value={c} className="bg-gray-900">{c}</option>
                           ))}
                         </select>
+                      </div>
+                    </div>
+                    {/* Extra phone numbers */}
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.otherPhones', 'Other phone numbers')}</label>
+                      <div className="space-y-2">
+                        {(form.extra_phones || []).map((ph, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <div className="relative flex-1"><Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                              <input type="tel" className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all !pl-9" style={{ '--tw-ring-color': pc + '55' }} value={ph} placeholder="0555123456"
+                                onChange={(e) => setForm({ ...form, extra_phones: form.extra_phones.map((x, j) => (j === i ? e.target.value : x)) })} /></div>
+                            <button type="button" onClick={() => setForm({ ...form, extra_phones: form.extra_phones.filter((_, j) => j !== i) })} className="p-2 rounded-xl bg-white/5 text-gray-400 hover:text-red-400" aria-label={t('store.remove', 'Remove')}><X size={14} /></button>
+                          </div>
+                        ))}
+                        {(form.extra_phones || []).length < 5 && <button type="button" onClick={() => setForm({ ...form, extra_phones: [...(form.extra_phones || []), ''] })} className="text-xs font-bold flex items-center gap-1" style={{ color: pc }}><Plus size={13} />{t('store.addPhone', 'Add a phone number')}</button>}
+                      </div>
+                    </div>
+                    {/* Extra addresses */}
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">{t('store.otherAddresses', 'Other addresses')}</label>
+                      <div className="space-y-3">
+                        {(form.saved_addresses || []).map((ad, i) => {
+                          const upd = (patch) => setForm({ ...form, saved_addresses: form.saved_addresses.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+                          return (
+                            <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <input className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all" style={{ '--tw-ring-color': pc + '55' }} value={ad.label || ''} onChange={(e) => upd({ label: e.target.value })} placeholder={t('store.addressLabel', 'Name (e.g. Work, Parents)')} />
+                                <button type="button" onClick={() => setForm({ ...form, saved_addresses: form.saved_addresses.filter((_, j) => j !== i) })} className="p-2 rounded-xl bg-white/5 text-gray-400 hover:text-red-400" aria-label={t('store.remove', 'Remove')}><X size={14} /></button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <select className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all" style={{ '--tw-ring-color': pc + '55' }} value={ad.wilaya || ''} onChange={(e) => upd({ wilaya: e.target.value, city: '' })}>
+                                  <option value="" className="bg-gray-900">{t('store.wilaya', 'Wilaya')}</option>
+                                  {Object.keys(WILAYA_CITIES).sort().map((w) => <option key={w} value={w} className="bg-gray-900">{w}</option>)}
+                                </select>
+                                <select className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all disabled:opacity-50" style={{ '--tw-ring-color': pc + '55' }} value={ad.city || ''} onChange={(e) => upd({ city: e.target.value })} disabled={!ad.wilaya}>
+                                  <option value="" className="bg-gray-900">{t('store.selectCity', 'Select your commune…')}</option>
+                                  {(WILAYA_CITIES[ad.wilaya] || []).map((c) => <option key={c} value={c} className="bg-gray-900">{c}</option>)}
+                                </select>
+                              </div>
+                              <input className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 placeholder-gray-600 transition-all" style={{ '--tw-ring-color': pc + '55' }} value={ad.address || ''} onChange={(e) => upd({ address: e.target.value })} placeholder={t('store.address', 'Address')} />
+                            </div>
+                          );
+                        })}
+                        {(form.saved_addresses || []).length < 10 && <button type="button" onClick={() => setForm({ ...form, saved_addresses: [...(form.saved_addresses || []), { label: '', wilaya: '', city: '', address: '' }] })} className="text-xs font-bold flex items-center gap-1" style={{ color: pc }}><Plus size={13} />{t('store.addAddress', 'Add an address')}</button>}
                       </div>
                     </div>
                     {passwordSection}

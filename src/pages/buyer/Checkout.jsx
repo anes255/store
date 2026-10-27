@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
+import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi, paymentApi } from '../../utils/api';
@@ -358,14 +358,30 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (code && !form.shipping_zip) setForm(prev => ({ ...prev, shipping_zip: code.padStart(2,'0') + '000' }));
   }, [form.shipping_wilaya, shippingWilayas]);
 
-  // Live settings from the checkout settings page (preview mode only): only
-  // keys the store already has are taken over, so nothing unrelated leaks in.
+  // A signed-in buyer's other phone numbers and saved addresses (profile page),
+  // offered as one-tap choices next to the matching fields.
+  const [savedPicks, setSavedPicks] = useState({ phones: [], addresses: [] });
+  useEffect(() => {
+    if (previewMode || !storeSlug || useAuthStore.getState().role !== 'customer') return;
+    storeApi.getCustomerProfile(storeSlug).then((r) => {
+      const d = r.data || {};
+      const phones = [d.phone, ...(Array.isArray(d.extra_phones) ? d.extra_phones : [])].filter(Boolean);
+      const main = (d.address || d.city || d.wilaya) ? [{ label: t('checkout.mainAddress', 'Main address'), address: d.address || '', city: d.city || '', wilaya: d.wilaya || '' }] : [];
+      const saved = Array.isArray(d.saved_addresses) ? d.saved_addresses : [];
+      setSavedPicks({ phones: phones.length > 1 ? phones : [], addresses: saved.length ? [...main, ...saved] : [] });
+    }).catch(() => {});
+  }, [storeSlug]); // eslint-disable-line
+  const chip = 'px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors';
+
+  // Live settings from the checkout settings page (preview mode only).
   useEffect(() => {
     if (!previewMode) return;
     const onMsg = (e) => {
       if (e.origin !== window.location.origin || e.data?.type !== 'checkout-preview' || !e.data.settings) return;
       const next = e.data.settings;
-      setStore(prev => { if (!prev) return prev; const out = { ...prev }; Object.keys(next).forEach(k => { if (k in prev) out[k] = next[k]; }); return out; });
+      // Settings never saved yet are absent from the store data, so take every
+      // key — except identity fields the preview must keep.
+      setStore(prev => { if (!prev) return prev; const out = { ...prev }; Object.keys(next).forEach(k => { if (!['id', 'slug', 'owner_id', 'config'].includes(k)) out[k] = next[k]; }); return out; });
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
@@ -774,10 +790,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               {items.length>0 && <span className="w-[22px] h-[22px] rounded-full text-[11px] font-bold text-white grid place-items-center" style={{backgroundColor:pc}}>{items.length}</span>}
             </div>
           ) : (
-            <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-              {store?.logo ? <img src={store.logo} className="w-9 h-9 rounded-full object-cover shrink-0" alt=""/> : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{backgroundColor:pc}}>{store?.name?.[0]||'S'}</div>}
-              <span className="text-lg font-extrabold text-gray-900">{store?.name||t('checkout.store','Store')}</span>
-            </Link>
+            <StoreBrand store={store} storeSlug={storeSlug} color="#111827" logoBg={pc + '22'} onLight />
           )}
           <div className="flex items-center gap-2">
             {!isModal && <StoreHeaderIcons storeSlug={storeSlug} store={store} className="text-gray-700 [&_a:hover]:bg-gray-100 [&_button:hover]:bg-gray-100"/>}
@@ -813,9 +826,12 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <div className="space-y-4">
                 {/* Name, phone and email stacked vertically — easier to tap on mobile */}
                 <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
-                <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/></div>
+                <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/>
+                  {savedPicks.phones.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">{savedPicks.phones.map((ph) => <button key={ph} type="button" onClick={() => setForm((prev) => ({ ...prev, customer_phone: ph }))} className={chip} style={form.customer_phone === ph ? { backgroundColor: pc, borderColor: pc, color: '#fff' } : { borderColor: pc + '55', color: pc }}>{ph}</button>)}</div>}</div>
                 {store?.checkout_email!==false && <div><label className="input-label">{t('auth.email')}{store?.checkout_email===true?' *':''}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required={store?.checkout_email===true}/></div>}
-                <div><label className="input-label">{t('auth.address')} *</label><input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
+                <div><label className="input-label">{t('auth.address')} *</label>
+                  {savedPicks.addresses.length > 0 && <div className="flex flex-wrap gap-1.5 mb-2">{savedPicks.addresses.map((ad, i) => { const on = form.shipping_address === ad.address && form.shipping_wilaya === ad.wilaya && form.shipping_city === ad.city; return <button key={i} type="button" title={[ad.address, ad.city, ad.wilaya].filter(Boolean).join(', ')} onClick={() => setForm((prev) => ({ ...prev, shipping_address: ad.address || '', shipping_wilaya: ad.wilaya || prev.shipping_wilaya, shipping_city: ad.city || '', shipping_zip: '' }))} className={chip} style={on ? { backgroundColor: pc, borderColor: pc, color: '#fff' } : { borderColor: pc + '55', color: pc }}>{ad.label || [ad.city, ad.wilaya].filter(Boolean).join(', ')}</button>; })}</div>}
+                  <input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
 
                 {/* Wilaya → City → ZIP (stacked vertically) */}
                 <div className="grid grid-cols-1 gap-4">

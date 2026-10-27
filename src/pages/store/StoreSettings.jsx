@@ -1,5 +1,6 @@
 import useStaffAccess from '../../hooks/useStaffAccess';
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion as SMotion, AnimatePresence as SAnimatePresence } from 'framer-motion';
 import { fuzzyScore } from '../../components/shared/CommandPalette';
 import HoldToConfirm from '../../components/shared/HoldToConfirm';
@@ -64,43 +65,81 @@ function SubscriptionSection(){
 // The real checkout page, loaded in a phone-sized frame in preview mode
 // (sample product, nothing is ordered or saved). Unsaved settings are sent
 // to it as they change, so the preview is exactly what buyers will see.
-function CheckoutPreview({ s }) {
-  const{t}=useTranslation();
+// One live checkout frame. It scales to the space it is given (never wider
+// than its box, so nothing is cropped on phones) and receives the settings
+// being edited by postMessage, so changes show without saving or reloading.
+function CheckoutPreviewFrame({ s, mode, maxHeight }) {
+  const boxRef = useRef(null);
   const frameRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
-  const [mode, setMode] = useState('mobile'); // mobile | desktop
-  const slug = s.slug;
+  const [boxW, setBoxW] = useState(0);
   const send = () => { try { frameRef.current?.contentWindow?.postMessage({ type: 'checkout-preview', settings: s }, window.location.origin); } catch {} };
-  useEffect(() => { if (!loaded) return; const h = setTimeout(send, 150); return () => clearTimeout(h); }, [s, loaded]); // eslint-disable-line
-  // the frame asks for the settings once it is ready
+  useEffect(() => { if (!loaded) return; const h = setTimeout(send, 120); return () => clearTimeout(h); }, [s, loaded]); // eslint-disable-line
   useEffect(() => {
-    const onMsg = (e) => { if (e.origin === window.location.origin && e.data?.type === 'checkout-preview-ready') send(); };
+    const onMsg = (e) => { if (e.origin === window.location.origin && e.data?.type === 'checkout-preview-ready' && e.source === frameRef.current?.contentWindow) send(); };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
   }); // eslint-disable-line
-  const W = mode === 'mobile' ? 375 : 1024, H = mode === 'mobile' ? 740 : 760;
-  const scale = mode === 'mobile' ? 0.82 : 0.33;
+  useEffect(() => {
+    const el = boxRef.current; if (!el) return;
+    const ro = new ResizeObserver(([e]) => setBoxW(e.contentRect.width));
+    ro.observe(el); return () => ro.disconnect();
+  }, []);
+  const W = mode === 'mobile' ? 390 : 1280, H = mode === 'mobile' ? 800 : 820, bezel = mode === 'mobile' ? 12 : 8;
+  const fitW = boxW ? (boxW - bezel) / W : 0;
+  const fitH = maxHeight ? (maxHeight - bezel) / H : Infinity;
+  const scale = Math.max(0.1, Math.min(fitW, fitH, mode === 'mobile' ? 1 : 1));
   return (
-    <div className="glass-card-solid p-4 sm:p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Eye size={16} className="text-purple-500" />
-        <h3 className="font-bold">{t('storePage.checkoutPreview','Checkout Preview')}</h3>
-        <div className="ml-auto flex items-center bg-gray-100 rounded-lg p-0.5">
-          {['mobile','desktop'].map(m => (
-            <button key={m} type="button" onClick={() => setMode(m)} className={`px-2 py-1 rounded-md text-[11px] font-bold ${mode===m?'bg-white shadow-sm text-brand-600':'text-gray-400'}`}>
-              {m === 'mobile' ? t('storePage.previewMobile','Mobile') : t('storePage.previewDesktop','Desktop')}
-            </button>
-          ))}
-        </div>
-      </div>
-      {!slug ? <p className="text-sm text-gray-400 text-center py-10">{t('storePage.previewUnavailable','Preview unavailable')}</p> : (
-        <div className="mx-auto rounded-[1.6rem] border-[6px] border-gray-800 overflow-hidden shadow-2xl bg-white relative" style={{ width: W * scale + 12, height: H * scale + 12 }}>
+    <div ref={boxRef} className="w-full">
+      {boxW > 0 && (
+        <div className={`mx-auto overflow-hidden shadow-2xl bg-white relative ${mode === 'mobile' ? 'rounded-[1.6rem] border-[6px] border-gray-800' : 'rounded-xl border-4 border-gray-800'}`}
+          style={{ width: W * scale + bezel, height: H * scale + bezel }}>
           {!loaded && <div className="absolute inset-0 grid place-items-center"><div className="w-7 h-7 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin" /></div>}
-          <iframe ref={frameRef} title="checkout-preview" src={`/s/${slug}/checkout?preview=1`} onLoad={() => setLoaded(true)}
+          <iframe ref={frameRef} title="checkout-preview" src={`/s/${s.slug}/checkout?preview=1`} onLoad={() => setLoaded(true)}
             style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: '0 0', border: 0, opacity: loaded ? 1 : 0 }} />
         </div>
       )}
+    </div>
+  );
+}
+
+function CheckoutPreview({ s }) {
+  const{t}=useTranslation();
+  const [mode, setMode] = useState('mobile'); // mobile | desktop
+  const [big, setBig] = useState(false);
+  useEffect(() => { if (!big) return; const k = (e) => { if (e.key === 'Escape') setBig(false); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [big]);
+  const switcher = (
+    <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+      {['mobile','desktop'].map(m => (
+        <button key={m} type="button" onClick={() => setMode(m)} className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${mode===m?'bg-white shadow-sm text-brand-600':'text-gray-400'}`}>
+          {m === 'mobile' ? t('storePage.previewMobile','Mobile') : t('storePage.previewDesktop','Desktop')}
+        </button>
+      ))}
+    </div>
+  );
+  return (
+    <div className="glass-card-solid p-4 sm:p-6">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <Eye size={16} className="text-purple-500" />
+        <h3 className="font-bold">{t('storePage.checkoutPreview','Checkout Preview')}</h3>
+        <div className="ml-auto flex items-center gap-2">
+          {switcher}
+          {s.slug && <button type="button" onClick={() => setBig(true)} className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-brand-500 text-white hover:opacity-90">{t('storePage.previewExpand','Expand')}</button>}
+        </div>
+      </div>
+      {!s.slug ? <p className="text-sm text-gray-400 text-center py-10">{t('storePage.previewUnavailable','Preview unavailable')}</p>
+        : !big && <CheckoutPreviewFrame s={s} mode={mode} maxHeight={mode === 'mobile' ? 720 : undefined} />}
       <p className="text-[10px] text-gray-400 text-center mt-3">{t('storePage.previewNote','This is your real checkout page with a sample product. Changes show here before you save.')}</p>
+      {big && createPortal(
+        <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex flex-col p-3 sm:p-6" onClick={() => setBig(false)}>
+          <div className="flex items-center gap-2 mb-3 mx-auto w-full max-w-[1400px]" onClick={(e) => e.stopPropagation()}>
+            <p className="font-bold text-white">{t('storePage.checkoutPreview','Checkout Preview')}</p>
+            <div className="ml-auto flex items-center gap-2">{switcher}<button type="button" onClick={() => setBig(false)} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white text-gray-800">{t('storePage.close','Close')}</button></div>
+          </div>
+          <div className="flex-1 min-h-0 mx-auto w-full max-w-[1400px] flex items-start justify-center overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <CheckoutPreviewFrame s={s} mode={mode} maxHeight={Math.max(300, window.innerHeight - 110)} />
+          </div>
+        </div>, document.body)}
     </div>
   );
 }
@@ -881,7 +920,7 @@ export default function StoreSettings(){
 </div></div>
 {editRole&&<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={()=>setEditRole(null)}><div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="p-5 border-b flex items-center justify-between"><h3 className="font-bold text-lg">{editRole.id?t('ui.settings.editRole', 'Edit Role'):t('ui.settings.newRole', 'New Role')}</h3><button onClick={()=>setEditRole(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div><div className="p-5 space-y-4"><div><label className="input-label">{t('ui.settings.roleName', 'Role Name')}</label><input className="input-field" value={editRole.name} onChange={e=>setEditRole({...editRole,name:e.target.value})} placeholder={t('ui.settings.eGShippingManager', 'e.g. Shipping Manager')}/></div><div><label className="input-label">{t('ui.settings.description', 'Description')}</label><input className="input-field" value={editRole.description} onChange={e=>setEditRole({...editRole,description:e.target.value})} placeholder={t('ui.settings.optionalDescription', 'Optional description')}/></div><div><label className="input-label">{t('ui.settings.permissions', 'Permissions (')}{editRole.permissions?.length||0}/{ALL_PERMISSIONS.length})</label><div className="space-y-3 mt-2">{PERM_GROUPS.map(group=>(<div key={group} className="p-3 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-500 uppercase mb-2">{t(`workers.permGroup.${group.toLowerCase()}`,group)}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{ALL_PERMISSIONS.filter(p=>p.group===group).map(p=>{const on=(editRole.permissions||[]).includes(p.key);return(<label key={p.key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white"><input type="checkbox" checked={on} onChange={()=>togglePerm(p.key)}/><span className="text-sm text-gray-700">{t(`workers.perm.${p.key}`,p.label)}</span></label>);})}</div></div>))}</div></div></div><div className="p-5 border-t flex justify-end gap-2"><button onClick={()=>setEditRole(null)} className="btn-ghost text-sm">{t('ui.settings.cancel', 'Cancel')}</button><button onClick={saveRole} className="btn-primary text-sm flex items-center gap-1"><Save size={14}/>{t('ui.settings.saveRole', 'Save Role')}</button></div></div></div>}</>}
 
-{sec==='checkout'&&<div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6"><div className="space-y-4 min-w-0"><SH icon={ShoppingCart} title={t('ui.settings.purchaseFlow', 'Purchase Flow')} subtitle={t('ui.settings.optimizeVisitorToCustomerConversion', 'Optimize visitor to customer conversion.')} accent="purple"/>
+{sec==='checkout'&&<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6"><div className="space-y-4 min-w-0"><SH icon={ShoppingCart} title={t('ui.settings.purchaseFlow', 'Purchase Flow')} subtitle={t('ui.settings.optimizeVisitorToCustomerConversion', 'Optimize visitor to customer conversion.')} accent="purple"/>
 
 {/* Order success message + logo customization. Shown to the buyer right
     after they place an order. Logo defaults to the store logo if unset. */}
@@ -922,7 +961,7 @@ export default function StoreSettings(){
 
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Lock size={16}/>{t('ui.settings.dataCollection', 'Data Collection')}</h3><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">{t('ui.settings.fullName', 'Full Name')}</p><p className="text-[10px] text-gray-400">{t('ui.settings.primaryIdentifier', 'Primary identifier')}</p></div><span className="badge badge-danger text-[10px]">{t('ui.settings.requiredBadge','REQUIRED')}</span></div><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">{t('ui.settings.phoneNumber', 'Phone Number')}</p><p className="text-[10px] text-gray-400">{t('ui.settings.deliveryCoordination', 'Delivery coordination')}</p></div><span className="badge badge-danger text-[10px]">{t('ui.settings.requiredBadge','REQUIRED')}</span></div><T label={t('ui.settings.emailCollection', 'Email Collection')} desc={t('ui.settings.automatedInvoiceFlow', 'Automated invoice flow.')} checked={s.checkout_email} onChange={e=>setV('checkout_email',e.target.checked)}/></div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Zap size={16}/>{t('ui.settings.experience', 'Experience')}</h3><T label={t('ui.settings.cartDrawer', 'Cart Drawer')} desc={t('ui.settings.sideCartOnClick', 'Side-cart on click.')} checked={s.cart_drawer} onChange={e=>setV('cart_drawer',e.target.checked)}/><T label={t('ui.settings.orderNotes', 'Order Notes')} desc={t('ui.settings.specialInstructions', 'Special instructions.')} checked={s.order_notes} onChange={e=>setV('order_notes',e.target.checked)}/><T label={t('ui.settings.trustSignals', 'Trust Signals')} desc={t('ui.settings.securityBadges', 'Security badges.')} checked={s.trust_signals!==false} onChange={e=>setV('trust_signals',e.target.checked)}/><T label={t('ui.settings.stickyCheckout', 'Sticky Checkout')} desc={t('ui.settings.alwaysVisibleBuyNow', 'Always visible Buy Now.')} checked={s.sticky_checkout} onChange={e=>setV('sticky_checkout',e.target.checked)}/><T label={t('ui.settings.showSavings', 'Show Savings')} desc={t('ui.settings.highlightDiscounts', 'Highlight discounts.')} checked={s.show_savings} onChange={e=>setV('show_savings',e.target.checked)}/></div>
-<div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-2"><Code size={16}/><h3 className="font-bold">{t('ui.settings.customScripts', 'Custom Scripts')}</h3></div><textarea className="input-field font-mono text-xs" rows={3} value={s.post_script||''} onChange={set('post_script')} placeholder="<script>...</script>"/><p className="text-[10px] text-gray-400">{t('ui.settings.runsOnCheckoutPageOnly', 'Runs on checkout page only.')}</p></div></div><div className="lg:sticky lg:top-4 lg:self-start"><CheckoutPreview s={s}/></div></div>}
+<div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-2"><Code size={16}/><h3 className="font-bold">{t('ui.settings.customScripts', 'Custom Scripts')}</h3></div><textarea className="input-field font-mono text-xs" rows={3} value={s.post_script||''} onChange={set('post_script')} placeholder="<script>...</script>"/><p className="text-[10px] text-gray-400">{t('ui.settings.runsOnCheckoutPageOnly', 'Runs on checkout page only.')}</p></div></div><div className="min-w-0 xl:sticky xl:top-4 xl:self-start"><CheckoutPreview s={s}/></div></div>}
 
 
 {sec==='payments'&&<div className="glass-card-solid p-4 sm:p-6 space-y-4"><h3 className="font-bold mb-2">{t('ui.settings.paymentMethods', 'Payment Methods')}</h3><T label={t('ui.settings.cashOnDeliveryCod', 'Cash on Delivery (COD)')} desc={t('ui.settings.payInCashUponDelivery', 'Pay in cash upon delivery.')} checked={s.enable_cod} onChange={set('enable_cod')}/><T label={t('ui.settings.ccpDirectTransfer', 'CCP Direct Transfer')} checked={s.enable_ccp} onChange={set('enable_ccp')}/>{s.enable_ccp&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-4 border-l-2 border-brand-200"><div><label className="input-label text-xs">{t('ui.settings.ccpAccount', 'CCP Account')}</label><input className="input-field" value={s.ccp_account||''} onChange={set('ccp_account')}/></div><div><label className="input-label text-xs">{t('ui.settings.ccpName', 'CCP Name')}</label><input className="input-field" value={s.ccp_name||''} onChange={set('ccp_name')}/></div></div>}<T label={t('ui.settings.baridipayQr', 'BaridiPay QR')} checked={s.enable_baridimob} onChange={set('enable_baridimob')}/>{s.enable_baridimob&&<div className="pl-4 border-l-2 border-brand-200 space-y-3"><div><label className="input-label text-xs">RIP</label><input className="input-field" value={s.baridimob_rip||''} onChange={set('baridimob_rip')}/></div><div><label className="input-label text-xs">{t('ui.settings.baridipayQrCodeShownTo', 'BaridiPay QR Code (shown to buyers at checkout)')}</label><div className="flex items-center gap-4 mt-1">{s.baridimob_qr&&<img src={s.baridimob_qr} className="w-24 h-24 rounded-xl border object-cover" alt="QR"/>}<div className="flex-1"><div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-emerald-400" onClick={()=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{setS({...s,baridimob_qr:r.result});toast.success(t('storePage.uploaded','Uploaded!'));};r.readAsDataURL(f);};inp.click();}}><Upload size={16} className="mx-auto text-gray-400 mb-1"/><p className="text-xs text-gray-500">{s.baridimob_qr?t('ui.settings.replaceQr', 'Replace QR'):t('ui.settings.uploadQrImage', 'Upload QR image')}</p></div></div></div></div></div>}<T label={t('ui.settings.bankTransfer', 'Bank Transfer')} checked={s.enable_bank_transfer} onChange={set('enable_bank_transfer')}/>{s.enable_bank_transfer&&<div className="grid grid-cols-3 gap-2 sm:gap-3 pl-4 border-l-2 border-brand-200"><div><label className="input-label text-xs">{t('ui.settings.bank', 'Bank')}</label><input className="input-field" value={s.bank_name||''} onChange={set('bank_name')}/></div><div><label className="input-label text-xs">{t('ui.settings.account', 'Account')}</label><input className="input-field" value={s.bank_account||''} onChange={set('bank_account')}/></div><div><label className="input-label text-xs">RIB</label><input className="input-field" value={s.bank_rib||''} onChange={set('bank_rib')}/></div></div>}</div>}

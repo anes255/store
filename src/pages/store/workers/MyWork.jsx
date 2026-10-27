@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ClipboardList, CheckCircle, Clock, XCircle, Wallet, Home, ShoppingCart, User, Save, Camera, KeyRound, TrendingUp } from 'lucide-react';
 import DashboardLayout from '../../../components/shared/DashboardLayout';
@@ -26,7 +26,10 @@ export default function MyWork() {
   const actionLabel = useActionLabel();
   const sid = currentStore?.id;
   const [d, setD] = useState(null);
-  const [tab, setTab] = useState('home');
+  // The tab lives in the URL (?tab=profile) so the sidebar can link to it.
+  const [params, setParams] = useSearchParams();
+  const tab = ['earnings', 'profile'].includes(params.get('tab')) ? params.get('tab') : 'home';
+  const setTab = (k) => setParams(k === 'home' ? {} : { tab: k }, { replace: true });
   const [p, setP] = useState(null);
   const [pw, setPw] = useState({ current_password: '', new_password: '', confirm: '' });
   const [saving, setSaving] = useState(false);

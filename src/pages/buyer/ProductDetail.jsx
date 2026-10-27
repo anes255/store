@@ -10,6 +10,7 @@ const Checkout = lazy(() => import('./Checkout'));
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import { useStoreFont } from '../../utils/storeFont';
+import { StoreBrand } from '../../components/shared/StoreNav';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Full-screen image lightbox with zoom controls. Supports:
@@ -266,12 +267,7 @@ export default function ProductDetail() {
   const [cartOpen, setCartOpen] = useState(false);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
   const [buyNowItems, setBuyNowItems] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) navigate(`/s/${storeSlug}?search=${encodeURIComponent(searchQuery.trim())}`);
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -445,21 +441,7 @@ export default function ProductDetail() {
     <div className={`min-h-screen w-full max-w-full overflow-x-hidden pb-28 ${buyerTheme.mode==='dark'?'buyer-theme-dark text-gray-100':'bg-[#f5f5f5] text-gray-900'}`} style={{...(store?.header_font?{fontFamily:store.header_font}:{}),...(buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:{}))}}>
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
-            {store.logo ? <img src={store.logo} className="w-9 h-9 sm:w-14 sm:h-14 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-white/20 font-bold text-base sm:text-xl shrink-0" style={{color:headerText}}>{store.name?.[0]}</div>}
-            <span className="text-base sm:text-2xl font-extrabold truncate" style={{color:headerText,fontFamily:nameFont}}>{store.name}</span>
-          </Link>
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="store-search flex items-center bg-white rounded-full shadow-md w-full">
-              <Search size={20} className="ml-5 text-gray-400"/>
-              <input
-                className="flex-1 bg-transparent px-4 py-3.5 text-base focus:outline-none text-gray-800"
-                placeholder={t('store.search','Search products...')}
-                value={searchQuery}
-                onChange={e=>setSearchQuery(e.target.value)}
-              />
-            </div>
-          </form>
+          <StoreBrand store={store} storeSlug={storeSlug} color={headerText}/>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <div className="hidden sm:block"><ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
@@ -474,18 +456,6 @@ export default function ProductDetail() {
             </button>
           </div>
         </div>
-        {/* Mobile search */}
-        <form onSubmit={handleSearch} className="md:hidden px-3 pb-3">
-          <div className="store-search flex items-center bg-white rounded-full shadow-md w-full">
-            <Search size={16} className="ml-4 text-gray-400 shrink-0"/>
-            <input
-              className="flex-1 bg-transparent px-3 py-2.5 text-sm focus:outline-none text-gray-800"
-              placeholder={t('store.search','Search products...')}
-              value={searchQuery}
-              onChange={e=>setSearchQuery(e.target.value)}
-            />
-          </div>
-        </form>
       </header>
 
       <div className="max-w-6xl mx-auto px-0 sm:px-4 py-0 sm:py-8">

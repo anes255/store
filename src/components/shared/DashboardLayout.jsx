@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{Briefcase,Home as House,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{Briefcase,Home as House,User,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 import CommandPalette from './CommandPalette';
 import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
@@ -319,6 +319,7 @@ function NotifBell(){
 // Default sidebar order
 const DEFAULT_ITEMS = [
   {id:'mywork',type:'link',to:'/dashboard/me',icon:'House',label:'sidebar.myWork',staffOnly:true},
+  {id:'myprofile',type:'link',to:'/dashboard/me?tab=profile',icon:'User',label:'sidebar.myProfile',staffOnly:true},
   {id:'dashboard',type:'link',to:'/dashboard',icon:'LayoutDashboard',label:'sidebar.dashboard'},
   {id:'apps',type:'link',to:'/dashboard/apps',icon:'Zap',label:'sidebar.apps'},
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
@@ -339,7 +340,7 @@ const DEFAULT_ITEMS = [
   {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'sidebar.billing'},
 ];
 
-const ICONS = {House,Briefcase,LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target};
+const ICONS = {House,User,Briefcase,LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target};
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
@@ -466,7 +467,8 @@ export default function DashboardLayout({children}){
   const handleDragEnd=()=>{setDragIdx(null);setOverIdx(null);};
 
   const toggle=(k)=>setOpenMenus({...openMenus,[k]:!openMenus[k]});
-  const isActive=(p)=>location.pathname===p;
+  // Links may carry ?tab= (the worker's own page): match the tab too.
+  const isActive=(p)=>{const[path,q]=p.split('?');if(location.pathname!==path)return false;if(path!=='/dashboard/me')return true;const onProfile=new URLSearchParams(location.search).get('tab')==='profile';return new URLSearchParams(q||'').get('tab')==='profile'?onProfile:!onProfile;};
   // Open the group that holds the current page so its highlighted entry is visible.
   useEffect(()=>{const g=items.find(it=>Array.isArray(it.children)&&it.children.some(c=>c.to===location.pathname));if(g&&!openMenus[g.id])setOpenMenus(m=>({...m,[g.id]:true}));},[location.pathname]); // eslint-disable-line
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
+import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -257,15 +257,9 @@ export default function TrackOrder() {
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
 
       <header className="relative z-10 sticky top-0 backdrop-blur-xl border-b border-white/10" style={{backgroundColor:pc}}>
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center gap-3">
           <Link to={`/s/${storeSlug}`} className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors shrink-0"><ArrowLeft size={16} /></Link>
-          {store.logo
-            ? <img src={store.logo} alt="" className="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0" />
-            : <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: pc }}>{store.name?.[0] || 'S'}</div>}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-base font-extrabold truncate">{merchantText(store.tracking_hero_title, DEFAULT_HERO_TITLES) || t('track.title', 'Track your order')}</h1>
-            <p className="text-[11px] text-gray-400 truncate">{store.name}</p>
-          </div>
+          <div className="min-w-0 flex-1"><StoreBrand store={store} storeSlug={storeSlug} color="#ffffff" /></div>
           <div className="flex items-center gap-2 shrink-0">
             <LanguageSwitcher variant="header"/>
             <StoreHeaderIcons storeSlug={storeSlug} store={store} className="text-white"/>
@@ -274,6 +268,7 @@ export default function TrackOrder() {
       </header>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-8">
+        <h1 className="text-2xl sm:text-3xl font-extrabold mb-5">{merchantText(store.tracking_hero_title, DEFAULT_HERO_TITLES) || t('track.title', 'Track your order')}</h1>
         {/* Lookup card */}
         <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
           <div className="flex items-center gap-4 mb-5">

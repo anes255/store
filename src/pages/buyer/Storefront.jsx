@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SmartSearch from '../../components/shared/SmartSearch';
-import { StoreBottomNav, StoreHeaderIcons, CartPill } from '../../components/shared/StoreNav';
+import { StoreBottomNav, StoreHeaderIcons, CartPill, StoreBrand } from '../../components/shared/StoreNav';
 import flyToCart from '../../components/shared/flyToCart';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -963,10 +963,7 @@ export default function Storefront() {
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Link to={`/s/${storeSlug}`} className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink" style={{color:headerText}}>
-              {store.logo ? <img src={store.logo} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center bg-white/20 font-bold text-lg sm:text-2xl shrink-0" style={{color:headerText}}>{(store.name || storeSlug)?.[0]}</div>}
-              <span data-store-name className="store-header-title text-lg sm:text-3xl font-extrabold truncate" style={{color:headerText,WebkitTextFillColor:headerText,fontFamily:nameFont}}>{store.name || storeSlug}</span>
-            </Link>
+            <StoreBrand store={store} storeSlug={storeSlug} color={headerText}/>
           </div>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
             <SmartSearch value={search} onChange={setSearch} products={searchPool.length?searchPool:products} storeSlug={storeSlug} getName={getName} getThumb={getThumb} currency={store.currency||'DZD'} size="lg"/>

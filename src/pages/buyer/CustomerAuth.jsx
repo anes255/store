@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PasswordStrength from '../../components/shared/PasswordStrength';
-import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
+import OtpInput from '../../components/shared/OtpInput';
+import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storeApi } from '../../utils/api';
 import { useAuthStore, useBuyerTheme, useCartStore } from '../../hooks/useStore';
@@ -16,7 +17,7 @@ import { User, Phone, Lock, Mail, MapPin, ArrowLeft, ArrowRight, Eye, EyeOff, Sh
 export default function CustomerAuth() {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { setAuth } = useAuthStore();
   // This screen ignored the storefront theme entirely and was always light.
   const buyerTheme = useBuyerTheme();
@@ -42,6 +43,31 @@ export default function CustomerAuth() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', address: '', city: '', wilaya: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Forgot password: phone → 6-digit WhatsApp code → new password.
+  const [forgot, setForgot] = useState(null); // null | { step, phone, otp_token, masked, code, reset_token, pw, pw2 }
+  const fset = (patch) => setForgot((f) => ({ ...f, ...patch }));
+  const sendCode = async () => {
+    if (!isValidAlgerianPhone(forgot.phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
+    setLoading(true);
+    try { const { data } = await storeApi.customerForgotPassword(storeSlug, { phone: forgot.phone, lang: (i18n.language || 'en').slice(0, 2) }); fset({ step: 'code', otp_token: data.otp_token, masked: data.masked, code: '' }); toast.success(t('auth.codeSentWhatsapp', 'Code sent to your WhatsApp')); }
+    catch (err) { toast.error(err.response?.data?.error || t('storePage.failed', 'Failed')); }
+    setLoading(false);
+  };
+  const verifyCode = async (code = forgot.code) => {
+    if (String(code).length !== 6) return toast.error(t('auth.enter6Digit', 'Enter the 6-digit code'));
+    setLoading(true);
+    try { const { data } = await storeApi.customerForgotVerify(storeSlug, { otp_token: forgot.otp_token, code }); fset({ step: 'password', reset_token: data.reset_token, pw: '', pw2: '' }); }
+    catch (err) { toast.error(err.response?.data?.error || t('storePage.failed', 'Failed')); fset({ code: '' }); }
+    setLoading(false);
+  };
+  const resetPassword = async () => {
+    if ((forgot.pw || '').length < 6) return toast.error(t('auth.pwMin6', 'Password must be at least 6 characters'));
+    if (forgot.pw !== forgot.pw2) return toast.error(t('auth.pwMismatch', 'Passwords do not match'));
+    setLoading(true);
+    try { await storeApi.customerForgotReset(storeSlug, { reset_token: forgot.reset_token, new_password: forgot.pw }); toast.success(t('auth.pwResetSuccess', 'Password reset successfully! You can now sign in.')); setForm((f) => ({ ...f, phone: forgot.phone, password: '' })); setForgot(null); }
+    catch (err) { toast.error(err.response?.data?.error || t('storePage.failed', 'Failed')); }
+    setLoading(false);
+  };
 
   useEffect(() => {
     try { const cached = JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); if (cached) { setStore(cached); setStoreLoading(false); } } catch {}
@@ -102,11 +128,8 @@ export default function CustomerAuth() {
       <div className="absolute -bottom-24 left-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: pc + (isDarkBuyer ? '1a' : '33') }}/>
       {/* Store Header */}
       <header className="backdrop-blur-xl sticky top-0 z-30 shadow-md" style={{ backgroundColor: headerBg, color: headerText, fontFamily: headerFont }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={`/s/${storeSlug}`} className="flex items-center gap-2.5">
-            {store?.logo ? <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-white/20 shrink-0" alt=""/> : <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 font-bold shrink-0" style={{color:headerText}}>{store?.name?.[0]||'S'}</div>}
-            <span data-store-name className="store-header-title text-lg sm:text-2xl font-extrabold" style={{ color: headerText, WebkitTextFillColor: headerText }}>{store?.name||t('ui.shop.store', 'Store')}</span>
-          </Link>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
+          <StoreBrand store={store} storeSlug={storeSlug} color={headerText}/>
           <div className="flex items-center gap-2">
             <Link to={`/s/${storeSlug}`} className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs font-bold hover:bg-white/20 rounded-lg"><ArrowLeft size={14}/>{t('store.backToStore','Store')}</Link>
             <StoreHeaderIcons storeSlug={storeSlug} store={store}/>
@@ -145,6 +168,28 @@ export default function CustomerAuth() {
           <motion.div initial={false}
             animate={{ opacity: swapping ? 0 : 1, scale: swapping ? 0.97 : 1, filter: swapping ? 'blur(6px)' : 'blur(0px)' }}
             transition={{ duration: 0.2, ease: 'easeOut' }} style={{ pointerEvents: swapping ? 'none' : undefined }}>
+            {forgot ? (
+              <div>
+                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{forgot.step === 'password' ? t('auth.setNewPassword', 'Set new password') : t('auth.forgotPassword', 'Forgot password?')}</h1>
+                <p className="text-gray-500 mb-6">{forgot.step === 'phone' ? t('store.forgotPhoneHelp', 'Enter the phone number of your account. We will send you a code on WhatsApp.') : forgot.step === 'code' ? t('auth.resetCodeHelp', 'We sent a 6-digit code to {{m}}', { m: forgot.masked }) : t('auth.newPwHelp', 'Choose a strong password for your account.')}</p>
+                {forgot.step === 'phone' && <form onSubmit={(e) => { e.preventDefault(); sendCode(); }} className="space-y-4">
+                  <div className="relative"><Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" autoFocus className="input-field !pl-11" placeholder="0555123456" value={forgot.phone} onChange={(e) => fset({ phone: e.target.value })} /></div>
+                  <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90" style={{ backgroundColor: pc }}>{loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('auth.sendResetCode', 'Send reset code')}</button>
+                </form>}
+                {forgot.step === 'code' && <div className="space-y-4">
+                  <OtpInput value={forgot.code} onChange={(v) => fset({ code: v })} onComplete={(v) => verifyCode(v)} color={pc} disabled={loading} />
+                  <button type="button" disabled={loading} onClick={() => verifyCode()} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90" style={{ backgroundColor: pc }}>{loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('auth.verify', 'Verify')}</button>
+                  <button type="button" disabled={loading} onClick={sendCode} className="w-full text-sm font-semibold hover:underline" style={{ color: pc }}>{t('storePage.resendCode', 'Resend code')}</button>
+                </div>}
+                {forgot.step === 'password' && <form onSubmit={(e) => { e.preventDefault(); resetPassword(); }} className="space-y-4">
+                  <div className="relative"><Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input type={showPw ? 'text' : 'password'} autoFocus className="input-field !pl-11 !pr-11" placeholder={t('auth.newPassword', 'New password')} value={forgot.pw} onChange={(e) => fset({ pw: e.target.value })} /><button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">{showPw ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>
+                  <PasswordStrength password={forgot.pw} />
+                  <div className="relative"><Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" /><input type={showPw ? 'text' : 'password'} className="input-field !pl-11" placeholder={t('auth.confirmPasswordPlaceholder', 'Re-enter your password')} value={forgot.pw2} onChange={(e) => fset({ pw2: e.target.value })} /></div>
+                  <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90" style={{ backgroundColor: pc }}>{loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('auth.resetPassword', 'Reset password')}</button>
+                </form>}
+                <button type="button" onClick={() => setForgot(null)} className="mt-6 w-full flex items-center justify-center gap-1.5 text-sm font-semibold text-gray-500 hover:underline"><ArrowLeft size={14} />{t('auth.backToLogin', 'Back to login')}</button>
+              </div>
+            ) : <>
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{mode === 'login' ? t('auth.login','Log In') : t('auth.register','Create Account')}</h1>
             <p className="text-gray-500 mb-8">{mode === 'login' ? t('store.enterPhonePassword','Enter your phone number and password') : t('store.fillDetails','Fill in your details to get started')}</p>
 
@@ -176,6 +221,7 @@ export default function CustomerAuth() {
                   <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showPw ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
                 </div>
                 {mode !== 'login' && <PasswordStrength password={form.password}/>}
+                {mode === 'login' && <div className="flex justify-end mt-1.5"><button type="button" onClick={() => setForgot({ step: 'phone', phone: form.phone })} className="text-xs font-semibold hover:underline" style={{ color: pc }}>{t('auth.forgotPassword', 'Forgot password?')}</button></div>}
               </div>
 
               {mode === 'register' && (
@@ -231,6 +277,7 @@ export default function CustomerAuth() {
                 {mode === 'login' ? t('auth.register','Create Account') : t('auth.login','Log In')}
               </button>
             </p>
+            </>}
           </motion.div>
           {/* logo interlude while the forms swap */}
           <motion.div aria-hidden className="absolute inset-0 grid place-items-center pointer-events-none" initial={false}

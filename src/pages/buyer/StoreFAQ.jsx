@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
+import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
@@ -40,15 +40,9 @@ export default function StoreFAQ() {
     <div className={`min-h-screen ${isDark ? 'bg-[#0b1020] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header */}
       <header className="sticky top-0 z-30 shadow-md" style={{ backgroundColor: pc }}>
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center gap-3">
           <Link to={`/s/${storeSlug}`} className="p-2 hover:bg-white/20 rounded-full text-white"><ArrowLeft size={20}/></Link>
-          <div className="flex items-center gap-3">
-            {store?.logo && <img src={store.logo} className="w-10 h-10 rounded-full object-cover bg-white/20 shrink-0" alt=""/>}
-            <div>
-              <h1 className="text-lg font-bold text-white">{t('buyer.faq', 'FAQ')}</h1>
-              <p className="text-xs text-white/70">{store?.name}</p>
-            </div>
-          </div>
+          <div className="min-w-0 flex-1"><StoreBrand store={store} storeSlug={storeSlug} color="#ffffff" /></div>
           <StoreHeaderIcons storeSlug={storeSlug} store={store} className="ml-auto text-white"/>
         </div>
       </header>

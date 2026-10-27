@@ -8,9 +8,10 @@ import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer } from 'lucide-react';
+import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer , Shuffle } from 'lucide-react';
 import useStaffAccess from '../../hooks/useStaffAccess';
 import { workersApi } from '../../utils/api';
+import DistributeOrders from './workers/DistributeOrders';
 
 // All columns available to toggle / reorder.
 const ALL_COLUMNS = [
@@ -147,6 +148,7 @@ export default function StoreOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   // Order assignment to workers (who confirms / prepares which order).
   const canAssign = can('orders_assign');
+  const [distributeOpen, setDistributeOpen] = useState(false);
   const [assignables, setAssignables] = useState([]);
   useEffect(() => { if (canAssign && currentStore?.id) workersApi.assignableWorkers(currentStore.id).then((r) => setAssignables(r.data.workers || [])).catch(() => {}); }, [canAssign, currentStore?.id]); // eslint-disable-line
   const workerName = (id) => assignables.find((w) => String(w.id) === String(id))?.name;
@@ -979,6 +981,7 @@ export default function StoreOrders() {
           <button onClick={async () => { setRefreshing(true); try { const m = await import('../../utils/api'); m.invalidateCache?.('mords'); } catch {} await loadOrders(); setRefreshing(false); }} disabled={refreshing} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider disabled:opacity-60" title={t('common.refresh','Refresh')}>
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''}/>{t('common.refresh','Refresh')}
           </button>
+          {canAssign && <button onClick={() => setDistributeOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider"><Shuffle size={13}/>{t('workers.distShort', 'Distribute')}</button>}
           <button onClick={() => exportCsv(filteredOrders)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <Download size={13}/>{t('orders.export','Export')}
           </button>
@@ -1484,6 +1487,7 @@ export default function StoreOrders() {
           {lastDispatchDebug.debug.tried&&lastDispatchDebug.debug.tried.length>0&&<details className="mt-1"><summary className="text-[10px] text-gray-500 cursor-pointer">{t('ui.orders.urlsTried', 'URLs tried (')}{lastDispatchDebug.debug.tried.length})</summary><pre className="p-2 bg-gray-50 rounded-lg text-[10px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">{JSON.stringify(lastDispatchDebug.debug.tried,null,2)}</pre></details>}
         </>}
       </div></div>}
+    <DistributeOrders sid={currentStore?.id} open={distributeOpen} onClose={() => setDistributeOpen(false)} onDone={() => loadOrders()} />
     </DashboardLayout>
   );
 }

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Users, UserCheck, UserX, Wifi, Wallet, Coins, Search, Plus, Download, Eye, Edit, MoreHorizontal, Power, Ban, KeyRound, LogOut, Send, Trash2, Copy } from 'lucide-react';
+import { Users, UserCheck, UserX, Wifi, Wallet, Coins, Search, Plus, Download, Eye, Edit, MoreHorizontal, Power, Ban, KeyRound, LogOut, Send, Trash2, Copy, Shuffle } from 'lucide-react';
 import DashboardLayout from '../../../components/shared/DashboardLayout';
 import { useStoreManagement } from '../../../hooks/useStore';
 import useStaffAccess from '../../../hooks/useStaffAccess';
@@ -12,6 +12,7 @@ import { formatMulti, formatMoney } from '../../../utils/money';
 import { dangerConfirm } from '../../../components/shared/DangerConfirm';
 import { Avatar, StatusBadge, StatCard, Skeleton, EmptyState, Sheet, useRuleLabel, ruleSummary, timeAgo } from './shared';
 import AddWorkerWizard from './AddWorkerWizard';
+import DistributeOrders from './DistributeOrders';
 
 const earningsText = (e) => formatMulti(Object.fromEntries(Object.entries(e || {}).map(([c, v]) => [c, (v.fixed || 0) + (v.commission || 0)])));
 
@@ -96,6 +97,7 @@ export default function WorkersPage() {
   const [jobs, setJobs] = useState([]);
   const [roles, setRoles] = useState([]);
   const [wizard, setWizard] = useState(false);
+  const [distribute, setDistribute] = useState(false);
   const canManage = can('workers_manage');
 
   const load = useCallback(async (offset = 0) => {
@@ -130,6 +132,7 @@ export default function WorkersPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={exportCsv} disabled={!rows.length} className="btn-secondary text-sm flex items-center gap-1.5"><Download size={15} />{t('workers.export', 'Export')}</button>
+          {can('orders_assign') && <button onClick={() => setDistribute(true)} className="btn-secondary text-sm flex items-center gap-1.5"><Shuffle size={15} />{t('workers.distButton', 'Distribute orders')}</button>}
           {canManage && <button onClick={() => setWizard(true)} className="btn-primary text-sm flex items-center gap-1.5 shadow-lg"><Plus size={16} />{t('workers.addWorker', 'Add Worker')}</button>}
         </div>
       </div>
@@ -212,6 +215,7 @@ export default function WorkersPage() {
       {/* sticky add button on phones */}
       {canManage && <button onClick={() => setWizard(true)} className="lg:hidden fixed bottom-5 end-5 z-30 w-14 h-14 rounded-full bg-brand-500 text-white shadow-2xl grid place-items-center" aria-label={t('workers.addWorker', 'Add Worker')}><Plus size={24} /></button>}
       <AddWorkerWizard open={wizard} onClose={() => setWizard(false)} onCreated={() => load(0)} />
+      <DistributeOrders sid={sid} open={distribute} onClose={() => setDistribute(false)} onDone={() => load(0)} />
     </DashboardLayout>
   );
 }
