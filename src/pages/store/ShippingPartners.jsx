@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope,Star,ArrowUp,ArrowDown}from'lucide-react';
+import React,{useState,useEffect} from'react';import{useTranslation}from'react-i18next';import DashboardLayout from'../../components/shared/DashboardLayout';import{useStoreManagement}from'../../hooks/useStore';import api,{API_URL}from'../../utils/api';import toast from'react-hot-toast';import{Search,Truck,Plus,X,Trash2,Edit,Package,RefreshCw,Check,Wifi,WifiOff,Zap,HelpCircle,CheckCircle,XCircle,AlertCircle,LayoutGrid,LayoutList,Clock,Link2,Copy,ChevronDown,ChevronUp,Save,DollarSign,Stethoscope,Star,ArrowUp,ArrowDown}from'lucide-react';
 import{gradientForCompany,initialFor}from'../../utils/carrierGradient';
 import CarrierLogo,{isLogoImage}from'../../components/shared/CarrierLogo';
 
@@ -237,7 +237,7 @@ export default function ShippingPartners(){
 
 
   const copyWebhookUrl=async(c)=>{
-    const base=import.meta.env.VITE_API_URL||'https://test-dz47.onrender.com/api';
+    const base=API_URL;
     try{const{data}=await api.get(`/manage/stores/${currentStore.id}/delivery-companies/${c.id}/webhook-key`);
       const url=`${base}/webhook/carrier/${currentStore.id}/${c.id}/${data.key}`;
       await navigator.clipboard.writeText(url);toast.success(t('storePage.copied','Copied!'));}catch{toast.error(t('storePage.failed','Failed'));}

@@ -1,7 +1,11 @@
 import axios from 'axios';
 import i18n from '../i18n';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://test-dz47.onrender.com/api';
+// Live backend: the Render service "test" (test-dz47). Production builds use it
+// directly — the Vercel VITE_API_URL setting still points at a backend that no
+// longer exists. VITE_API_URL is only honoured in local dev (`vite`).
+const LIVE_API_URL = 'https://test-dz47.onrender.com/api';
+export const API_URL = (import.meta.env.DEV && import.meta.env.VITE_API_URL) || LIVE_API_URL;
 
 const api = axios.create({
   baseURL: API_URL,

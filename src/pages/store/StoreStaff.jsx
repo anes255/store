@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PasswordInput from '../../components/shared/PasswordInput';
 import { useTranslation } from 'react-i18next';
-import { ownerApi, publicRoleTemplatesApi } from '../../utils/api';
+import { ownerApi, publicRoleTemplatesApi, API_URL } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -90,7 +90,7 @@ export default function StoreStaff() {
       .catch(err => {
         console.error('[role templates] fetch failed:', err?.response?.status, err?.response?.data || err?.message);
         // Fallback: direct fetch bypassing axios to rule out interceptor issues
-        const base = import.meta.env.VITE_API_URL || 'https://test-dz47.onrender.com/api';
+        const base = API_URL;
         fetch(base + '/platform/role-templates/public')
           .then(r => r.json())
           .then(d => { if (d?.templates) { console.log('[role templates] fallback loaded:', d.templates.length); setPlatformTemplates(d.templates); } })

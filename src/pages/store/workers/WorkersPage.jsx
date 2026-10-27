@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -22,7 +23,26 @@ export function WorkerActions({ worker, onChanged, compact = false }) {
   const [open, setOpen] = useState(false);
   const [secret, setSecret] = useState(null);
   const ref = useRef(null);
-  useEffect(() => { if (!open) return; const h = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, [open]);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+  const [pos, setPos] = useState(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (!ref.current?.contains(e.target) && !menuRef.current?.contains(e.target)) setOpen(false); };
+    const close = () => setOpen(false);
+    document.addEventListener('mousedown', h); window.addEventListener('scroll', close, true); window.addEventListener('resize', close);
+    return () => { document.removeEventListener('mousedown', h); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
+  }, [open]);
+  // The menu lives in a portal with fixed coordinates so the table's scroll
+  // box can't clip it; it opens upward when there isn't room below the button.
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) { setPos(null); return; }
+    const b = btnRef.current.getBoundingClientRect();
+    const h = menuRef.current?.offsetHeight || 0, w = 224, gap = 4, vh = window.innerHeight;
+    const up = b.bottom + gap + h > vh - 8 && b.top - gap - h > 8;
+    const left = Math.min(Math.max(8, b.right - w), window.innerWidth - w - 8);
+    setPos({ left, top: up ? b.top - gap - h : b.bottom + gap, ready: h > 0 });
+  }, [open, pos?.ready]);
   const run = async (fn, okMsg) => { setOpen(false); try { const r = await fn(); if (okMsg) toast.success(okMsg); onChanged?.(); return r; } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } };
   const setStatus = (status) => run(() => workersApi.update(sid, worker.id, { status }), t('workers.saved', 'Saved'));
   const items = [
@@ -40,13 +60,15 @@ export function WorkerActions({ worker, onChanged, compact = false }) {
         <button onClick={() => navigate(`/dashboard/workers/${worker.id}`)} className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100" title={t('workers.view', 'View')}><Eye size={15} /></button>
         <button onClick={() => navigate(`/dashboard/workers/${worker.id}?tab=overview&edit=1`)} className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100" title={t('workers.edit', 'Edit')}><Edit size={15} /></button>
       </>}
-      <button onClick={() => setOpen((o) => !o)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"><MoreHorizontal size={16} /></button>
-      {open && (
-        <div className="absolute z-30 top-full mt-1 end-0 w-56 rounded-2xl bg-white shadow-2xl border border-gray-100 p-1.5">
+      <button ref={btnRef} onClick={() => setOpen((o) => !o)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"><MoreHorizontal size={16} /></button>
+      {open && createPortal(
+        <div ref={menuRef} style={{ position: 'fixed', left: pos?.left ?? -9999, top: pos?.top ?? -9999, visibility: pos?.ready ? 'visible' : 'hidden' }}
+          className="z-[60] w-56 rounded-2xl bg-white shadow-2xl border border-gray-100 p-1.5">
           {items.map((it, i) => { const I = it.icon; return (
             <button key={i} onClick={it.onClick} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-start ${it.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}><I size={15} />{it.label}</button>
           ); })}
-        </div>
+        </div>,
+        document.body
       )}
       <Sheet open={!!secret} onClose={() => setSecret(null)} title={secret?.title}
         footer={<button className="btn-primary text-sm flex items-center gap-1.5" onClick={() => navigator.clipboard?.writeText(secret.value).then(() => toast.success(t('store.copied', 'Copied!')))}><Copy size={14} />{t('workers.copy', 'Copy')}</button>}>
