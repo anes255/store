@@ -142,7 +142,7 @@ function WhatsAppQR({ storeId }) {
 
       {/* Templates Tab */}
       {tab === 'templates' && <>
-        <p className="text-xs text-gray-500">{t('storePage.customizeMessages','Customize the messages sent to customers. Use')} <span className="font-mono bg-gray-100 px-1 rounded">{'{order}'}</span> <span className="font-mono bg-gray-100 px-1 rounded">{'{store}'}</span> <span className="font-mono bg-gray-100 px-1 rounded">{'{total}'}</span> as placeholders.</p>
+        <p className="text-xs text-gray-500">{t('storePage.customizeMessages','Customize the messages sent to customers. Use')} <span className="font-mono bg-gray-100 px-1 rounded">{'{order}'}</span> <span className="font-mono bg-gray-100 px-1 rounded">{'{store}'}</span> <span className="font-mono bg-gray-100 px-1 rounded">{'{total}'}</span> {t('storePage.asPlaceholders','as placeholders.')}</p>
         {Object.entries(templates).map(([key, val]) => (
           <div key={key}>
             <label className="input-label text-xs capitalize flex items-center gap-2">
@@ -574,7 +574,7 @@ export default function StoreApps() {
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-white text-gray-800 rounded-tl-sm shadow-sm'}`}>
                         {msg.text}
-                        {msg.model && <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-white/50' : 'text-gray-400'}`}>via {msg.model}</p>}
+                        {msg.model && <p className={`text-[9px] mt-1 ${msg.role === 'user' ? 'text-white/50' : 'text-gray-400'}`}>{t('storePage.viaModel','via {{model}}',{model:msg.model})}</p>}
                         {msg.debug && <p className="text-[9px] mt-1 text-red-400">{msg.debug}</p>}
                       </div>
                     </div>

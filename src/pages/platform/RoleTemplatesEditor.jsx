@@ -54,6 +54,7 @@ function ui(isDark) {
 }
 
 function RoleForm({ value, onChange, isDark }) {
+  const { t } = useTranslation();
   const u = ui(isDark);
   const [activeLang, setActiveLang] = useState('en');
   const [openGroups, setOpenGroups] = useState(() => Object.fromEntries(PERM_GROUPS.map(g => [g, true])));
@@ -103,24 +104,24 @@ function RoleForm({ value, onChange, isDark }) {
       {/* Name + description per lang */}
       <div className={`rounded-2xl border p-4 space-y-3 ${u.cardSoft}`}>
         <div>
-          <label className={`block text-[11px] font-extrabold uppercase tracking-wide mb-1.5 ${u.muted}`}>Role Name ({activeLang.toUpperCase()})</label>
+          <label className={`block text-[11px] font-extrabold uppercase tracking-wide mb-1.5 ${u.muted}`}>{t('ui.roles.roleNameLang', 'Role Name ({{lang}})', { lang: activeLang.toUpperCase() })}</label>
           <input
             dir={activeLang === 'ar' ? 'rtl' : 'ltr'}
             className={`w-full px-3 py-2.5 border rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${u.input}`}
             value={value.name[activeLang] || ''}
             onChange={e => set(`name.${activeLang}`, e.target.value)}
-            placeholder={activeLang === 'en' ? 'e.g. Store Manager' : activeLang === 'fr' ? 'ex. Gérant de magasin' : 'مثال: مدير المتجر'}
+            placeholder={activeLang === 'en' ? t('ui.roles.eGStoreManager', 'e.g. Store Manager') : activeLang === 'fr' ? t('ui.roles.exGRantDeMagasin', 'ex. Gérant de magasin') : 'مثال: مدير المتجر'}
           />
         </div>
         <div>
-          <label className={`block text-[11px] font-extrabold uppercase tracking-wide mb-1.5 ${u.muted}`}>Description ({activeLang.toUpperCase()})</label>
+          <label className={`block text-[11px] font-extrabold uppercase tracking-wide mb-1.5 ${u.muted}`}>{t('ui.roles.descriptionLang', 'Description ({{lang}})', { lang: activeLang.toUpperCase() })}</label>
           <textarea
             dir={activeLang === 'ar' ? 'rtl' : 'ltr'}
             rows={2}
             className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 resize-none ${u.input}`}
             value={value.description[activeLang] || ''}
             onChange={e => set(`description.${activeLang}`, e.target.value)}
-            placeholder={activeLang === 'en' ? 'Short summary of what this role can do' : ''}
+            placeholder={activeLang === 'en' ? t('ui.roles.shortSummaryOfWhatThis', 'Short summary of what this role can do') : ''}
           />
         </div>
       </div>
@@ -133,13 +134,13 @@ function RoleForm({ value, onChange, isDark }) {
               <Lock size={14} className="text-white" />
             </div>
             <div>
-              <p className={`text-sm font-extrabold ${u.title}`}>Permissions</p>
-              <p className={`text-[11px] ${u.muted}`}>{value.permissions.length} / {ALL_PERMISSIONS.length} granted</p>
+              <p className={`text-sm font-extrabold ${u.title}`}>{t('ui.roles.permissions', 'Permissions')}</p>
+              <p className={`text-[11px] ${u.muted}`}>{value.permissions.length} / {ALL_PERMISSIONS.length} {t('ui.roles.granted', 'granted')}</p>
             </div>
           </div>
           <div className="flex gap-1.5">
-            <button onClick={selectAll} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border ${u.btnGhost}`}>All</button>
-            <button onClick={clearAll} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border ${u.btnGhost}`}>Clear</button>
+            <button onClick={selectAll} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border ${u.btnGhost}`}>{t('ui.roles.all', 'All')}</button>
+            <button onClick={clearAll} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border ${u.btnGhost}`}>{t('ui.roles.clear', 'Clear')}</button>
           </div>
         </div>
         <div className="p-3 space-y-2 max-h-[420px] overflow-y-auto">
@@ -163,7 +164,7 @@ function RoleForm({ value, onChange, isDark }) {
                     </span>
                   </button>
                   <button onClick={() => toggleGroup(group)} className={`text-[10px] font-extrabold px-2 py-1 rounded-md ${allOn ? 'text-red-500 hover:underline' : 'text-brand-500 hover:underline'}`}>
-                    {allOn ? 'Uncheck' : 'Check all'}
+                    {allOn ? t('ui.roles.uncheck', 'Uncheck') : t('ui.roles.checkAll', 'Check all')}
                   </button>
                 </div>
                 {isOpen && (
@@ -198,8 +199,8 @@ function RoleForm({ value, onChange, isDark }) {
             <Sparkles size={16} className="text-white" />
           </div>
           <div>
-            <p className={`text-sm font-bold ${u.title}`}>Active template</p>
-            <p className={`text-[11px] ${u.muted}`}>When on, store owners can see and clone this role.</p>
+            <p className={`text-sm font-bold ${u.title}`}>{t('ui.roles.activeTemplate', 'Active template')}</p>
+            <p className={`text-[11px] ${u.muted}`}>{t('ui.roles.whenOnStoreOwnersCan', 'When on, store owners can see and clone this role.')}</p>
           </div>
         </div>
         <button
@@ -212,20 +213,21 @@ function RoleForm({ value, onChange, isDark }) {
 
       {/* Sort order */}
       <div className={`rounded-2xl border p-4 ${u.cardSoft}`}>
-        <label className={`block text-[11px] font-extrabold uppercase tracking-wide mb-1.5 ${u.muted}`}>Sort order</label>
+        <label className={`block text-[11px] font-extrabold uppercase tracking-wide mb-1.5 ${u.muted}`}>{t('ui.roles.sortOrder', 'Sort order')}</label>
         <input
           type="number"
           className={`w-32 px-3 py-2 border rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${u.input}`}
           value={value.sort_order || 0}
           onChange={e => set('sort_order', parseInt(e.target.value) || 0)}
         />
-        <p className={`text-[10px] mt-1 ${u.subtle}`}>Lower numbers appear first in the list.</p>
+        <p className={`text-[10px] mt-1 ${u.subtle}`}>{t('ui.roles.lowerNumbersAppearFirstIn', 'Lower numbers appear first in the list.')}</p>
       </div>
     </div>
   );
 }
 
 function Modal({ title, onClose, isDark, children, footer }) {
+  const { t } = useTranslation();
   const u = ui(isDark);
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -247,7 +249,8 @@ function Modal({ title, onClose, isDark, children, footer }) {
 }
 
 export default function RoleTemplatesEditor() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLang = (i18n.language || 'en').slice(0, 2);
   const theme = usePlatformTheme();
   const isDark = theme.mode === 'dark';
   const u = ui(isDark);
@@ -265,7 +268,7 @@ export default function RoleTemplatesEditor() {
       const { data } = await platformApi.getRoleTemplates();
       setRoles(data.templates || []);
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Failed to load roles');
+      toast.error(e.response?.data?.error || t('ui.roles.failedToLoadRoles', 'Failed to load roles'));
     }
     setLoading(false);
   };
@@ -303,7 +306,7 @@ export default function RoleTemplatesEditor() {
   };
 
   const remove = async (r) => {
-    if (!confirm(`Delete role "${r.name?.en || ''}"?`)) return;
+    if (!confirm(t('ui.roles.deleteConfirm', 'Delete role "{{name}}"?', { name: r.name?.[uiLang] || r.name?.en || '' }))) return;
     try {
       await platformApi.deleteRoleTemplate(r.id);
       toast.success(t('store.deleted','Deleted'));
@@ -318,7 +321,7 @@ export default function RoleTemplatesEditor() {
       await platformApi.updateRoleTemplate(r.id, { ...r, is_active: !r.is_active });
       toast.success(r.is_active ? 'Hidden from store owners' : 'Published');
       load();
-    } catch (e) { toast.error(e.response?.data?.error || 'Failed'); }
+    } catch (e) { toast.error(e.response?.data?.error || t('ui.roles.failed', 'Failed')); }
   };
 
   const filtered = useMemo(() => {
@@ -353,25 +356,25 @@ export default function RoleTemplatesEditor() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
                 <Shield size={20} className="text-white" />
               </div>
-              <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${u.title}`}>Staff Role Templates</h1>
+              <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${u.title}`}>{t('ui.roles.staffRoleTemplates', 'Staff Role Templates')}</h1>
             </div>
             <p className={`text-sm leading-relaxed ${u.muted}`}>
-              Define reusable role templates available to every store owner. Owners can assign them directly or clone one as a starting point and tweak permissions for their store.
+             {t('ui.roles.defineReusableRoleTemplatesAvailable', 'Define reusable role templates available to every store owner. Owners can assign them directly or clone one as a starting point and tweak permissions for their store.')}.
             </p>
           </div>
           <button
             onClick={openCreate}
             className="px-5 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-2xl font-extrabold flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all"
           >
-            <Plus size={18} />Create Role
+            <Plus size={18} />{t('ui.roles.createRole', 'Create Role')}
           </button>
         </div>
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
           {[
-            { label: 'Total', value: stats.total, icon: Shield, c: 'from-purple-500 to-indigo-500' },
-            { label: 'Active', value: stats.active, icon: Check, c: 'from-emerald-500 to-teal-500' },
-            { label: 'Inactive', value: stats.inactive, icon: Lock, c: 'from-gray-500 to-gray-600' },
-            { label: 'Avg Perms', value: stats.avgPerms, icon: Users, c: 'from-amber-500 to-orange-500' },
+            { label: t('ui.roles.total', 'Total'), value: stats.total, icon: Shield, c: 'from-purple-500 to-indigo-500' },
+            { label: t('ui.roles.active', 'Active'), value: stats.active, icon: Check, c: 'from-emerald-500 to-teal-500' },
+            { label: t('ui.roles.inactive', 'Inactive'), value: stats.inactive, icon: Lock, c: 'from-gray-500 to-gray-600' },
+            { label: t('ui.roles.avgPerms', 'Avg Perms'), value: stats.avgPerms, icon: Users, c: 'from-amber-500 to-orange-500' },
           ].map(s => {
             const Ic = s.icon;
             return (
@@ -396,15 +399,15 @@ export default function RoleTemplatesEditor() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search roles…"
+            placeholder={t('ui.roles.searchRoles', 'Search roles…')}
             className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${u.input}`}
           />
         </div>
         <div className={`flex items-center gap-1 p-1 rounded-xl ${u.cardSoft} border`}>
           {[
-            { k: 'all', l: 'All' },
-            { k: 'active', l: 'Active' },
-            { k: 'inactive', l: 'Inactive' },
+            { k: 'all', l: t('ui.roles.all', 'All') },
+            { k: 'active', l: t('ui.roles.active', 'Active') },
+            { k: 'inactive', l: t('ui.roles.inactive', 'Inactive') },
           ].map(f => (
             <button
               key={f.k}
@@ -427,9 +430,9 @@ export default function RoleTemplatesEditor() {
           <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center">
             <Shield size={28} className="text-purple-500" />
           </div>
-          <p className={`font-bold ${u.title}`}>{search || filter !== 'all' ? 'No roles match' : 'No roles yet'}</p>
+          <p className={`font-bold ${u.title}`}>{search || filter !== 'all' ? t('ui.roles.noRolesMatch', 'No roles match') : t('ui.roles.noRolesYet', 'No roles yet')}</p>
           <p className={`text-xs mt-1 ${u.muted}`}>
-            {search || filter !== 'all' ? 'Try adjusting search or filter.' : 'Click Create Role to add your first template.'}
+            {search || filter !== 'all' ? t('ui.roles.tryAdjustingSearchOrFilter', 'Try adjusting search or filter.') : t('ui.roles.clickCreateRoleToAdd', 'Click Create Role to add your first template.')}
           </p>
         </div>
       ) : (
@@ -451,31 +454,31 @@ export default function RoleTemplatesEditor() {
                       <Shield size={18} className="text-white" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className={`font-extrabold truncate ${u.title}`}>{r.name?.en || 'Untitled'}</h3>
-                      {r.description?.en && <p className={`text-xs mt-0.5 line-clamp-2 ${u.muted}`}>{r.description.en}</p>}
+                      <h3 className={`font-extrabold truncate ${u.title}`}>{r.name?.[uiLang] || r.name?.en || t('ui.roles.untitled', 'Untitled')}</h3>
+                      {(r.description?.[uiLang] || r.description?.en) && <p className={`text-xs mt-0.5 line-clamp-2 ${u.muted}`}>{r.description?.[uiLang] || r.description.en}</p>}
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${r.is_active ? u.chipActive : u.chipInactive}`}>
-                          {r.is_active ? 'ACTIVE' : 'INACTIVE'}
+                          {r.is_active ? t('ui.roles.active2', 'ACTIVE') : t('ui.roles.inactive2', 'INACTIVE')}
                         </span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${u.chip}`}>
-                          {perms.length} perms
+                          {perms.length} {t('ui.roles.perms', 'perms')}
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <button onClick={() => openEdit(r)} className={`p-2 rounded-lg transition-all ${u.btnEdit}`} title="Edit"><Edit3 size={14} /></button>
-                    <button onClick={() => toggleActive(r)} className={`p-2 rounded-lg transition-all ${u.btnEdit}`} title={r.is_active ? 'Deactivate' : 'Activate'}>
+                    <button onClick={() => openEdit(r)} className={`p-2 rounded-lg transition-all ${u.btnEdit}`} title={t('ui.roles.edit', 'Edit')}><Edit3 size={14} /></button>
+                    <button onClick={() => toggleActive(r)} className={`p-2 rounded-lg transition-all ${u.btnEdit}`} title={r.is_active ? t('ui.roles.deactivate', 'Deactivate') : t('ui.roles.activate', 'Activate')}>
                       {r.is_active ? <Lock size={14} /> : <Check size={14} />}
                     </button>
-                    <button onClick={() => remove(r)} className={`p-2 rounded-lg border transition-all ${u.btnDanger}`} title="Delete"><Trash2 size={14} /></button>
+                    <button onClick={() => remove(r)} className={`p-2 rounded-lg border transition-all ${u.btnDanger}`} title={t('ui.roles.delete', 'Delete')}><Trash2 size={14} /></button>
                   </div>
                 </div>
 
                 {/* Coverage bar */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <p className={`text-[10px] font-extrabold uppercase tracking-wide ${u.muted}`}>Coverage</p>
+                    <p className={`text-[10px] font-extrabold uppercase tracking-wide ${u.muted}`}>{t('ui.roles.coverage', 'Coverage')}</p>
                     <p className={`text-[10px] font-extrabold ${u.title}`}>{pct}%</p>
                   </div>
                   <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
@@ -503,15 +506,15 @@ export default function RoleTemplatesEditor() {
 
       {creating && (
         <Modal
-          title="Create New Role"
+          title={t('ui.roles.createNewRole', 'Create New Role')}
           isDark={isDark}
           onClose={() => setCreating(null)}
           footer={
             <div className="flex gap-2">
-              <button onClick={() => setCreating(null)} className={`flex-1 py-3 border rounded-xl font-bold ${u.btnGhost}`}>Cancel</button>
+              <button onClick={() => setCreating(null)} className={`flex-1 py-3 border rounded-xl font-bold ${u.btnGhost}`}>{t('ui.roles.cancel', 'Cancel')}</button>
               <button onClick={saveCreate} disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 text-white rounded-xl font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                Create Role
+               {t('ui.roles.createRole', 'Create Role')}e
               </button>
             </div>
           }
@@ -522,15 +525,15 @@ export default function RoleTemplatesEditor() {
 
       {editing && (
         <Modal
-          title={`Edit: ${editing.name?.en || 'Role'}`}
+          title={t('ui.roles.edit2', 'Edit: {{v0}}', { v0: editing.name?.[uiLang] || editing.name?.en || t('ui.roles.role', 'Role') })}
           isDark={isDark}
           onClose={() => setEditing(null)}
           footer={
             <div className="flex gap-2">
-              <button onClick={() => setEditing(null)} className={`flex-1 py-3 border rounded-xl font-bold ${u.btnGhost}`}>Cancel</button>
+              <button onClick={() => setEditing(null)} className={`flex-1 py-3 border rounded-xl font-bold ${u.btnGhost}`}>{t('ui.roles.cancel', 'Cancel')}</button>
               <button onClick={saveEdit} disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 text-white rounded-xl font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                Save Changes
+               {t('ui.roles.saveChanges', 'Save Changes')}s
               </button>
             </div>
           }

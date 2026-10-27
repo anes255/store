@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {aiApi} from '../../utils/api';
 import {useAdminTheme} from '../../hooks/useStore';
 import {MessageCircle,Phone,Send,X,Save,Clock,ShoppingCart,QrCode,RefreshCw,Wifi,WifiOff,Bell,ChevronDown,Eye,CheckCircle2,XCircle,Truck,Package,RotateCcw,Hourglass,PhoneOff,Search,Calendar,Check} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const WA_STATUSES=['new_order','confirmed','under_preparation','ready','shipped','delivered','cancelled','awaiting','failed_call_1','failed_call_2','failed_call_3','returned'];
 const WA_STATUS_LABELS={new_order:{en:'New Order',fr:'Nouvelle commande',ar:'طلب جديد'},confirmed:{en:'Confirmed',fr:'Confirmé',ar:'تم التأكيد'},under_preparation:{en:'Under Preparation',fr:'En préparation',ar:'قيد التحضير'},ready:{en:'Ready',fr:'Prêt',ar:'جاهز'},shipped:{en:'Shipped',fr:'Expédié',ar:'تم الشحن'},delivered:{en:'Delivered',fr:'Livré',ar:'تم التسليم'},cancelled:{en:'Cancelled',fr:'Annulé',ar:'ملغي'},awaiting:{en:'Awaiting',fr:'En attente',ar:'في الانتظار'},failed_call_1:{en:'Call Failed 1',fr:'Appel échoué 1',ar:'اتصال فاشل 1'},failed_call_2:{en:'Call Failed 2',fr:'Appel échoué 2',ar:'اتصال فاشل 2'},failed_call_3:{en:'Call Failed 3',fr:'Appel échoué 3',ar:'اتصال فاشل 3'},returned:{en:'Returned',fr:'Retourné',ar:'مرتجع'}};
@@ -116,11 +117,11 @@ export {WA_STATUSES,WA_STATUS_LABELS,WA_TIMING_OPTIONS,WA_CART_TIMING,WA_VARS,WA
 // Single status row — collapsed pill view + inline editor when expanded.
 // ─────────────────────────────────────────────────────────────────────────────
 function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemplate,onTest,onPreview,dk,t1,t2,t3,inp,varBtn,expanded,onExpand}){
+  const { t, i18n } = useTranslation(); const uiLang = (i18n.language || 'en').slice(0, 2);
   const meta=WA_STATUS_META[status]||{color:'#6b7280',bg:'bg-gray-100 text-gray-500',Icon:Bell};
   const Icon=meta.Icon;
   const isRtl=lang==='ar';
-  const labelLocal=WA_STATUS_LABELS[status]?.[lang]||status;
-  const labelEn=WA_STATUS_LABELS[status]?.en||status;
+  const labelLocal=WA_STATUS_LABELS[status]?.[uiLang]||status;
   const hasTpl=!!(template||'').trim();
   return(
     <div className={`rounded-2xl border ${dk?'border-gray-700 bg-gray-800/40':'border-gray-100 bg-white'} overflow-hidden`}>
@@ -128,18 +129,18 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${meta.bg} shrink-0`}><Icon size={16}/></div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-sm font-bold ${t1}`} dir={isRtl?'rtl':'ltr'}>{lang==='ar'?`${labelLocal} ${labelEn.toUpperCase()}`:labelLocal}</span>
-            {!enabled&&<span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase">Disabled</span>}
+            <span className={`text-sm font-bold ${t1}`} dir={isRtl?'rtl':'ltr'}>{labelLocal}</span>
+            {!enabled&&<span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase">{t('ui.notif.disabled', 'Disabled')}</span>}
           </div>
-          <p className={`text-[11px] ${t3} truncate`}>{hasTpl?(template.length>60?template.slice(0,60)+'…':template):'No template set'}</p>
+          <p className={`text-[11px] ${t3} truncate`}>{hasTpl?(template.length>60?template.slice(0,60)+'…':template):t('ui.notif.noTemplateSet', 'No template set')}</p>
         </div>
-        <button type="button" onClick={(e)=>{e.stopPropagation();onPreview();}} title="Preview" className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>Preview</button>
-        <button type="button" onClick={(e)=>{e.stopPropagation();onTest();}} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>Test</button>
+        <button type="button" onClick={(e)=>{e.stopPropagation();onPreview();}} title={t('ui.notif.preview', 'Preview')} className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>{t('ui.notif.preview', 'Preview')}</button>
+        <button type="button" onClick={(e)=>{e.stopPropagation();onTest();}} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk?'bg-gray-700 text-gray-300 hover:bg-gray-600':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>{t('ui.notif.test', 'Test')}</button>
         {/* On/off pill toggle — fixed dimensions, no overlap with sibling buttons. */}
-        <button type="button" onClick={(e)=>{e.stopPropagation();onToggle(!enabled);}} title={enabled?'Click to disable':'Click to enable'} aria-label={enabled?'Disable':'Enable'} className={`relative shrink-0 inline-flex items-center rounded-full transition-colors ${enabled?'':'bg-gray-300'}`} style={{backgroundColor:enabled?meta.color:'#d1d5db',width:'46px',height:'24px',padding:'2px'}}>
+        <button type="button" onClick={(e)=>{e.stopPropagation();onToggle(!enabled);}} title={enabled?t('ui.notif.clickToDisable', 'Click to disable'):t('ui.notif.clickToEnable', 'Click to enable')} aria-label={enabled?t('ui.notif.disable', 'Disable'):t('ui.notif.enable', 'Enable')} className={`relative shrink-0 inline-flex items-center rounded-full transition-colors ${enabled?'':'bg-gray-300'}`} style={{backgroundColor:enabled?meta.color:'#d1d5db',width:'46px',height:'24px',padding:'2px'}}>
           <span className="block bg-white rounded-full shadow" style={{width:'20px',height:'20px',transform:enabled?'translateX(22px)':'translateX(0)',transition:'transform 0.2s ease'}}/>
         </button>
-        <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} aria-label="Expand">
+        <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} aria-label={t('ui.notif.expand', 'Expand')}>
           <ChevronDown size={16} className={`transition-transform ${expanded?'rotate-180':''}`}/>
         </button>
       </div>
@@ -148,9 +149,9 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
           {/* Notification message */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <p className={`text-[10px] font-bold ${t3} uppercase`}>{lang==='ar'?'رسالة الإشعار':lang==='fr'?'Message de notification':'Notification Message'} ({lang.toUpperCase()})</p>
+              <p className={`text-[10px] font-bold ${t3} uppercase`}>{t('notif.notificationMessage', 'Notification Message')} ({lang.toUpperCase()})</p>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={onPreview} className="text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1"><Eye size={11}/>{lang==='ar'?'مثال الرسالة':lang==='fr'?'Exemple':'Example'}</button>
+                <button type="button" onClick={onPreview} className="text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1"><Eye size={11}/>{t('notif.example', 'Example')}</button>
               </div>
             </div>
             <textarea
@@ -158,28 +159,28 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
               rows={4}
               value={template||''}
               onChange={e=>onTemplate(e.target.value)}
-              placeholder={lang==='ar'?'اكتب نص الإشعار هنا.':lang==='fr'?'Écrivez le texte de notification ici.':'Write the notification text here.'}
+              placeholder={t('notif.writeTheNotificationTextHere', 'Write the notification text here.')}
               style={{direction:isRtl?'rtl':'ltr'}}
               disabled={!enabled}
             />
             <div className="flex items-center justify-between mt-1">
-              <p className={`text-[10px] ${t3}`}>{(template||'').length} characters</p>
+              <p className={`text-[10px] ${t3}`}>{(template||'').length} {t('ui.notif.characters', 'characters')}</p>
               <div className="flex items-center gap-2">
-                <label className={`flex items-center gap-1.5 text-[11px] ${t2}`}><input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500" checked={enabled} onChange={e=>onToggle(e.target.checked)}/>{lang==='ar'?'مفعّل':lang==='fr'?'Activé':'Enabled'}</label>
+                <label className={`flex items-center gap-1.5 text-[11px] ${t2}`}><input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500" checked={enabled} onChange={e=>onToggle(e.target.checked)}/>{t('notif.enabled', 'Enabled')}</label>
               </div>
             </div>
           </div>
           {/* Send time */}
           <div>
-            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5 flex items-center gap-1`}><Clock size={11}/>{lang==='ar'?'وقت الإرسال بعد تغيير الحالة':lang==='fr'?'Envoyer après changement de statut':'Send time after status change'}</p>
-            <select className={`text-xs ${inp} rounded-lg px-3 py-2 font-medium border w-full sm:w-auto`} value={timing} onChange={e=>onTiming(e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[lang]||o.en}</option>)}</select>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5 flex items-center gap-1`}><Clock size={11}/>{t('notif.sendTimeAfterStatusChange', 'Send time after status change')}</p>
+            <select className={`text-xs ${inp} rounded-lg px-3 py-2 font-medium border w-full sm:w-auto`} value={timing} onChange={e=>onTiming(e.target.value)}>{WA_TIMING_OPTIONS.map(o=><option key={o.v} value={o.v}>{o[uiLang]||o.en}</option>)}</select>
           </div>
           {/* Variables — clicking inserts the localized token (e.g. {اسم_العميل}
               in Arabic, {Nom_du_client} in French) so the message reads in the
               admin's language. Backend / preview resolve aliases back to the
               canonical English token before substitution. */}
           <div>
-            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang==='ar'?'إدراج متغير':lang==='fr'?'Insérer une variable':'Insert variable'}</p>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{t('notif.insertVariable', 'Insert variable')}</p>
             <div className="flex flex-wrap gap-1">{WA_VARS.map(v=>{const lbl=WA_VAR_LABELS[v]?.[lang]||v;const tok=localizedToken(v,lang);return(<button key={v} type="button" onClick={()=>onTemplate((template||'')+tok)} title={tok+' → '+lbl} className={`px-2 py-1 border rounded-md text-[10px] font-mono transition-colors ${varBtn}`}>{lbl}</button>);})}</div>
           </div>
         </div>
@@ -192,6 +193,7 @@ function StatusRow({status,lang,enabled,timing,template,onToggle,onTiming,onTemp
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,onSave}){
+  const { t, i18n } = useTranslation(); const uiLang = (i18n.language || 'en').slice(0, 2);
   const[cfg,setCfg]=useState({});
   const[lang,setLang]=useState('fr');
   const[expanded,setExpanded]=useState(null); // currently expanded status key
@@ -305,10 +307,10 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
   const[testPhone,setTestPhone]=useState('');
   const[testSending,setTestSending]=useState(false);
   const sendTest=async(forceStatus)=>{
-    if(!storeId){alert('Save store first');return;}
+    if(!storeId){alert(t('ui.notif.saveStoreFirst', 'Save store first'));return;}
     const phone=(testPhone||'').trim();
-    if(!phone){alert(lang==='ar'?'أدخل رقم الهاتف للاختبار':lang==='fr'?'Entrez un numéro de test':'Enter a test phone number');return;}
-    if(!waStatus?.connected){alert(lang==='ar'?'WhatsApp غير متصل':lang==='fr'?'WhatsApp non connecté':'WhatsApp is not connected — scan the QR first.');return;}
+    if(!phone){alert(t('notif.enterATestPhoneNumber', 'Enter a test phone number'));return;}
+    if(!waStatus?.connected){alert(t('notif.whatsappIsNotConnectedScan', 'WhatsApp is not connected — scan the QR first.'));return;}
     setTestSending(true);
     try{
       const st=forceStatus||expanded||'confirmed';
@@ -319,8 +321,8 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
         const{api}=await import('../../utils/api');
         await api.post(`/ai/wa/${storeId}/send-test`,{phone,message:msg,language:lang});
       }
-      alert((lang==='ar'?'أُرسلت رسالة الاختبار إلى ':lang==='fr'?'Test envoyé à ':'Test sent to ')+phone);
-    }catch(e){alert('Test failed: '+(e?.response?.data?.error||e.message||'unknown'));}
+      alert((t('notif.testSentTo', 'Test sent to '))+phone);
+    }catch(e){alert(t('ui.notif.testFailed', 'Test failed: ')+(e?.response?.data?.error||e.message||'unknown'));}
     setTestSending(false);
   };
 
@@ -377,11 +379,11 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0"><MessageCircle size={18} className="text-white"/></div>
             <div className="min-w-0">
-              <h2 className={`font-extrabold text-base sm:text-lg ${t1} truncate`}>WhatsApp Order Notifications</h2>
+              <h2 className={`font-extrabold text-base sm:text-lg ${t1} truncate`}>{t('ui.notif.whatsappOrderNotifications', 'WhatsApp Order Notifications')}</h2>
               <div className="flex items-center gap-2 mt-0.5 text-[11px]">
-                <span className={`flex items-center gap-1 font-semibold ${waStatus?.connected?'text-emerald-600':t3}`}><span className={`w-1.5 h-1.5 rounded-full ${waStatus?.connected?'bg-emerald-500':'bg-gray-400'}`}/>{waStatus?.connected?'Active':'Inactive'}</span>
+                <span className={`flex items-center gap-1 font-semibold ${waStatus?.connected?'text-emerald-600':t3}`}><span className={`w-1.5 h-1.5 rounded-full ${waStatus?.connected?'bg-emerald-500':'bg-gray-400'}`}/>{waStatus?.connected?t('ui.notif.active', 'Active'):t('ui.notif.inactive', 'Inactive')}</span>
                 <span className={t3}>·</span>
-                <span className={`font-semibold ${waStatus?.connected?'text-emerald-600':t3}`}>Server {waStatus?.connected?'Connected':'Disconnected'}</span>
+                <span className={`font-semibold ${waStatus?.connected?'text-emerald-600':t3}`}>{t('ui.notif.server', 'Server')} {waStatus?.connected?t('ui.notif.connected', 'Connected'):t('ui.notif.disconnected', 'Disconnected')}</span>
               </div>
             </div>
           </div>
@@ -402,25 +404,25 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-8 h-8 rounded-xl ${dk?'bg-gray-700':'bg-gray-50'} flex items-center justify-center`}><QrCode size={16} className="text-gray-500"/></div>
               <div className="flex-1 min-w-0">
-                <p className={`font-bold text-sm ${t1}`}>Connect WhatsApp Business (QR Code)</p>
+                <p className={`font-bold text-sm ${t1}`}>{t('ui.notif.connectWhatsappBusinessQrCode', 'Connect WhatsApp Business (QR Code)')}</p>
                 {waStatus?.connected?(
-                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5"><Check size={11}/>Connected for automated messages {waStatus.phone&&<span className={`font-mono ${t3}`}>· {waStatus.phone}</span>}</p>
+                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5"><Check size={11}/>{t('ui.notif.connectedForAutomatedMessages', 'Connected for automated messages')} {waStatus.phone&&<span className={`font-mono ${t3}`}>· {waStatus.phone}</span>}</p>
                 ):(
-                  <p className={`text-[11px] ${t3}`}>Scan the QR with WhatsApp on your phone to connect.</p>
+                  <p className={`text-[11px] ${t3}`}>{t('ui.notif.scanTheQrWithWhatsapp', 'Scan the QR with WhatsApp on your phone to connect.')}</p>
                 )}
               </div>
               {waStatus?.connected?(
-                <button onClick={disconnect} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"><WifiOff size={11}/>Disconnect</button>
+                <button onClick={disconnect} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"><WifiOff size={11}/>{t('ui.notif.disconnect', 'Disconnect')}</button>
               ):(
-                <button onClick={startConnection} disabled={waLoading} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-1">{waLoading?<RefreshCw size={11} className="animate-spin"/>:<QrCode size={11}/>}Connect</button>
+                <button onClick={startConnection} disabled={waLoading} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-1">{waLoading?<RefreshCw size={11} className="animate-spin"/>:<QrCode size={11}/>}{t('ui.notif.connect', 'Connect')}</button>
               )}
             </div>
             {/* QR display when starting */}
             {showQR&&waStatus?.qr&&!waStatus?.connected&&(
               <div className="text-center mb-3">
                 <img src={waStatus.qr.startsWith('data:')?waStatus.qr:`data:image/png;base64,${waStatus.qr}`} alt="QR" className="w-40 h-40 mx-auto rounded-lg border"/>
-                <p className={`text-[10px] ${t3} mt-1`}>Scan with WhatsApp → Settings → Linked Devices</p>
-                <button onClick={startConnection} className="mt-1 text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={11}/>Refresh QR</button>
+                <p className={`text-[10px] ${t3} mt-1`}>{t('ui.notif.scanWithWhatsappSettingsLinked', 'Scan with WhatsApp → Settings → Linked Devices')}</p>
+                <button onClick={startConnection} className="mt-1 text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1 mx-auto"><RefreshCw size={11}/>{t('ui.notif.refreshQr', 'Refresh QR')}</button>
               </div>
             )}
             {/* Quick send test message bar */}
@@ -428,18 +430,18 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
               <input className={`flex-1 ${inp} border rounded-xl px-3 py-2 text-sm font-mono`} value={testPhone} onChange={e=>setTestPhone(e.target.value)} placeholder="+213 5XX XX XX XX"/>
               <input readOnly value={lang==='ar'?'رسالة اختبار سريعة':lang==='fr'?'Message test rapide':'Quick send test message'} className={`flex-1 ${inp} border rounded-xl px-3 py-2 text-sm`}/>
               <button onClick={()=>sendTest()} disabled={testSending||!waStatus?.connected} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0">
-                {testSending?<RefreshCw size={12} className="animate-spin"/>:<Send size={12}/>}Test Send
+                {testSending?<RefreshCw size={12} className="animate-spin"/>:<Send size={12}/>}{t('ui.notif.testSend', 'Test Send')}
               </button>
             </div>
-            <p className={`text-[10px] ${t3} mt-2`}>Automatically sent to each customer when their order status changes. The session is saved locally and does not require re-linking.</p>
+            <p className={`text-[10px] ${t3} mt-2`}>{t('ui.notif.autoSentHelp', 'Automatically sent to each customer when their order status changes. The session is saved locally and does not require re-linking.')}</p>
             {waError&&<p className="text-[11px] text-red-500 mt-1">{waError}</p>}
           </div>
 
           {/* ── Stats row ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              {label:'SENT TODAY',value:stats.sent_today,color:'#3b82f6'},
-              {label:'SUCCESS RATE',value:`${stats.success_rate}%`,color:'#10b981'},
+              {label:t('ui.notif.sentToday', 'SENT TODAY'),value:stats.sent_today,color:'#3b82f6'},
+              {label:t('ui.notif.successRate', 'SUCCESS RATE'),value:`${stats.success_rate}%`,color:'#10b981'},
               {label:'DELIVERED',value:stats.delivered,color:'#10b981'},
               {label:'FAILED',value:stats.failed,color:'#ef4444'},
             ].map(s=>(
@@ -447,7 +449,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
                 <span className="absolute top-3 right-3 w-2 h-2 rounded-full" style={{backgroundColor:s.color}}/>
                 <p className={`text-[10px] font-bold ${t3} uppercase tracking-wider`}>{s.label}</p>
                 <p className={`text-2xl font-extrabold ${t1} mt-1`}>{s.value}</p>
-                <p className={`text-[10px] ${t3} mt-0.5`}>{s.label==='SENT TODAY'?'Total messages sent today':s.label==='SUCCESS RATE'?'Delivery success rate':s.label==='DELIVERED'?'Lifetime delivered messages':'Retrying automatically'}</p>
+                <p className={`text-[10px] ${t3} mt-0.5`}>{s.label==='SENT TODAY'?t('ui.notif.totalMessagesSentToday', 'Total messages sent today'):s.label==='SUCCESS RATE'?t('ui.notif.deliverySuccessRate', 'Delivery success rate'):s.label==='DELIVERED'?t('ui.notif.lifetimeDeliveredMessages', 'Lifetime delivered messages'):t('ui.notif.retryingAutomatically', 'Retrying automatically')}</p>
               </div>
             ))}
           </div>
@@ -457,8 +459,8 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-8 h-8 rounded-xl ${dk?'bg-gray-700':'bg-gray-50'} flex items-center justify-center`}><Bell size={15} className="text-emerald-500"/></div>
               <div className="flex-1 min-w-0">
-                <p className={`font-bold text-sm ${t1}`}>Message Template Settings</p>
-                <p className={`text-[11px] ${t3}`}>Sent automatically when order status changes</p>
+                <p className={`font-bold text-sm ${t1}`}>{t('ui.notif.messageTemplateSettings', 'Message Template Settings')}</p>
+                <p className={`text-[11px] ${t3}`}>{t('ui.notif.sentAutomaticallyWhenOrderStatus', 'Sent automatically when order status changes')}</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -489,38 +491,38 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
               <div className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-xl ${dk?'bg-gray-700':'bg-gray-50'} flex items-center justify-center`}><RefreshCw size={14} className="text-gray-500"/></div>
                 <div>
-                  <p className={`font-bold text-sm ${t1}`}>Recent Activity</p>
-                  <p className={`text-[11px] ${t3}`}>Last 50 messages sent to customers</p>
+                  <p className={`font-bold text-sm ${t1}`}>{t('ui.notif.recentActivity', 'Recent Activity')}</p>
+                  <p className={`text-[11px] ${t3}`}>{t('ui.notif.last50MessagesSentTo', 'Last 50 messages sent to customers')}</p>
                 </div>
               </div>
-              <button onClick={loadRecent} className={`p-1.5 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title="Refresh"><RefreshCw size={13}/></button>
+              <button onClick={loadRecent} className={`p-1.5 rounded-lg ${dk?'hover:bg-gray-700 text-gray-400':'hover:bg-gray-100 text-gray-500'}`} title={t('ui.notif.refresh', 'Refresh')}><RefreshCw size={13}/></button>
             </div>
             {/* Filters */}
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-3">
               <select className={`text-[11px] ${inp} border rounded-lg px-2 py-1.5`} value={recentFilter.status} onChange={e=>setRecentFilter(p=>({...p,status:e.target.value}))}>
-                <option value="all">All statuses</option>
+                <option value="all">{t('ui.notif.allStatuses', 'All statuses')}</option>
                 {WA_STATUSES.map(s=><option key={s} value={s}>{WA_STATUS_LABELS[s]?.en||s}</option>)}
               </select>
               <select className={`text-[11px] ${inp} border rounded-lg px-2 py-1.5`} value={recentFilter.type} onChange={e=>setRecentFilter(p=>({...p,type:e.target.value}))}>
-                <option value="all">All types</option>
-                <option value="auto">Auto</option>
-                <option value="test">Test</option>
-                <option value="manual">Manual</option>
+                <option value="all">{t('ui.notif.allTypes', 'All types')}</option>
+                <option value="auto">{t('ui.notif.auto', 'Auto')}</option>
+                <option value="test">{t('ui.notif.test', 'Test')}</option>
+                <option value="manual">{t('ui.notif.manual', 'Manual')}</option>
               </select>
               <div className="relative col-span-1"><Calendar size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input type="date" className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} value={recentFilter.from} onChange={e=>setRecentFilter(p=>({...p,from:e.target.value}))}/></div>
               <div className="relative col-span-1"><Calendar size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input type="date" className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} value={recentFilter.to} onChange={e=>setRecentFilter(p=>({...p,to:e.target.value}))}/></div>
-              <div className="relative col-span-1"><Search size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} placeholder="Search code…" value={recentFilter.q} onChange={e=>setRecentFilter(p=>({...p,q:e.target.value}))}/></div>
+              <div className="relative col-span-1"><Search size={12} className={`absolute left-2 top-1/2 -translate-y-1/2 ${t3}`}/><input className={`text-[11px] ${inp} border rounded-lg pl-7 pr-2 py-1.5 w-full`} placeholder={t('ui.notif.searchCode', 'Search code…')} value={recentFilter.q} onChange={e=>setRecentFilter(p=>({...p,q:e.target.value}))}/></div>
               <select className={`text-[11px] ${inp} border rounded-lg px-2 py-1.5`} value={recentFilter.pageSize} onChange={e=>setRecentFilter(p=>({...p,pageSize:Number(e.target.value)}))}>
-                {[10,25,50,100].map(n=><option key={n} value={n}>{n} results</option>)}
+                {[10,25,50,100].map(n=><option key={n} value={n}>{n} {t('ui.notif.results', 'results')}</option>)}
               </select>
             </div>
             {filteredRecent.length===0?(
-              <div className={`text-center py-8 text-[12px] ${t3}`}>No messages yet — send a test or wait for an order.</div>
+              <div className={`text-center py-8 text-[12px] ${t3}`}>{t('ui.notif.noMessagesYetSendA', 'No messages yet — send a test or wait for an order.')}</div>
             ):(
               <div className="overflow-x-auto -mx-2">
                 <table className="w-full text-xs">
                   <thead className={`${dk?'text-gray-400':'text-gray-500'} text-[10px] uppercase`}>
-                    <tr><th className="text-left px-2 py-2">When</th><th className="text-left px-2 py-2">To</th><th className="text-left px-2 py-2">Status</th><th className="text-left px-2 py-2">Result</th></tr>
+                    <tr><th className="text-left px-2 py-2">{t('ui.notif.when', 'When')}</th><th className="text-left px-2 py-2">{t('ui.notif.to', 'To')}</th><th className="text-left px-2 py-2">{t('ui.notif.status', 'Status')}</th><th className="text-left px-2 py-2">{t('ui.notif.result', 'Result')}</th></tr>
                   </thead>
                   <tbody>
                     {filteredRecent.map((m,i)=>(
@@ -528,7 +530,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
                         <td className={`px-2 py-2 ${t3}`}>{new Date(m.created_at).toLocaleString()}</td>
                         <td className={`px-2 py-2 font-mono ${t2}`}>{m.recipient}</td>
                         <td className="px-2 py-2"><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${WA_STATUS_META[m.status]?.bg||'bg-gray-100 text-gray-500'}`}>{WA_STATUS_LABELS[m.status]?.en||m.status||'—'}</span></td>
-                        <td className="px-2 py-2"><span className={`text-[10px] font-bold ${m.status==='sent'||m.delivered?'text-emerald-600':'text-red-500'}`}>{m.delivered||m.status==='sent'?'Delivered':'Failed'}</span></td>
+                        <td className="px-2 py-2"><span className={`text-[10px] font-bold ${m.status==='sent'||m.delivered?'text-emerald-600':'text-red-500'}`}>{m.delivered||m.status==='sent'?t('ui.notif.delivered', 'Delivered'):t('ui.notif.failed', 'Failed')}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -543,10 +545,10 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
         {/* ─── Footer ─── */}
         <div className={`px-4 sm:px-6 py-3 border-t ${dk?'border-gray-800 bg-gray-900':'border-gray-100 bg-white'} flex items-center justify-end gap-2 shrink-0`}>
           {savedToast&&(
-            <span className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-[11px] font-bold"><Check size={12}/>{Object.keys(getTemplates()[lang]||{}).length} templates saved</span>
+            <span className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-[11px] font-bold"><Check size={12}/>{Object.keys(getTemplates()[lang]||{}).length} {t('ui.notif.templatesSaved', 'templates saved')}</span>
           )}
-          <button onClick={handleSaveAll} className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 flex items-center gap-1.5"><Save size={13}/>Save All</button>
-          <button onClick={handleSaveAndClose} className={`px-4 py-2 rounded-xl text-xs font-bold ${dk?'bg-gray-700 text-white hover:bg-gray-600':'bg-gray-900 text-white hover:bg-black'}`}>Save & Close</button>
+          <button onClick={handleSaveAll} className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 flex items-center gap-1.5"><Save size={13}/>{t('ui.notif.saveAll', 'Save All')}</button>
+          <button onClick={handleSaveAndClose} className={`px-4 py-2 rounded-xl text-xs font-bold ${dk?'bg-gray-700 text-white hover:bg-gray-600':'bg-gray-900 text-white hover:bg-black'}`}>{t('ui.notif.saveClose', 'Save & Close')}</button>
         </div>
       </div>
 
@@ -558,15 +560,15 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center"><MessageCircle size={14} className="text-white"/></div>
               <div className="min-w-0">
-                <p className={`text-sm font-bold ${t1}`}>{lang==='ar'?'إشعار':lang==='fr'?'Notification':'Notification'} · {WA_STATUS_LABELS[previewStatus]?.[lang]||previewStatus}</p>
-                <p className={`text-[10px] ${t3}`}>WhatsApp Preview</p>
+                <p className={`text-sm font-bold ${t1}`}>{t('notif.notification', 'Notification')} · {WA_STATUS_LABELS[previewStatus]?.[uiLang]||previewStatus}</p>
+                <p className={`text-[10px] ${t3}`}>{t('ui.notif.whatsappPreview', 'WhatsApp Preview')}</p>
               </div>
             </div>
-            <div className="flex items-center justify-center mb-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk?'bg-gray-700 text-gray-300':'bg-gray-100 text-gray-600'}`}>SYSTEM PREVIEW</span></div>
+            <div className="flex items-center justify-center mb-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk?'bg-gray-700 text-gray-300':'bg-gray-100 text-gray-600'}`}>{t('ui.notif.systemPreview', 'SYSTEM PREVIEW')}</span></div>
             <div className="rounded-2xl p-3 min-h-[180px]" style={{backgroundColor:'#e5ddd5',backgroundImage:'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000\' fill-opacity=\'0.04\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}}>
               <div className={`flex ${lang==='ar'?'flex-row-reverse':''}`}>
                 <div className="max-w-[90%] rounded-xl rounded-tl-sm px-3 py-2 shadow-sm" style={{backgroundColor:'#dcf8c6',direction:lang==='ar'?'rtl':'ltr'}}>
-                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words" style={{color:'#000000'}}>{preview(getTpl(previewStatus))||(lang==='ar'?'(قالب فارغ)':lang==='fr'?'(modèle vide)':'(empty template)')}</p>
+                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words" style={{color:'#000000'}}>{preview(getTpl(previewStatus))||(t('notif.emptyTemplate', '(empty template)'))}</p>
                   <div className={`flex items-center gap-1 mt-1 ${lang==='ar'?'justify-start':'justify-end'}`}>
                     <span className="text-[9px] text-gray-500">{new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
                     <span className="text-emerald-500 text-[10px]">✓✓</span>
@@ -574,7 +576,7 @@ export default function WhatsAppConfigModal({show,onClose,storeId,initialConfig,
                 </div>
               </div>
             </div>
-            <p className={`text-center text-[10px] ${t3} mt-2`}>Preview generated with sample data</p>
+            <p className={`text-center text-[10px] ${t3} mt-2`}>{t('ui.notif.previewGeneratedWithSampleData', 'Preview generated with sample data')}</p>
           </div>
         </div>,
         document.body

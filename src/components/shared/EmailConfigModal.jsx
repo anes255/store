@@ -9,6 +9,7 @@ import {
   WA_STATUSES, WA_STATUS_LABELS, WA_TIMING_OPTIONS, WA_VARS, WA_VAR_LABELS,
   resolveAliases, localizedToken,
 } from './WhatsAppConfigModal';
+import { useTranslation } from 'react-i18next';
 
 // Re-use the same status meta as WhatsApp so the rows look familiar.
 const STATUS_META = {
@@ -42,11 +43,11 @@ const DEFAULT_EMAIL_BODIES = {
 // Mirrors the WA modal's row but with subject + body fields instead of one body.
 // ─────────────────────────────────────────────────────────────────────────────
 function StatusRow({ status, lang, enabled, timing, subject, body, onToggle, onTiming, onSubject, onBody, onTest, onPreview, dk, t1, t2, t3, inp, varBtn, expanded, onExpand }) {
+  const { t, i18n } = useTranslation(); const uiLang = (i18n.language || 'en').slice(0, 2);
   const meta = STATUS_META[status] || { color: '#6b7280', bg: 'bg-gray-100 text-gray-500', Icon: Bell };
   const Icon = meta.Icon;
   const isRtl = lang === 'ar';
-  const labelLocal = WA_STATUS_LABELS[status]?.[lang] || status;
-  const labelEn = WA_STATUS_LABELS[status]?.en || status;
+  const labelLocal = WA_STATUS_LABELS[status]?.[uiLang] || status;
   const hasTpl = !!(body || '').trim();
   return (
     <div className={`rounded-2xl border ${dk ? 'border-gray-700 bg-gray-800/40' : 'border-gray-100 bg-white'} overflow-hidden`}>
@@ -54,49 +55,49 @@ function StatusRow({ status, lang, enabled, timing, subject, body, onToggle, onT
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${meta.bg} shrink-0`}><Icon size={16}/></div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-sm font-bold ${t1}`} dir={isRtl ? 'rtl' : 'ltr'}>{lang === 'ar' ? `${labelLocal} ${labelEn.toUpperCase()}` : labelLocal}</span>
-            {!enabled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase">Disabled</span>}
+            <span className={`text-sm font-bold ${t1}`} dir={isRtl ? 'rtl' : 'ltr'}>{labelLocal}</span>
+            {!enabled && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase">{t('ui.notif.disabled', 'Disabled')}</span>}
           </div>
-          <p className={`text-[11px] ${t3} truncate`}>{hasTpl ? (subject || '(no subject)') : 'No template set'}</p>
+          <p className={`text-[11px] ${t3} truncate`}>{hasTpl ? (subject || t('ui.notif.noSubject', '(no subject)')) : t('ui.notif.noTemplateSet', 'No template set')}</p>
         </div>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onPreview(); }} title="Preview" className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>Preview</button>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onTest(); }} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>Test</button>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(!enabled); }} title={enabled ? 'Click to disable' : 'Click to enable'} className="w-5 h-5 rounded-full shrink-0 ring-2 ring-transparent hover:ring-gray-300 transition-all" style={{ backgroundColor: enabled ? meta.color : '#d1d5db' }}/>
-        <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`} aria-label="Expand">
+        <button type="button" onClick={(e) => { e.stopPropagation(); onPreview(); }} title={t('ui.notif.preview', 'Preview')} className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Eye size={11}/>{t('ui.notif.preview', 'Preview')}</button>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onTest(); }} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${dk ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Send size={11}/>{t('ui.notif.test', 'Test')}</button>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onToggle(!enabled); }} title={enabled ? t('ui.notif.clickToDisable', 'Click to disable') : t('ui.notif.clickToEnable', 'Click to enable')} className="w-5 h-5 rounded-full shrink-0 ring-2 ring-transparent hover:ring-gray-300 transition-all" style={{ backgroundColor: enabled ? meta.color : '#d1d5db' }}/>
+        <button type="button" onClick={onExpand} className={`p-1 rounded-lg ${dk ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`} aria-label={t('ui.notif.expand', 'Expand')}>
           <ChevronDown size={16} className={`transition-transform ${expanded ? 'rotate-180' : ''}`}/>
         </button>
       </div>
       {expanded && (
         <div className={`px-4 pb-4 pt-1 border-t ${dk ? 'border-gray-700' : 'border-gray-100'} space-y-3`}>
           <div>
-            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang === 'ar' ? 'الموضوع' : lang === 'fr' ? 'Sujet' : 'Subject'}</p>
-            <input className={`w-full ${inp} border rounded-xl px-3 py-2 text-sm`} value={subject || ''} onChange={e => onSubject(e.target.value)} placeholder={lang === 'ar' ? 'موضوع البريد' : lang === 'fr' ? "Sujet de l'e-mail" : 'Email subject'} disabled={!enabled} style={{ direction: isRtl ? 'rtl' : 'ltr' }}/>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{t('notif.subject', 'Subject')}</p>
+            <input className={`w-full ${inp} border rounded-xl px-3 py-2 text-sm`} value={subject || ''} onChange={e => onSubject(e.target.value)} placeholder={t('notif.emailSubject', 'Email subject')} disabled={!enabled} style={{ direction: isRtl ? 'rtl' : 'ltr' }}/>
           </div>
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <p className={`text-[10px] font-bold ${t3} uppercase`}>{lang === 'ar' ? 'نص الرسالة' : lang === 'fr' ? "Corps de l'e-mail" : 'Email Body'} ({lang.toUpperCase()})</p>
-              <button type="button" onClick={onPreview} className="text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1"><Eye size={11}/>{lang === 'ar' ? 'مثال' : lang === 'fr' ? 'Exemple' : 'Example'}</button>
+              <p className={`text-[10px] font-bold ${t3} uppercase`}>{t('notif.emailBody', 'Email Body')} ({lang.toUpperCase()})</p>
+              <button type="button" onClick={onPreview} className="text-[11px] text-emerald-600 font-bold hover:underline flex items-center gap-1"><Eye size={11}/>{t('notif.example', 'Example')}</button>
             </div>
             <textarea
               className={`w-full ${inp} border rounded-xl px-3 py-2.5 text-sm resize-y focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none transition-all`}
               rows={7}
               value={body || ''}
               onChange={e => onBody(e.target.value)}
-              placeholder={lang === 'ar' ? 'اكتب نص البريد هنا.' : lang === 'fr' ? "Écrivez le contenu de l'e-mail ici." : 'Write the email body here.'}
+              placeholder={t('notif.writeTheEmailBodyHere', 'Write the email body here.')}
               style={{ direction: isRtl ? 'rtl' : 'ltr' }}
               disabled={!enabled}
             />
             <div className="flex items-center justify-between mt-1">
-              <p className={`text-[10px] ${t3}`}>{(body || '').length} characters</p>
-              <label className={`flex items-center gap-1.5 text-[11px] ${t2}`}><input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500" checked={enabled} onChange={e => onToggle(e.target.checked)}/>{lang === 'ar' ? 'مفعّل' : lang === 'fr' ? 'Activé' : 'Enabled'}</label>
+              <p className={`text-[10px] ${t3}`}>{(body || '').length} {t('ui.notif.characters', 'characters')}</p>
+              <label className={`flex items-center gap-1.5 text-[11px] ${t2}`}><input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500" checked={enabled} onChange={e => onToggle(e.target.checked)}/>{t('notif.enabled', 'Enabled')}</label>
             </div>
           </div>
           <div>
-            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5 flex items-center gap-1`}><Clock size={11}/>{lang === 'ar' ? 'وقت الإرسال' : lang === 'fr' ? 'Envoyer après' : 'Send time after status change'}</p>
-            <select className={`text-xs ${inp} rounded-lg px-3 py-2 font-medium border w-full sm:w-auto`} value={timing} onChange={e => onTiming(e.target.value)}>{WA_TIMING_OPTIONS.map(o => <option key={o.v} value={o.v}>{o[lang] || o.en}</option>)}</select>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5 flex items-center gap-1`}><Clock size={11}/>{t('notif.sendTimeAfterStatusChange', 'Send time after status change')}</p>
+            <select className={`text-xs ${inp} rounded-lg px-3 py-2 font-medium border w-full sm:w-auto`} value={timing} onChange={e => onTiming(e.target.value)}>{WA_TIMING_OPTIONS.map(o => <option key={o.v} value={o.v}>{o[uiLang] || o.en}</option>)}</select>
           </div>
           <div>
-            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{lang === 'ar' ? 'إدراج متغير' : lang === 'fr' ? 'Insérer une variable' : 'Insert variable'}</p>
+            <p className={`text-[10px] font-bold ${t3} uppercase mb-1.5`}>{t('notif.insertVariable', 'Insert variable')}</p>
             <div className="flex flex-wrap gap-1">
               {WA_VARS.map(v => {
                 const lbl = WA_VAR_LABELS[v]?.[lang] || v;
@@ -117,6 +118,7 @@ function StatusRow({ status, lang, enabled, timing, subject, body, onToggle, onT
 // Email config modal
 // ─────────────────────────────────────────────────────────────────────────────
 export default function EmailConfigModal({ show, onClose, storeId, initialConfig, onSave }) {
+  const { t, i18n } = useTranslation(); const uiLang = (i18n.language || 'en').slice(0, 2);
   const [cfg, setCfg] = useState({});
   const [lang, setLang] = useState('fr');
   const [expanded, setExpanded] = useState(null);
@@ -197,14 +199,14 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
     try {
       const { default: api } = await import('../../utils/api');
       const { data } = await api.get('/ai/email/status').catch(() => ({ data: null }));
-      if (data) setEmailStatus({ ok: !!data.ok, message: data.message || (data.ok ? 'Email service ready' : 'Email service not configured') });
-      else setEmailStatus({ ok: null, message: 'Could not check email service' });
-    } catch { setEmailStatus({ ok: null, message: 'Could not check email service' }); }
+      if (data) setEmailStatus({ ok: !!data.ok, message: data.ok ? t('ui.notif.emailServiceReady', 'Email service is configured.') : t('ui.notif.emailServiceNotConfigured', 'Email service is not configured. Ask the platform admin to set RESEND_API_KEY.') });
+      else setEmailStatus({ ok: null, message: t('ui.notif.couldNotCheckEmailService', 'Could not check email service') });
+    } catch { setEmailStatus({ ok: null, message: t('ui.notif.couldNotCheckEmailService', 'Could not check email service') }); }
   };
   const sendTest = async (forceStatus) => {
-    if (!storeId) { alert('Save store first'); return; }
+    if (!storeId) { alert(t('ui.notif.saveStoreFirst', 'Save store first')); return; }
     const to = (testEmail || '').trim();
-    if (!to) { alert(lang === 'ar' ? 'أدخل بريد الاختبار' : lang === 'fr' ? 'Entrez un e-mail de test' : 'Enter a test email address'); return; }
+    if (!to) { alert(t('notif.enterATestEmailAddress', 'Enter a test email address')); return; }
     setTestSending(true);
     try {
       const st = forceStatus || expanded || 'confirmed';
@@ -212,8 +214,8 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
       const html = preview(getBody(st)).replace(/\n/g, '<br>');
       const { default: api } = await import('../../utils/api');
       await api.post(`/ai/email/${storeId}/send-test`, { to, subject, html, language: lang });
-      alert((lang === 'ar' ? 'تم إرسال بريد الاختبار إلى ' : lang === 'fr' ? 'Test envoyé à ' : 'Test sent to ') + to);
-    } catch (e) { alert('Test failed: ' + (e?.response?.data?.error || e.message || 'unknown')); }
+      alert((t('notif.testSentTo', 'Test sent to ')) + to);
+    } catch (e) { alert(t('ui.notif.testFailed', 'Test failed: ') + (e?.response?.data?.error || e.message || 'unknown')); }
     setTestSending(false);
   };
 
@@ -240,11 +242,11 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center shrink-0"><Mail size={18} className="text-white"/></div>
             <div className="min-w-0">
-              <h2 className={`font-extrabold text-base sm:text-lg ${t1} truncate`}>Email Order Notifications</h2>
+              <h2 className={`font-extrabold text-base sm:text-lg ${t1} truncate`}>{t('ui.notif.emailOrderNotifications', 'Email Order Notifications')}</h2>
               <div className="flex items-center gap-2 mt-0.5 text-[11px]">
-                <span className={`flex items-center gap-1 font-semibold ${emailStatus.ok ? 'text-emerald-600' : t3}`}><span className={`w-1.5 h-1.5 rounded-full ${emailStatus.ok ? 'bg-emerald-500' : 'bg-gray-400'}`}/>{emailStatus.ok ? 'Ready' : 'Inactive'}</span>
+                <span className={`flex items-center gap-1 font-semibold ${emailStatus.ok ? 'text-emerald-600' : t3}`}><span className={`w-1.5 h-1.5 rounded-full ${emailStatus.ok ? 'bg-emerald-500' : 'bg-gray-400'}`}/>{emailStatus.ok ? t('ui.notif.ready', 'Ready') : t('ui.notif.inactive', 'Inactive')}</span>
                 <span className={t3}>·</span>
-                <span className={`font-semibold ${emailStatus.ok ? 'text-emerald-600' : t3}`}>{emailStatus.message || 'Checking…'}</span>
+                <span className={`font-semibold ${emailStatus.ok ? 'text-emerald-600' : t3}`}>{emailStatus.message || t('ui.notif.checking', 'Checking…')}</span>
               </div>
             </div>
           </div>
@@ -265,18 +267,18 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-8 h-8 rounded-xl ${dk ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-center`}><Mail size={16} className="text-gray-500"/></div>
               <div className="flex-1 min-w-0">
-                <p className={`font-bold text-sm ${t1}`}>SMTP / Email Service</p>
-                <p className={`text-[11px] ${emailStatus.ok ? 'text-emerald-600 font-semibold' : t3}`}>{emailStatus.ok ? '✓ Email service is configured by the platform admin' : 'Email is configured by the platform admin (RESEND_API_KEY / SMTP).'}</p>
+                <p className={`font-bold text-sm ${t1}`}>{t('ui.notif.smtpEmailService', 'SMTP / Email Service')}</p>
+                <p className={`text-[11px] ${emailStatus.ok ? 'text-emerald-600 font-semibold' : t3}`}>{emailStatus.ok ? t('ui.notif.emailServiceIsConfiguredBy', '✓ Email service is configured by the platform admin') : t('ui.notif.emailIsConfiguredByThe', 'Email is configured by the platform admin (RESEND_API_KEY / SMTP).')}</p>
               </div>
-              <button onClick={probeStatus} className={`p-2 rounded-lg ${dk ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} text-gray-400`} title="Re-check"><RefreshCw size={13}/></button>
+              <button onClick={probeStatus} className={`p-2 rounded-lg ${dk ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} text-gray-400`} title={t('ui.notif.reCheck', 'Re-check')}><RefreshCw size={13}/></button>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <input className={`flex-1 ${inp} border rounded-xl px-3 py-2 text-sm font-mono`} value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="test@example.com"/>
               <button onClick={() => sendTest()} disabled={testSending} className="px-4 py-2 bg-blue-500 text-white rounded-xl text-xs font-bold hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0">
-                {testSending ? <RefreshCw size={12} className="animate-spin"/> : <Send size={12}/>}Send Test Email
+                {testSending ? <RefreshCw size={12} className="animate-spin"/> : <Send size={12}/>}{t('ui.notif.sendTestEmail', 'Send Test Email')}
               </button>
             </div>
-            <p className={`text-[10px] ${t3} mt-2`}>Sends the currently-expanded status template (or "confirmed" by default) to the address above. Uses the same content the buyer would receive.</p>
+            <p className={`text-[10px] ${t3} mt-2`}>{t('ui.notif.sendsTheCurrentlyExpandedStatus', 'Sends the currently-expanded status template (or "confirmed" by default) to the address above. Uses the same content the buyer would receive.')}</p>
           </div>
 
           {/* Templates list */}
@@ -284,8 +286,8 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
             <div className="flex items-center gap-2 mb-3">
               <div className={`w-8 h-8 rounded-xl ${dk ? 'bg-gray-700' : 'bg-gray-50'} flex items-center justify-center`}><Bell size={15} className="text-blue-500"/></div>
               <div className="flex-1 min-w-0">
-                <p className={`font-bold text-sm ${t1}`}>Email Template Settings</p>
-                <p className={`text-[11px] ${t3}`}>Sent automatically when an order changes status. Subject + HTML body — variables in {'{braces}'} get substituted.</p>
+                <p className={`font-bold text-sm ${t1}`}>{t('ui.notif.emailTemplateSettings', 'Email Template Settings')}</p>
+                <p className={`text-[11px] ${t3}`}>{t('ui.notif.sentAutomaticallyWhenAnOrder', 'Sent automatically when an order changes status. Subject + HTML body — variables in')} {'{braces}'} {t('ui.notif.getSubstituted', 'get substituted.')}</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -318,10 +320,10 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
         {/* Footer */}
         <div className={`px-4 sm:px-6 py-3 border-t ${dk ? 'border-gray-800 bg-gray-900' : 'border-gray-100 bg-white'} flex items-center justify-end gap-2 shrink-0`}>
           {savedToast && (
-            <span className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-[11px] font-bold"><Check size={12}/>Email templates saved</span>
+            <span className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-[11px] font-bold"><Check size={12}/>{t('ui.notif.emailTemplatesSaved', 'Email templates saved')}</span>
           )}
-          <button onClick={handleSaveAll} className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 flex items-center gap-1.5"><Save size={13}/>Save All</button>
-          <button onClick={handleSaveAndClose} className={`px-4 py-2 rounded-xl text-xs font-bold ${dk ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-900 text-white hover:bg-black'}`}>Save & Close</button>
+          <button onClick={handleSaveAll} className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 flex items-center gap-1.5"><Save size={13}/>{t('ui.notif.saveAll', 'Save All')}</button>
+          <button onClick={handleSaveAndClose} className={`px-4 py-2 rounded-xl text-xs font-bold ${dk ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-900 text-white hover:bg-black'}`}>{t('ui.notif.saveClose', 'Save & Close')}</button>
         </div>
       </div>
 
@@ -333,19 +335,19 @@ export default function EmailConfigModal({ show, onClose, storeId, initialConfig
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center"><Mail size={14} className="text-white"/></div>
               <div className="min-w-0">
-                <p className={`text-sm font-bold ${t1}`}>Email · {WA_STATUS_LABELS[previewStatus]?.[lang] || previewStatus}</p>
-                <p className={`text-[10px] ${t3}`}>Inbox preview</p>
+                <p className={`text-sm font-bold ${t1}`}>{t('ui.notif.email', 'Email ·')} {WA_STATUS_LABELS[previewStatus]?.[uiLang] || previewStatus}</p>
+                <p className={`text-[10px] ${t3}`}>{t('ui.notif.inboxPreview', 'Inbox preview')}</p>
               </div>
             </div>
             <div className={`rounded-2xl border ${dk ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
               <div className={`px-4 py-2 border-b ${dk ? 'border-gray-700 bg-gray-900' : 'border-gray-100 bg-gray-50'} text-[11px] flex items-center gap-2`}>
-                <span className={t3}>From:</span>
-                <span className={`font-mono ${t1}`}>{cfg.name || cfg.store_name || 'My Store'} &lt;{cfg.email || cfg.store_email || 'no-reply@store.com'}&gt;</span>
+                <span className={t3}>{t('ui.notif.from', 'From:')}</span>
+                <span className={`font-mono ${t1}`}>{cfg.name || cfg.store_name || t('ui.notif.myStore', 'My Store')} &lt;{cfg.email || cfg.store_email || 'no-reply@store.com'}&gt;</span>
               </div>
-              <div className={`px-4 py-2 border-b ${dk ? 'border-gray-700 bg-gray-900' : 'border-gray-100 bg-gray-50'} text-[12px] font-bold ${t1}`} dir={isRtl ? 'rtl' : 'ltr'}>{preview(getSubject(previewStatus)) || '(no subject)'}</div>
-              <div className={`px-4 py-3 ${dk ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} text-[12.5px] leading-relaxed whitespace-pre-wrap break-words`} dir={isRtl ? 'rtl' : 'ltr'}>{preview(getBody(previewStatus)) || '(empty body)'}</div>
+              <div className={`px-4 py-2 border-b ${dk ? 'border-gray-700 bg-gray-900' : 'border-gray-100 bg-gray-50'} text-[12px] font-bold ${t1}`} dir={isRtl ? 'rtl' : 'ltr'}>{preview(getSubject(previewStatus)) || t('ui.notif.noSubject', '(no subject)')}</div>
+              <div className={`px-4 py-3 ${dk ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} text-[12.5px] leading-relaxed whitespace-pre-wrap break-words`} dir={isRtl ? 'rtl' : 'ltr'}>{preview(getBody(previewStatus)) || t('ui.notif.emptyBody', '(empty body)')}</div>
             </div>
-            <p className={`text-center text-[10px] ${t3} mt-2`}>Preview generated with sample data</p>
+            <p className={`text-center text-[10px] ${t3} mt-2`}>{t('ui.notif.previewGeneratedWithSampleData', 'Preview generated with sample data')}</p>
           </div>
         </div>,
         document.body

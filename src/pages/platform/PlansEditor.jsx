@@ -64,6 +64,7 @@ function ui(isDark) {
 }
 
 function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
+  const { t } = useTranslation();
   const u = ui(isDark);
   const [tab, setTab] = useState('general');
   const [collapsed, setCollapsed] = useState(false);
@@ -87,10 +88,10 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
   const featureKeys = plan.feature_keys || [];
   const gateCount = featureKeys.length;
   const tabs = [
-    { id: 'general', l: 'General', I: Settings2 },
-    { id: 'features_text', l: 'Feature Text', I: Languages },
-    { id: 'feature_keys', l: 'Feature Gates', I: Shield, badge: gateCount },
-    { id: 'limits', l: 'Limits', I: Package },
+    { id: 'general', l: t('ui.plans.general', 'General'), I: Settings2 },
+    { id: 'features_text', l: t('ui.plans.featureText', 'Feature Text'), I: Languages },
+    { id: 'feature_keys', l: t('ui.plans.featureGates', 'Feature Gates'), I: Shield, badge: gateCount },
+    { id: 'limits', l: t('ui.plans.limits', 'Limits'), I: Package },
   ];
 
   const accent = plan.is_popular ? 'from-amber-400 via-brand-500 to-purple-500' : 'from-brand-500 to-purple-600';
@@ -111,28 +112,28 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <input
                   className={`text-lg font-extrabold bg-transparent outline-none border-b-2 border-transparent focus:border-brand-400 min-w-0 max-w-full ${u.title}`}
-                  value={plan.name.en} onChange={e => set('name.en', e.target.value)} placeholder="Plan name"
+                  value={plan.name.en} onChange={e => set('name.en', e.target.value)} placeholder={t('ui.plans.planName', 'Plan name')}
                 />
                 {plan.is_popular && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shrink-0 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm`}>
-                    <Star size={10} />POPULAR
+                    <Star size={10} />{t('ui.plans.popular', 'POPULAR')}
                   </span>
                 )}
-                {!plan.is_active && <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.pillBg}`}>INACTIVE</span>}
+                {!plan.is_active && <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.pillBg}`}>{t('ui.plans.inactive', 'INACTIVE')}</span>}
               </div>
               <div className={`flex items-center gap-3 mt-1 text-xs ${u.muted}`}>
-                <span className="flex items-center gap-1"><DollarSign size={11} />{(plan.price_monthly||0).toLocaleString()} {plan.currency||'DZD'}/mo</span>
+                <span className="flex items-center gap-1"><DollarSign size={11} />{(plan.price_monthly||0).toLocaleString()} {plan.currency||'DZD'}{t('ui.plans.mo', '/mo')}</span>
                 <span className="opacity-40">·</span>
-                <span>{(plan.price_yearly||0).toLocaleString()} /yr</span>
+                <span>{(plan.price_yearly||0).toLocaleString()} {t('ui.plans.yr', '/yr')}</span>
                 <span className="opacity-40">·</span>
-                <span className="flex items-center gap-1"><Shield size={11} />{gateCount} features</span>
+                <span className="flex items-center gap-1"><Shield size={11} />{gateCount} {t('ui.plans.features', 'features')}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Toggle isDark={isDark} checked={!!plan.is_popular} onChange={v => set('is_popular', v)} label="Popular" color="amber" />
-            <Toggle isDark={isDark} checked={!!plan.is_active} onChange={v => set('is_active', v)} label="Active" color="emerald" />
-            <button onClick={() => setCollapsed(c => !c)} className={`p-2 rounded-lg ${u.btnGhost}`} title={collapsed ? 'Expand' : 'Collapse'}>
+            <Toggle isDark={isDark} checked={!!plan.is_popular} onChange={v => set('is_popular', v)} label={t('ui.plans.popular2', 'Popular')} color="amber" />
+            <Toggle isDark={isDark} checked={!!plan.is_active} onChange={v => set('is_active', v)} label={t('ui.plans.active', 'Active')} color="emerald" />
+            <button onClick={() => setCollapsed(c => !c)} className={`p-2 rounded-lg ${u.btnGhost}`} title={collapsed ? t('ui.plans.expand', 'Expand') : t('ui.plans.collapse', 'Collapse')}>
               {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
             </button>
           </div>
@@ -161,7 +162,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {LANGS.map(l => (
                   <div key={l.code}>
-                    <label className={`block text-[10px] font-bold mb-1 ${u.muted}`}>{l.flag} NAME ({l.label})</label>
+                    <label className={`block text-[10px] font-bold mb-1 ${u.muted}`}>{l.flag} {t('ui.plans.nameLang', 'NAME ({{lang}})', { lang: l.label })}</label>
                     <input className={`w-full px-3 py-2 border rounded-lg text-sm ${u.input}`} value={plan.name[l.code] || ''} onChange={e => set(`name.${l.code}`, e.target.value)} />
                   </div>
                 ))}
@@ -169,48 +170,48 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {LANGS.map(l => (
                   <div key={l.code}>
-                    <label className={`block text-[10px] font-bold mb-1 ${u.muted}`}>{l.flag} TAGLINE ({l.label})</label>
+                    <label className={`block text-[10px] font-bold mb-1 ${u.muted}`}>{l.flag} {t('ui.plans.taglineLang', 'TAGLINE ({{lang}})', { lang: l.label })}</label>
                     <input className={`w-full px-3 py-2 border rounded-lg text-sm ${u.input}`} value={plan.tagline[l.code] || ''} onChange={e => set(`tagline.${l.code}`, e.target.value)} />
                   </div>
                 ))}
               </div>
               <div className={`rounded-xl p-4 border ${u.cardSoft}`}>
-                <p className={`text-[10px] font-bold mb-3 ${u.muted}`}>PRICING</p>
+                <p className={`text-[10px] font-bold mb-3 ${u.muted}`}>{t('ui.plans.pricing', 'PRICING')}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>MONTHLY</label>
+                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>{t('ui.plans.monthly', 'MONTHLY')}</label>
                     <div className="relative">
                       <input type="number" className={`w-full pl-3 pr-12 py-2 border rounded-lg text-sm font-bold ${u.input}`} value={plan.price_monthly} onChange={e => set('price_monthly', parseFloat(e.target.value) || 0)} />
                       <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold ${u.subtle}`}>{plan.currency}</span>
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>YEARLY</label>
+                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>{t('ui.plans.yearly', 'YEARLY')}</label>
                     <div className="relative">
                       <input type="number" className={`w-full pl-3 pr-12 py-2 border rounded-lg text-sm font-bold ${u.input}`} value={plan.price_yearly} onChange={e => set('price_yearly', parseFloat(e.target.value) || 0)} />
                       <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold ${u.subtle}`}>{plan.currency}</span>
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>CURRENCY</label>
+                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>{t('ui.plans.currency', 'CURRENCY')}</label>
                     <select className={`w-full px-3 py-2 border rounded-lg text-sm ${u.input}`} value={plan.currency} onChange={e => set('currency', e.target.value)}>
-                      <option value="DZD">DZD</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="MAD">MAD</option><option value="TND">TND</option>
+                      <option value="DZD">DZD</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="MAD">{t('ui.plans.mad', 'MAD')}</option><option value="TND">{t('ui.plans.tnd', 'TND')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>SORT ORDER</label>
+                    <label className={`block text-[10px] font-bold mb-1 ${u.subtle}`}>{t('ui.plans.sortOrder', 'SORT ORDER')}</label>
                     <input type="number" className={`w-full px-3 py-2 border rounded-lg text-sm ${u.input}`} value={plan.sort_order || 0} onChange={e => set('sort_order', parseInt(e.target.value) || 0)} />
                   </div>
                 </div>
                 {plan.price_monthly > 0 && plan.price_yearly > 0 && (
                   <p className={`text-[10px] mt-2 ${u.muted}`}>
-                    Yearly saves <b className="text-emerald-500">{Math.max(0, Math.round((1 - (plan.price_yearly / (plan.price_monthly * 12))) * 100))}%</b> vs 12× monthly
+                   {t('ui.plans.yearlySaves', 'Yearly saves')}s <b className="text-emerald-500">{Math.max(0, Math.round((1 - (plan.price_yearly / (plan.price_monthly * 12))) * 100))}%</b> {t('ui.plans.vs12Monthly', 'vs 12× monthly')}
                   </p>
                 )}
               </div>
               <div>
-                <label className={`block text-[10px] font-bold mb-1 ${u.muted}`}>SLUG (URL identifier)</label>
-                <input className={`w-full max-w-xs px-3 py-2 border rounded-lg text-sm font-mono ${u.input}`} value={plan.slug || ''} onChange={e => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} placeholder="e.g. basic" />
+                <label className={`block text-[10px] font-bold mb-1 ${u.muted}`}>{t('ui.plans.slugUrlIdentifier', 'SLUG (URL identifier)')}</label>
+                <input className={`w-full max-w-xs px-3 py-2 border rounded-lg text-sm font-mono ${u.input}`} value={plan.slug || ''} onChange={e => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} placeholder={t('ui.plans.eGBasic', 'e.g. basic')} />
               </div>
             </>
           )}
@@ -219,7 +220,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
           {tab === 'features_text' && (
             <>
               <div className={`border rounded-xl p-3 ${u.hintInfo}`}>
-                <p className="text-xs font-medium"><Languages size={12} className="inline mr-1" />Display labels shown to store owners on the billing page. Translate in all 3 languages.</p>
+                <p className="text-xs font-medium"><Languages size={12} className="inline mr-1" />{t('ui.plans.displayLabelsShownToStore', 'Display labels shown to store owners on the billing page. Translate in all 3 languages.')}</p>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {LANGS.map(l => (
@@ -231,7 +232,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
                         <button onClick={() => removeFeature(l.code, i)} className={`p-1.5 rounded-lg ${u.btnDanger} border`}><X size={12} /></button>
                       </div>
                     ))}
-                    <button onClick={() => addFeature(l.code)} className={`w-full py-1.5 rounded-lg border border-dashed text-[11px] font-bold ${u.muted} ${isDark ? 'border-gray-700 hover:border-brand-500 hover:text-brand-400' : 'border-gray-300 hover:border-brand-400 hover:text-brand-500'}`}>+ Add feature</button>
+                    <button onClick={() => addFeature(l.code)} className={`w-full py-1.5 rounded-lg border border-dashed text-[11px] font-bold ${u.muted} ${isDark ? 'border-gray-700 hover:border-brand-500 hover:text-brand-400' : 'border-gray-300 hover:border-brand-400 hover:text-brand-500'}`}>{t('ui.plans.addFeature', '+ Add feature')}</button>
                   </div>
                 ))}
               </div>
@@ -242,13 +243,13 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
           {tab === 'feature_keys' && (
             <>
               <div className={`border rounded-xl p-3 ${u.hintWarn}`}>
-                <p className="text-xs font-medium"><Lock size={12} className="inline mr-1" />These keys <b>actually control</b> what store admins can use. Unchecked features will be locked for this plan.</p>
+                <p className="text-xs font-medium"><Lock size={12} className="inline mr-1" />{t('ui.plans.keysControlHelp', 'These keys actually control what store admins can use. Unchecked features will be locked for this plan.')}</p>
               </div>
               <div className="space-y-4">
                 {GROUPS.map(group => (
                   <div key={group}>
                     <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${u.muted}`}>
-                      <span>{group}</span>
+                      <span>{t(`ui.plans.group.${group}`, group)}</span>
                       <span className={`px-1.5 py-0.5 rounded-full ${u.pillBg} text-[9px]`}>
                         {ALL_FEATURE_KEYS.filter(f => f.group === group && featureKeys.includes(f.key)).length}/{ALL_FEATURE_KEYS.filter(f => f.group === group).length}
                       </span>
@@ -262,7 +263,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
                             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${active ? 'bg-emerald-500/20' : isDark ? 'bg-gray-700/50' : 'bg-white'}`}>
                               <Icon size={13} />
                             </div>
-                            <span className="truncate flex-1">{f.label}</span>
+                            <span className="truncate flex-1">{t(`ui.plans.feat.${f.key}`, f.label)}</span>
                             {active ? <Unlock size={12} className="text-emerald-500 shrink-0" /> : <Lock size={12} className={`shrink-0 ${u.subtle}`} />}
                           </button>
                         );
@@ -273,10 +274,10 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
               </div>
               <div className={`pt-3 border-t flex gap-2 ${u.divider}`}>
                 <button onClick={() => { const p = JSON.parse(JSON.stringify(plan)); p.feature_keys = ALL_FEATURE_KEYS.map(f => f.key); onChange(p); }} className={`text-[11px] font-bold px-3 py-1.5 rounded-lg ${u.btnGhost}`}>
-                  <Check size={11} className="inline mr-1" />Select all
+                  <Check size={11} className="inline mr-1" />{t('ui.plans.selectAll', 'Select all')}
                 </button>
                 <button onClick={() => { const p = JSON.parse(JSON.stringify(plan)); p.feature_keys = []; onChange(p); }} className={`text-[11px] font-bold px-3 py-1.5 rounded-lg ${u.btnDanger} border`}>
-                  <X size={11} className="inline mr-1" />Clear all
+                  <X size={11} className="inline mr-1" />{t('ui.plans.clearAll', 'Clear all')}
                 </button>
               </div>
             </>
@@ -286,14 +287,14 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
           {tab === 'limits' && (
             <>
               <div className={`border rounded-xl p-3 ${u.hintInfo}`}>
-                <p className="text-xs font-medium">Set <b>0</b> for unlimited. These quotas are enforced server-side — store owners can't exceed them.</p>
+                <p className="text-xs font-medium">{t('ui.plans.quotaHelp', 'Set 0 for unlimited. These quotas are enforced server-side — store owners can\'t exceed them.')}</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { k: 'max_products', I: Package, l: 'MAX PRODUCTS' },
-                  { k: 'max_orders_month', I: ShoppingCart, l: 'MAX ORDERS / MONTH' },
-                  { k: 'max_staff', I: Users, l: 'MAX STAFF' },
-                  { k: 'max_stores', I: Globe, l: 'MAX STORES' },
+                  { k: 'max_products', I: Package, l: t('ui.plans.maxProducts', 'MAX PRODUCTS') },
+                  { k: 'max_orders_month', I: ShoppingCart, l: t('ui.plans.maxOrdersMonth', 'MAX ORDERS / MONTH') },
+                  { k: 'max_staff', I: Users, l: t('ui.plans.maxStaff', 'MAX STAFF') },
+                  { k: 'max_stores', I: Globe, l: t('ui.plans.maxStores', 'MAX STORES') },
                 ].map(f => {
                   const I = f.I; const v = plan[f.k] || 0;
                   return (
@@ -303,7 +304,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
                         <label className={`text-[10px] font-bold ${u.muted}`}>{f.l}</label>
                       </div>
                       <input type="number" min={0} className={`w-full px-3 py-2 border rounded-lg text-lg font-extrabold ${u.input}`} value={v} onChange={e => set(f.k, parseInt(e.target.value) || 0)} />
-                      <p className={`text-[10px] mt-1 ${v === 0 ? 'text-emerald-500 font-bold' : u.subtle}`}>{v === 0 ? '∞ Unlimited' : `Capped at ${v.toLocaleString()}`}</p>
+                      <p className={`text-[10px] mt-1 ${v === 0 ? 'text-emerald-500 font-bold' : u.subtle}`}>{v === 0 ? t('ui.plans.unlimited', '∞ Unlimited') : t('ui.plans.cappedAt', 'Capped at {{n}}', { n: v.toLocaleString() })}</p>
                     </div>
                   );
                 })}
@@ -316,7 +317,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
       {/* Action row */}
       <div className={`flex gap-2 p-4 border-t ${u.divider} ${isDark ? 'bg-gray-900/50' : 'bg-gray-50/50'}`}>
         <button onClick={onSave} disabled={saving} className="flex-1 py-2.5 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg text-sm font-bold hover:shadow-lg hover:shadow-brand-500/30 disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}{saving ? 'Saving...' : 'Save Plan'}
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}{saving ? t('ui.plans.saving', 'Saving...') : t('ui.plans.savePlan', 'Save Plan')}
         </button>
         <button onClick={onDelete} className={`px-4 py-2.5 border rounded-lg text-sm font-bold flex items-center gap-1 ${u.btnDanger}`}>
           <Trash2 size={14} />
@@ -327,6 +328,7 @@ function PlanCard({ plan, onChange, onSave, onDelete, saving, isDark }) {
 }
 
 function Toggle({ checked, onChange, label, color = 'brand', isDark }) {
+  const { t } = useTranslation();
   const colorBg = checked
     ? (color === 'amber' ? 'bg-amber-500' : color === 'emerald' ? 'bg-emerald-500' : 'bg-brand-500')
     : (isDark ? 'bg-gray-700' : 'bg-gray-300');
@@ -354,7 +356,7 @@ export default function PlansEditor() {
 
   const load = async () => {
     try { const { data } = await platformApi.getPlans(); setPlans(data.plans || []); }
-    catch (e) { toast.error(e.response?.data?.error || 'Failed to load plans'); }
+    catch (e) { toast.error(e.response?.data?.error || t('ui.plans.failedToLoadPlans', 'Failed to load plans')); }
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -412,13 +414,13 @@ export default function PlansEditor() {
                 <Sparkles size={20} className="text-white" />
               </div>
               <div>
-                <h1 className={`text-xl md:text-2xl font-black ${u.title}`}>Subscription Plans</h1>
-                <p className={`text-xs ${u.muted}`}>Design tiers, set prices, and gate features. Changes apply instantly to store owners.</p>
+                <h1 className={`text-xl md:text-2xl font-black ${u.title}`}>{t('ui.plans.subscriptionPlans', 'Subscription Plans')}</h1>
+                <p className={`text-xs ${u.muted}`}>{t('ui.plans.designTiersSetPricesAnd', 'Design tiers, set prices, and gate features. Changes apply instantly to store owners.')}</p>
               </div>
             </div>
           </div>
           <button onClick={addNew} className="px-5 py-2.5 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-xl font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-brand-500/30 transition-all self-start lg:self-auto">
-            <Plus size={16} />New Plan
+            <Plus size={16} />{t('ui.plans.newPlan', 'New Plan')}
           </button>
         </div>
       </div>
@@ -426,10 +428,10 @@ export default function PlansEditor() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { l: 'Total Plans', v: stats.total, I: Package, c: 'brand' },
-          { l: 'Active', v: stats.active, I: Check, c: 'emerald' },
-          { l: 'Popular', v: stats.popular, I: Star, c: 'amber' },
-          { l: 'Avg. Monthly', v: `${stats.avgMonthly.toLocaleString()} DZD`, I: DollarSign, c: 'purple' },
+          { l: t('ui.plans.totalPlans', 'Total Plans'), v: stats.total, I: Package, c: 'brand' },
+          { l: t('ui.plans.active', 'Active'), v: stats.active, I: Check, c: 'emerald' },
+          { l: t('ui.plans.filterPopular', 'Popular'), v: stats.popular, I: Star, c: 'amber' },
+          { l: t('ui.plans.avgMonthly', 'Avg. Monthly'), v: `${stats.avgMonthly.toLocaleString()} DZD`, I: DollarSign, c: 'purple' },
         ].map((s, i) => {
           const I = s.I;
           const colorMap = { brand: 'text-brand-500', emerald: 'text-emerald-500', amber: 'text-amber-500', purple: 'text-purple-500' };
@@ -449,10 +451,10 @@ export default function PlansEditor() {
       <div className={`rounded-2xl p-3 border flex flex-col sm:flex-row gap-3 ${u.card}`}>
         <div className="relative flex-1">
           <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${u.subtle}`} />
-          <input className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm ${u.input}`} placeholder="Search by name, tagline, or slug..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm ${u.input}`} placeholder={t('ui.plans.searchByNameTaglineOr', 'Search by name, tagline, or slug...')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className={`flex items-center gap-1 p-1 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-          {[{ k: 'all', l: 'All' }, { k: 'active', l: 'Active' }, { k: 'inactive', l: 'Inactive' }, { k: 'popular', l: 'Popular' }].map(f => (
+          {[{ k: 'all', l: t('ui.plans.all', 'All') }, { k: 'active', l: t('ui.plans.active', 'Active') }, { k: 'inactive', l: t('ui.plans.filterInactive', 'Inactive') }, { k: 'popular', l: t('ui.plans.filterPopular', 'Popular') }].map(f => (
             <button key={f.k} onClick={() => setFilter(f.k)} className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all ${filter === f.k ? (isDark ? 'bg-gray-900 text-brand-400 shadow-sm' : 'bg-white text-brand-600 shadow-sm') : u.muted}`}>{f.l}</button>
           ))}
         </div>
@@ -461,7 +463,7 @@ export default function PlansEditor() {
       {filtered.length === 0 && (
         <div className={`p-12 text-center rounded-2xl border ${u.card}`}>
           <div className={`w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}><Package size={24} className={u.subtle} /></div>
-          <p className={u.muted}>{plans.length === 0 ? 'No plans yet. Click ' : 'No plans match your filter. Try '}<b>{plans.length === 0 ? 'New Plan' : 'clearing search'}</b>.</p>
+          <p className={u.muted}>{plans.length === 0 ? t('ui.plans.noPlansYetHelp', 'No plans yet. Click "New Plan".') : t('ui.plans.noPlansMatchHelp', 'No plans match your filter. Try clearing the search.')}</p>
         </div>
       )}
 

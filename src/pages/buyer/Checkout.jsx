@@ -6,7 +6,7 @@ import { storeApi, paymentApi } from '../../utils/api';
 import { useCartStore, useLangStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 import i18n from '../../i18n';
 import toast from 'react-hot-toast';
-import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Globe, Truck, Gift, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Minus, Plus, CreditCard, Banknote, QrCode, Building, Trash2, Check, Lock, Upload, Copy, AlertTriangle, Smartphone, ArrowRight, Wifi, User, Heart, Truck, Gift, ChevronDown, ChevronUp, Package } from 'lucide-react';
 
 // Algerian phone validator lives in utils/phone; re-exported for older imports.
 import { isValidAlgerianPhone } from '../../utils/phone';
@@ -16,6 +16,7 @@ import { bilingualLabel } from '../../data/wilayaTranslations';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
 import { gradientForCompany, initialFor } from '../../utils/carrierGradient';
 import CarrierLogo from '../../components/shared/CarrierLogo';
+import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 
 // Stable wrapper component defined at module level so it doesn't unmount on every parent re-render.
 function ShellWrapper({ isModal, onClose, children }) {
@@ -794,16 +795,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           )}
           <div className="flex items-center gap-2">
             {!isModal && <StoreHeaderIcons storeSlug={storeSlug} store={store} className="text-gray-700 [&_a:hover]:bg-gray-100 [&_button:hover]:bg-gray-100"/>}
-            {/* Language switcher (visible on the checkout page) */}
-            <div className="flex items-center bg-gray-100 rounded-full p-0.5 mr-1">
-              <Globe size={14} className="text-gray-500 ml-2" />
-              {[{c:'en',l:'EN'},{c:'fr',l:'FR'},{c:'ar',l:'AR'}].map(L => (
-                <button key={L.c} onClick={() => i18n.changeLanguage(L.c)}
-                  className={`px-2 py-1 rounded-full text-[10px] font-bold ${i18n.language?.startsWith(L.c) ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {L.l}
-                </button>
-              ))}
-            </div>
+            <LanguageSwitcher />
             {isModal ? (
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={20}/></button>
             ) : (<>
