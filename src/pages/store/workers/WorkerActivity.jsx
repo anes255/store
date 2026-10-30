@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Activity, Download } from 'lucide-react';
 import DashboardLayout from '../../../components/shared/DashboardLayout';
+import DateRangeFilter from '../../../components/shared/DateRangeFilter';
 import { useStoreManagement } from '../../../hooks/useStore';
 import { workersApi } from '../../../utils/api';
 import { Skeleton, EmptyState, useActionLabel, useActivityFormat } from './shared';
@@ -39,12 +40,11 @@ export default function WorkerActivity() {
         <div><h1 className="text-xl sm:text-2xl font-black text-gray-900">{t('workers.activityLogs', 'Activity Logs')}</h1><p className="text-sm text-gray-400">{t('workers.activitySubtitle', 'Every worker action and every sensitive change, with who and when')}</p></div>
         <button onClick={exportCsv} disabled={!rows?.length} className="btn-secondary text-sm flex items-center gap-1.5 self-start"><Download size={15} />{t('workers.export', 'Export')}</button>
       </div>
-      <div className="glass-card-solid p-3 mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="glass-card-solid p-3 mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
         <select className="input-field text-sm" value={f.worker} onChange={(e) => setF({ ...f, worker: e.target.value })}><option value="">{t('workers.allWorkers', 'All workers')}</option>{workers.map((w) => <option key={w.id} value={w.id}>{w.full_name}</option>)}</select>
         <select className="input-field text-sm" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value, action: '' })}><option value="all">{t('workers.allActions', 'All actions')}</option><option value="orders">{t('workers.orderActions', 'Order actions')}</option><option value="account">{t('workers.accountActions', 'Account & admin actions')}</option></select>
         <select className="input-field text-sm" value={f.action} onChange={(e) => setF({ ...f, action: e.target.value })}><option value="">{t('workers.anyAction', 'Any action')}</option>{['confirmed', 'prepared', 'completed', 'shipped', 'cancelled', 'assigned', 'called', 'worker_login', 'worker_created', 'worker_updated', 'compensation_changed', 'role_updated', 'payroll_approved', 'payroll_paid', 'worker_password_reset'].map((a) => <option key={a} value={a}>{actionLabel(a)}</option>)}</select>
-        <input type="date" className="input-field text-sm" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} />
-        <input type="date" className="input-field text-sm" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} />
+        <DateRangeFilter align="start" className="col-span-2 md:col-span-1" value={{ from: f.from, to: f.to }} onChange={(r) => setF({ ...f, from: r.from || '', to: r.to || '' })} />
       </div>
       {!rows ? <Skeleton className="h-96" /> : !rows.length ? <EmptyState icon={Activity} title={t('workers.noActivity', 'No activity yet')} /> : (
         <div className="glass-card-solid overflow-x-auto">

@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{Briefcase,Home as House,User,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,Navigate,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{Briefcase,Home as House,User,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 import CommandPalette from './CommandPalette';
 import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
@@ -17,6 +17,16 @@ const FEATURE_GATE_MAP = {
 // Maps sidebar routes to the staff permission required to use them.
 // Used to hide/disable items for team members based on the permissions their
 // store admin granted them. Owners (is_staff=false) bypass this entirely.
+
+// The signed-in person's picture (workers upload one in their profile); the
+// coloured initial is only the fallback when there is no photo.
+function UserBubble({user,pc,size=32,className=''}){
+  const src=user?.avatar||user?.staff_avatar||null;
+  const style={width:size,height:size};
+  if(src)return <img src={src} alt="" className={`rounded-full object-cover shrink-0 bg-white ${className}`} style={{...style,boxShadow:`0 0 0 2px ${pc}55`}} onError={(e)=>{e.currentTarget.style.display='none';}}/>;
+  return <div className={`rounded-full flex items-center justify-center text-white font-bold shrink-0 ${className}`} style={{...style,backgroundColor:pc,fontSize:Math.round(size*0.4)}}>{user?.name?.[0]||'U'}</div>;
+}
+
 const PERM_GATE_MAP = {
   '/dashboard': ['dashboard_view','analytics_view','orders_view','products_view','customers_view','finances_view'],
   '/dashboard/analytics': 'analytics_view',
@@ -60,6 +70,38 @@ const PERM_GATE_MAP = {
   '/dashboard/themes': 'settings_edit',
   '/dashboard/tracking-pixels': 'settings_edit',
 };
+
+// Where to send a team member who opens a page their role doesn't cover.
+// A preparer who taps "Orders" lands on Preparing instead of a dead end; the
+// first entry they are allowed to open wins, and "My work" is the catch-all.
+// Only if nothing here is open to them do they see the Access Denied card.
+const STAFF_FALLBACKS = {
+  '/dashboard/orders': ['/dashboard/preparing', '/dashboard/tracking-orders', '/dashboard/orders-archive', '/dashboard/abandoned'],
+  '/dashboard/preparing': ['/dashboard/orders', '/dashboard/tracking-orders'],
+  '/dashboard/orders-archive': ['/dashboard/orders', '/dashboard/preparing'],
+  '/dashboard/abandoned': ['/dashboard/orders', '/dashboard/preparing'],
+  '/dashboard/products': ['/dashboard/stock', '/dashboard/offers'],
+  '/dashboard/stock': ['/dashboard/products'],
+  '/dashboard/offers': ['/dashboard/products'],
+  '/dashboard/analytics': ['/dashboard', '/dashboard/orders'],
+  '/dashboard/costs': ['/dashboard/taxes', '/dashboard/billing', '/dashboard/workers/payroll'],
+  '/dashboard/taxes': ['/dashboard/costs'],
+  '/dashboard/billing': ['/dashboard/costs'],
+  '/dashboard/customers': ['/dashboard/orders', '/dashboard/blacklist'],
+  '/dashboard/blacklist': ['/dashboard/customers', '/dashboard/auto-blacklist'],
+  '/dashboard/auto-blacklist': ['/dashboard/blacklist', '/dashboard/customers'],
+  '/dashboard/tracking-orders': ['/dashboard/order-tracking', '/dashboard/orders'],
+  '/dashboard/order-tracking': ['/dashboard/tracking-orders'],
+  '/dashboard/shipping-partners': ['/dashboard/shipping-wilayas', '/dashboard/tracking-orders'],
+  '/dashboard/shipping-wilayas': ['/dashboard/shipping-partners'],
+  '/dashboard/workers': ['/dashboard/workers/performance', '/dashboard/workers/payroll'],
+  '/dashboard/workers/roles': ['/dashboard/workers'],
+  '/dashboard/workers/performance': ['/dashboard/workers'],
+  '/dashboard/workers/activity': ['/dashboard/workers'],
+  '/dashboard/workers/payroll': ['/dashboard/workers'],
+  '/dashboard/settings': ['/dashboard/contact', '/dashboard/faqs', '/dashboard/about'],
+};
+const STAFF_LAST_RESORT = ['/dashboard/me', '/dashboard'];
 
 // LiveBadge — shows the live "● Live" pill plus a count of buyers currently
 // browsing the store (polled every 15s from /store/:slug/live-visitors which
@@ -485,6 +527,14 @@ export default function DashboardLayout({children}){
     return (Array.isArray(need)?need:[need]).some(k=>staffPerms.has(k));
   };
   const isStaffBlocked=(path)=>!!staffPerms&&!hasStaffPerm(path);
+  // The page this person should actually land on when they open `path`:
+  // the page itself when their role covers it, otherwise the closest page in
+  // the same area that it does cover. null = nothing related is open to them.
+  const resolveStaffPath=(path)=>{
+    if(!isStaffBlocked(path))return path;
+    const tried=[...(STAFF_FALLBACKS[path]||[]),...STAFF_LAST_RESORT];
+    return tried.find(p=>p!==path&&!isStaffBlocked(p))||null;
+  };
 
   // Check if a sidebar route is gated by the plan. Look up by the route path
   // last segment or by the item id for top-level links.
@@ -498,22 +548,27 @@ export default function DashboardLayout({children}){
     toast.error(`"${label}" is locked on your current plan. Upgrade to unlock it.`);};
 
   const SLink=({to,icon:Icon,label,gated})=>{
-    if(isStaffBlocked(to))return null;
+    // A team member whose role doesn't cover this page still sees the item —
+    // it just takes them to the part of it they are allowed to work on.
+    const dest=resolveStaffPath(to);
+    if(!dest)return null;
     if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pc:pc}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
-    const active=isActive(to);
-    return(<Link to={to} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
+    const active=isActive(dest)||isActive(to);
+    return(<Link to={dest} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
       style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:isDark?pc:pc}}
       onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');e.currentTarget.style.color=isDark?pc:pc;}}}
       onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pc:pc;}}}
     ><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
   };
   const SubLink=({to,label})=>{
-    if(isStaffBlocked(to))return null;
+    const dest=resolveStaffPath(to);
+    if(!dest)return null;
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
     const segment=to.split('/').pop();
     const gated=isGated(segment);
     if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pc+'80':pc}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
-    const active=isActive(to);
+    const active=isActive(dest)||isActive(to);
+    to=dest;
     // The current sub-page gets the same filled highlight as a selected main
     // page (it used to be only a colour change, easy to miss).
     return(<Link to={to} className={`ml-3 mr-1 my-0.5 pl-9 pr-3 py-1.5 block text-sm rounded-xl transition-all ${active?'font-semibold text-white shadow-md':''}`}
@@ -685,7 +740,7 @@ export default function DashboardLayout({children}){
         })()}
       </nav>
       <div className={`border-t shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sidebarOpen?'p-3':'p-2'} ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className={`flex items-center ${sidebarOpen?'gap-2 rounded-xl p-2.5':'justify-center rounded-lg p-2'} mb-2`} style={{backgroundColor:pc+'15'}}><div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'U'}</div>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('ui.layout.user', 'User')}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
+        <div className={`flex items-center ${sidebarOpen?'gap-2 rounded-xl p-2.5':'justify-center rounded-lg p-2'} mb-2`} style={{backgroundColor:pc+'15'}}><UserBubble user={user} pc={pc} size={32}/>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('ui.layout.user', 'User')}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
         {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center ${sidebarOpen?'gap-3 px-4':'justify-center px-0'} py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
@@ -759,7 +814,7 @@ export default function DashboardLayout({children}){
           <NotifBell/>
           <ThemePanel compact mode={theme.mode} primaryColor={pc} onModeChange={theme.setMode} onColorChange={theme.setPrimaryColor} buttonColor={theme.buttonColor} onButtonColorChange={theme.setButtonColor} backgroundColor={theme.backgroundColor} onBackgroundColorChange={theme.setBackgroundColor}/>
           <LanguageSwitcher/>
-          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||user.staff_role||t('ui.layout.staff', 'Staff')):t('ui.layout.admin', 'Admin')}>{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{backgroundColor:pc}}>{user?.name?.[0]||'A'}</div></div>
+          <div className={`hidden md:flex items-center gap-2 rounded-xl px-3 py-1.5 max-w-[260px] ${isDark?'bg-gray-800':'bg-gray-50'}`}><span className={`text-sm font-bold truncate ${isDark?'text-gray-300':'text-gray-700'}`} title={user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||user.staff_role||t('ui.layout.staff', 'Staff')):t('ui.layout.admin', 'Admin')}>{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</span><UserBubble user={user} pc={pc} size={28}/></div>
           {currentStore?.is_live!==false&&<span className="md:hidden"><LiveBadge storeId={currentStore?.id}/></span>}
         </div>
         </div>
@@ -770,14 +825,20 @@ export default function DashboardLayout({children}){
           <span className="underline font-bold">{t('storePage.cancelDeletion','Cancel deletion')}</span>
         </Link>);})()}
       <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`} style={theme.backgroundColor?{background:theme.backgroundColor}:undefined}>
-        {isStaffBlocked(location.pathname)?(
+        {(()=>{
+          if(!isStaffBlocked(location.pathname))return children;
+          // Send them to the part of this area their role does cover rather
+          // than leaving them on a dead end they can do nothing with.
+          const dest=resolveStaffPath(location.pathname);
+          return dest?<Navigate to={dest} replace/>:(
           <div className={`max-w-md mx-auto mt-16 p-8 rounded-3xl text-center ${isDark?'bg-gray-900 border border-gray-800':'bg-white border border-gray-100 shadow-md'}`}>
             <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3" style={{backgroundColor:pc+'15'}}><Lock size={24} style={{color:pc}}/></div>
             <h2 className={`text-lg font-bold mb-1 ${isDark?'text-white':'text-gray-900'}`}>{t('staff.accessDenied','Access Denied')}</h2>
             <p className={`text-sm ${isDark?'text-gray-400':'text-gray-500'}`}>{t('staff.accessDeniedHelp','Your role does not include permission to view this page. Ask the store admin to grant you access.')}</p>
             <Link to="/dashboard" className="btn-ghost mt-4 inline-block">{t('sidebar.dashboard','Dashboard')}</Link>
           </div>
-        ):children}
+          );
+        })()}
       </div>
     </main>
   </div>);

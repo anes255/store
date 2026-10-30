@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { storeApi } from '../../utils/api';
 import toast from 'react-hot-toast';
-import { useBuyerTheme } from '../../hooks/useStore';
 import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from '../../utils/phone';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
@@ -88,9 +88,9 @@ function stepIndexFor(status) {
 }
 
 export default function TrackOrder() {
+  const storeTheme = useStoreTheme();
   const { storeSlug } = useParams();
   const { t } = useTranslation();
-  const buyerTheme = useBuyerTheme();
   const [store, setStore] = useState({
     name: '', currency: 'DZD', logo: '', primary_color: '',
     tracking_enabled: true,
@@ -151,7 +151,7 @@ export default function TrackOrder() {
   }, [storeSlug]);
 
   const currency = store.currency || 'DZD';
-  const pc = store.primary_color || buyerTheme.primaryColor || '#7c3aed';
+  const pc = storeTheme.pcFor(store);
 
   const lookup = async () => {
     const useMode = store.tracking_search_method === 'both' ? mode : store.tracking_search_method;

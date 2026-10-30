@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Edit, Save, Phone, Mail, Clock, Shield, KeyRound, LogOut, Store as StoreIcon, Plus, Camera, Wallet, Activity, ShoppingCart, CheckCircle, Package, Truck } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import DashboardLayout from '../../../components/shared/DashboardLayout';
+import DateRangeFilter from '../../../components/shared/DateRangeFilter';
 import { useStoreManagement, useAuthStore } from '../../../hooks/useStore';
 import useStaffAccess from '../../../hooks/useStaffAccess';
 import { workersApi } from '../../../utils/api';
@@ -245,37 +246,94 @@ function EarningsCard({ e, t, ruleLabel }) {
   );
 }
 
+export const PER_PAGE = [10, 20, 50, 100];
+
+/** "10 / 20 / 50 / 100 per page" + page buttons, shared by the lists below. */
+export function PageBar({ perPage, onPerPage, page, onPage, count, t }) {
+  const pages = Math.max(1, Math.ceil(count / perPage));
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-gray-100">
+      <label className="flex items-center gap-2 text-xs text-gray-500">
+        {t('workers.perPage', 'Per page')}
+        <select className="input-field text-xs !py-1 !px-2" value={perPage} onChange={(e) => { onPerPage(Number(e.target.value)); onPage(1); }}>
+          {PER_PAGE.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+      </label>
+      {pages > 1 && (
+        <div className="flex items-center gap-1">
+          <button className="btn-ghost text-xs !px-2" disabled={page <= 1} onClick={() => onPage(page - 1)}>‹</button>
+          <span className="text-xs text-gray-500 px-1">{t('workers.pageOf', '{{a}} / {{b}}', { a: page, b: pages })}</span>
+          <button className="btn-ghost text-xs !px-2" disabled={page >= pages} onClick={() => onPage(page + 1)}>›</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WorkerOrders({ sid, wid, t, actionLabel }) {
   const [rows, setRows] = useState(null);
   const [kind, setKind] = useState('');
-  useEffect(() => { setRows(null); workersApi.activity(sid, { worker: wid, kind: 'orders', action: kind || undefined, limit: 100 }).then((r) => setRows(r.data.entries)).catch(() => setRows([])); }, [sid, wid, kind]);
+  const [range, setRange] = useState({});
+  const [perPage, setPerPage] = useState(20);
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [kind, range.from, range.to]);
+  useEffect(() => {
+    setRows(null);
+    workersApi.activity(sid, { worker: wid, kind: 'orders', action: kind || undefined, from: range.from, to: range.to, limit: 100 })
+      .then((r) => setRows(r.data.entries)).catch(() => setRows([]));
+  }, [sid, wid, kind, range.from, range.to]);
+  const shown = (rows || []).slice((page - 1) * perPage, page * perPage);
   return (
     <div className="glass-card-solid p-4">
-      <div className="flex flex-wrap gap-1.5 mb-3">{['', 'confirmed', 'prepared', 'completed', 'cancelled', 'assigned', 'called'].map((k) => (
-        <button key={k} onClick={() => setKind(k)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${kind === k ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500'}`}>{k ? actionLabel(k) : t('workers.all', 'All')}</button>
-      ))}</div>
-      {!rows ? <Skeleton className="h-40" /> : !rows.length ? <p className="text-sm text-gray-400 py-6 text-center">{t('workers.noOrders', 'No orders yet')}</p> : (
-        <div className="space-y-1.5">{rows.map((a, i) => (
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <div className="flex flex-wrap gap-1.5 flex-1">{['', 'confirmed', 'prepared', 'shipped', 'completed', 'cancelled', 'assigned', 'called'].map((k) => (
+          <button key={k} onClick={() => setKind(k)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${kind === k ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500'}`}>{k ? actionLabel(k) : t('workers.all', 'All')}</button>
+        ))}</div>
+        <DateRangeFilter value={range} onChange={setRange} />
+      </div>
+      {!rows ? <Skeleton className="h-40" /> : !rows.length ? <p className="text-sm text-gray-400 py-6 text-center">{t('workers.noOrders', 'No orders yet')}</p> : (<>
+        <div className="space-y-1.5">{shown.map((a, i) => (
           <Link key={i} to={`/dashboard/orders?highlight=${a.target_id}`} className="flex items-center justify-between gap-3 text-sm rounded-xl bg-gray-50 hover:bg-gray-100 px-3 py-2">
             <span className="min-w-0 truncate"><b className="text-gray-900">#{a.target}</b> <span className="text-gray-500">{actionLabel(a.action)}</span>{a.after && <span className="text-gray-400 text-[11px]"> → {a.after}</span>}</span>
             <span className="text-[11px] text-gray-400 shrink-0">{new Date(a.created_at).toLocaleString()}</span>
           </Link>))}</div>
-      )}
+        <PageBar perPage={perPage} onPerPage={setPerPage} page={page} onPage={setPage} count={rows.length} t={t} />
+      </>)}
     </div>
   );
 }
 
 export function WorkerActivityList({ sid, wid, t, actionLabel }) {
   const [rows, setRows] = useState(null);
-  useEffect(() => { workersApi.activity(sid, { worker: wid, limit: 100 }).then((r) => setRows(r.data.entries)).catch(() => setRows([])); }, [sid, wid]);
-  if (!rows) return <Skeleton className="h-40" />;
+  const [range, setRange] = useState({});
+  const [action, setAction] = useState('');
+  const [perPage, setPerPage] = useState(20);
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [action, range.from, range.to]);
+  useEffect(() => {
+    setRows(null);
+    workersApi.activity(sid, { worker: wid, action: action || undefined, from: range.from, to: range.to, limit: 100 })
+      .then((r) => setRows(r.data.entries)).catch(() => setRows([]));
+  }, [sid, wid, action, range.from, range.to]);
+  const shown = (rows || []).slice((page - 1) * perPage, page * perPage);
   return (
     <div className="glass-card-solid p-4">
-      {!rows.length ? <p className="text-sm text-gray-400 text-center py-6">{t('workers.noActivity', 'No activity yet')}</p> : <ol className="relative border-s border-gray-200 ms-2 space-y-3">{rows.map((a, i) => (
-        <li key={i} className="ms-4"><span className={`absolute -start-1.5 mt-1.5 w-3 h-3 rounded-full ${a.kind === 'order' ? 'bg-brand-500' : 'bg-gray-400'}`} />
-          <p className="text-sm"><b className="text-gray-900">{actionLabel(a.action)}</b>{a.kind === 'order' ? <span className="text-gray-500"> #{a.target}</span> : null}</p>
-          <p className="text-[11px] text-gray-400">{new Date(a.created_at).toLocaleString()}{a.before || (a.kind === 'order' && a.after) ? ` · ${a.before || '—'} → ${a.after || '—'}` : ''}</p></li>
-      ))}</ol>}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <select className="input-field text-sm !py-1.5 flex-1 min-w-[140px]" value={action} onChange={(e) => setAction(e.target.value)}>
+          <option value="">{t('workers.allStatuses', 'All statuses')}</option>
+          {['assigned', 'called', 'confirmed', 'prepared', 'shipped', 'completed', 'cancelled'].map((a) => <option key={a} value={a}>{actionLabel(a)}</option>)}
+        </select>
+        <DateRangeFilter value={range} onChange={setRange} />
+      </div>
+      {!rows ? <Skeleton className="h-40" />
+        : !rows.length ? <p className="text-sm text-gray-400 text-center py-6">{t('workers.noActivity', 'No activity yet')}</p> : (<>
+          <ol className="relative border-s border-gray-200 ms-2 space-y-3">{shown.map((a, i) => (
+            <li key={i} className="ms-4"><span className={`absolute -start-1.5 mt-1.5 w-3 h-3 rounded-full ${a.kind === 'order' ? 'bg-brand-500' : 'bg-gray-400'}`} />
+              <p className="text-sm"><b className="text-gray-900">{actionLabel(a.action)}</b>{a.kind === 'order' ? <span className="text-gray-500"> #{a.target}</span> : null}</p>
+              <p className="text-[11px] text-gray-400">{new Date(a.created_at).toLocaleString()}{a.before || (a.kind === 'order' && a.after) ? ` · ${a.before || '—'} → ${a.after || '—'}` : ''}</p></li>
+          ))}</ol>
+          <PageBar perPage={perPage} onPerPage={setPerPage} page={page} onPage={setPage} count={rows.length} t={t} />
+        </>)}
     </div>
   );
 }

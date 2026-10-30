@@ -5,7 +5,7 @@ import api, { ownerApi } from '../../utils/api';
 import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import useStaffAccess from '../../hooks/useStaffAccess';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 import toast from 'react-hot-toast';
 import {
   Eye, DollarSign, ShoppingCart, TrendingUp, Package, Plus, ArrowUpRight, ArrowDownRight,
@@ -94,6 +94,16 @@ export default function StoreDashboard() {
   const showOrders = can('orders_view');
   const showMoney = can('finances_view');
   const showProducts = canAny('products_view', 'products_edit', 'stock_manage');
+  // Settings → Dashboard decides which blocks appear, the greeting line and
+  // the chart style. `!== false` keeps every block on for stores that never
+  // opened those switches.
+  const cfg = currentStore || {};
+  const showAction = cfg.dash_action !== false;
+  const showTelemetry = cfg.dash_telemetry !== false;
+  const showPulse = cfg.dash_pulse !== false;
+  const showLog = cfg.dash_log !== false;
+  const showDashDate = cfg.dash_date !== false;
+  const chartType = ['AREA', 'LINE', 'BAR'].includes(cfg.chart_type) ? cfg.chart_type : 'AREA';
   const showCustomers = can('customers_view');
   const showVisits = canAny('analytics_view', 'dashboard_view');
 
@@ -214,9 +224,9 @@ export default function StoreDashboard() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2230%22%20height%3D%2230%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M1.22676%200C1.91374%200%202.45351%200.539773%202.45351%201.22676C2.45351%201.91374%201.91374%202.45351%201.22676%202.45351C0.539773%202.45351%200%201.91374%200%201.22676C0%200.539773%200.539773%200%201.22676%200Z%22%20fill%3D%22rgba(255%2C255%2C255%2C0.06)%22%2F%3E%3C%2Fsvg%3E')]" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">{t('dashboard.welcome')} 👋</h2>
+            <h2 className="text-2xl font-bold text-white">{cfg.dash_greeting || `${t('dashboard.welcome')} 👋`}</h2>
             <p className="text-white/70 mt-1">{currentStore?.name}</p>
-            <p className="text-white/50 text-sm">{new Date().toLocaleDateString(({ fr: 'fr-FR', ar: 'ar-DZ' })[(i18n.language || 'en').slice(0, 2)] || 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            {showDashDate && <p className="text-white/50 text-sm">{new Date().toLocaleDateString(({ fr: 'fr-FR', ar: 'ar-DZ' })[(i18n.language || 'en').slice(0, 2)] || 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>}
           </div>
           <Link to={`/s/${currentStore?.slug}`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl text-white text-sm font-medium transition-all">
             <Eye size={16} /> {t('storePage.viewStore', 'View Store')}
@@ -225,7 +235,7 @@ export default function StoreDashboard() {
       </div>
 
       {/* Quick Actions */}
-      {quickActions.length > 0 && <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {showAction && quickActions.length > 0 && <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {quickActions.map((action, i) => {
           const Icon = action.icon;
           return (
@@ -238,7 +248,7 @@ export default function StoreDashboard() {
       </div>}
 
       {/* Stats */}
-      {statCards.length > 0 && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {showTelemetry && statCards.length > 0 && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -261,7 +271,7 @@ export default function StoreDashboard() {
       </div>}
 
       {/* Charts + Products */}
-      {(showOrders || showMoney) && <div className="grid lg:grid-cols-3 gap-6 mb-8">
+      {showPulse && (showOrders || showMoney) && <div className="grid lg:grid-cols-3 gap-6 mb-8">
         <div className={`${showOrders ? 'lg:col-span-2' : 'lg:col-span-3'} glass-card-solid p-6`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900">{t('dashboard.salesOverview')}</h3>
@@ -272,7 +282,10 @@ export default function StoreDashboard() {
             const chartData=salesData.length>=2?salesData.map(d=>({...d,revenue:parseFloat(d.revenue||d.total||0),orders:parseInt(d.orders||d.count||0)})):fallback;
             return(
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={chartData}>
+              {(() => {
+              // Settings → Dashboard → Chart Type picks the shape; the axes,
+              // tooltip and series are the same in all three.
+              const axes = (<>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.2} />
@@ -287,9 +300,23 @@ export default function StoreDashboard() {
                 <XAxis dataKey="date" tickFormatter={v => {try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}}} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${t('storePage.dzd','DZD')}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]} />
-                {showMoney && <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" name="revenue" />}
-                {showOrders && <Area type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} fill="url(#colorOrd)" name="orders" />}
-              </AreaChart>
+              </>);
+              if (chartType === 'BAR') return (
+                <BarChart data={chartData}>{axes}
+                  {showMoney && <Bar dataKey="revenue" fill="#7C3AED" radius={[6, 6, 0, 0]} name="revenue" />}
+                  {showOrders && <Bar dataKey="orders" fill="#10B981" radius={[6, 6, 0, 0]} name="orders" />}
+                </BarChart>);
+              if (chartType === 'LINE') return (
+                <LineChart data={chartData}>{axes}
+                  {showMoney && <Line type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} dot={false} name="revenue" />}
+                  {showOrders && <Line type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} dot={false} name="orders" />}
+                </LineChart>);
+              return (
+                <AreaChart data={chartData}>{axes}
+                  {showMoney && <Area type="monotone" dataKey="revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#colorRev)" name="revenue" />}
+                  {showOrders && <Area type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} fill="url(#colorOrd)" name="orders" />}
+                </AreaChart>);
+              })()}
             </ResponsiveContainer>);
           })()}
         </div>
@@ -328,7 +355,7 @@ export default function StoreDashboard() {
       </div>}
 
       {/* Products + Recent Orders */}
-      {(showProducts || showOrders) && <div className={`grid gap-6 ${showProducts && showOrders ? 'lg:grid-cols-2' : ''}`}>
+      {showLog && (showProducts || showOrders) && <div className={`grid gap-6 ${showProducts && showOrders ? 'lg:grid-cols-2' : ''}`}>
         {showProducts && <div className="glass-card-solid p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { imageList, productImage } from '../utils/productImage';
 
 export const useAuthStore = create((set) => ({
   user: JSON.parse(localStorage.getItem('user') || 'null'),
@@ -12,6 +13,12 @@ export const useAuthStore = create((set) => ({
     set({ user, token, role });
   },
   
+  // Patch the signed-in user in place (e.g. a profile photo added later).
+  setUser: (user) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
+  },
+
   logout: () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -110,10 +117,9 @@ export const useCartStore = create((set, get) => ({
       newItems = [...items];
       newItems[existingIndex].quantity += quantity;
     } else {
-      // Parse images safely — backend sometimes returns a JSON string
-      let imgs = product.images;
-      if (typeof imgs === 'string') try { imgs = JSON.parse(imgs); } catch { imgs = []; }
-      if (!Array.isArray(imgs)) imgs = [];
+      // Images can be URLs, { url } objects, or a JSON string — normalise to
+      // plain URLs so the cart pill and checkout always have something to show.
+      const imgs = imageList(product.images);
       // Keep the full variant options so checkout can render the per-unit
       // variant picker (not just the single chosen variant).
       let variants = product.variants;
@@ -123,7 +129,7 @@ export const useCartStore = create((set, get) => ({
         product_id: product.id,
         name: product.name_en || product.name_fr || product.name_ar || product.name,
         price: product.price,
-        image: product.thumbnail || imgs[0] || null,
+        image: productImage(product) || imgs[0] || null,
         quantity,
         variant,
         variants,

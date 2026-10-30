@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import HoldToConfirm from '../../components/shared/HoldToConfirm';
 import PasswordInput from '../../components/shared/PasswordInput';
 import PasswordStrength from '../../components/shared/PasswordStrength';
@@ -128,6 +129,7 @@ function getProductName(p) {
 // MAIN COMPONENT
 // ---------------------------------------------------------------------------
 export default function CustomerProfile() {
+  const storeTheme = useStoreTheme();
   const { storeSlug } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -197,7 +199,7 @@ export default function CustomerProfile() {
   const headerBg = tplStyle.bg || store?.primary_color || '#7C3AED';
   const headerText = tplStyle.textColor || '#ffffff';
   const headerFont = tplStyle.fontFamily || 'Inter';
-  const pc = store?.primary_color || '#7C3AED';
+  const pc = storeTheme.pcFor(store);
   const currency = store?.currency || 'DZD';
 
   // -- Handlers ---------------------------------------------------------------

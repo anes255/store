@@ -1,4 +1,5 @@
 import React,{useState,useEffect,useRef,useCallback}from'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import{useParams,Link}from'react-router-dom';
 import{useTranslation}from'react-i18next';
 import{storeApi,paymentApi,aiApi}from'../../utils/api';
@@ -444,6 +445,7 @@ function BuyerLangSwitcher({accent}){
 }
 
 export default function BuyerLandingPage(){
+  const storeTheme = useStoreTheme();
   const{storeSlug,landingSlug}=useParams();
   const{t,i18n}=useTranslation();
   const[store,setStore]=useState(null);
@@ -710,7 +712,7 @@ export default function BuyerLandingPage(){
   const effPrice=(it,qty)=>{let up=parseFloat(it?.price)||0;const offers=itemQtyOffers(it);if(offers.length){const m=offers.filter(qo=>parseInt(qo.quantity)>0&&(qty||1)>=parseInt(qo.quantity)).sort((a,b)=>parseInt(b.quantity)-parseInt(a.quantity))[0];if(m){const dv=parseFloat(m.discount_value)||0;if(dv>0)up=m.discount_type==='fixed'?Math.max(0,up-dv):Math.round(up*(1-dv/100));else if(m.label){const lm=String(m.label).match(/(\d+(?:\.\d+)?)\s*%/);if(lm)up=Math.round(up*(1-parseFloat(lm[1])/100));}}}return Math.max(0,up+variantAdj(it?.product_id));};
   const subtotal=cartItems.reduce((s,it)=>s+effPrice(it,cart[it.product_id]||0)*(cart[it.product_id]||0),0);
   const total=Math.max(0,subtotal+shippingPrice-couponDiscount);
-  const pc=page?.accent_color||store?.primary_color||'#7C3AED';
+  const pc=page?.accent_color||storeTheme.pcFor(store);
   // Quantity-offer tiers shown under each checkout line. Single-select toggle:
   // a tier is active only on exact quantity match; clicking it again resets to 1.
   const renderOfferTiers=(it)=>{

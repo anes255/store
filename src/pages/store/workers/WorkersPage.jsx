@@ -16,6 +16,16 @@ import DistributeOrders from './DistributeOrders';
 
 const earningsText = (e) => formatMulti(Object.fromEntries(Object.entries(e || {}).map(([c, v]) => [c, (v.fixed || 0) + (v.commission || 0)])));
 
+// What a worker earned this month from one kind of action (prepared, shipped…),
+// kept per currency because pay rules can be set in DZD, USD or EUR.
+const commissionFor = (earnings, action) => {
+  const by = {};
+  Object.entries(earnings || {}).forEach(([cur, slot]) => {
+    (slot.lines || []).filter((l) => l.action === action).forEach((l) => { by[cur] = (by[cur] || 0) + (Number(l.amount) || 0); });
+  });
+  return Object.keys(by).length ? formatMulti(by) : '—';
+};
+
 export function WorkerActions({ worker, onChanged, compact = false }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -115,8 +125,8 @@ export default function WorkersPage() {
   const st = data?.stats || {};
   const exportCsv = () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lines = [['Worker', 'Phone', 'Email', 'Job', 'Role', 'Status', 'Orders', 'Confirmed', 'Pay rules', 'Earnings this month'].map(esc).join(',')]
-      .concat(rows.map((w) => [w.full_name, w.phone, w.email, w.job_type, w.role_name, w.status, w.orders, w.confirmed, ruleSummary(w.rules, ruleLabel, t), earningsText(w.earnings)].map(esc).join(',')));
+    const lines = [['Worker', 'Phone', 'Email', 'Job', 'Role', 'Status', 'Orders', 'Confirmed', 'Preparing', 'Preparing commission', 'Shipped', 'Shipped commission', 'Pay rules', 'Earnings this month'].map(esc).join(',')]
+      .concat(rows.map((w) => [w.full_name, w.phone, w.email, w.job_type, w.role_name, w.status, w.orders, w.confirmed, w.prepared || 0, commissionFor(w.earnings, 'prepared'), w.shipped || 0, commissionFor(w.earnings, 'shipped'), ruleSummary(w.rules, ruleLabel, t), earningsText(w.earnings)].map(esc).join(',')));
     const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `workers-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
   };
@@ -167,7 +177,7 @@ export default function WorkersPage() {
           <div className="hidden lg:block glass-card-solid overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                {[t('workers.worker', 'Worker'), t('workers.job', 'Job'), t('workers.role', 'Role'), t('workers.status', 'Status'), t('workers.orders', 'Orders'), t('workers.confirmed', 'Confirmed'), t('workers.fixedSalary', 'Fixed salary'), t('workers.commission', 'Commission'), t('workers.totalEarnings', 'Total earnings'), t('workers.lastActivity', 'Last activity'), ''].map((h, i) => <th key={i} className="px-3 py-3 text-start font-bold whitespace-nowrap">{h}</th>)}
+                {[t('workers.worker', 'Worker'), t('workers.job', 'Job'), t('workers.role', 'Role'), t('workers.status', 'Status'), t('workers.orders', 'Orders'), t('workers.confirmed', 'Confirmed'), t('workers.prepared', 'Preparing'), t('workers.preparedCommission', 'Preparing commission'), t('workers.shipped', 'Shipped'), t('workers.shippedCommission', 'Shipped commission'), t('workers.fixedSalary', 'Fixed salary'), t('workers.commission', 'Commission'), t('workers.totalEarnings', 'Total earnings'), t('workers.lastActivity', 'Last activity'), ''].map((h, i) => <th key={i} className="px-3 py-3 text-start font-bold whitespace-nowrap">{h}</th>)}
               </tr></thead>
               <tbody>{rows.map((w) => (
                 <tr key={w.id} className="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer" onClick={(e) => { if (!e.target.closest('button')) navigate(`/dashboard/workers/${w.id}`); }}>
@@ -177,6 +187,10 @@ export default function WorkersPage() {
                   <td className="px-3 py-2.5"><StatusBadge status={w.status} /></td>
                   <td className="px-3 py-2.5 font-semibold tabular-nums">{w.orders}</td>
                   <td className="px-3 py-2.5 font-semibold tabular-nums">{w.confirmed || '—'}</td>
+                  <td className="px-3 py-2.5 font-semibold tabular-nums">{w.prepared || '—'}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap tabular-nums text-[12px]">{commissionFor(w.earnings, 'prepared')}</td>
+                  <td className="px-3 py-2.5 font-semibold tabular-nums">{w.shipped || '—'}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap tabular-nums text-[12px]">{commissionFor(w.earnings, 'shipped')}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap tabular-nums">{fixedOf(w)}</td>
                   <td className="px-3 py-2.5 text-[12px] text-gray-500 max-w-[160px] truncate">{commissionOf(w)}</td>
                   <td className="px-3 py-2.5 font-black text-gray-900 whitespace-nowrap tabular-nums">{earningsText(w.earnings)}</td>
@@ -198,10 +212,16 @@ export default function WorkersPage() {
                     <p className="text-[11px] text-gray-400 truncate">{w.role_name ? t(`workers.roleName.${w.role_name}`, w.role_name) : ''}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+                <div className="grid grid-cols-4 gap-2 mt-3 text-center">
                   <div className="rounded-xl bg-gray-50 py-2"><p className="text-base font-black text-gray-900">{w.orders}</p><p className="text-[10px] text-gray-400">{t('workers.orders', 'Orders')}</p></div>
                   <div className="rounded-xl bg-gray-50 py-2"><p className="text-base font-black text-gray-900">{w.confirmed}</p><p className="text-[10px] text-gray-400">{t('workers.confirmed', 'Confirmed')}</p></div>
-                  <div className="rounded-xl bg-gray-50 py-2 px-1"><p className="text-[13px] font-black text-gray-900 truncate">{earningsText(w.earnings)}</p><p className="text-[10px] text-gray-400">{t('workers.thisMonth', 'This month')}</p></div>
+                  <div className="rounded-xl bg-gray-50 py-2"><p className="text-base font-black text-gray-900">{w.prepared || 0}</p><p className="text-[10px] text-gray-400">{t('workers.prepared', 'Preparing')}</p></div>
+                  <div className="rounded-xl bg-gray-50 py-2"><p className="text-base font-black text-gray-900">{w.shipped || 0}</p><p className="text-[10px] text-gray-400">{t('workers.shipped', 'Shipped')}</p></div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                  <div className="rounded-xl bg-gray-50 py-2 px-1"><p className="text-[12px] font-black text-gray-900 truncate">{commissionFor(w.earnings, 'prepared')}</p><p className="text-[10px] text-gray-400">{t('workers.preparedCommission', 'Preparing commission')}</p></div>
+                  <div className="rounded-xl bg-gray-50 py-2 px-1"><p className="text-[12px] font-black text-gray-900 truncate">{commissionFor(w.earnings, 'shipped')}</p><p className="text-[10px] text-gray-400">{t('workers.shippedCommission', 'Shipped commission')}</p></div>
+                  <div className="rounded-xl bg-gray-50 py-2 px-1"><p className="text-[12px] font-black text-gray-900 truncate">{earningsText(w.earnings)}</p><p className="text-[10px] text-gray-400">{t('workers.thisMonth', 'This month')}</p></div>
                 </div>
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                   <span className="text-[11px] text-gray-400">{w.online ? <span className="text-emerald-600 font-bold">● {t('workers.onlineNow', 'Online')}</span> : timeAgo(w.last_activity, t)}</span>

@@ -1,6 +1,7 @@
 import React,{useState,useEffect,useMemo,useRef} from'react';import{useStoreManagement}from'../../hooks/useStore';import DashboardLayout from'../../components/shared/DashboardLayout';import api from'../../utils/api';import{BarChart3,TrendingUp,ShoppingCart,DollarSign,Users,RefreshCw,ArrowUpRight,ArrowDownRight}from'lucide-react';
 import{AreaChart,Area,BarChart,Bar,PieChart,Pie,Cell,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Legend}from'recharts';
 import { useTranslation } from 'react-i18next';
+import DateRangeFilter from '../../components/shared/DateRangeFilter';
 
 const STATUS_COLORS={pending:'#f59e0b',new_order:'#f59e0b',pending_payment:'#eab308',confirmed:'#3b82f6',preparing:'#8b5cf6',shipped:'#06b6d4',in_transit:'#0ea5e9',delivered:'#10b981',cancelled:'#ef4444',canceled:'#ef4444',returned:'#f97316',refunded:'#6b7280'};
 // Stores can define their own statuses; give those distinct colours too.
@@ -12,6 +13,8 @@ export default function StoreAnalytics(){
   const[data,setData]=useState(null);
   const[loading,setLoading]=useState(true);
   const[dateRange,setDateRange]=useState('30d');
+  // A picked calendar window (from date A to date B) overrides the preset.
+  const[custom,setCustom]=useState({});
 
   // Everything on this page comes from /analytics, computed server-side over
   // ALL orders in the selected range (not the dashboard's 10 latest orders).
@@ -20,11 +23,11 @@ export default function StoreAnalytics(){
   // (or React's double effect in dev) otherwise let an older reply win.
   const reqId=useRef(0);
   const load=()=>{if(!currentStore?.id)return;const id=++reqId.current;setLoading(true);setError(false);
-    api.get(`/owner/stores/${currentStore.id}/analytics`,{params:{range:dateRange},timeout:45000})
+    api.get(`/owner/stores/${currentStore.id}/analytics`,{params:{range:dateRange,from:custom.from,to:custom.to},timeout:45000})
       .then(r=>{if(id===reqId.current)setData(r.data);})
       .catch(()=>{if(id===reqId.current){setData(null);setError(true);}})
       .finally(()=>{if(id===reqId.current)setLoading(false);});};
-  useEffect(()=>{load();},[currentStore?.id,dateRange]);
+  useEffect(()=>{load();},[currentStore?.id,dateRange,custom.from,custom.to]);
 
   const tot=data?.totals||{};
   const unit=data?.unit||'day';
@@ -45,7 +48,8 @@ export default function StoreAnalytics(){
     <div className="flex items-center justify-between mb-6">
       <div><h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 size={22} className="text-brand-500"/>{t('storePage.analytics','Analytics')}</h1><p className="text-sm text-gray-400 mt-1">{currentStore?.name||t('storePage.store','Store')} {t('storePage.performance','performance')}</p></div>
       <div className="flex items-center gap-2">
-        <select value={dateRange} onChange={e=>setDateRange(e.target.value)} className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 font-medium">
+        <DateRangeFilter value={custom} onChange={setCustom}/>
+        <select value={dateRange} disabled={!!(custom.from||custom.to)} onChange={e=>{setCustom({});setDateRange(e.target.value);}} className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 font-medium disabled:opacity-40">
           <option value="7d">{t('storePage.last7Days','Last 7 Days')}</option>
           <option value="30d">{t('storePage.last30Days','Last 30 Days')}</option>
           <option value="3m">{t('storePage.last3Months','Last 3 Months')}</option>

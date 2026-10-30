@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import { motion, AnimatePresence } from 'framer-motion';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import OtpInput from '../../components/shared/OtpInput';
@@ -15,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { User, Phone, Lock, Mail, MapPin, ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBag, Heart, ShoppingCart } from 'lucide-react';
 
 export default function CustomerAuth() {
+  const storeTheme = useStoreTheme();
   const { storeSlug } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -99,7 +101,7 @@ export default function CustomerAuth() {
     setLoading(false);
   };
 
-  const pc = store?.primary_color || '#7C3AED';
+  const pc = storeTheme.pcFor(store);
   // Same values the storefront header uses, so the two bars match exactly.
   const headerBg = pc;
   const headerText = '#ffffff';

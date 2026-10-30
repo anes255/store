@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ownerApi, aiApi, publicRoleTemplatesApi } from '../../utils/api';
 import { useStoreManagement, useAuthStore, useAdminTheme } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
+import { CHECKOUT_FIELDS, fieldState } from '../../utils/checkoutFields';
 import WhatsAppConfigModal,{WA_STATUSES,WA_STATUS_LABELS} from '../../components/shared/WhatsAppConfigModal';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
@@ -68,7 +69,7 @@ function SubscriptionSection(){
 // One live checkout frame. It scales to the space it is given (never wider
 // than its box, so nothing is cropped on phones) and receives the settings
 // being edited by postMessage, so changes show without saving or reloading.
-function CheckoutPreviewFrame({ s, mode, maxHeight }) {
+function CheckoutPreviewFrame({ s, mode, maxHeight, fitInside = false }) {
   const boxRef = useRef(null);
   const frameRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
@@ -88,9 +89,15 @@ function CheckoutPreviewFrame({ s, mode, maxHeight }) {
   const W = mode === 'mobile' ? 390 : 1280, H = mode === 'mobile' ? 800 : 820, bezel = mode === 'mobile' ? 12 : 8;
   const fitW = boxW ? (boxW - bezel) / W : 0;
   const fitH = maxHeight ? (maxHeight - bezel) / H : Infinity;
-  const scale = Math.max(0.1, Math.min(fitW, fitH, mode === 'mobile' ? 1 : 1));
+  // Inline, the preview takes the full width of its panel and the panel
+  // scrolls if that makes it tall — it used to be capped by height and by
+  // scale 1, which left a band of empty panel beside and under the phone.
+  // Expanded, the whole page has to be visible at once, so height wins there.
+  const scale = Math.max(0.1, Math.min(fitInside ? Math.min(fitW, fitH) : fitW, 3));
+  const frameH = H * scale + bezel;
   return (
-    <div ref={boxRef} className="w-full">
+    <div ref={boxRef} className="w-full"
+      style={fitInside || !maxHeight ? undefined : { maxHeight, overflowY: frameH > maxHeight ? 'auto' : 'visible', overflowX: 'hidden' }}>
       {boxW > 0 && (
         <div className={`mx-auto overflow-hidden shadow-2xl bg-white relative ${mode === 'mobile' ? 'rounded-[1.6rem] border-[6px] border-gray-800' : 'rounded-xl border-4 border-gray-800'}`}
           style={{ width: W * scale + bezel, height: H * scale + bezel }}>
@@ -107,6 +114,11 @@ function CheckoutPreview({ s }) {
   const{t}=useTranslation();
   const [mode, setMode] = useState('mobile'); // mobile | desktop
   const [big, setBig] = useState(false);
+  // How tall the inline preview may be. Measured from the window so the frame
+  // uses the space the panel actually has, on a phone and on a desktop alike.
+  const [vh, setVh] = useState(typeof window === 'undefined' ? 900 : window.innerHeight);
+  useEffect(() => { const h = () => setVh(window.innerHeight); window.addEventListener('resize', h); return () => window.removeEventListener('resize', h); }, []);
+  const inlineMax = Math.max(420, Math.min(1100, vh - 170));
   useEffect(() => { if (!big) return; const k = (e) => { if (e.key === 'Escape') setBig(false); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [big]);
   const switcher = (
     <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
@@ -128,7 +140,7 @@ function CheckoutPreview({ s }) {
         </div>
       </div>
       {!s.slug ? <p className="text-sm text-gray-400 text-center py-10">{t('storePage.previewUnavailable','Preview unavailable')}</p>
-        : !big && <CheckoutPreviewFrame s={s} mode={mode} maxHeight={mode === 'mobile' ? 720 : undefined} />}
+        : !big && <CheckoutPreviewFrame s={s} mode={mode} maxHeight={inlineMax} />}
       <p className="text-[10px] text-gray-400 text-center mt-3">{t('storePage.previewNote','This is your real checkout page with a sample product. Changes show here before you save.')}</p>
       {big && createPortal(
         <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex flex-col p-3 sm:p-6" onClick={() => setBig(false)}>
@@ -137,7 +149,7 @@ function CheckoutPreview({ s }) {
             <div className="ml-auto flex items-center gap-2">{switcher}<button type="button" onClick={() => setBig(false)} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white text-gray-800">{t('storePage.close','Close')}</button></div>
           </div>
           <div className="flex-1 min-h-0 mx-auto w-full max-w-[1400px] flex items-start justify-center overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <CheckoutPreviewFrame s={s} mode={mode} maxHeight={Math.max(300, window.innerHeight - 110)} />
+            <CheckoutPreviewFrame s={s} mode={mode} fitInside maxHeight={Math.max(300, window.innerHeight - 110)} />
           </div>
         </div>, document.body)}
     </div>
@@ -959,7 +971,33 @@ export default function StoreSettings(){
 
 <div className="glass-card-solid p-4 sm:p-6"><p className="text-sm text-gray-500">{t('ui.settings.couponSettingsHaveBeenMoved', 'Coupon settings have been moved to the')} <a href="/dashboard/offers" className="text-brand-500 font-bold hover:underline">{t('ui.settings.offersSales', 'Offers & Sales')}</a>{t('ui.settings.pageSuffix',' page.')}</p></div>
 
-<div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Lock size={16}/>{t('ui.settings.dataCollection', 'Data Collection')}</h3><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">{t('ui.settings.fullName', 'Full Name')}</p><p className="text-[10px] text-gray-400">{t('ui.settings.primaryIdentifier', 'Primary identifier')}</p></div><span className="badge badge-danger text-[10px]">{t('ui.settings.requiredBadge','REQUIRED')}</span></div><div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="font-semibold text-sm">{t('ui.settings.phoneNumber', 'Phone Number')}</p><p className="text-[10px] text-gray-400">{t('ui.settings.deliveryCoordination', 'Delivery coordination')}</p></div><span className="badge badge-danger text-[10px]">{t('ui.settings.requiredBadge','REQUIRED')}</span></div><T label={t('ui.settings.emailCollection', 'Email Collection')} desc={t('ui.settings.automatedInvoiceFlow', 'Automated invoice flow.')} checked={s.checkout_email} onChange={e=>setV('checkout_email',e.target.checked)}/></div>
+{/* Every box on the checkout form: switch it off to hide it, or mark it
+    optional so the buyer can leave it empty. */}
+<div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Lock size={16}/>{t('ui.settings.checkoutFields','Checkout form fields')}</h3>
+  <p className="text-[11px] text-gray-400">{t('ui.settings.checkoutFieldsHelp','Switch a box off to remove it from the checkout form. "Required" means the buyer cannot order without filling it.')}</p>
+  {(()=>{const st=(k)=>fieldState(s,k);
+    const setField=(k,patch)=>{const cur={};CHECKOUT_FIELDS.forEach(f=>{cur[f.key]=st(f.key);});setV('checkout_fields',{...cur,[k]:{...cur[k],...patch}});};
+    const anyContact=st('name').on||st('phone').on;
+    return(<>
+      {CHECKOUT_FIELDS.map(f=>{const c=st(f.key);return(
+        <div key={f.key} className="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-sm text-gray-800">{t(`ui.settings.field_${f.key}`,f.label)}</p>
+            <p className="text-[10px] text-gray-400">{t(`ui.settings.fieldHint_${f.key}`,f.hint)}</p>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer shrink-0">
+            <span className={`text-[11px] font-bold ${c.on?'text-emerald-600':'text-gray-400'}`}>{c.on?t('ui.settings.on','ON'):t('ui.settings.off','OFF')}</span>
+            <span className={`w-11 h-6 rounded-full transition-colors relative ${c.on?'bg-brand-500':'bg-gray-300'}`}><span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${c.on?'translate-x-5':'translate-x-0.5'}`}/></span>
+            <input type="checkbox" className="sr-only" checked={c.on} onChange={e=>setField(f.key,{on:e.target.checked,...(e.target.checked?{}:{required:false})})}/>
+          </label>
+          <label className={`flex items-center gap-1.5 shrink-0 ${c.on?'cursor-pointer':'opacity-40 cursor-not-allowed'}`}>
+            <input type="checkbox" disabled={!c.on} checked={c.required} onChange={e=>setField(f.key,{required:e.target.checked})} className="rounded border-gray-300"/>
+            <span className="text-[11px] font-bold text-gray-500">{t('ui.settings.requiredBadge','REQUIRED')}</span>
+          </label>
+        </div>);})}
+      {!anyContact&&<p className="text-[11px] font-bold text-red-500">{t('ui.settings.noContactWarn','With both the name and the phone switched off you will have no way to reach the buyer.')}</p>}
+    </>);})()}
+</div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><h3 className="font-bold flex items-center gap-2"><Zap size={16}/>{t('ui.settings.experience', 'Experience')}</h3><T label={t('ui.settings.cartDrawer', 'Cart Drawer')} desc={t('ui.settings.sideCartOnClick', 'Side-cart on click.')} checked={s.cart_drawer} onChange={e=>setV('cart_drawer',e.target.checked)}/><T label={t('ui.settings.orderNotes', 'Order Notes')} desc={t('ui.settings.specialInstructions', 'Special instructions.')} checked={s.order_notes} onChange={e=>setV('order_notes',e.target.checked)}/><T label={t('ui.settings.trustSignals', 'Trust Signals')} desc={t('ui.settings.securityBadges', 'Security badges.')} checked={s.trust_signals!==false} onChange={e=>setV('trust_signals',e.target.checked)}/><T label={t('ui.settings.stickyCheckout', 'Sticky Checkout')} desc={t('ui.settings.alwaysVisibleBuyNow', 'Always visible Buy Now.')} checked={s.sticky_checkout} onChange={e=>setV('sticky_checkout',e.target.checked)}/><T label={t('ui.settings.showSavings', 'Show Savings')} desc={t('ui.settings.highlightDiscounts', 'Highlight discounts.')} checked={s.show_savings} onChange={e=>setV('show_savings',e.target.checked)}/></div>
 <div className="glass-card-solid p-4 sm:p-6 space-y-3"><div className="flex items-center gap-2"><Code size={16}/><h3 className="font-bold">{t('ui.settings.customScripts', 'Custom Scripts')}</h3></div><textarea className="input-field font-mono text-xs" rows={3} value={s.post_script||''} onChange={set('post_script')} placeholder="<script>...</script>"/><p className="text-[10px] text-gray-400">{t('ui.settings.runsOnCheckoutPageOnly', 'Runs on checkout page only.')}</p></div></div><div className="min-w-0 xl:sticky xl:top-4 xl:self-start"><CheckoutPreview s={s}/></div></div>}
 

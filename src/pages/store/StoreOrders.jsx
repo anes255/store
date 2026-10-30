@@ -6,6 +6,7 @@ import { orderApi } from '../../utils/api';
 import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
+import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
 import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer , Shuffle } from 'lucide-react';
@@ -947,13 +948,10 @@ export default function StoreOrders() {
               {allStatuses.map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
             </select>
           </div>
-          <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateOldest','Date: Oldest')}</label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0" />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateNewest','Date: Newest')}</label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input-field !py-2 text-sm w-full box-border min-w-0" />
+          <div className="sm:col-span-2">
+            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.dateRange','Date range')}</label>
+            <DateRangeFilter align="start" className="w-full" value={{ from: dateFrom, to: dateTo }}
+              onChange={(r) => { setDateFrom(r.from || ''); setDateTo(r.to || ''); }} />
           </div>
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('common.search','Search')}</label>

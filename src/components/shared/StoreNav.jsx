@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { imageUrl } from '../../utils/productImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -173,7 +174,7 @@ export function CartPill({ storeSlug, pc = '#7c3aed', currency = 'DZD', onCart, 
               <motion.span key={(it.product_id || i) + '-' + i} className="w-9 h-9 rounded-full border-2 overflow-hidden bg-white/90 grid place-items-center"
                 style={{ borderColor: pc, zIndex: 3 - i }}
                 initial={{ scale: 0, y: -20 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', stiffness: 500, damping: 20, delay: i * 0.04 }}>
-                {it.image ? <img src={it.image} alt="" className="w-full h-full object-cover" /> : <ShoppingCart size={14} className="text-gray-500" />}
+                {imageUrl(it.image) ? <img src={imageUrl(it.image)} alt="" className="w-full h-full object-cover" onError={(e)=>{e.currentTarget.style.display='none';}} /> : <ShoppingCart size={14} className="text-gray-500" />}
               </motion.span>
             ))}
           </span>

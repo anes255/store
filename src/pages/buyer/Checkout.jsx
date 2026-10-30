@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,8 @@ import { isValidAlgerianPhone } from '../../utils/phone';
 export { isValidAlgerianPhone };
 import WILAYA_CITIES from '../../data/wilayaCities';
 import { bilingualLabel } from '../../data/wilayaTranslations';
+import { fieldOn, fieldRequired } from '../../utils/checkoutFields';
+import { imageUrl, productImage } from '../../utils/productImage';
 import { trackPurchase, trackInitiateCheckout, initPixels } from '../../utils/trackingPixels';
 import { gradientForCompany, initialFor } from '../../utils/carrierGradient';
 import CarrierLogo from '../../components/shared/CarrierLogo';
@@ -32,6 +35,7 @@ function ShellWrapper({ isModal, onClose, children }) {
 // directItems: optional array of items for "Buy Now" flow (skips cart).
 // Each item: { product_id, name, price, image, quantity, variant }
 export default function Checkout({ isModal = false, onClose, storeSlug: storeSlugProp, directItems = null }) {
+  const storeTheme = useStoreTheme();
   const params = useParams();
   const storeSlug = storeSlugProp || params.storeSlug;
   const { t } = useTranslation();
@@ -450,7 +454,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   const freeShipRemaining = !freeShipping && freeShipThreshold > 0 ? Math.max(0, freeShipThreshold - subtotal) : 0;
   const isNonCodPayment = ['ccp','baridimob','bank_transfer'].includes(form.payment_method);
   const total = subtotal + shipping - couponDiscount;
-  const pc = store?.primary_color || '#7C3AED';
+  const pc = storeTheme.pcFor(store);
 
   const validateCoupon = async () => {
     if (!form.coupon_code) return;
@@ -493,18 +497,17 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if (previewMode) return toast(t('storePage.previewNoOrder', 'Preview — no order is placed'), { icon: '👀' });
     // All boxes are required. Field-specific errors so the message matches the
     // actual missing field — buyer has to complete every input before checkout.
-    if (!form.customer_name) return toast.error(t('checkout.errName', 'Please enter your name'));
-    if (!form.customer_phone) return toast.error(t('checkout.errPhone', 'Please enter your phone number'));
-    if (!isValidAlgerianPhone(form.customer_phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
-    // Email is only required when the admin enabled "Email Collection" in
-    // Settings → Checkout. If the toggle is off (or the field is hidden),
-    // skip the requirement entirely. Format check still applies if filled.
-    const emailRequired = store?.checkout_email === true;
-    if (emailRequired && !form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
+    // Only ask for a box that is switched on AND marked required in
+    // Settings → Checkout → Checkout form fields.
+    const need = (k) => fieldRequired(store, k);
+    if (need('name') && !form.customer_name) return toast.error(t('checkout.errName', 'Please enter your name'));
+    if (need('phone') && !form.customer_phone) return toast.error(t('checkout.errPhone', 'Please enter your phone number'));
+    if (form.customer_phone && !isValidAlgerianPhone(form.customer_phone)) return toast.error(t('checkout.errPhoneAlg', 'Please enter a valid Algerian phone (e.g. 0555123456)'));
+    if (need('email') && !form.customer_email) return toast.error(t('checkout.errEmail', 'Please enter your email'));
     if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) return toast.error(t('checkout.errEmailFormat', 'Please enter a valid email address'));
-    if (!form.shipping_address) return toast.error(t('checkout.errAddress', 'Please enter your shipping address'));
-    if (!form.shipping_wilaya) return toast.error(t('checkout.errWilaya', 'Please choose your wilaya'));
-    if (!form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
+    if (need('address') && !form.shipping_address) return toast.error(t('checkout.errAddress', 'Please enter your shipping address'));
+    if (need('wilaya') && !form.shipping_wilaya) return toast.error(t('checkout.errWilaya', 'Please choose your wilaya'));
+    if (need('city') && !form.shipping_city) return toast.error(t('checkout.errCity', 'Please choose your commune / city'));
     if (!form.shipping_type) return toast.error(t('checkout.errShipType', 'Please choose a delivery type'));
     if (!form.payment_method) return toast.error(t('checkout.errPay', 'Please choose a payment method'));
     // Delivery company is ALWAYS required when companies are available or still loading
@@ -561,7 +564,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
         }
         snapshot.push({
           name: it.name || it.name_en || it.product_name || '',
-          image: it.image || (Array.isArray(it.images) ? (typeof it.images[0] === 'string' ? it.images[0] : null) : null) || null,
+          image: productImage(it),
           quantity: it.quantity,
           unit_price: it.price,
           variantLabel: variant?.label || (typeof it.variant === 'object' ? (it.variant?.label || it.variant?.name) : it.variant) || '',
@@ -727,8 +730,8 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                     <div className="space-y-2">
                       {rows.map((it, idx) => (
                         <div key={idx} className="flex items-center gap-2.5 text-sm">
-                          {it.image
-                            ? <img src={it.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" loading="lazy" decoding="async" />
+                          {imageUrl(it.image)
+                            ? <img src={imageUrl(it.image)} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" loading="lazy" decoding="async" />
                             : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><Package size={15} className="text-gray-400" /></div>}
                           <div className="flex-1 min-w-0">
                             <p className="text-gray-700 truncate">{it.name} × {it.quantity}</p>
@@ -817,18 +820,18 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               <h3 className="font-bold text-gray-900 mb-4">{t('checkout.shippingInfo','Shipping Information')}</h3>
               <div className="space-y-4">
                 {/* Name, phone and email stacked vertically — easier to tap on mobile */}
-                <div><label className="input-label">{t('auth.name')} *</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>
-                <div><label className="input-label">{t('auth.phone')} *</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/>
-                  {savedPicks.phones.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">{savedPicks.phones.map((ph) => <button key={ph} type="button" onClick={() => setForm((prev) => ({ ...prev, customer_phone: ph }))} className={chip} style={form.customer_phone === ph ? { backgroundColor: pc, borderColor: pc, color: '#fff' } : { borderColor: pc + '55', color: pc }}>{ph}</button>)}</div>}</div>
-                {store?.checkout_email!==false && <div><label className="input-label">{t('auth.email')}{store?.checkout_email===true?' *':''}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required={store?.checkout_email===true}/></div>}
-                <div><label className="input-label">{t('auth.address')} *</label>
+                {fieldOn(store,'name') && <div><label className="input-label">{t('auth.name')}{fieldRequired(store,'name')?' *':''}</label><input className="input-field" value={form.customer_name} onChange={set('customer_name')}/></div>}
+                {fieldOn(store,'phone') && <div><label className="input-label">{t('auth.phone')}{fieldRequired(store,'phone')?' *':''}</label><input className="input-field" value={form.customer_phone} onChange={set('customer_phone')}/>
+                  {savedPicks.phones.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">{savedPicks.phones.map((ph) => <button key={ph} type="button" onClick={() => setForm((prev) => ({ ...prev, customer_phone: ph }))} className={chip} style={form.customer_phone === ph ? { backgroundColor: pc, borderColor: pc, color: '#fff' } : { borderColor: pc + '55', color: pc }}>{ph}</button>)}</div>}</div>}
+                {fieldOn(store,'email') && <div><label className="input-label">{t('auth.email')}{fieldRequired(store,'email')?' *':''}</label><input type="email" className="input-field" value={form.customer_email} onChange={set('customer_email')} placeholder="email@example.com" required={fieldRequired(store,'email')}/></div>}
+                {fieldOn(store,'address') && <div><label className="input-label">{t('auth.address')}{fieldRequired(store,'address')?' *':''}</label>
                   {savedPicks.addresses.length > 0 && <div className="flex flex-wrap gap-1.5 mb-2">{savedPicks.addresses.map((ad, i) => { const on = form.shipping_address === ad.address && form.shipping_wilaya === ad.wilaya && form.shipping_city === ad.city; return <button key={i} type="button" title={[ad.address, ad.city, ad.wilaya].filter(Boolean).join(', ')} onClick={() => setForm((prev) => ({ ...prev, shipping_address: ad.address || '', shipping_wilaya: ad.wilaya || prev.shipping_wilaya, shipping_city: ad.city || '', shipping_zip: '' }))} className={chip} style={on ? { backgroundColor: pc, borderColor: pc, color: '#fff' } : { borderColor: pc + '55', color: pc }}>{ad.label || [ad.city, ad.wilaya].filter(Boolean).join(', ')}</button>; })}</div>}
-                  <input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>
+                  <input className="input-field" value={form.shipping_address} onChange={set('shipping_address')}/></div>}
 
                 {/* Wilaya → City → ZIP (stacked vertically) */}
                 <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="input-label">{t('auth.wilaya')} *</label>
+                  {fieldOn(store,'wilaya') && <div>
+                    <label className="input-label">{t('auth.wilaya')}{fieldRequired(store,'wilaya')?' *':''}</label>
                     <select className="input-field" value={form.shipping_wilaya} onChange={e => {
                       const w = e.target.value;
                       setForm(prev => ({ ...prev, shipping_wilaya: w, shipping_city: '', shipping_zip: '' }));
@@ -838,9 +841,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         <option key={w.wilaya_code} value={w.wilaya_name} disabled={w.is_active===false}>{w.is_active===false?t('ui.shop.inactive', '(Inactive) '):''}{w.wilaya_code} - {bilingualLabel(w.wilaya_name)}</option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="input-label">{t('auth.city','الدائرة (City)')} *</label>
+                  </div>}
+                  {fieldOn(store,'city') && <div>
+                    <label className="input-label">{t('auth.city','الدائرة (City)')}{fieldRequired(store,'city')?' *':''}</label>
                     <select className="input-field" value={form.shipping_city} onChange={e => {
                       const city = e.target.value;
                       const wCode = selectedWilayaData?.wilaya_code || shippingWilayas.find(w=>w.wilaya_name===form.shipping_wilaya)?.wilaya_code || WILAYA_CODES[form.shipping_wilaya] || '';
@@ -855,11 +858,11 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         <option key={c} value={c}>{bilingualLabel(c)}</option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="input-label">{t('ui.shop.zip','ZIP')}</label>
+                  </div>}
+                  {fieldOn(store,'zip') && <div>
+                    <label className="input-label">{t('ui.shop.zip','ZIP')}{fieldRequired(store,'zip')?' *':''}</label>
                     <input className="input-field bg-gray-50" value={form.shipping_zip} onChange={set('shipping_zip')} placeholder={t('checkout.autoFilled','Auto-filled')}/>
-                  </div>
+                  </div>}
                 </div>
 
                 {/* Desk vs Home delivery toggle. On mobile we stack the cards
@@ -1050,7 +1053,9 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                   })();
                   return (
                   <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl">
-                    {item.image && <img src={item.image} className="w-12 h-12 rounded-lg object-cover shrink-0" alt=""/>}
+                    {imageUrl(item.image)
+                      ? <img src={imageUrl(item.image)} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100" alt="" onError={(e)=>{e.currentTarget.style.visibility='hidden';}}/>
+                      : <span className="w-12 h-12 rounded-lg bg-gray-100 grid place-items-center shrink-0 text-gray-300"><Package size={18}/></span>}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
                       {vLabel && (
@@ -1230,7 +1235,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200"><span className="text-gray-900">{t('checkout.total','Total')}</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">{t('checkout.youSaved','You saved')} {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
               </div>
-              {store?.order_notes && <div className="mt-4"><label className="input-label text-xs">{t('checkout.orderNotes','Order Notes')}</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder={t('checkout.specialInstructions','Special instructions...')}/></div>}
+              {fieldOn(store,'notes') && <div className="mt-4"><label className="input-label text-xs">{t('checkout.orderNotes','Order Notes')}{fieldRequired(store,'notes')?' *':''}</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder={t('checkout.specialInstructions','Special instructions...')}/></div>}
               <button onClick={placeOrder} disabled={loading || items.length === 0} className={`w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all ${store?.sticky_checkout?'sm:sticky sm:bottom-4':''}`} style={{backgroundColor: pc}}>
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <>{store?.btn_order_now || t('store.placeOrder')}</>}
               </button>

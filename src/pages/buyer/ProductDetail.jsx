@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import AnimatedAddToCart from '../../components/shared/AnimatedAddToCart';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -241,6 +242,7 @@ function ProductOfferCountdown({ product }) {
 }
 
 export default function ProductDetail() {
+  const storeTheme = useStoreTheme();
   const { storeSlug, productSlug } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -258,6 +260,28 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  // The gallery is a snap-scrolling strip: scrolling it updates the dot/thumb,
+  // and the arrows and thumbnails scroll it instead of swapping the <img>.
+  const galleryRef = useRef(null);
+  const scrollRaf = useRef(0);
+  const onGalleryScroll = () => {
+    const el = galleryRef.current;
+    if (!el || !el.clientWidth) return;
+    cancelAnimationFrame(scrollRaf.current);
+    scrollRaf.current = requestAnimationFrame(() => {
+      const i = Math.round(Math.abs(el.scrollLeft) / el.clientWidth);
+      setSelectedImage((prev) => (prev === i ? prev : i));
+    });
+  };
+  const goToImage = (i) => {
+    const el = galleryRef.current;
+    const n = el ? el.children.length : 0;
+    if (!el || !n) return;
+    const idx = ((i % n) + n) % n;
+    const rtl = getComputedStyle(el).direction === 'rtl';
+    el.scrollTo({ left: (rtl ? -1 : 1) * idx * el.clientWidth, behavior: 'smooth' });
+    setSelectedImage(idx);
+  };
   // Lightbox: when set, an overlay shows that image full-screen.
   const [lightboxIdx, setLightboxIdx] = useState(null);
   useStoreFont(store);
@@ -288,7 +312,7 @@ export default function ProductDetail() {
 
   const getName = (item) => lang==='ar'?(item.name_ar||item.name_en||item.name):lang==='fr'?(item.name_fr||item.name_en||item.name):item.name_en||item.name;
   const getDesc = () => lang==='ar'?(product.description_ar||product.description_en||product.description):lang==='fr'?(product.description_fr||product.description_en||product.description):product.description_en||product.description;
-  const pc = store.primary_color || '#7C3AED';
+  const pc = storeTheme.pcFor(store);
   const currency = store.currency || 'DZD';
 
   // Parse variants safely
@@ -367,6 +391,7 @@ export default function ProductDetail() {
       [type]: prev[type] === idx ? null : idx,
     }));
     setSelectedImage(0);
+    if (galleryRef.current) galleryRef.current.scrollLeft = 0;
   };
 
   const requireSelections = () => {
@@ -462,27 +487,44 @@ export default function ProductDetail() {
         <div className="grid md:grid-cols-2 gap-4 sm:gap-8 lg:gap-12">
           {/* ═══ IMAGES ═══ */}
           <div className="space-y-3">
-            <div className="bg-white sm:rounded-3xl cursor-zoom-in relative w-full max-w-full overflow-hidden flex items-center justify-center px-12 py-3" style={{height:'min(55vh, 420px)'}} onClick={()=>allImages[selectedImage]&&setLightboxIdx(selectedImage)}>
-              {allImages[selectedImage]
-                ? <img src={allImages[selectedImage]} loading="eager" decoding="async" fetchpriority="high" className="max-w-full max-h-full w-auto h-auto object-contain rounded-2xl sm:rounded-xl" alt=""/>
-                : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
+            {/* The images sit in one sideways strip that snaps. Dragging
+                follows the finger and settles on the nearest photo instead of
+                jumping, and the arrows / thumbnails glide to their slide. */}
+            <div className="bg-white sm:rounded-3xl relative w-full max-w-full overflow-hidden" style={{height:'min(55vh, 420px)'}}>
+              <div ref={galleryRef} onScroll={onGalleryScroll}
+                className="flex h-full w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory no-scrollbar"
+                style={{ scrollBehavior: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}>
+                {allImages.length ? allImages.map((img, i) => (
+                  <div key={i} className="w-full h-full shrink-0 snap-center flex items-center justify-center px-12 py-3 cursor-zoom-in"
+                    onClick={() => setLightboxIdx(i)}>
+                    <img src={img} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'auto'}
+                      draggable={false} className="max-w-full max-h-full w-auto h-auto object-contain rounded-2xl sm:rounded-xl select-none" alt=""/>
+                  </div>
+                )) : <div className="w-full h-full flex items-center justify-center bg-gray-100"><Package size={64} className="text-gray-300"/></div>}
+              </div>
               {allImages.length > 1 && (
                 <>
-                  <button aria-label={t('ui.shop.previousImage', 'Previous image')} onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage - 1 + allImages.length) % allImages.length); }}
+                  <button aria-label={t('ui.shop.previousImage', 'Previous image')} onClick={(e) => { e.stopPropagation(); goToImage(selectedImage - 1); }}
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-20 active:scale-90 shadow-xl">
                     <ArrowLeft size={18}/>
                   </button>
-                  <button aria-label={t('ui.shop.nextImage', 'Next image')} onClick={(e) => { e.stopPropagation(); setSelectedImage((selectedImage + 1) % allImages.length); }}
+                  <button aria-label={t('ui.shop.nextImage', 'Next image')} onClick={(e) => { e.stopPropagation(); goToImage(selectedImage + 1); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 text-white grid place-items-center z-20 active:scale-90 shadow-xl">
                     <ArrowRight size={18}/>
                   </button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                    {allImages.map((_, i) => (
+                      <button key={i} aria-label={`${i + 1}`} onClick={(e) => { e.stopPropagation(); goToImage(i); }}
+                        className={`h-1.5 rounded-full transition-all ${selectedImage === i ? 'w-5 bg-gray-900' : 'w-1.5 bg-gray-900/30'}`}/>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
             {allImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1 px-3 sm:px-0">
                 {allImages.map((img,i) => (
-                  <button key={i} onClick={() => setSelectedImage(i)}
+                  <button key={i} onClick={() => goToImage(i)}
                     className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white overflow-hidden shrink-0 border-2 transition-all ${selectedImage===i ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-gray-300'}`}>
                     <img src={img} loading="lazy" className="w-full h-full object-contain" alt=""/>
                   </button>

@@ -18,7 +18,15 @@ const inflight = {};
 export function refreshStaffAccess(storeId) {
   if (!storeId || inflight[storeId]) return;
   inflight[storeId] = api.get(`/owner/stores/${storeId}/my-access`)
-    .then(({ data }) => { if (data?.is_staff) useLiveAccess.getState().setFor(storeId, data.permissions || []); })
+    .then(({ data }) => {
+      if (!data?.is_staff) return;
+      useLiveAccess.getState().setFor(storeId, data.permissions || []);
+      // A photo added after this device logged in still shows in the sidebar.
+      if (data.avatar) {
+        const auth = useAuthStore.getState();
+        if (auth.user && auth.user.avatar !== data.avatar) auth.setUser({ ...auth.user, avatar: data.avatar });
+      }
+    })
     .catch(() => {})
     .finally(() => { setTimeout(() => { delete inflight[storeId]; }, 15000); });
 }

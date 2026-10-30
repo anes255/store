@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { useBuyerTheme } from '../../hooks/useStore';
 import { ArrowLeft, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function StoreFAQ() {
+  const storeTheme = useStoreTheme();
   const { storeSlug } = useParams();
   const { t } = useTranslation();
   const buyerTheme = useBuyerTheme();
@@ -31,7 +33,7 @@ export default function StoreFAQ() {
     })();
   }, [storeSlug]);
 
-  const pc = store?.primary_color || '#7C3AED';
+  const pc = storeTheme.pcFor(store);
   const isDark = buyerTheme.mode === 'dark';
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;

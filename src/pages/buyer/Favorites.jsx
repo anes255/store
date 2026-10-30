@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ import { useStoreFont } from '../../utils/storeFont';
 //   • search inside their own favorites
 // =============================================================================
 export default function Favorites() {
+  const storeTheme = useStoreTheme();
   const { storeSlug } = useParams();
   const { t } = useTranslation();
   const { addItem } = useCartStore();
@@ -138,7 +140,7 @@ export default function Favorites() {
     );
   }
 
-  const pc = store.primary_color || '#7C3AED';
+  const pc = storeTheme.pcFor(store);
   const currency = store.currency || 'DZD';
   // Same derivation the storefront uses, so this page carries the store's own
   // colours instead of a fixed navy canvas and a grey bar.
