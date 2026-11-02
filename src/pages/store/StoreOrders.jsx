@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -9,12 +9,15 @@ import DashboardLayout from '../../components/shared/DashboardLayout';
 import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
-import { Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer , Shuffle } from 'lucide-react';
+import { AlertTriangle, Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer , Shuffle } from 'lucide-react';
 import useStaffAccess from '../../hooks/useStaffAccess';
 import { workersApi } from '../../utils/api';
 import DistributeOrders from './workers/DistributeOrders';
 
 // All columns available to toggle / reorder.
+// Products always leads the table, whatever order the columns were dragged into.
+const pinProducts = (cols) => (cols.includes('products') ? ['products', ...cols.filter(k => k !== 'products')] : cols);
+
 const ALL_COLUMNS = [
   { key: 'photo',            label: 'Photo',            tKey: 'col.photo' },
   { key: 'order',            label: 'Order N',          tKey: 'col.order' },
@@ -76,8 +79,19 @@ const statusConfig = {
 const allStatuses = ['new_order','confirmed','preparing','ready','shipped','delivered','cancelled','failed_call_1','failed_call_2','failed_call_3','returned','awaiting_pickup','archived'];
 
 const TRANSFER_COMPANY_COLORS = { noest: '#3b82f6', dhd: '#f97316', yalidine: '#22c55e', yalid: '#22c55e', 'zr express': '#6366f1', procolis: '#8b5cf6', maystro: '#ec4899', ecotrack: '#14b8a6', yassir: '#eab308', aramex: '#dc2626', dhl: '#fbbf24', fedex: '#7c3aed', ups: '#92400e', boxy: '#64748b' };
+// Did this order really reach the carrier? delivery_company_id alone proves
+// nothing: it is filled from the buyer's choice at checkout and before the
+// carrier has answered, so it is set on orders that were never accepted.
+const CARRIER_STATUSES = ['shipped', 'in_transit', 'out_for_delivery', 'delivered', 'returned', 'awaiting_pickup'];
+function wasTransferred(o) {
+  if (o.tracking_number || o.external_id) return true;
+  if (o.dispatch_status === 'failed') return false;
+  if (o.dispatch_status === 'sent' || o.dispatch_status === 'manual') return true;
+  return !!o.shipped_at || CARRIER_STATUSES.includes(String(o.status || '').toLowerCase());
+}
+
 function transferBadge(o) {
-  if (!o.delivery_company_name) return null;
+  if (!o.delivery_company_name || !wasTransferred(o)) return null;
   const name = (o.delivery_company_name || '').toLowerCase();
   let color = '#6366f1';
   for (const [k,v] of Object.entries(TRANSFER_COMPANY_COLORS)) { if (name.includes(k)) { color = v; break; } }
@@ -241,10 +255,24 @@ export default function StoreOrders() {
   // to resize that column. Stored across reloads.
   const [colWidths, setColWidths] = useState(() => { try { return JSON.parse(localStorage.getItem('orders.colWidths.v1') || '{}'); } catch { return {}; } });
   useEffect(() => { try { localStorage.setItem('orders.colWidths.v1', JSON.stringify(colWidths)); } catch {} }, [colWidths]);
+  // The Products column freezes right against the checkbox column, so its
+  // offset is measured from that column instead of being a guessed number: a
+  // wrong guess leaves a slit that scrolled cells show through.
+  const pinObserver = useRef(null);
+  const measurePin = useCallback((th) => {
+    pinObserver.current?.disconnect();
+    if (!th) return;
+    const box = th.closest('.orders-hscroll');
+    const apply = () => box?.style.setProperty('--pin-left', `${th.getBoundingClientRect().width}px`);
+    apply();
+    pinObserver.current = new ResizeObserver(apply);
+    pinObserver.current.observe(th);
+  }, []);
   const [draggedCol, setDraggedCol] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
   // Reorder helper used by the drag handlers — moves "key" so it lands at "before".
-  const reorderColumns = (key, before) => setActiveColumns(prev => {
+  const reorderColumns = (key, before) => setActiveColumns(saved => {
+    const prev = pinProducts(saved);
     const i = prev.indexOf(key); if (i < 0) return prev;
     const next = [...prev]; next.splice(i, 1);
     let j = next.indexOf(before); if (j < 0) j = next.length;
@@ -253,7 +281,8 @@ export default function StoreOrders() {
   const densityRowCls = density === 'compact' ? 'orders-row-compact' : density === 'large' ? 'orders-row-large' : 'orders-row-normal';
 
   const toggleColumn = (key) => setActiveColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-  const moveColumn = (key, dir) => setActiveColumns(prev => {
+  const moveColumn = (key, dir) => setActiveColumns(saved => {
+    const prev = pinProducts(saved);
     const i = prev.indexOf(key); if (i < 0) return prev;
     const j = i + dir; if (j < 0 || j >= prev.length) return prev;
     const next = [...prev]; [next[i], next[j]] = [next[j], next[i]]; return next;
@@ -679,17 +708,7 @@ export default function StoreOrders() {
   );
 
   // ---- Cell renderer ----
-  // The Products column leads the table and is frozen in place (see the
-  // sticky styles below), whatever order the owner dragged the columns into.
-  const pinnedColumns = React.useMemo(
-    () => (activeColumns.includes('products') ? ['products', ...activeColumns.filter(k => k !== 'products')] : activeColumns),
-    [activeColumns]
-  );
-  // Where the frozen column starts: just past the checkbox column.
-  const PIN_LEFT = 46;
-  const stickyCell = (key, bg) => (key === 'products'
-    ? { position: 'sticky', left: PIN_LEFT, zIndex: 11, background: bg, boxShadow: '2px 0 4px -2px rgba(0,0,0,0.12)' }
-    : undefined);
+  const pinnedColumns = pinProducts(activeColumns);
 
   const renderCell = (key, o) => {
     const sc = statusConfig[o.status] || statusConfig.pending;
@@ -706,7 +725,7 @@ export default function StoreOrders() {
           <td className="px-3 py-3">{cellBtn(o, 'order',
             <>
               <p className="font-mono font-bold text-sm text-emerald-600">{o.order_number}</p>
-              {o.delivery_company_name && <p className="text-[10px] font-bold text-emerald-500 uppercase mt-0.5">{o.delivery_company_name}</p>}
+              {o.delivery_company_name && wasTransferred(o) && <p className="text-[10px] font-bold text-emerald-500 uppercase mt-0.5">{o.delivery_company_name}</p>}
               {o.tracking_number ? <p className="text-[9px] text-gray-400 font-mono mt-0.5">{o.tracking_number}</p> : <p className="text-[9px] text-gray-400 mt-0.5">N/A</p>}
             </>
           )}</td>
@@ -717,14 +736,14 @@ export default function StoreOrders() {
         const first = items[0];
         const img = o.first_image || first?.product_image;
         return (
-          <td className="px-3 py-3" style={stickyCell('products', selectedItems.has(o.id) ? '#f5f3ff' : '#ffffff')}>{cellBtn(o, 'products',
-            <div className="flex items-center gap-2">
+          <td className="px-3 py-3 orders-pin orders-pin-main orders-pin-edge bg-white">{cellBtn(o, 'products',
+            <div className="flex items-center gap-2 orders-pin-body">
               {img ? <img src={img} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><Package size={14} className="text-gray-400"/></div>}
               {first ? (
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">{first.quantity}x</span>
-                    <span className="text-xs font-semibold truncate max-w-[120px]">{first.product_name || first.name}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold shrink-0">{first.quantity}x</span>
+                    <span className="text-xs font-semibold truncate max-w-[120px] min-w-0">{first.product_name || first.name}</span>
                   </div>
                   {items.length > 1 && <p className="text-[9px] text-gray-400 mt-0.5">{t('ui.orders.plusMore','+{{n}} more',{n:items.length-1})}</p>}
                 </div>
@@ -762,6 +781,10 @@ export default function StoreOrders() {
           <td className="px-3 py-3">{cellBtn(o, 'transfer',
             transfer ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold leading-tight text-white" style={{backgroundColor: transfer.color}}>{transfer.label}</span>
+            ) : o.dispatch_status === 'failed' ? (
+              <span title={o.dispatch_error || ''} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600 border border-red-200">
+                <AlertTriangle size={10}/>{t('orders.transferRetry','Transfer again')}
+              </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600"><Send size={10}/>{t('orders.transfer','Transfer')}</span>
             )
@@ -1014,7 +1037,7 @@ export default function StoreOrders() {
           {!isPreparingPage && <ColumnsPicker
             open={columnPickerOpen}
             setOpen={setColumnPickerOpen}
-            activeColumns={activeColumns}
+            activeColumns={pinnedColumns}
             ALL_COLUMNS={ALL_COLUMNS}
             toggleColumn={toggleColumn}
             moveColumn={moveColumn}
@@ -1046,6 +1069,7 @@ export default function StoreOrders() {
           <div
             ref={hscrollRef}
             className={`orders-hscroll orders-hscroll-clean ${densityRowCls}`}
+            onScroll={(e) => { e.currentTarget.dataset.scrolled = e.currentTarget.scrollLeft > 2 ? '1' : ''; }}
             style={{
               overflowX: 'auto',
               overflowY: 'hidden',
@@ -1076,11 +1100,11 @@ export default function StoreOrders() {
               {/* colgroup so user-set column widths actually apply to body cells. */}
               <colgroup>
                 <col style={{ width: 40 }} />
-                {pinnedColumns.map(k => <col key={k} style={colWidths[k] ? { width: `${colWidths[k]}px` } : undefined} />)}
+                {pinnedColumns.map(k => <col key={k} className={k === 'products' ? 'orders-col-main' : undefined} style={colWidths[k] ? { width: `${colWidths[k]}px` } : undefined} />)}
               </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
-                  <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-20"><button onClick={toggleAll}>{pageOrders.length>0 && pageOrders.every(o => selectedItems.has(o.id)) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
+                  <th ref={measurePin} className={`px-3 py-3 w-10 orders-pin orders-pin-check bg-gray-50 ${pinnedColumns[0] === 'products' ? '' : 'orders-pin-edge'}`}><button onClick={toggleAll}>{pageOrders.length>0 && pageOrders.every(o => selectedItems.has(o.id)) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
                   {pinnedColumns.map(key => {
                     const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
                     const w = colWidths[key];
@@ -1104,14 +1128,14 @@ export default function StoreOrders() {
                     return (
                       <th
                         key={key}
-                        draggable
+                        draggable={key !== 'products'}
                         onDragStart={(e) => { setDraggedCol(key); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', key); } catch {} }}
                         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOverCol !== key) setDragOverCol(key); }}
                         onDragLeave={() => { if (dragOverCol === key) setDragOverCol(null); }}
                         onDrop={(e) => { e.preventDefault(); const src = draggedCol || (() => { try { return e.dataTransfer.getData('text/plain'); } catch { return null; } })(); if (src && src !== key) reorderColumns(src, key); setDraggedCol(null); setDragOverCol(null); }}
                         onDragEnd={() => { setDraggedCol(null); setDragOverCol(null); }}
-                        className={`relative px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap select-none cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'opacity-40' : ''} ${isOver ? 'bg-brand-50 border-l-2 border-brand-500' : ''}`}
-                        style={{ ...(w ? { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` } : {}), ...(stickyCell(key, '#f9fafb') || {}) }}
+                        className={`${key === 'products' ? 'orders-pin orders-pin-main orders-pin-edge bg-gray-50' : 'relative'} px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap select-none cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'opacity-40' : ''} ${isOver ? 'bg-brand-50 border-l-2 border-brand-500' : ''}`}
+                        style={w ? { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` } : undefined}
                         title={t('ui.orders.dragHeaderToReorderDrag', 'Drag header to reorder · drag right edge to resize')}
                       >
                         <span className="flex items-center gap-1.5">
@@ -1133,8 +1157,8 @@ export default function StoreOrders() {
               </thead>
               <tbody>
                 {pageOrders.map(o => (
-                  <tr key={o.id} data-order-id={o.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
-                    <td className="px-3 py-3 sticky left-0 bg-white z-20">
+                  <tr key={o.id} data-order-id={o.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedItems.has(o.id) ? 'bg-brand-50/40 orders-row-on' : ''}`}>
+                    <td className={`px-3 py-3 orders-pin orders-pin-check bg-white ${pinnedColumns[0] === 'products' ? '' : 'orders-pin-edge'}`}>
                       <button onClick={() => toggleSelect(o.id)}>{selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-300"/>}</button>
                     </td>
                     {pinnedColumns.map(key => <React.Fragment key={key}>{renderCell(key, o)}</React.Fragment>)}
@@ -1167,7 +1191,7 @@ export default function StoreOrders() {
             <button type="button" onClick={()=>setBulkMenu(m=>m==='payment'?null:'payment')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">{t('ui.orders.payment', 'Payment')}</span> <ChevronDown size={10}/></button>
           </div>}
           {/* Auto transfer – uses each order's preferred delivery company */}
-          {canDispatch && <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(o=>o.delivery_company_name);const eligible=sel.filter(o=>o.preferred_delivery_company_id&&!o.delivery_company_name);if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred','{{n}} order(s) already transferred, rest have no preferred company',{n:alreadyTransferred.length}));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>}
+          {canDispatch && <button onClick={async()=>{const sel=orders.filter(o=>selectedItems.has(o.id));const alreadyTransferred=sel.filter(wasTransferred);const eligible=sel.filter(o=>(o.preferred_delivery_company_id||o.delivery_company_id)&&!wasTransferred(o));if(!eligible.length){if(alreadyTransferred.length===sel.length){toast.error(t('orders.alreadyTransferred','All selected orders have already been transferred'));}else if(alreadyTransferred.length>0){toast.error(t('orders.someAlreadyTransferred','{{n}} order(s) already transferred, rest have no preferred company',{n:alreadyTransferred.length}));}else{toast.error(t('orders.noPreferredCompany','No selected orders have a preferred delivery company'));}return;}const tid=toast.loading(`Auto-transferring ${eligible.length} order(s)...`);let ok=0;const done=[];const fails=[];for(const o of eligible){try{const r=await orderApi.dispatch(currentStore.id,o.id,{delivery_company_id:o.preferred_delivery_company_id});if(r?.data?.ok===false){fails.push({num:o.order_number,err:r.data.error});continue;}ok++;done.push({id:o.id,dcId:o.preferred_delivery_company_id,dcName:companies.find(c=>String(c.id)===String(o.preferred_delivery_company_id))?.name||o.preferred_delivery_company_name||null});}catch(e){fails.push({num:o.order_number,err:e?.response?.data?.error||e.message});}}if(done.length)setOrders(prev=>prev.map(x=>{const d=done.find(dd=>dd.id===x.id);return d?{...x,status:'shipped',delivery_company_id:d.dcId,delivery_company_name:d.dcName}:x;}));toast.dismiss(tid);reportDispatch(ok,eligible.length,fails,alreadyTransferred.length>0?`auto-transferred (${alreadyTransferred.length} already transferred, skipped)`:'auto-transferred');clearSelection();await loadOrders();}} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold shrink-0"><Send size={12}/><span className="hidden sm:inline">{t('orders.autoTransfer','Auto Transfer')}</span></button>}
           {/* Bulk transfer to delivery company */}
           {canDispatch && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='carrier'?null:'carrier')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
@@ -2167,9 +2191,9 @@ function ColumnsPicker({ open, setOpen, activeColumns, ALL_COLUMNS, toggleColumn
                 return (
                   <div key={key} className="flex items-center gap-2 px-2 py-2 mb-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <GripVertical size={12} className="text-gray-300 dark:text-gray-500" />
-                    <button onClick={() => moveColumn(key, -1)} disabled={idx === 0} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={12} /></button>
-                    <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={12} /></button>
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{t(col.tKey, col.label)}</span>
+                    <button onClick={() => moveColumn(key, -1)} disabled={idx === 0 || key === 'products' || (idx === 1 && activeColumns[0] === 'products')} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronUp size={12} /></button>
+                    <button onClick={() => moveColumn(key, 1)} disabled={idx === activeColumns.length - 1 || key === 'products'} className="w-7 h-7 rounded bg-white dark:bg-gray-900 disabled:opacity-30 flex items-center justify-center border border-gray-200 dark:border-gray-700 dark:text-gray-300"><ChevronDown size={12} /></button>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 truncate">{t(col.tKey, col.label)}{key === 'products' && <span className="ms-1.5 text-[10px] font-normal text-gray-400">{t('orders.alwaysFirst', 'always first')}</span>}</span>
                     <button onClick={() => toggleColumn(key)} title={t('ui.orders.hide', 'Hide')} className="w-7 h-7 flex items-center justify-center rounded text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Eye size={13} /></button>
                   </div>
                 );

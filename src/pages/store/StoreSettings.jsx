@@ -557,7 +557,12 @@ export default function StoreSettings(){
   useEffect(()=>{const onR=()=>setIsMobile(window.innerWidth<1024);window.addEventListener('resize',onR);return()=>window.removeEventListener('resize',onR);},[]);
   const[s,setSRaw]=useState({});const[dirty,setDirty]=useState(false);const setS=(v)=>{setDirty(true);setSRaw(v);};
   const[settingsQuery,setSettingsQuery]=useState('');
-  const[sec,setSec]=useState(typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details');const[loading,setLoading]=useState(false);
+  // ?sec=checkout opens that section straight away — the dashboard search
+  // links here, so a hit on "currency" or "wilaya" lands on the right panel.
+  const[sec,setSec]=useState(()=>{
+    try{const q=new URLSearchParams(window.location.search).get('sec');if(q)return q;}catch{}
+    return typeof window!=='undefined'&&window.innerWidth<1024?'':'store-details';
+  });const[loading,setLoading]=useState(false);
   const[staff,setStaff]=useState([]);const[wilayas,setWilayas]=useState([]);const[showRole,setShowRole]=useState(null);
   const[showStaff,setShowStaff]=useState(false);const[sf,setSf]=useState({name:'',email:'',phone:'',password:'',confirmPassword:'',avatar:'',role:'',assigned_store_ids:[],is_active:true});
   // Pop-out store picker for the Create User modal — opens a list of every

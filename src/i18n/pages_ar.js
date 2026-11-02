@@ -201,6 +201,8 @@ const P = {
   'storePage.amountCurRequired': 'المبلغ ({{c}}) *',
   'auth.pwNeedsAll': 'كلمة السر تحتاج حرفا كبيرا وحرفا صغيرا ورقما ورمزا، و8 خانات على الأقل.',
   'auth.pwPlaceholderStrong': '8 خانات، A-Z، a-z، 0-9، رمز',
+  'orders.transferRetry': 'أعد الإرسال',
+  'orders.alwaysFirst': 'دائما الأول',
   'dateFilter.today': 'اليوم', 'dateFilter.last7': 'آخر 7 أيام', 'dateFilter.last30': 'آخر 30 يوما',
   'dateFilter.thisMonth': 'هذا الشهر', 'dateFilter.last90': 'آخر 90 يوما', 'dateFilter.lastYear': 'آخر سنة',
   'dateFilter.allTime': 'كل الفترات', 'dateFilter.from': 'من', 'dateFilter.to': 'إلى',

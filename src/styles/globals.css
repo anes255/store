@@ -259,6 +259,29 @@ html.admin-dark .sticky.bg-gray-50\/95{background-color:rgba(15,23,42,0.95) !imp
 .orders-hscroll::-webkit-scrollbar-thumb{background:#9ca3af;border-radius:8px;border:3px solid #f3f4f6;min-width:60px;}
 .orders-hscroll::-webkit-scrollbar-thumb:hover{background:#6b7280;}
 .orders-hscroll::-webkit-scrollbar-thumb:active{background:#4b5563;}
+/* Frozen columns. Each cell takes its surface from the theme's own bg-white /
+   bg-gray-50 (so dark mode and custom backgrounds just work) and paints hover,
+   selection and its bottom rule with inset shadows, because a sticky cell in a
+   collapsed table loses its borders and hides the row colour behind it. */
+.orders-hscroll{--pin-left:40px;--pin-line:#f3f4f6;--pin-hover:rgba(0,0,0,.025);--pin-edge:rgba(17,24,39,.10);}
+html.admin-dark .orders-hscroll,html.platform-dark .orders-hscroll{--pin-line:#1a1a1a;--pin-hover:rgba(255,255,255,.04);--pin-edge:rgba(0,0,0,.6);scrollbar-color:#3a3a3a #0a0a0a;}
+html.admin-dark .orders-hscroll::-webkit-scrollbar,html.admin-dark .orders-hscroll::-webkit-scrollbar-track,html.platform-dark .orders-hscroll::-webkit-scrollbar,html.platform-dark .orders-hscroll::-webkit-scrollbar-track{background:#0a0a0a;}
+html.admin-dark .orders-hscroll::-webkit-scrollbar-thumb,html.platform-dark .orders-hscroll::-webkit-scrollbar-thumb{background:#3a3a3a;border-color:#0a0a0a;}
+.orders-hscroll .orders-pin{position:sticky;left:0;z-index:20;box-shadow:inset 0 -1px 0 var(--pin-line);}
+.orders-hscroll .orders-pin-main{left:var(--pin-left);z-index:19;}
+.orders-hscroll tbody tr:hover>.orders-pin{box-shadow:inset 0 -1px 0 var(--pin-line),inset 0 0 0 9999px var(--pin-hover);}
+.orders-hscroll tbody tr.orders-row-on>.orders-pin{box-shadow:inset 0 -1px 0 var(--pin-line),inset 0 0 0 9999px color-mix(in srgb,var(--brand-500,#C5A55A) 12%,transparent);}
+.orders-hscroll .orders-pin-edge::after{content:'';position:absolute;top:0;bottom:0;right:-12px;width:12px;pointer-events:none;opacity:0;transition:opacity .15s;background:linear-gradient(to right,var(--pin-edge),transparent);}
+.orders-hscroll[data-scrolled="1"] .orders-pin-edge::after{opacity:1;}
+/* Phones have no card layout for orders, so the frozen part has to stay small:
+   the checkbox scrolls away and Products keeps a fixed narrow width. */
+@media (max-width:640px){
+  .orders-hscroll .orders-pin-check{position:static;}
+  .orders-hscroll .orders-pin-main{left:0;width:auto !important;min-width:0 !important;max-width:none !important;padding-left:.5rem;padding-right:.5rem;}
+  .orders-hscroll .orders-col-main{width:auto !important;}
+  .orders-hscroll .orders-pin-body{width:124px;max-width:124px;gap:.375rem;}
+  .orders-hscroll .orders-pin-body img{width:2rem;height:2rem;}
+}
 .orders-hscroll-clean *{user-select:none;}
 .orders-hscroll-clean:active{cursor:grabbing !important;}
 

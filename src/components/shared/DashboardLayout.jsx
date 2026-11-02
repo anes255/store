@@ -1,4 +1,5 @@
-import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,Navigate,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';import{Briefcase,Home as House,User,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
+import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,Navigate,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';
+import useGlobalSearch from '../../hooks/useGlobalSearch';import{Briefcase,Home as House,User,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 import CommandPalette from './CommandPalette';
 import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
 import toast from'react-hot-toast';
@@ -458,6 +459,9 @@ export default function DashboardLayout({children}){
   const[paletteOpen,setPaletteOpen]=useState(false);
   useEffect(()=>{const onKey=(e)=>{if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();setPaletteOpen(o=>!o);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[]);
   const[topFocus,setTopFocus]=useState(false);
+  // Live results from the store's own data (orders, products, customers,
+  // workers/admins) plus the settings sections — not just sidebar page names.
+  const globalSearch=useGlobalSearch(topQuery,currentStore?.id,{enabled:topFocus,can:(k)=>!staffPerms||staffPerms.has(k)});
   const[headerHidden,setHeaderHidden]=useState(false);
   const lastScrollY=useRef(0);
 
@@ -795,16 +799,23 @@ export default function DashboardLayout({children}){
                 if(it.type==='link'){flat.push({to:it.to,label:lbl,parent:null});}
                 else if(it.children){it.children.forEach(c=>{const cl=typeof c.label==='string'&&c.label.startsWith('sidebar.')?t(c.label):c.label;flat.push({to:c.to,label:cl,parent:lbl});});}
               });
-              const matches=flat.filter(x=>(x.label||'').toLowerCase().includes(q)||(x.parent||'').toLowerCase().includes(q)).slice(0,12);
+              const pages=flat.filter(x=>(x.label||'').toLowerCase().includes(q)||(x.parent||'').toLowerCase().includes(q))
+                .map(x=>({group:'pages',label:x.label,hint:x.parent,to:x.to}));
+              const matches=[...pages,...globalSearch.results];
+              const GROUPS={pages:t('sidebar.cmdPages','Pages'),settings:t('sidebar.secSettings','Settings'),orders:t('sidebar.orders','Orders'),products:t('sidebar.products','Products'),customers:t('sidebar.customers','Customers'),workers:t('sidebar.workers','Workers')};
+              let lastGroup=null;
               return(<div className={`absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl shadow-2xl border z-50 ${isDark?'bg-gray-900 border-gray-700':'bg-white border-gray-100'}`}>
-                {matches.length===0?<p className="p-4 text-center text-xs text-gray-400">{t('common.noResults','No matches')}</p>:
-                matches.map((m,i)=>(
-                  <button key={i} onMouseDown={e=>{e.preventDefault();navigate(m.to);setTopQuery('');setTopFocus(false);}} className={`w-full px-4 py-2.5 text-left flex items-center gap-2 border-b last:border-0 ${isDark?'hover:bg-white/5 border-gray-800':'hover:bg-gray-50 border-gray-50'}`}>
+                {matches.length===0?<p className="p-4 text-center text-xs text-gray-400">{globalSearch.loading?t('common.searching','Searching…'):t('common.noResults','No matches')}</p>:
+                matches.map((m,i)=>{
+                  const head=m.group!==lastGroup?(lastGroup=m.group):null;
+                  return(<React.Fragment key={i}>
+                  {head&&<p className={`px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider ${isDark?'text-gray-500':'text-gray-400'}`}>{GROUPS[m.group]||m.group}</p>}
+                  <button onMouseDown={e=>{e.preventDefault();navigate(m.to);setTopQuery('');setTopFocus(false);}} className={`w-full px-4 py-2.5 text-left flex items-center gap-2 border-b last:border-0 ${isDark?'hover:bg-white/5 border-gray-800':'hover:bg-gray-50 border-gray-50'}`}>
                     <Search size={12} className="text-gray-400 shrink-0"/>
-                    <div className="flex-1 min-w-0"><p className={`text-sm font-semibold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{m.label}</p>{m.parent&&<p className="text-[10px] text-gray-500 truncate">{m.parent}</p>}</div>
-                    <span className="text-[10px] text-gray-400 font-mono shrink-0">{m.to}</span>
+                    <div className="flex-1 min-w-0"><p className={`text-sm font-semibold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{m.label}</p>{m.hint&&<p className="text-[10px] text-gray-500 truncate">{m.hint}</p>}</div>
                   </button>
-                ))}
+                </React.Fragment>);})}
+                {globalSearch.loading&&matches.length>0&&<p className="px-4 py-2 text-[10px] text-gray-400">{t('common.searching','Searching…')}</p>}
               </div>);
             })()}
           </div>

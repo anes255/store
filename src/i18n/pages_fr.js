@@ -201,6 +201,8 @@ const P = {
   'storePage.amountCurRequired': 'Montant ({{c}}) *',
   'auth.pwNeedsAll': 'Le mot de passe doit contenir une majuscule, une minuscule, un chiffre et un symbole, et au moins 8 caractères.',
   'auth.pwPlaceholderStrong': '8+ caractères, A-Z, a-z, 0-9, symbole',
+  'orders.transferRetry': 'Renvoyer',
+  'orders.alwaysFirst': 'toujours en premier',
   'dateFilter.today': 'Aujourd’hui', 'dateFilter.last7': '7 derniers jours', 'dateFilter.last30': '30 derniers jours',
   'dateFilter.thisMonth': 'Ce mois', 'dateFilter.last90': '90 derniers jours', 'dateFilter.lastYear': 'Dernière année',
   'dateFilter.allTime': 'Toute la période', 'dateFilter.from': 'Du', 'dateFilter.to': 'Au',
