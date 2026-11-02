@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import HoldToConfirm from '../../components/shared/HoldToConfirm';
 import PasswordInput from '../../components/shared/PasswordInput';
@@ -142,6 +143,7 @@ export default function CustomerProfile() {
     try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; }
   });
   useStoreFont(store);
+  useStoreLanguage(store);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
 

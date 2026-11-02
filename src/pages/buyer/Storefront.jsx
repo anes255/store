@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import SmartSearch from '../../components/shared/SmartSearch';
 import { StoreBottomNav, StoreHeaderIcons, CartPill, StoreBrand } from '../../components/shared/StoreNav';
 import flyToCart from '../../components/shared/flyToCart';
@@ -716,6 +717,7 @@ export default function Storefront() {
   },[storeSlug]);
   const wishlist = wishlistItems.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
+  useStoreLanguage(store);
   const [products, setProducts] = useState(() => { try { const c = sessionStorage.getItem('prodsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [categories, setCategories] = useState(() => { try { const c = sessionStorage.getItem('catsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [search, setSearch] = useState('');

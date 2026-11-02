@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -231,6 +232,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   };
 
   const [store, setStore] = useState(null);
+  useStoreLanguage(store);
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [paymentStep, setPaymentStep] = useState(null); // null=checkout, 'ccp','baridimob','bank_transfer','chargily'

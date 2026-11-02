@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
@@ -49,6 +50,7 @@ export default function Favorites() {
   }, [storeSlug]);
 
   useStoreFont(store);
+  useStoreLanguage(store);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState('');
   const [quickAddProduct, setQuickAddProduct] = useState(null);

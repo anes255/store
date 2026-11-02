@@ -1,19 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import OtpInput from '../../components/shared/OtpInput';
-import PasswordStrength from '../../components/shared/PasswordStrength';
+import PasswordStrength, { isStrongPassword } from '../../components/shared/PasswordStrength';
 import { getPlatformInfo } from '../../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ownerApi } from '../../utils/api';
-import { useAuthStore } from '../../hooks/useStore';
+import { useAuthStore, useAdminTheme } from '../../hooks/useStore';
+import AuthShell, { AuthTabs } from '../../components/shared/AuthShell';
+import { bilingualLabel } from '../../data/wilayaTranslations';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff, MessageCircle, ArrowLeft, Check } from 'lucide-react';
 import WILAYA_CITIES from '../../data/wilayaCities';
 
 export default function OwnerRegister() {
   const { t } = useTranslation();
+  // The owner's own dashboard theme drives this screen too, so signing up
+  // looks like the product they are signing up to.
+  const theme = useAdminTheme();
+  useEffect(() => { theme.init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const pc = theme.primaryColor || '#7C3AED';
+  const dark = theme.mode === 'dark';
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', address: '', city: '', wilaya: '' });
@@ -51,6 +59,10 @@ export default function OwnerRegister() {
     e.preventDefault();
     if (!form.name || !form.email || !form.phone || !form.password) {
       toast.error(t('auth.allFieldsRequired'));
+      return;
+    }
+    if (!isStrongPassword(form.password)) {
+      toast.error(t('auth.pwNeedsAll','Your password needs a capital letter, a small letter, a number and a symbol, and at least 8 characters.'));
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -103,24 +115,26 @@ export default function OwnerRegister() {
 
   const set = (k) => (e) => setForm({...form, [k]: e.target.value});
 
+  const header = (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/" className="flex items-center gap-2">
+          {brand.logo || brand.favicon ? (
+            <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg" style={{ boxShadow: `0 8px 20px ${pc}4d` }} />
+          ) : (
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: pc, boxShadow: `0 8px 20px ${pc}4d` }}><ShoppingBag size={20} className="text-white" /></div>
+          )}
+          {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
+        </Link>
+        <LanguageSwitcher />
+      </div>
+      {step === 1 && <AuthTabs value="register" pc={pc} labels={{ login: t('auth.login'), register: t('auth.register') }} onChange={(m) => { if (m === 'login') navigate('/login'); }} />}
+    </>
+  );
+
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-brand-50">
-      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-gradient-to-br from-brand-400/30 to-purple-500/30 rounded-full blur-3xl animate-pulse"/>
-      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-purple-400/30 to-brand-500/30 rounded-full blur-3xl animate-pulse"/>
-      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-br from-pink-400/20 to-brand-400/20 rounded-full blur-3xl"/>
-      <div className="relative min-h-screen flex items-center justify-center p-6 overflow-y-auto">
-        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
-          <div className="flex items-center justify-between mb-8">
-            <Link to="/" className="flex items-center gap-2">
-              {brand.logo || brand.favicon ? (
-                <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg shadow-brand-500/30" />
-              ) : (
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
-              )}
-              {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
-            </Link>
-            <LanguageSwitcher />
-          </div>
+    <AuthShell pc={pc} dark={dark} header={header}>
+      <>
 
           {step === 1 ? (<>
           <h1 className="text-3xl font-extrabold font-display text-gray-900 mb-2">{t('auth.register')}</h1>
@@ -152,8 +166,8 @@ export default function OwnerRegister() {
               <label className="input-label">{t('auth.password')} *</label>
               <div className="relative">
                 <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder={t('auth.minChars','Min 6 characters')}
-                  value={form.password} onChange={set('password')} required minLength={6} />
+                <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder={t('auth.pwPlaceholderStrong','8+ chars, A-Z, a-z, 0-9, symbol')}
+                  value={form.password} onChange={set('password')} required minLength={8} />
                 <button type="button" onClick={()=>setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPw ? <EyeOff size={18}/> : <Eye size={18}/>}
                 </button>
@@ -165,7 +179,7 @@ export default function OwnerRegister() {
               <div className="relative">
                 <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type={showPw2 ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder={t('auth.confirmPasswordPlaceholder','Re-enter your password')}
-                  value={form.confirmPassword} onChange={set('confirmPassword')} required minLength={6} />
+                  value={form.confirmPassword} onChange={set('confirmPassword')} required minLength={8} />
                 <button type="button" onClick={()=>setShowPw2(!showPw2)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                   {showPw2 ? <EyeOff size={18}/> : <Eye size={18}/>}
                 </button>
@@ -188,7 +202,8 @@ export default function OwnerRegister() {
                 <label className="input-label">{t('auth.wilaya')}</label>
                 <select className="input-field" value={form.wilaya} onChange={e => setForm({ ...form, wilaya: e.target.value, city: '' })}>
                   <option value="">{t('auth.wilayaPlaceholder', '— Select wilaya —')}</option>
-                  {Object.keys(WILAYA_CITIES).sort().map(w => <option key={w} value={w}>{w}</option>)}
+                  {/* Numbered and in both spellings, the same list as the store form */}
+                  {Object.keys(WILAYA_CITIES).map((w, i) => <option key={w} value={w}>{String(i + 1).padStart(2, '0')} - {bilingualLabel(w)}</option>)}
                 </select>
               </div>
               <div>
@@ -199,15 +214,11 @@ export default function OwnerRegister() {
                 </select>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5 mt-2">
+            <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90 transition-all disabled:opacity-60 mt-2" style={{ backgroundColor: pc }}>
               {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{t('auth.sendCode','Send code')} <ArrowRight size={18}/></>}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
-            {t('auth.hasAccount')}{' '}
-            <Link to="/login" className="text-brand-600 font-semibold hover:underline">{t('auth.login')}</Link>
-          </p>
           </>) : verified ? (
             <motion.div className="text-center py-6" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25 }}>
               <div className="relative w-20 h-20 mx-auto mb-5">
@@ -258,8 +269,7 @@ export default function OwnerRegister() {
               </button>
             </div>
           </>)}
-        </div>
-      </div>
-    </div>
+      </>
+    </AuthShell>
   );
 }

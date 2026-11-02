@@ -679,6 +679,18 @@ export default function StoreOrders() {
   );
 
   // ---- Cell renderer ----
+  // The Products column leads the table and is frozen in place (see the
+  // sticky styles below), whatever order the owner dragged the columns into.
+  const pinnedColumns = React.useMemo(
+    () => (activeColumns.includes('products') ? ['products', ...activeColumns.filter(k => k !== 'products')] : activeColumns),
+    [activeColumns]
+  );
+  // Where the frozen column starts: just past the checkbox column.
+  const PIN_LEFT = 46;
+  const stickyCell = (key, bg) => (key === 'products'
+    ? { position: 'sticky', left: PIN_LEFT, zIndex: 11, background: bg, boxShadow: '2px 0 4px -2px rgba(0,0,0,0.12)' }
+    : undefined);
+
   const renderCell = (key, o) => {
     const sc = statusConfig[o.status] || statusConfig.pending;
     const wilayaBi = getEnAr(o.shipping_wilaya || '');
@@ -705,7 +717,7 @@ export default function StoreOrders() {
         const first = items[0];
         const img = o.first_image || first?.product_image;
         return (
-          <td className="px-3 py-3">{cellBtn(o, 'products',
+          <td className="px-3 py-3" style={stickyCell('products', selectedItems.has(o.id) ? '#f5f3ff' : '#ffffff')}>{cellBtn(o, 'products',
             <div className="flex items-center gap-2">
               {img ? <img src={img} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><Package size={14} className="text-gray-400"/></div>}
               {first ? (
@@ -1064,12 +1076,12 @@ export default function StoreOrders() {
               {/* colgroup so user-set column widths actually apply to body cells. */}
               <colgroup>
                 <col style={{ width: 40 }} />
-                {activeColumns.map(k => <col key={k} style={colWidths[k] ? { width: `${colWidths[k]}px` } : undefined} />)}
+                {pinnedColumns.map(k => <col key={k} style={colWidths[k] ? { width: `${colWidths[k]}px` } : undefined} />)}
               </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-y border-gray-100">
-                  <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-10"><button onClick={toggleAll}>{pageOrders.length>0 && pageOrders.every(o => selectedItems.has(o.id)) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
-                  {activeColumns.map(key => {
+                  <th className="px-3 py-3 w-10 sticky left-0 bg-gray-50 z-20"><button onClick={toggleAll}>{pageOrders.length>0 && pageOrders.every(o => selectedItems.has(o.id)) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-400"/>}</button></th>
+                  {pinnedColumns.map(key => {
                     const col = ALL_COLUMNS.find(c => c.key === key); if (!col) return null;
                     const w = colWidths[key];
                     const isOver = dragOverCol === key;
@@ -1099,7 +1111,7 @@ export default function StoreOrders() {
                         onDrop={(e) => { e.preventDefault(); const src = draggedCol || (() => { try { return e.dataTransfer.getData('text/plain'); } catch { return null; } })(); if (src && src !== key) reorderColumns(src, key); setDraggedCol(null); setDragOverCol(null); }}
                         onDragEnd={() => { setDraggedCol(null); setDragOverCol(null); }}
                         className={`relative px-3 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap select-none cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'opacity-40' : ''} ${isOver ? 'bg-brand-50 border-l-2 border-brand-500' : ''}`}
-                        style={w ? { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` } : undefined}
+                        style={{ ...(w ? { width: `${w}px`, minWidth: `${w}px`, maxWidth: `${w}px` } : {}), ...(stickyCell(key, '#f9fafb') || {}) }}
                         title={t('ui.orders.dragHeaderToReorderDrag', 'Drag header to reorder · drag right edge to resize')}
                       >
                         <span className="flex items-center gap-1.5">
@@ -1122,10 +1134,10 @@ export default function StoreOrders() {
               <tbody>
                 {pageOrders.map(o => (
                   <tr key={o.id} data-order-id={o.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedItems.has(o.id) ? 'bg-brand-50/40' : ''}`}>
-                    <td className="px-3 py-3 sticky left-0 bg-white z-10">
+                    <td className="px-3 py-3 sticky left-0 bg-white z-20">
                       <button onClick={() => toggleSelect(o.id)}>{selectedItems.has(o.id) ? <CheckSquare size={16} className="text-brand-600"/> : <Square size={16} className="text-gray-300"/>}</button>
                     </td>
-                    {activeColumns.map(key => <React.Fragment key={key}>{renderCell(key, o)}</React.Fragment>)}
+                    {pinnedColumns.map(key => <React.Fragment key={key}>{renderCell(key, o)}</React.Fragment>)}
                   </tr>
                 ))}
               </tbody>

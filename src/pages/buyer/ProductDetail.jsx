@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import AnimatedAddToCart from '../../components/shared/AnimatedAddToCart';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -285,6 +286,7 @@ export default function ProductDetail() {
   // Lightbox: when set, an overlay shows that image full-screen.
   const [lightboxIdx, setLightboxIdx] = useState(null);
   useStoreFont(store);
+  useStoreLanguage(store);
   // Track selected variants per type so buyers can pick one from each group
   // e.g. { color: 2, size: 0 }
   const [selectedVariants, setSelectedVariants] = useState({});

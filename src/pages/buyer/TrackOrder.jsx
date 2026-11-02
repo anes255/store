@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
@@ -106,6 +107,7 @@ export default function TrackOrder() {
   });
   const [statusMap, setStatusMap] = useState({});
   useStoreFont(store);
+  useStoreLanguage(store);
   const [phone, setPhone] = useState('');
   const [orderIdInput, setOrderIdInput] = useState('');
   const [mode, setMode] = useState('phone'); // active tab when method==='both'

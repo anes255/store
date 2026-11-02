@@ -4,13 +4,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ownerApi, platformApi } from '../../utils/api';
-import { useAuthStore, useStoreManagement } from '../../hooks/useStore';
+import { useAuthStore, useStoreManagement, useAdminTheme } from '../../hooks/useStore';
+import AuthShell, { AuthTabs } from '../../components/shared/AuthShell';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check, Shield, RefreshCw, KeyRound, Phone, ArrowLeft } from 'lucide-react';
 import api from '../../utils/api';
 
 export default function OwnerLogin() {
   const { t } = useTranslation();
+  // Same theme the owner's dashboard uses, so the two match.
+  const theme = useAdminTheme();
+  useEffect(() => { theme.init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const pc = theme.primaryColor || '#7C3AED';
+  const dark = theme.mode === 'dark';
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const { setCurrentStore, setStores } = useStoreManagement();
@@ -204,66 +210,25 @@ export default function OwnerLogin() {
     } catch (e) { toast.error(e.response?.data?.error || 'Failed to resend'); }
   };
 
-  return (
-    <div className="auth-dark min-h-screen relative overflow-hidden text-gray-100" style={{ backgroundColor: '#111111' }}>
-      {/* Landing-style animated blobs, dimmed for the dark ground */}
-      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-gradient-to-br from-brand-500/25 to-purple-600/25 rounded-full blur-3xl animate-pulse"/>
-      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-purple-600/25 to-brand-600/25 rounded-full blur-3xl animate-pulse"/>
-      <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-br from-pink-600/15 to-brand-500/15 rounded-full blur-3xl"/>
-      <div className="relative min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-3xl shadow-2xl border border-white/10 p-8" style={{ backgroundColor: 'rgba(24,24,24,0.85)', backdropFilter: 'blur(20px)' }}>
-          <div className="flex items-center justify-between mb-8">
-            <Link to="/" className="flex items-center gap-2">
-              {brand.logo || brand.favicon ? (
-                <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg shadow-brand-500/30" />
-              ) : (
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30"><ShoppingBag size={20} className="text-white" /></div>
-              )}
-              {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
-            </Link>
-            <LanguageSwitcher />
-          </div>
-
-          <h1 className="text-3xl font-extrabold font-display text-gray-900 mb-2">{t('auth.login')}</h1>
-          <p className="text-gray-500 mb-8">{t('auth.loginSubtitle')}</p>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="input-label">{t('auth.emailOrPhone')}</label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="text" className="input-field !pl-11" placeholder={t('auth.emailOrPhonePlaceholder')}
-                  autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="username"
-                  value={form.identifier} onChange={e => setForm({...form, identifier: e.target.value})} required />
-              </div>
-            </div>
-            <div>
-              <label className="input-label">{t('auth.password')}</label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder="••••••••"
-                  value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPw ? <EyeOff size={18}/> : <Eye size={18}/>}
-                </button>
-              </div>
-            </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 !py-3.5">
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{t('auth.login')} <ArrowRight size={18}/></>}
-            </button>
-          </form>
-
-          <div className="mt-4 text-center">
-            <button onClick={openForgot} className="text-sm text-brand-600 font-semibold hover:underline">{t('auth.forgotPassword','Forgot password?')}</button>
-          </div>
-          <p className="mt-3 text-center text-sm text-gray-500">
-            {t('auth.noAccount')}{' '}
-            <Link to="/register" className="text-brand-600 font-semibold hover:underline">{t('auth.register')}</Link>
-          </p>
-        </div>
+  const header = (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/" className="flex items-center gap-2">
+          {brand.logo || brand.favicon ? (
+            <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg" style={{ boxShadow: `0 8px 20px ${pc}4d` }} />
+          ) : (
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: pc, boxShadow: `0 8px 20px ${pc}4d` }}><ShoppingBag size={20} className="text-white" /></div>
+          )}
+          {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
+        </Link>
+        <LanguageSwitcher />
       </div>
+      <AuthTabs value="login" pc={pc} labels={{ login: t('auth.login'), register: t('auth.register') }} onChange={(m) => { if (m === 'register') navigate('/register'); }} />
+    </>
+  );
 
-      {/* Two-step verification prompt — shown when /login responds with requires_2fa */}
+  const overlays = (
+    <>
       {twoFa && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl">
@@ -395,6 +360,48 @@ export default function OwnerLogin() {
           </div>
         </div>
       )}
-    </div>
+    </>
+  );
+
+  return (
+    <AuthShell pc={pc} dark={dark} header={header} overlay={overlays}>
+      <>
+
+          <h1 className="text-3xl font-extrabold font-display text-gray-900 mb-2">{t('auth.login')}</h1>
+          <p className="text-gray-500 mb-8">{t('auth.loginSubtitle')}</p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="input-label">{t('auth.emailOrPhone')}</label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="text" className="input-field !pl-11" placeholder={t('auth.emailOrPhonePlaceholder')}
+                  autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="username"
+                  value={form.identifier} onChange={e => setForm({...form, identifier: e.target.value})} required />
+              </div>
+            </div>
+            <div>
+              <label className="input-label">{t('auth.password')}</label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type={showPw ? 'text' : 'password'} className="input-field !pl-11 !pr-11" placeholder="••••••••"
+                  value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
+                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPw ? <EyeOff size={18}/> : <Eye size={18}/>}
+                </button>
+              </div>
+            </div>
+            <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-bold hover:opacity-90 transition-all disabled:opacity-60" style={{ backgroundColor: pc }}>
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{t('auth.login')} <ArrowRight size={18}/></>}
+            </button>
+          </form>
+
+          <div className="mt-4 text-center">
+            <button onClick={openForgot} className="text-sm font-semibold hover:underline" style={{ color: pc }}>{t('auth.forgotPassword','Forgot password?')}</button>
+          </div>
+      </>
+
+      {/* Two-step verification prompt — shown when /login responds with requires_2fa */}
+    </AuthShell>
   );
 }

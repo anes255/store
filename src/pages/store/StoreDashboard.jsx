@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useCurrency from '../../hooks/useCurrency';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api, { ownerApi } from '../../utils/api';
@@ -79,6 +80,7 @@ function CreateStoreModal({ open, onClose, onCreate }) {
 }
 
 export default function StoreDashboard() {
+  const storeCur = useCurrency(); // Settings → Regional
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -180,9 +182,9 @@ export default function StoreDashboard() {
     // No visit history is stored yet, so this card carries no delta rather than
     // an invented one.
     showVisits && { icon: Eye, label: t('dashboard.storeVisits'), value: stats.storeVisits?.toLocaleString() || '0', color: 'from-blue-500 to-cyan-500', change: null },
-    showMoney && { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${t('storePage.dzd','DZD')}`, color: 'from-emerald-500 to-teal-500', change: pctChange('revenue') },
+    showMoney && { icon: DollarSign, label: t('dashboard.totalSales'), value: `${(stats.totalRevenue || 0).toLocaleString()} ${storeCur}`, color: 'from-emerald-500 to-teal-500', change: pctChange('revenue') },
     showOrders && { icon: ShoppingCart, label: t('dashboard.totalOrders'), value: stats.totalOrders || 0, color: 'from-purple-500 to-pink-500', change: pctChange('orders') },
-    showMoney && { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${t('storePage.dzd','DZD')}`, color: 'from-amber-500 to-orange-500', change: pctChange('avgOrderValue') },
+    showMoney && { icon: TrendingUp, label: t('dashboard.avgOrderValue'), value: `${stats.avgOrderValue || '0'} ${storeCur}`, color: 'from-amber-500 to-orange-500', change: pctChange('avgOrderValue') },
     showProducts && !showMoney && { icon: Package, label: t('storePage.products', 'Products'), value: stats.totalProducts || products.length || 0, color: 'from-orange-500 to-amber-500', change: null },
   ].filter(Boolean);
   const quickActions = [
@@ -299,7 +301,7 @@ export default function StoreDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                 <XAxis dataKey="date" tickFormatter={v => {try{const p=(v||'').split('-');return p.length>=3?`${p[1]}/${p[2]}`:v;}catch{return v;}}} stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${t('storePage.dzd','DZD')}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v,name)=>[`${parseFloat(v).toLocaleString()}${name==='revenue'?` ${storeCur}`:''}`,name==='revenue'?t('storePage.revenue','Revenue'):t('storePage.orders','Orders')]} />
               </>);
               if (chartType === 'BAR') return (
                 <BarChart data={chartData}>{axes}
@@ -393,7 +395,7 @@ export default function StoreDashboard() {
                     {o.first_image ? <img src={o.first_image} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 flex-shrink-0"/> : <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0"><Package size={16} className="text-gray-400"/></div>}
                     <div className="min-w-0"><p className="text-sm font-semibold text-gray-800 truncate">{o.order_number}</p><p className="text-xs text-gray-400 truncate">{o.customer_name}{o.items?.length>1?` · +${o.items.length-1} more`:''}</p></div>
                   </div>
-                  <div className="text-right flex-shrink-0">{showMoney && o.total != null && <p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} {t('storePage.dzd','DZD')}</p>}<span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
+                  <div className="text-right flex-shrink-0">{showMoney && o.total != null && <p className="text-sm font-bold text-gray-900">{parseFloat(o.total).toLocaleString()} {storeCur}</p>}<span className={`badge badge-${o.status === 'delivered' ? 'success' : o.status === 'pending' ? 'warning' : 'info'} text-[10px]`}>{t(`storePage.status_${o.status}`, o.status)}</span></div>
                 </div>
               ))}
             </div>
@@ -428,7 +430,7 @@ export default function StoreDashboard() {
                 </div>
                 <h4 className="text-sm font-semibold text-gray-900 truncate">{p.name}</h4>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm font-bold text-brand-600">{parseFloat(p.price || 0).toLocaleString()} {t('storePage.dzd','DZD')}</span>
+                  <span className="text-sm font-bold text-brand-600">{parseFloat(p.price || 0).toLocaleString()} {storeCur}</span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     (p.stock ?? p.quantity ?? 0) > 10
                       ? 'bg-emerald-100 text-emerald-700'

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLangStore } from '../../hooks/useStore';
+import { markLanguageChosen } from '../../hooks/useStoreLanguage';
 import { Check } from 'lucide-react';
 
 const LANG_KEYS = {
@@ -48,6 +49,9 @@ export default function LanguageSwitcher({ variant }) {
   const handleChange = (code) => {
     i18n.changeLanguage(code);
     setLang(code);
+    // From now on this visitor keeps their own language: the store's default
+    // no longer overrides it.
+    markLanguageChosen();
     setOpen(false);
   };
 

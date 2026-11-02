@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, Link } from 'react-router-dom';
@@ -14,6 +15,7 @@ export default function StoreFAQ() {
   const buyerTheme = useBuyerTheme();
   useEffect(() => { buyerTheme.init(); }, []); // eslint-disable-line
   const [store, setStore] = useState(null);
+  useStoreLanguage(store);
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openIdx, setOpenIdx] = useState(null);

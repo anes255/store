@@ -2,6 +2,23 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 
+// What a new password must contain. Registration refuses anything that does
+// not tick every one of these, and the chips below show which are still
+// missing while the person types.
+export const PW_RULES = [
+  { key: 'length', test: (p) => (p || '').length >= 8, label: '8+', tKey: 'auth.pwRuleLength', fallback: '8+ chars' },
+  { key: 'upper', test: (p) => /[A-Z]/.test(p || ''), label: 'A-Z' },
+  { key: 'lower', test: (p) => /[a-z]/.test(p || ''), label: 'a-z' },
+  { key: 'digit', test: (p) => /\d/.test(p || ''), label: '123' },
+  { key: 'symbol', test: (p) => /[^A-Za-z0-9]/.test(p || ''), label: '@#$' },
+];
+
+/** true only when the password has a capital, a small letter, a digit and a symbol. */
+export const isStrongPassword = (pw) => PW_RULES.every((r) => r.test(pw));
+
+/** The rules still missing, for the error message. */
+export const missingPasswordRules = (pw) => PW_RULES.filter((r) => !r.test(pw)).map((r) => r.key);
+
 // Score 0-4 from length and character variety.
 export function passwordScore(pw) {
   if (!pw) return 0;
@@ -30,13 +47,7 @@ export default function PasswordStrength({ password, className = '' }) {
     { label: t('auth.pwStrong', 'Strong'), color: '#16a34a' },
   ];
   const lvl = levels[score];
-  const rules = [
-    { ok: password.length >= 8, label: t('auth.pwRuleLength', '8+ chars') },
-    { ok: /[A-Z]/.test(password), label: 'A-Z' },
-    { ok: /[a-z]/.test(password), label: 'a-z' },
-    { ok: /\d/.test(password), label: '123' },
-    { ok: /[^A-Za-z0-9]/.test(password), label: '@#$' },
-  ];
+  const rules = PW_RULES.map((r) => ({ ok: r.test(password), label: r.tKey ? t(r.tKey, r.fallback) : r.label }));
   return (
     <div className={`mt-2 ${className}`} aria-live="polite">
       <div className="flex items-center justify-between text-[11px] mb-1">

@@ -1,4 +1,5 @@
 import React,{useState,useEffect,useRef,useCallback}from'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import{useParams,Link}from'react-router-dom';
 import{useTranslation}from'react-i18next';
@@ -449,6 +450,7 @@ export default function BuyerLandingPage(){
   const{storeSlug,landingSlug}=useParams();
   const{t,i18n}=useTranslation();
   const[store,setStore]=useState(null);
+  useStoreLanguage(store);
   const[page,setPage]=useState(null);
   const[loading,setLoading]=useState(true);
   const[notFound,setNotFound]=useState(false);

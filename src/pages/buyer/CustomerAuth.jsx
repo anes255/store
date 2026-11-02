@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useStoreLanguage from '../../hooks/useStoreLanguage';
 import useStoreTheme from '../../hooks/useStoreTheme';
 import { motion, AnimatePresence } from 'framer-motion';
-import PasswordStrength from '../../components/shared/PasswordStrength';
+import PasswordStrength, { isStrongPassword } from '../../components/shared/PasswordStrength';
 import OtpInput from '../../components/shared/OtpInput';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -28,6 +29,7 @@ export default function CustomerAuth() {
   const [store, setStore] = useState(null);
   const [storeLoading, setStoreLoading] = useState(true);
   useStoreFont(store);
+  useStoreLanguage(store);
   const [mode, setMode] = useState('login');
   // Switching between "Log in" and "Create account": the pill moves at once,
   // the form fades out, the store logo holds the card for a beat, then the
@@ -88,7 +90,7 @@ export default function CustomerAuth() {
       } else {
         if (!form.name || !form.phone || !form.password) { toast.error(t('store.namePhonePasswordRequired','Name, phone, and password required')); setLoading(false); return; }
         if (!isValidAlgerianPhone(form.phone)) { toast.error(t('checkout.errPhoneAlg','Please enter a valid Algerian phone (e.g. 0555123456)')); setLoading(false); return; }
-        if (form.password.length < 6) { toast.error(t('auth.minChars','Min 6 characters')); setLoading(false); return; }
+        if (!isStrongPassword(form.password)) { toast.error(t('auth.pwNeedsAll','Your password needs a capital letter, a small letter, a number and a symbol, and at least 8 characters.')); setLoading(false); return; }
         if (form.password !== form.confirmPassword) { toast.error(t('auth.passwordsDontMatch','Passwords do not match')); setLoading(false); return; }
         if (!form.wilaya || !form.city) { toast.error(t('auth.pickWilayaCity','Please choose your wilaya and city')); setLoading(false); return; }
         const { confirmPassword, ...payload } = form;
@@ -273,12 +275,6 @@ export default function CustomerAuth() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
-              {mode === 'login' ? t('auth.noAccount',"Don't have an account?") + ' ' : t('auth.hasAccount','Already have an account?') + ' '}
-              <button onClick={() => switchMode(mode === 'login' ? 'register' : 'login')} className="font-semibold hover:underline" style={{color:pc}}>
-                {mode === 'login' ? t('auth.register','Create Account') : t('auth.login','Log In')}
-              </button>
-            </p>
             </>}
           </motion.div>
           {/* logo interlude while the forms swap */}
