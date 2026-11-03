@@ -668,12 +668,13 @@ export default function ProductDetail() {
             {/* On phones this sits on top of the shop's bottom bar instead of
                 covering it, so Shop / Favs / Track / Cart stay one tap away. */}
             <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[env(safe-area-inset-bottom)] z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
-              <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center gap-2">
+              <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 grid grid-cols-[auto_1fr_auto] sm:flex sm:items-center gap-2">
                 <div className="flex items-center bg-gray-100 rounded-xl shrink-0">
                   <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-2.5 hover:bg-gray-200 rounded-l-xl" aria-label="minus"><Minus size={14}/></button>
                   <span className="w-8 text-center font-bold text-sm">{quantity}</span>
                   <button onClick={() => setQuantity(quantity+1)} className="p-2.5 hover:bg-gray-200 rounded-r-xl" aria-label="plus"><Plus size={14}/></button>
                 </div>
+                <div className="col-span-3 order-last sm:order-none sm:contents flex items-stretch gap-2 min-w-0">
                 <AnimatedAddToCart
                   onAdd={handleAddToCart}
                   disabled={stockCount <= 0 && !product.allow_oversell}
@@ -684,11 +685,12 @@ export default function ProductDetail() {
                 <button
                   onClick={handleBuyNow}
                   disabled={stockCount <= 0 && !product.allow_oversell}
-                  className="flex-1 min-w-0 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 border-2 hover:opacity-90 disabled:opacity-50 transition-all"
+                  className="flex-1 min-w-0 py-3 px-3 rounded-xl text-sm font-bold leading-tight flex items-center justify-center text-center gap-1.5 border-2 hover:opacity-90 disabled:opacity-50 transition-all"
                   style={{borderColor:pc, color:pc, backgroundColor: pc + '10'}}
                 >
-                  <Zap size={16} className="shrink-0"/><span className="truncate">{store.btn_buy_now || t('store.buyNow','Buy Now')}</span>
+                  <Zap size={16} className="shrink-0"/><span className="min-w-0">{store.btn_buy_now || t('store.buyNow','Buy Now')}</span>
                 </button>
+                </div>
                 <button
                   onClick={handleToggleWishlist}
                   aria-label="wishlist"

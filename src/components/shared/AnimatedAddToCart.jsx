@@ -42,7 +42,7 @@ export default function AnimatedAddToCart({ onAdd, label = 'Add to Cart', addedL
   const cartX = idle || !w ? 0 : done ? w - EDGE * 2 - CART : w / 2 - EDGE - CART / 2;
   return (
     <button ref={btnRef} type="button" onClick={click} disabled={disabled} aria-live="polite"
-      className={`relative overflow-hidden flex-1 min-w-0 py-3 rounded-xl text-white text-sm font-bold flex items-center justify-center shadow-lg disabled:opacity-50 transition-colors duration-300 ${className}`}
+      className={`relative overflow-hidden flex-1 min-w-0 py-3 rounded-xl text-white text-sm font-bold leading-tight flex items-center justify-center text-center shadow-lg disabled:opacity-50 transition-colors duration-300 ${className}`}
       style={{ backgroundColor: done ? '#10b981' : pc, backgroundImage: done ? 'none' : `linear-gradient(110deg, ${pc}, ${pc}cc)` }}>
       {/* the cart: rests at the left, rolls to the middle, then off to the right */}
       <motion.span aria-hidden className="absolute top-1/2 -mt-[9px] pointer-events-none" style={{ left: EDGE }}
@@ -61,7 +61,7 @@ export default function AnimatedAddToCart({ onAdd, label = 'Add to Cart', addedL
         ))}
       </motion.span>
       {/* resting label */}
-      <motion.span className="relative min-w-0 truncate pl-8 pr-3" initial={false}
+      <motion.span className="relative min-w-0 pl-8 pr-3" initial={false}
         animate={{ opacity: idle ? 1 : 0, x: idle ? 0 : 10 }} transition={{ duration: 0.2 }}>{label}</motion.span>
       {/* ✓ on the left */}
       <motion.span aria-hidden className="absolute left-2.5 top-1/2 -mt-3 w-6 h-6 rounded-full bg-white/25 grid place-items-center pointer-events-none" initial={false}
