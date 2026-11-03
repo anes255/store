@@ -12,7 +12,7 @@ import { Search, Clock, X, TrendingUp, ArrowUpRight } from 'lucide-react';
 // The parent still owns `value` (it filters the product grid as before).
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export default function SmartSearch({ value, onChange, products = [], storeSlug, getName = (p) => p.name, getThumb = () => null, currency = 'DZD', size = 'lg', className = '' }) {
+export default function SmartSearch({ value, onChange, products = [], storeSlug, getName = (p) => p.name, getThumb = () => null, currency = 'DZD', size = 'lg', className = '', autoFocus = false }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -99,7 +99,7 @@ export default function SmartSearch({ value, onChange, products = [], storeSlug,
     <div ref={wrapRef} className={`relative w-full ${className}`}>
       <div className="store-search flex items-center bg-white rounded-full shadow-md w-full overflow-hidden">
         <Search size={big ? 20 : 16} className={`${big ? 'ml-5' : 'ml-4'} text-gray-400 shrink-0`} />
-        <input ref={inputRef}
+        <input ref={inputRef} autoFocus={autoFocus}
           className={`flex-1 bg-transparent ${big ? 'px-4 py-3.5 text-base' : 'px-3 py-2.5 text-sm'} focus:outline-none text-gray-800 rounded-full`}
           placeholder={t('store.searchHint', 'Search by product name or reference…')}
           value={value}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { topLevel, childrenOf, withDescendants, parentOf, rootOf } from '../../utils/categoryTree';
 import useStoreLanguage from '../../hooks/useStoreLanguage';
-import SmartSearch from '../../components/shared/SmartSearch';
 import { StoreBottomNav, StoreHeaderIcons, CartPill, StoreBrand } from '../../components/shared/StoreNav';
 import flyToCart from '../../components/shared/flyToCart';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -779,7 +779,20 @@ export default function Storefront() {
         // the store first. We still catch the store error separately so 403
         // (suspended) and 404 (not found) can be handled correctly.
         const storeP = storeApi.getStore(storeSlug);
-        const prodsP = storeApi.getProducts(storeSlug, { search, category: selectedCategory, sort: sortBy === 'price_asc' ? 'price_asc' : sortBy === 'price_desc' ? 'price_desc' : undefined });
+        const prodParams = { search, sort: sortBy === 'price_asc' ? 'price_asc' : sortBy === 'price_desc' ? 'price_desc' : undefined };
+        // A main category covers its subcategories too. The products endpoint
+        // filters on one exact category, so ask for each and merge.
+        const catIds = selectedCategory ? withDescendants(categories, selectedCategory) : [];
+        const prodsP = catIds.length > 1
+          ? Promise.all(catIds.map(id => storeApi.getProducts(storeSlug, { ...prodParams, category: id }))).then(rs => {
+              const seen = new Set(); const merged = [];
+              rs.forEach(r => (r.data?.products || []).forEach(p => { if (!seen.has(p.id)) { seen.add(p.id); merged.push(p); } }));
+              if (sortBy === 'price_asc') merged.sort((a, b) => Number(a.price) - Number(b.price));
+              else if (sortBy === 'price_desc') merged.sort((a, b) => Number(b.price) - Number(a.price));
+              else merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              return { data: { products: merged } };
+            })
+          : storeApi.getProducts(storeSlug, { ...prodParams, category: selectedCategory });
         const catsP  = storeApi.getCategories(storeSlug);
 
         let storeData;
@@ -967,13 +980,12 @@ export default function Storefront() {
           <div className="flex items-center gap-2">
             <StoreBrand store={store} storeSlug={storeSlug} color={headerText}/>
           </div>
-          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <SmartSearch value={search} onChange={setSearch} products={searchPool.length?searchPool:products} storeSlug={storeSlug} getName={getName} getThumb={getThumb} currency={store.currency||'DZD'} size="lg"/>
-          </div>
           {/* Desktop: the actions stay laid out across the bar. */}
           <div className="hidden md:flex items-center gap-3 shrink-0 overflow-visible">
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
+            {/* Search has its own page now (phones: the bottom bar) */}
+            <Link to={`/s/${storeSlug}/search`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title={t('store.search','Search')}><Search size={20}/></Link>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full shrink-0"><User size={20}/></Link>
             {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title={t('track.title','Track your order')}><Truck size={20}/></Link>}
             {/* Favourites sits right beside the cart in the header */}
@@ -1020,10 +1032,6 @@ export default function Storefront() {
             </>)}
           </div>
         </div>
-        {/* Mobile-only search row */}
-        <div className="md:hidden px-3 pb-3">
-          <SmartSearch value={search} onChange={setSearch} products={searchPool.length?searchPool:products} storeSlug={storeSlug} getName={getName} getThumb={getThumb} currency={store.currency||'DZD'} size="sm"/>
-        </div>
       </header>
 
       {false?(
@@ -1049,29 +1057,55 @@ export default function Storefront() {
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
           <button onClick={()=>setShowCategories(v=>!v)} aria-expanded={showCategories}
-            className={`h-10 px-5 inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-bold leading-none whitespace-nowrap shrink-0 transition-all ${!selectedCategory?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={!selectedCategory?{backgroundColor:pc}:{}}>
-            <span className="leading-none">{t('store.allCategories','All')}</span>
+            className={`store-chip text-sm font-bold whitespace-nowrap shrink-0 transition-all ${!selectedCategory?'text-white shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`} style={!selectedCategory?{backgroundColor:pc}:{}}>
+            <span>{t('store.allCategories','All')}</span>
             {categories.length>0&&<ChevronDown size={14} className={`shrink-0 transition-transform ${showCategories?'rotate-180':''}`}/>}
           </button>
-          {selectedCategory && (()=>{ const cat=categories.find(c=>String(c.id)===String(selectedCategory)); return cat ? (
-            <button onClick={()=>setSelectedCategory(null)} title={t('store.clearFilters','Clear filters')}
-              className="h-10 pl-5 pr-3 inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-bold leading-none whitespace-nowrap shrink-0 text-white shadow-md" style={{backgroundColor:pc}}>
-              <span className="leading-none">{getName(cat)}</span><X size={14} className="shrink-0 opacity-80"/>
-            </button>
-          ) : null; })()}
+          {selectedCategory && (()=>{
+            const cat=categories.find(c=>String(c.id)===String(selectedCategory)); if(!cat) return null;
+            const parent=parentOf(categories, cat.id);
+            return (<>
+              {parent && <button onClick={()=>setSelectedCategory(parent.id)} className="store-chip text-sm font-bold whitespace-nowrap shrink-0 bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"><span>{getName(parent)}</span></button>}
+              <button onClick={()=>setSelectedCategory(parent?parent.id:null)} title={t('store.clearFilters','Clear filters')}
+                className="store-chip text-sm font-bold whitespace-nowrap shrink-0 text-white shadow-md" style={{backgroundColor:pc}}>
+                <span>{getName(cat)}</span><X size={14} className="shrink-0 opacity-80"/>
+              </button>
+            </>);
+          })()}
         </div>
+        {/* Subcategories of the picked category wrap onto as many lines as they
+            need, like a paragraph, instead of one long sideways row. */}
+        {selectedCategory && (()=>{
+          const host = childrenOf(categories, selectedCategory).length ? categories.find(c=>String(c.id)===String(selectedCategory)) : parentOf(categories, selectedCategory);
+          const subs = host ? childrenOf(categories, host.id) : [];
+          if (!subs.length) return null;
+          const onHost = String(host.id)===String(selectedCategory);
+          return (
+            <div className="mt-1 mb-2 flex flex-wrap gap-2">
+              <button onClick={()=>setSelectedCategory(host.id)} className={`store-chip text-sm font-bold transition-colors ${onHost?'text-white shadow-md':'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`} style={onHost?{backgroundColor:pc}:{}}>
+                <span>{t('store.allIn','All {{name}}',{name:getName(host)})}</span>
+              </button>
+              {subs.map(c=>{ const on=String(c.id)===String(selectedCategory); return (
+                <button key={c.id} onClick={()=>setSelectedCategory(c.id)} className={`store-chip text-sm font-bold transition-colors ${on?'text-white shadow-md':'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`} style={on?{backgroundColor:pc}:{}}>
+                  {c.image&&<img src={c.image} alt="" className="w-6 h-6 rounded-md object-cover shrink-0"/>}<span>{getName(c)}</span>
+                </button>
+              ); })}
+            </div>
+          );
+        })()}
         {showCategories && categories.length>0 && (
           <div className="mt-1 mb-2 p-2 rounded-2xl bg-white border border-gray-200 shadow-xl grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 animate-[pop_.2s_ease-out]">
             <button onClick={()=>{setSelectedCategory(null);setShowCategories(false);}}
               className={`min-h-[44px] px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2 text-left transition-colors ${!selectedCategory?'text-white':'text-gray-700 hover:bg-gray-100'}`} style={!selectedCategory?{backgroundColor:pc}:{}}>
-              <span className="flex-1 min-w-0 truncate">{t('store.allProducts','All products')}</span>
+              <span className="flex-1 min-w-0 break-words">{t('store.allProducts','All products')}</span>
               {!selectedCategory&&<Check size={14} className="shrink-0"/>}
             </button>
-            {categories.map(cat=>{ const on=String(selectedCategory)===String(cat.id); return (
+            {topLevel(categories).map(cat=>{ const on=String(rootOf(categories, selectedCategory)?.id)===String(cat.id); const subCount=childrenOf(categories, cat.id).length; return (
               <button key={cat.id} onClick={()=>{setSelectedCategory(cat.id);setShowCategories(false);}}
-                className={`min-h-[44px] px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2 text-left transition-colors ${on?'text-white':'text-gray-700 hover:bg-gray-100'}`} style={on?{backgroundColor:pc}:{}}>
+                className={`min-h-[44px] px-3 py-2 rounded-xl text-sm font-bold leading-snug flex items-center gap-2 text-left transition-colors ${on?'text-white':'text-gray-700 hover:bg-gray-100'}`} style={on?{backgroundColor:pc}:{}}>
                 {cat.image&&<img src={cat.image} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0"/>}
-                <span className="flex-1 min-w-0 truncate">{getName(cat)}</span>
+                <span className="flex-1 min-w-0 break-words">{getName(cat)}</span>
+                {subCount>0&&!on&&<ChevronDown size={14} className="shrink-0 -rotate-90 opacity-60"/>}
                 {on&&<Check size={14} className="shrink-0"/>}
               </button>
             ); })}

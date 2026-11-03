@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Package, Heart, Truck, ShoppingCart, User } from 'lucide-react';
+import { Package, Heart, Truck, ShoppingCart, User, Search } from 'lucide-react';
 import { useCartStore, useWishlistStore, useAuthStore, useBuyerTheme } from '../../hooks/useStore';
 
 // The store's navigation icons (shop, favourites, tracking, cart, account),
@@ -66,6 +66,7 @@ export function StoreBottomNav({ storeSlug, store, pc = '#7c3aed', onCart }) {
   const isOn = (p) => p === base ? pathname === base || pathname === base + '/' : pathname.startsWith(p);
   const tabs = [
     { key: 'shop', to: base, icon: Package, label: t('store.shop', 'Shop'), on: isOn(base) },
+    { key: 'search', to: `${base}/search`, icon: Search, label: t('store.search', 'Search'), on: isOn(`${base}/search`) },
     { key: 'favs', to: `${base}/favorites`, icon: Heart, label: t('store.favorites', 'Favs'), on: isOn(`${base}/favorites`), badge: favCount },
     store?.tracking_enabled !== false && { key: 'track', to: `${base}/track`, icon: Truck, label: t('store.track', 'Track'), on: isOn(`${base}/track`) },
     { key: 'cart', onClick: openCart, icon: ShoppingCart, label: t('store.cart', 'Cart'), on: isOn(`${base}/checkout`), badge: cartCount },
@@ -131,6 +132,7 @@ export function StoreHeaderIcons({ storeSlug, store, onCart, className = '' }) {
   return (
     <div className={`hidden md:flex items-center gap-1 shrink-0 ${className}`}>
       <Link to={base} className={btn} title={t('store.shop', 'Shop')}><Package size={20} /></Link>
+      <Link to={`${base}/search`} className={btn} title={t('store.search', 'Search')}><Search size={20} /></Link>
       <Link to={`${base}/${loggedIn ? 'profile' : 'auth'}`} className={btn} title={t('store.account', 'Account')}><User size={20} /></Link>
       {store?.tracking_enabled !== false && <Link to={`${base}/track`} className={btn} title={t('track.title', 'Track your order')}><Truck size={20} /></Link>}
       <Link to={`${base}/favorites`} className={btn} title={t('store.favoritesWord', 'Favorites')}>

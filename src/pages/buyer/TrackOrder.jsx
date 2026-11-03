@@ -9,7 +9,6 @@ import toast from 'react-hot-toast';
 import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from '../../utils/phone';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
-import { darkenHex } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
 import ScrollToTopButton from '../../components/shared/ScrollToTopButton';
 const DEFAULT_STATUS_COLORS = {
@@ -234,13 +233,14 @@ export default function TrackOrder() {
 
   // Wait for store data to load before rendering to avoid color flash
   if (!storeReady) {
-    return <div className="min-h-screen" style={{ background: '#000000' }} />;
+    const surf = storeTheme.surface(store, { glass: true });
+    return <div className={`min-h-screen ${surf.className}`} style={surf.style} />;
   }
 
   // Tracking disabled → blocked screen
   if (!store.tracking_enabled) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 text-center">
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center ${storeTheme.surface(store, { glass: true }).className}`} style={storeTheme.surface(store, { glass: true }).style}>
         <div className="w-16 h-16 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center mb-4"><Ban size={22} className="text-gray-400"/></div>
         <h1 className="text-lg font-extrabold">{t('track.disabledTitle', 'Order tracking is disabled')}</h1>
         <p className="text-sm text-gray-400 mt-2 max-w-sm">{t('track.disabledDesc', 'This store has turned off public order tracking.')}</p>
@@ -254,7 +254,7 @@ export default function TrackOrder() {
   const showOrderInput = method === 'order_id' || (method === 'both' && mode === 'order_id');
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden pb-24 md:pb-0" style={{ fontFamily: store.header_font || undefined, background: store.tracking_bg || store.dark_bg || `radial-gradient(circle at 20% 0%, ${darkenHex(pc, 0.35)} 0%, #0a0a0a 55%, #000000 100%)` }}>
+    <div className={`min-h-screen relative overflow-hidden pb-24 md:pb-0 ${storeTheme.surface(store, { glass: true }).className}`} style={{ fontFamily: store.header_font || undefined, ...storeTheme.surface(store, { glass: true }).style }}>
       <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${pc}66 0%, transparent 70%)` }} />
       <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, ${pc}88 0%, transparent 70%)` }} />
 

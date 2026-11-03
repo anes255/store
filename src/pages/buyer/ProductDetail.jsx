@@ -12,7 +12,7 @@ const Checkout = lazy(() => import('./Checkout'));
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import { useStoreFont } from '../../utils/storeFont';
-import { StoreBrand } from '../../components/shared/StoreNav';
+import { StoreBrand, StoreBottomNav } from '../../components/shared/StoreNav';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Full-screen image lightbox with zoom controls. Supports:
@@ -465,13 +465,14 @@ export default function ProductDetail() {
   const headerFont = store.header_font || tplStyle.fontFamily || 'Arial, sans-serif';
 
   return (
-    <div className={`min-h-screen w-full max-w-full overflow-x-hidden pb-28 ${buyerTheme.mode==='dark'?'buyer-theme-dark text-gray-100':'bg-[#f5f5f5] text-gray-900'}`} style={{...(store?.header_font?{fontFamily:store.header_font}:{}),...(buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:{}))}}>
+    <div className={`min-h-screen w-full max-w-full overflow-x-hidden pb-48 md:pb-28 ${buyerTheme.mode==='dark'?'buyer-theme-dark text-gray-100':'bg-[#f5f5f5] text-gray-900'}`} style={{...(store?.header_font?{fontFamily:store.header_font}:{}),...(buyerTheme.mode==='dark'?{background:store?.config?.store_dark_bg_color||'#000000'}:(store?.config?.store_bg_color?{background:store.config.store_bg_color}:{}))}}>
       <header className="sticky top-0 z-30 shadow-md" style={{backgroundColor:headerBg,color:headerText,fontFamily:headerFont}}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center justify-between gap-2">
           <StoreBrand store={store} storeSlug={storeSlug} color={headerText}/>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <div className="hidden sm:block"><ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
+            <Link to={`/s/${storeSlug}/search`} className="hidden md:inline-flex p-2 hover:bg-white/20 rounded-full" title={t('store.search','Search')}><Search size={20}/></Link>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
@@ -664,7 +665,9 @@ export default function ProductDetail() {
 
             {/* ADD TO CART + BUY NOW - fixed to the bottom so they stay in view
                 however far the buyer scrolls. */}
-            <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)]">
+            {/* On phones this sits on top of the shop's bottom bar instead of
+                covering it, so Shop / Favs / Track / Cart stay one tap away. */}
+            <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[env(safe-area-inset-bottom)] z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
               <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center gap-2">
                 <div className="flex items-center bg-gray-100 rounded-xl shrink-0">
                   <button onClick={() => setQuantity(Math.max(1, quantity-1))} className="p-2.5 hover:bg-gray-200 rounded-l-xl" aria-label="minus"><Minus size={14}/></button>
@@ -728,6 +731,7 @@ export default function ProductDetail() {
         {/* ═══ REVIEWS SECTION ═══ */}
         <ReviewsSection storeSlug={storeSlug} productSlug={productSlug} pc={pc}/>
       </div>
+      <StoreBottomNav storeSlug={storeSlug} store={store} pc={pc} onCart={()=>{ if(getCount()===0){ toast(t('store.cartEmpty','Your cart is empty'),{icon:'🛒'}); return; } setCartOpen(true); }}/>
       {cartOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setCartOpen(false)} storeSlug={storeSlug}/></Suspense>}
       {buyNowOpen && <Suspense fallback={null}><Checkout isModal onClose={()=>setBuyNowOpen(false)} storeSlug={storeSlug} directItems={buyNowItems}/></Suspense>}
 

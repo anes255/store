@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { topLevel, childrenOf, withDescendants, parentOf } from '../../utils/categoryTree';
 import { useTranslation } from 'react-i18next';
 import { productApi, aiApi } from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
@@ -39,11 +40,23 @@ export default function StoreProducts() {
   const [filterCategory, setFilterCategory] = useState('');
   const loadCategories = () => { if (!currentStore?.id) return; productApi.getCategories(currentStore.id).then(r => setCategories(r.data || [])).catch(() => {}); };
   useEffect(() => { loadCategories(); }, [currentStore?.id]);
-  const addCategory = async () => {
-    const name = prompt(t('products.newCategoryName','New category name:')); if (!name) return;
-    try { await productApi.createCategory(currentStore.id, { name_en: name }); toast.success(t('products.categoryAdded','Category added')); loadCategories(); }
-    catch { toast.error(t('products.failed','Failed')); }
+  // parentId: put the new category inside another one (a subcategory).
+  // Returns the created category so the form can select it straight away.
+  const addCategory = async (parentId) => {
+    const parent = parentId ? categories.find(c => String(c.id) === String(parentId)) : null;
+    const name = prompt(parent
+      ? t('products.newSubcategoryName','New subcategory inside "{{name}}":', { name: parent.name_en || parent.name })
+      : t('products.newCategoryName','New category name:'));
+    if (!name) return null;
+    try {
+      const { data } = await productApi.createCategory(currentStore.id, { name_en: name, ...(parent ? { parent_id: parent.id } : {}) });
+      toast.success(parent ? t('products.subcategoryAdded','Subcategory added') : t('products.categoryAdded','Category added'));
+      loadCategories();
+      return data;
+    } catch { toast.error(t('products.failed','Failed')); return null; }
   };
+  // Names for the filter list: "Computers › RAM".
+  const catLabel = (c) => { const p = parentOf(categories, c.id); return p ? `${p.name_en || p.name} › ${c.name_en || c.name}` : (c.name_en || c.name); };
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -177,16 +190,19 @@ export default function StoreProducts() {
         <div className="relative flex-1 basis-full sm:basis-auto sm:max-w-sm order-last sm:order-none"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"/><input className="input-field !pl-9 !py-2 text-sm w-full bg-white text-gray-900 placeholder-gray-400" placeholder={t('products.searchPlaceholder','Search...')} value={search} onChange={e=>setSearch(e.target.value)} style={{color:'#111827',backgroundColor:'#ffffff'}}/></div>
         <select className="input-field !py-2 text-sm w-full sm:!w-44 shrink-0" value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}>
           <option value="">{t('products.allCategories','All Categories')}</option>
-          {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name} ({c.product_count||0})</option>))}
+          {topLevel(categories).map(c=>(<React.Fragment key={c.id}>
+            <option value={c.id}>{c.name_en||c.name} ({withDescendants(categories, c.id).reduce((n,id)=>n+(parseInt(categories.find(x=>String(x.id)===String(id))?.product_count)||0),0)})</option>
+            {childrenOf(categories, c.id).map(s=>(<option key={s.id} value={s.id}>{'\u00A0\u00A0\u00A0'}↳ {s.name_en||s.name} ({s.product_count||0})</option>))}
+          </React.Fragment>))}
         </select>
-        <button onClick={addCategory} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title={t('products.addCategory','Add category')}><Plus size={12}/>{t('products.category','Category')}</button>
+        <button onClick={()=>addCategory()} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title={t('products.addCategory','Add category')}><Plus size={12}/>{t('products.category','Category')}</button>
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0 ml-auto sm:ml-0">
           <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title={t('products.gridView','Grid view')}><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
           <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title={t('products.listView','List view')}><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>
         </div>
       </div>
 
-      {(()=>{const displayProducts = filterCategory ? products.filter(p => String(p.category_id||'') === String(filterCategory)) : products; return (
+      {(()=>{const filterIds = filterCategory ? withDescendants(categories, filterCategory).map(String) : []; const displayProducts = filterCategory ? products.filter(p => filterIds.includes(String(p.category_id||''))) : products; return (
       <>
       {displayProducts.length===0?(
         <div className="flex flex-col items-center py-20 glass-card-solid"><Package size={48} className="text-gray-300 mb-4"/><p className="text-gray-500 mb-4">{t('products.noProducts')}</p>{canEdit&&<button onClick={()=>{setForm({...empty});setShowModal(true);}} className="btn-primary text-sm"><Plus size={16} className="mr-1 inline"/>{t('products.addProduct')}</button>}</div>
@@ -300,11 +316,30 @@ export default function StoreProducts() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('products.category','Category')}</label><button type="button" onClick={addCategory} className="text-xs text-brand-600 font-bold hover:underline flex items-center gap-1"><Plus size={10}/>{t('products.new','New')}</button></div>
-                <select className="input-field" value={form.category_id||''} onChange={set('category_id')}>
-                  <option value="">— {t('products.uncategorized','Uncategorized')} —</option>
-                  {categories.map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name}</option>))}
-                </select>
+                <div className="flex items-center justify-between"><label className="input-label text-xs">{t('products.category','Category')}</label><button type="button" onClick={()=>addCategory()} className="text-xs text-brand-600 font-bold hover:underline flex items-center gap-1"><Plus size={10}/>{t('products.new','New')}</button></div>
+{(()=>{
+                  // Two steps: the main category, then (when it has any) one of
+                  // its subcategories. The product keeps the most precise one.
+                  const picked = categories.find(c=>String(c.id)===String(form.category_id||''));
+                  const main = picked ? (parentOf(categories, picked.id) || picked) : null;
+                  const subs = main ? childrenOf(categories, main.id) : [];
+                  return (<>
+                    <select className="input-field" value={main?.id||''} onChange={e=>setForm({...form, category_id: e.target.value})}>
+                      <option value="">— {t('products.uncategorized','Uncategorized')} —</option>
+                      {topLevel(categories).map(c=>(<option key={c.id} value={c.id}>{c.name_en||c.name}</option>))}
+                    </select>
+                    {main && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between"><label className="input-label text-xs">{t('products.subcategory','Subcategory')}</label>
+                          <button type="button" onClick={async()=>{ const c=await addCategory(main.id); if(c?.id) setForm(f=>({...f, category_id: c.id})); }} className="text-xs text-brand-600 font-bold hover:underline flex items-center gap-1"><Plus size={10}/>{t('products.addSubcategory','Subcategory')}</button></div>
+                        <select className="input-field" value={picked && picked.id!==main.id ? picked.id : ''} onChange={e=>setForm({...form, category_id: e.target.value || main.id})}>
+                          <option value="">{subs.length ? `— ${t('products.noSubcategory','None (just')} ${main.name_en||main.name}) —` : `— ${t('products.noSubcategoriesYet','No subcategories yet')} —`}</option>
+                          {subs.map(s=>(<option key={s.id} value={s.id}>{s.name_en||s.name}</option>))}
+                        </select>
+                      </div>
+                    )}
+                  </>);
+                })()}
               </div>
 
               {/* Allow Oversell Toggle */}

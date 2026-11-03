@@ -232,6 +232,21 @@ html.admin-dark .sticky.bg-gray-50\/95{background-color:rgba(15,23,42,0.95) !imp
 /* ═══ Buyer storefront dark mode overrides ═══
    Near-black surfaces, matching the admin dashboard's true-black dark mode.
    These were a navy palette (#1a2140 / #141a33), which read as dark blue. */
+/* Every storefront page paints the same background (see useStoreTheme.surface). */
+.store-page{background:var(--page-bg);}
+/* Light mode for the pages drawn dark-only (Track, Favorites, Profile): their
+   white-on-glass styling becomes dark-on-white. Text on a coloured surface
+   (buttons, badges, the header) keeps its white — see the rule after. */
+.buyer-theme-light .bg-white\/5{background-color:#ffffff !important;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.buyer-theme-light .bg-white\/10,.buyer-theme-light .hover\:bg-white\/5:hover,.buyer-theme-light .hover\:bg-white\/10:hover,.buyer-theme-light .hover\:bg-white\/15:hover,.buyer-theme-light .hover\:bg-white\/20:hover{background-color:#f3f4f6 !important;}
+.buyer-theme-light .bg-gray-900\/70,.buyer-theme-light .bg-gray-900\/80{background-color:rgba(255,255,255,.94) !important;}
+.buyer-theme-light .border-white\/5,.buyer-theme-light .border-white\/10,.buyer-theme-light .border-white\/20,.buyer-theme-light .border-white\/30{border-color:#e5e7eb !important;}
+.buyer-theme-light .ring-white\/10{--tw-ring-color:#e5e7eb !important;}
+.buyer-theme-light .text-white,.buyer-theme-light .text-white\/90,.buyer-theme-light .hover\:text-white:hover{color:#111827 !important;}
+.buyer-theme-light .text-white\/60,.buyer-theme-light .text-white\/50{color:#6b7280 !important;}
+.buyer-theme-light .text-white\/40,.buyer-theme-light .text-white\/30,.buyer-theme-light .text-white\/20{color:#9ca3af !important;}
+.buyer-theme-light :is([style*="background"],[class~="bg-black"],[class~="bg-gray-800"],[class~="bg-gray-900"],[class~="bg-gray-950"],[class*="bg-"][class*="-500"],[class*="bg-"][class*="-600"],[class*="bg-"][class*="-700"]):is(.text-white,.text-white\/90),
+.buyer-theme-light :is([style*="background"],[class~="bg-black"],[class~="bg-gray-800"],[class~="bg-gray-900"],[class~="bg-gray-950"],[class*="bg-"][class*="-500"],[class*="bg-"][class*="-600"],[class*="bg-"][class*="-700"]) :is(.text-white,.text-white\/90){color:#ffffff !important;}
 .buyer-theme-dark .bg-white{background-color:#0a0a0a !important;}
 .buyer-theme-dark .bg-gray-50,.buyer-theme-dark .bg-gray-100{background-color:#050505 !important;}
 .buyer-theme-dark .bg-gray-200{background-color:#1a1a1a !important;}
@@ -283,6 +298,12 @@ html.admin-dark .orders-hscroll::-webkit-scrollbar-thumb,html.platform-dark .ord
   .orders-hscroll .orders-pin-body img{width:2rem;height:2rem;}
 }
 .orders-hscroll-clean *{user-select:none;}
+/* Category chips on the shop: grow to fit their text (no fixed height that a
+   tall font overflows) and sit the words in the optical middle whatever the
+   font's own spacing — text-box trims the extra space some fonts add above
+   capitals and below the baseline. */
+.store-chip{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;min-height:2.5rem;padding:.5rem 1.1rem;border-radius:9999px;line-height:1.2;text-align:center;max-width:100%;overflow-wrap:anywhere;}
+@supports (text-box: trim-both cap alphabetic){.store-chip>span{text-box:trim-both cap alphabetic;}.store-chip{padding-top:.7rem;padding-bottom:.7rem;}}
 .orders-hscroll-clean:active{cursor:grabbing !important;}
 
 /* Hide scrollbars on header rows that scroll horizontally on mobile */

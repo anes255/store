@@ -10,7 +10,6 @@ import { Heart, ArrowLeft, ShoppingCart, Eye, Trash2, CheckSquare, Square, X, Pa
 import { useCartStore, useWishlistStore } from '../../hooks/useStore';
 import { storeApi } from '../../utils/api';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
-import { storeCanvas } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
 
 // =============================================================================
@@ -125,7 +124,7 @@ export default function Favorites() {
   const pcFallback = store?.primary_color || '#7C3AED';
   if (!storeReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: storeCanvas(store, pcFallback) }}>
+      <div className={`min-h-screen flex items-center justify-center ${storeTheme.surface(store, { glass: true }).className}`} style={storeTheme.surface(store, { glass: true }).style}>
         <div className="w-10 h-10 border-4 border-gray-700 rounded-full animate-spin" style={{ borderTopColor: pcFallback }} />
       </div>
     );
@@ -133,7 +132,7 @@ export default function Favorites() {
 
   if (!store) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: storeCanvas(store, pcFallback) }}>
+      <div className={`min-h-screen flex items-center justify-center ${storeTheme.surface(store, { glass: true }).className}`} style={storeTheme.surface(store, { glass: true }).style}>
         <div className="text-center">
           <Package size={48} className="mx-auto text-white/20 mb-4"/>
           <p className="text-white/60">{t('store.storeNotFound', 'Store not found')}</p>
@@ -147,14 +146,13 @@ export default function Favorites() {
   // Same derivation the storefront uses, so this page carries the store's own
   // colours instead of a fixed navy canvas and a grey bar.
   const headerFont = store.header_font || 'Arial, sans-serif';
-  // Derived from the store's own colour, unconditionally. There used to be a
-  // separate favorites_bg_color picker whose stale value (a brown, on a purple
-  // store) overrode this; these pages follow the storefront now.
-  // A colour picked for this page in Settings wins; otherwise follow the store.
-  const canvas = store?.config?.favorites_bg_color || storeCanvas(store, pc);
+  // Same background as every other storefront page, in the buyer's chosen
+  // light or dark mode. The old per-page colour (a brown, on a purple store)
+  // ignored the mode entirely.
+  const surf = storeTheme.surface(store, { glass: true });
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: headerFont, background: canvas }}>
+    <div className={`min-h-screen ${surf.className}`} style={{ fontFamily: headerFont, ...surf.style }}>
 
       {/* ==================== TOP BAR ==================== */}
       <div className="sticky top-0 z-30 backdrop-blur-xl border-b border-white/10 shadow-md" style={{ backgroundColor: pc }}>

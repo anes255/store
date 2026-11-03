@@ -6,7 +6,6 @@ import PasswordInput from '../../components/shared/PasswordInput';
 import PasswordStrength from '../../components/shared/PasswordStrength';
 import { isValidAlgerianPhone } from '../../utils/phone';
 import { StoreBottomNav, StoreHeaderIcons, StoreBrand } from '../../components/shared/StoreNav';
-import { storeCanvas } from '../../utils/storeTheme';
 import { useStoreFont } from '../../utils/storeFont';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -329,7 +328,7 @@ export default function CustomerProfile() {
 
   // -- Loading state ----------------------------------------------------------
   if (!store || (loading && !profile)) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className={`min-h-screen flex items-center justify-center ${storeTheme.surface(store, { glass: true }).className}`} style={storeTheme.surface(store, { glass: true }).style}>
       <div className="w-10 h-10 border-4 border-gray-700 rounded-full animate-spin" style={{ borderTopColor: pc }} />
     </div>
   );
@@ -373,7 +372,7 @@ export default function CustomerProfile() {
   );
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: store?.header_font || 'Arial, sans-serif', background: store?.config?.profile_bg_color || storeCanvas(store, store?.primary_color)}}>
+    <div className={`min-h-screen ${storeTheme.surface(store, { glass: true }).className}`} style={{ fontFamily: store?.header_font || 'Arial, sans-serif', ...storeTheme.surface(store, { glass: true }).style }}>
 
       {/* ==================== MOBILE TOP BAR ==================== */}
       <div className="lg:hidden sticky top-0 z-30 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">

@@ -38,10 +38,11 @@ export default function StoreFAQ() {
   const pc = storeTheme.pcFor(store);
   const isDark = buyerTheme.mode === 'dark';
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
+  const surf = storeTheme.surface(store);
+  if (loading) return <div className={`min-h-screen flex items-center justify-center ${surf.className}`} style={surf.style}><div className="w-8 h-8 border-3 border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0b1020] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`min-h-screen ${surf.className}`} style={surf.style}>
       {/* Header */}
       <header className="sticky top-0 z-30 shadow-md" style={{ backgroundColor: pc }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-5 flex items-center gap-3">
@@ -61,7 +62,7 @@ export default function StoreFAQ() {
         </div>
 
         {faqs.length === 0 ? (
-          <div className={`text-center py-16 rounded-2xl ${isDark ? 'bg-gray-800/50' : 'bg-white'} shadow-sm`}>
+          <div className={`text-center py-16 rounded-2xl ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white'} shadow-sm`}>
             <HelpCircle size={48} className="mx-auto text-gray-300 mb-4"/>
             <p className="text-gray-500">{t('buyer.noFaqs', 'No FAQs available yet')}</p>
           </div>
@@ -70,7 +71,7 @@ export default function StoreFAQ() {
             {faqs.map((faq, i) => {
               const isOpen = openIdx === i;
               return (
-                <div key={i} className={`rounded-2xl shadow-sm overflow-hidden ${isDark ? 'bg-gray-800/80 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+                <div key={i} className={`rounded-2xl shadow-sm overflow-hidden ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-100'}`}>
                   <button
                     onClick={() => setOpenIdx(isOpen ? null : i)}
                     className="w-full flex items-center justify-between gap-3 p-5 text-left"
@@ -82,7 +83,7 @@ export default function StoreFAQ() {
                   </button>
                   {isOpen && (
                     <div className={`px-5 pb-5 pt-0 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      <div className="border-t pt-4 whitespace-pre-line text-sm leading-relaxed" style={{ borderColor: isDark ? '#374151' : '#f3f4f6' }}>
+                      <div className="border-t pt-4 whitespace-pre-line text-sm leading-relaxed" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#f3f4f6' }}>
                         {faq.a}
                       </div>
                     </div>

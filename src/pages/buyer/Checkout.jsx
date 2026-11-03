@@ -23,14 +23,18 @@ import CarrierLogo from '../../components/shared/CarrierLogo';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 
 // Stable wrapper component defined at module level so it doesn't unmount on every parent re-render.
-function ShellWrapper({ isModal, onClose, children }) {
+function ShellWrapper({ isModal, onClose, surface, children }) {
+  // `surface` is the shared storefront background, so checkout is dark when
+  // the buyer chose dark — it used to be light whatever they picked.
+  const cls = surface?.className || '';
+  const style = surface?.style;
   return isModal
     ? (<div className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/50 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
-         <div className="w-full max-w-3xl bg-gray-50 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
+         <div className={`w-full max-w-3xl shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 ${cls}`} style={style} onClick={e => e.stopPropagation()}>
            {children}
          </div>
        </div>)
-    : (<div className="min-h-screen bg-gray-50">{children}</div>);
+    : (<div className={`min-h-screen ${cls}`} style={style}>{children}</div>);
 }
 
 // directItems: optional array of items for "Buy Now" flow (skips cart).
@@ -590,7 +594,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   // IMPORTANT: must be a stable function reference (not re-created on every render)
   // so React doesn't unmount its children on each keystroke, which would blur inputs.
   const Shell = ShellWrapper;
-  const shellProps = { isModal, onClose };
+  const shellProps = { isModal, onClose, surface: storeTheme.surface(store) };
 
   if (!store) return <Shell {...shellProps}><div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div></Shell>;
 
@@ -1238,9 +1242,6 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                 {store?.show_savings && couponDiscount>0 && <div className="text-xs text-emerald-600 text-right font-semibold">{t('checkout.youSaved','You saved')} {couponDiscount.toLocaleString()} {store.currency||'DZD'}!</div>}
               </div>
               {fieldOn(store,'notes') && <div className="mt-4"><label className="input-label text-xs">{t('checkout.orderNotes','Order Notes')}{fieldRequired(store,'notes')?' *':''}</label><textarea className="input-field" rows={2} value={form.notes} onChange={set('notes')} placeholder={t('checkout.specialInstructions','Special instructions...')}/></div>}
-              <button onClick={placeOrder} disabled={loading || items.length === 0} className={`w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all ${store?.sticky_checkout?'sm:sticky sm:bottom-4':''}`} style={{backgroundColor: pc}}>
-                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <>{store?.btn_order_now || t('store.placeOrder')}</>}
-              </button>
               {store?.trust_signals!==false && (
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[10px] text-gray-400">
                   <span className="flex items-center gap-1"><Lock size={12}/> {t('checkout.secureCheckout','Secure checkout')}</span>
@@ -1253,7 +1254,23 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
           </div>
         </div>
       </div>
-      {!isModal && <><div className="h-20 md:hidden"/><StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/></>}
+      {/* The order button stays on screen wherever the buyer is in the form —
+          it used to sit at the very end of the summary card, which on a phone
+          comes after the whole form. Fixed on the page (above the bottom bar on
+          phones); sticky inside the cart drawer, which scrolls on its own. */}
+      <div className={`${isModal ? 'sticky bottom-0' : 'fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] md:bottom-0'} z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md shadow-[0_-8px_24px_rgba(0,0,0,0.08)]`}>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="shrink-0 leading-tight">
+            <p className="text-[11px] text-gray-500">{t('checkout.total','Total')}</p>
+            <p className="text-lg font-extrabold whitespace-nowrap" style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</p>
+          </div>
+              <button onClick={placeOrder} disabled={loading || items.length === 0} className={`flex-1 min-w-0 py-3.5 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 hover:opacity-90 transition-all ${store?.sticky_checkout?'sm:sticky sm:bottom-4':''}`} style={{backgroundColor: pc}}>
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <>{store?.btn_order_now || t('store.placeOrder')}</>}
+              </button>
+        </div>
+      </div>
+      {!isModal && <><div className="h-44 md:h-24"/><StoreBottomNav storeSlug={storeSlug} store={store} pc={pc}/></>}
+      {isModal && <div className="h-2"/>}
     </Shell>
   );
 }
