@@ -985,7 +985,7 @@ export default function Storefront() {
             <LanguageSwitcher variant="header"/>
             <ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/>
             {/* Search has its own page now (phones: the bottom bar) */}
-            <Link to={`/s/${storeSlug}/search`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title={t('store.search','Search')}><Search size={20}/></Link>
+            <Link to={`/s/${storeSlug}/search`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title={t('store.searchTab','Search')}><Search size={20}/></Link>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-2 hover:bg-white/20 rounded-full shrink-0"><User size={20}/></Link>
             {store.tracking_enabled !== false && <Link to={`/s/${storeSlug}/track`} className="p-2 hover:bg-white/20 rounded-full shrink-0" title={t('track.title','Track your order')}><Truck size={20}/></Link>}
             {/* Favourites sits right beside the cart in the header */}

@@ -215,6 +215,7 @@ const P = {
   'products.subcategoryAdded': 'Sous-catégorie ajoutée',
   'products.noSubcategory': 'Aucune (seulement',
   'products.noSubcategoriesYet': 'Pas encore de sous-catégories',
+  'store.searchTab': 'Recherche',
   'dateFilter.today': 'Aujourd’hui', 'dateFilter.last7': '7 derniers jours', 'dateFilter.last30': '30 derniers jours',
   'dateFilter.thisMonth': 'Ce mois', 'dateFilter.last90': '90 derniers jours', 'dateFilter.lastYear': 'Dernière année',
   'dateFilter.allTime': 'Toute la période', 'dateFilter.from': 'Du', 'dateFilter.to': 'Au',

@@ -472,7 +472,7 @@ export default function ProductDetail() {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <div className="hidden sm:block"><LanguageSwitcher variant="header"/></div>
             <div className="hidden sm:block"><ThemePanel compact modeOnly mode={buyerTheme.mode} primaryColor={buyerTheme.primaryColor} onModeChange={buyerTheme.setMode} onColorChange={buyerTheme.setPrimaryColor}/></div>
-            <Link to={`/s/${storeSlug}/search`} className="hidden md:inline-flex p-2 hover:bg-white/20 rounded-full" title={t('store.search','Search')}><Search size={20}/></Link>
+            <Link to={`/s/${storeSlug}/search`} className="hidden md:inline-flex p-2 hover:bg-white/20 rounded-full" title={t('store.searchTab','Search')}><Search size={20}/></Link>
             <Link to={`/s/${storeSlug}/${isLoggedInCustomer?'profile':'auth'}`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full"><User size={18} className="sm:w-5 sm:h-5"/></Link>
             <Link to={`/s/${storeSlug}/favorites`} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full relative">
               <Heart size={18} className="sm:w-5 sm:h-5"/>
