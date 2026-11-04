@@ -954,7 +954,7 @@ export default function StoreOrders() {
           <span className="text-[11px] text-gray-400">{t('ui.orders.showingOnlyOrdersCurrentlyBeing', 'Showing only orders currently being prepared.')}</span>
         </div>
       ) : (
-        <div className="mb-3 overflow-x-auto -mx-1 px-1">
+        <div className="mb-3 overflow-x-auto -mx-1 px-1 hidden sm:block">
           <div className="flex items-center gap-2 w-max sm:w-auto sm:flex-wrap">
             {filters.map(f => {
               const isActive = filter === f.key;
@@ -1005,7 +1005,26 @@ export default function StoreOrders() {
         </div>
       </div>}
 
-      {/* Orders header */}
+      {/* Orders header — on phones the status chips ride along with it */}
+      <div className="dash-sticky-bar sm:!static sm:!bg-transparent sm:backdrop-blur-none -mx-4 px-4 sm:mx-0 sm:px-0 pt-2 pb-1 sm:pt-0 sm:pb-0 mb-2 sm:mb-0">
+      {!isPreparingPage && (
+        <div className="sm:hidden mb-2 overflow-x-auto -mx-1 px-1">
+          <div className="flex items-center gap-2 w-max">
+            {filters.map(f => {
+              const isActive = filter === f.key;
+              const sc = statusConfig[f.key];
+              const count = f.key === 'all' ? total : orders.filter(o => f.key === 'preparing' ? (o.status === 'preparing' || o.status === 'under_preparation') : o.status === f.key).length;
+              return (
+                <button key={f.key} onClick={() => setFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${isActive ? (sc ? `${sc.bg} text-white border-transparent shadow-md` : 'bg-gray-900 text-white border-transparent shadow-md') : 'bg-white text-gray-600 border-gray-200'}`}>
+                  {f.label}
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
         <h1 className="text-xl sm:text-2xl font-black text-gray-900 shrink-0">{t('orders.title','Orders')}</h1>
         <div className="overflow-x-auto -mx-1 px-1 flex-1 min-w-0">
@@ -1047,6 +1066,7 @@ export default function StoreOrders() {
           </button>}
         </div>
         </div>
+      </div>
       </div>
 
       {/* Orders table with horizontal scroll */}
@@ -1275,28 +1295,44 @@ export default function StoreOrders() {
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
                   const tid = toast.loading(t('ui.orders.archivingDeleting', 'Archiving & deleting...'));
-                  try { await orderApi.bulkArchive(currentStore.id, ids, true); } catch (e) { console.error('Archive failed:', e); }
-                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch (e) { console.error('Delete failed:', e); }
-                  toast.dismiss(tid);
-                  toast.success(`${ids.length} order(s) archived & deleted`);
-                  setDeleteConfirm(null); clearSelection(); loadOrders();
+                  setDeleteConfirm(null);
+                  try {
+                    await orderApi.bulkArchive(currentStore.id, ids, true);
+                    const { data } = await orderApi.bulkDelete(currentStore.id, ids);
+                    toast.dismiss(tid);
+                    const n = typeof data?.count === 'number' ? data.count : ids.length;
+                    toast.success(t('ui.orders.archivedDeletedN', '{{n}} order(s) archived & deleted', { n }));
+                    setOrders((prev) => prev.filter((o) => !ids.includes(o.id)));
+                  } catch (e) {
+                    toast.dismiss(tid);
+                    toast.error(e?.response?.data?.error || t('ui.orders.deleteFailed', 'Could not delete those orders'));
+                  }
+                  clearSelection(); loadOrders();
                 }}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-2"
               >
-               {t('ui.orders.archiveDelete', 'Archive & Delete')}e
+                {t('ui.orders.archiveDelete', 'Archive & Delete')}
               </button>
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
                   const tid = toast.loading(t('ui.orders.deleting', 'Deleting...'));
-                  try { await orderApi.bulkDelete(currentStore.id, ids); } catch (e) { console.error('Delete failed:', e); }
-                  toast.dismiss(tid);
-                  toast.success(`${ids.length} order(s) deleted`);
-                  setDeleteConfirm(null); clearSelection(); loadOrders();
+                  setDeleteConfirm(null);
+                  try {
+                    const { data } = await orderApi.bulkDelete(currentStore.id, ids);
+                    toast.dismiss(tid);
+                    const n = typeof data?.count === 'number' ? data.count : ids.length;
+                    toast.success(t('ui.orders.deletedN', '{{n}} order(s) deleted', { n }));
+                    setOrders((prev) => prev.filter((o) => !ids.includes(o.id)));
+                  } catch (e) {
+                    toast.dismiss(tid);
+                    toast.error(e?.response?.data?.error || t('ui.orders.deleteFailed', 'Could not delete those orders'));
+                  }
+                  clearSelection(); loadOrders();
                 }}
                 className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm"
               >
-               {t('ui.orders.deleteWithoutArchiving', 'Delete without archiving')}g
+                {t('ui.orders.deleteWithoutArchiving', 'Delete without archiving')}
               </button>
               <button onClick={() => setDeleteConfirm(null)} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm">{t('ui.orders.cancel', 'Cancel')}</button>
             </div>

@@ -193,11 +193,16 @@ export default function WorkerProfile() {
       {tab === 'permissions' && (
         <div className="glass-card-solid p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <p className="font-black text-gray-900 flex items-center gap-2"><Shield size={16} />{t('workers.permissions', 'Permissions')}</p>
-            {canManage && <div className="flex gap-2">
-              {roles.find((r) => String(r.id) === String(w.role_template_id)) && <button className="btn-secondary text-xs" onClick={() => setPermsDraft(roles.find((r) => String(r.id) === String(w.role_template_id)).permissions || [])}>{t('workers.applyRolePerms', 'Apply role permissions')}</button>}
+            <p className="font-black text-gray-900 flex items-center gap-2"><Shield size={16} />{t('workers.permissions', 'Permissions')}
+              <span className="text-[11px] font-bold text-gray-400">{t('workers.nTicked', '{{n}} ticked', { n: (permsDraft || []).length })}</span>
+            </p>
+            {canManage && (() => { const role = roles.find((r) => String(r.id) === String(w.role_template_id)); return <div className="flex gap-2">
+              {role && <button className="btn-secondary text-xs" title={t('workers.applyRolePermsHelp', 'Adds every permission this role carries to the ones already ticked.')}
+                onClick={() => setPermsDraft((cur) => [...new Set([...(cur || []), ...(role.permissions || [])])])}>
+                {t('workers.applyRolePermsN', 'Add role permissions ({{n}})', { n: (role.permissions || []).length })}
+              </button>}
               <button className="btn-primary text-xs flex items-center gap-1" disabled={saving} onClick={() => save({ permissions: permsDraft }, t('workers.permsSaved', 'Permissions saved — they apply on the worker\'s next action.'))}><Save size={13} />{t('workers.save', 'Save')}</button>
-            </div>}
+            </div>; })()}
           </div>
           {canManage ? <PermissionPicker value={permsDraft} onChange={setPermsDraft} allowed={perms} /> : <p className="text-sm text-gray-500">{(w.permissions || []).join(', ') || '—'}</p>}
         </div>

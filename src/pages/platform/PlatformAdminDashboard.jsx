@@ -965,13 +965,15 @@ function PageBuilder(){
     {type:'spacer',label:t('ui.admin.spacer', 'Spacer'),icon:ArrowDown,defaults:{height:'48',bgColor:'transparent'}},
   ];
 
+  const[page,setPage]=useState('landing'); // landing | howto
+  const FIELD=page==='howto'?'howto_blocks':'landing_blocks';
   const[blocks,setBlocks]=useState([]);const[saving,setSaving]=useState(false);const[editIdx,setEditIdx]=useState(null);
   const imgRef=useRef(null);
   const theme=usePlatformTheme();const pc=theme.primaryColor;
 
-  useEffect(()=>{platformApi.getSettings().then(r=>{try{setBlocks(JSON.parse(r.data?.landing_blocks||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[]);
+  useEffect(()=>{setEditIdx(null);platformApi.getSettings().then(r=>{try{setBlocks(JSON.parse(r.data?.[FIELD]||'[]'));}catch{setBlocks([]);}}).catch(()=>{});},[FIELD]);
 
-  const save=async(overrideBlocks)=>{setSaving(true);try{await platformApi.updateSettings({landing_blocks:JSON.stringify(overrideBlocks!==undefined?overrideBlocks:blocks)});toast.success(t('platform.pageSaved','Page saved!'));}catch(e){toast.error(t('store.failed','Failed'));}setSaving(false);};
+  const save=async(overrideBlocks)=>{setSaving(true);try{await platformApi.updateSettings({[FIELD]:JSON.stringify(overrideBlocks!==undefined?overrideBlocks:blocks)});toast.success(t('platform.pageSaved','Page saved!'));}catch(e){toast.error(t('store.failed','Failed'));}setSaving(false);};
   const addBlock=(type)=>{const t=BLOCK_TYPES.find(b=>b.type===type);if(t)setBlocks([...blocks,{type:t.type,...JSON.parse(JSON.stringify(t.defaults)),id:Date.now()}]);};
   const removeBlock=(idx)=>setBlocks(blocks.filter((_,i)=>i!==idx));
   const moveBlock=(from,to)=>{if(to<0||to>=blocks.length)return;const n=[...blocks];const[m]=n.splice(from,1);n.splice(to,0,m);setBlocks(n);};
@@ -1019,7 +1021,14 @@ function PageBuilder(){
   };
 
   return(<div>
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><h1 className="text-xl md:text-2xl font-black text-gray-900">{t('ui.admin.pageBuilder', 'Page Builder')}</h1><div className="flex flex-wrap gap-2"><button onClick={()=>{if(confirm(t('ui.admin.resetConfirm', 'Reset to original landing page? All custom blocks will be removed.'))){setBlocks([]);save([]);}}} className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/><span className="hidden sm:inline">{t('ui.admin.resetToOriginal', 'Reset to Original')}</span><span className="sm:hidden">{t('ui.admin.reset', 'Reset')}</span></button><a href="/" target="_blank" className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1"><Eye size={14}/>{t('ui.admin.preview', 'Preview')}</a><button onClick={()=>save()} disabled={saving} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-xs md:text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2"><Save size={16}/>{saving?t('ui.admin.saving', 'Saving...'):t('ui.admin.save', 'Save')}</button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-6"><div className="flex items-center gap-3 flex-wrap"><h1 className="text-xl md:text-2xl font-black text-gray-900">{t('ui.admin.pageBuilder', 'Page Builder')}</h1>
+      <div className="flex items-center bg-gray-100 rounded-xl p-1">
+        {[['landing',t('ui.admin.pbLanding','Landing page')],['howto',t('ui.admin.pbHowTo','How to use')]].map(([k,l])=>(
+          <button key={k} onClick={()=>setPage(k)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${page===k?'bg-white shadow-sm text-brand-600':'text-gray-500'}`}>{l}</button>
+        ))}
+      </div>
+      {page==='howto'&&<span className="text-[11px] text-gray-400">{t('ui.admin.pbHowToHint','Shown to store owners under Settings › How to use.')}</span>}
+      </div><div className="flex flex-wrap gap-2"><button onClick={()=>{if(confirm(t('ui.admin.resetConfirm', 'Reset to original landing page? All custom blocks will be removed.'))){setBlocks([]);save([]);}}} className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 hover:bg-gray-200 flex items-center gap-1"><RefreshCw size={14}/><span className="hidden sm:inline">{t('ui.admin.resetToOriginal', 'Reset to Original')}</span><span className="sm:hidden">{t('ui.admin.reset', 'Reset')}</span></button><a href={page==='howto'?'/dashboard/settings?sec=how-to':'/'} target="_blank" className="px-3 md:px-4 py-2 bg-gray-100 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1"><Eye size={14}/>{t('ui.admin.preview', 'Preview')}</a><button onClick={()=>save()} disabled={saving} style={{backgroundColor:pc}} className="px-4 md:px-6 py-2.5 text-white rounded-xl text-xs md:text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-2"><Save size={16}/>{saving?t('ui.admin.saving', 'Saving...'):t('ui.admin.save', 'Save')}</button></div></div>
 
     <div className="grid lg:grid-cols-[1fr,280px] gap-4 md:gap-6">
       <div className="space-y-3">

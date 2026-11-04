@@ -14,7 +14,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'store-details', label: 'Store Details', keywords: 'name logo phone address whatsapp button contact store details' },
   { id: 'customization', label: 'Customization', keywords: 'colors colours theme font background header design scrollbar' },
   { id: 'dashboard-config', label: 'Dashboard', keywords: 'dashboard sidebar admin greeting chart modules' },
-  { id: 'users', label: 'Users & Permissions', keywords: 'staff team members roles permissions users admins activity log' },
+  { id: 'how-to', label: 'How to use', keywords: 'help guide tutorial video videos how to use learn getting started' },
   { id: 'checkout', label: 'Checkout', keywords: 'checkout form fields coupon order button success page email notes wilaya name phone' },
   { id: 'payments', label: 'Payments', keywords: 'cod ccp baridimob payment bank transfer rib' },
   { id: 'taxes', label: 'Taxes', keywords: 'tax vat tva' },

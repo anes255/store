@@ -38,7 +38,10 @@ api.interceptors.response.use(
     }
     // The server refused because of the staff member's role: say so clearly
     // (pages often only show a generic "Failed").
-    if (error?.response?.status === 403 && error?.response?.data?.missing_permission) {
+    // Only for something the person actually did. A page their role does not
+    // cover already says so on the page itself, so loading one stays silent.
+    const method = String(error?.config?.method || 'get').toLowerCase();
+    if (error?.response?.status === 403 && error?.response?.data?.missing_permission && method !== 'get') {
       import('react-hot-toast').then(({ default: toast }) => toast.error(error.response.data.error || 'Your role does not allow this action.', { id: 'perm-denied' })).catch(() => {});
     }
     return Promise.reject(error);
@@ -421,6 +424,7 @@ export const workersApi = {
   assignOrders: (sid, orderIds, staffId) => api.post(`${W(sid)}/orders/assign`, { order_ids: orderIds, staff_id: staffId }),
   autoAssign: (sid, data) => api.post(`${W(sid)}/orders/auto-assign`, data),
   autoAssignSettings: (sid) => api.get(`${W(sid)}/orders/auto-assign/settings`),
+  autoAssignAvailable: (sid, includeCallFailed) => api.get(`${W(sid)}/orders/auto-assign/available`, { params: { include_call_failed: includeCallFailed ? 1 : 0 } }),
   saveAutoAssignSettings: (sid, data) => api.put(`${W(sid)}/orders/auto-assign/settings`, data),
   logOrderAction: (sid, oid, action) => api.post(`${W(sid)}/orders/${oid}/log-action`, { action }),
   orderTimeline: (sid, oid) => api.get(`${W(sid)}/orders/${oid}/timeline`),

@@ -570,3 +570,19 @@ html.admin-dark input:-webkit-autofill,html.platform-dark input:-webkit-autofill
 
 /* Small "pop" used by the add-to-cart confirmations. */
 @keyframes pop { 0% { transform: scale(.4); opacity: 0 } 60% { transform: scale(1.15); opacity: 1 } 100% { transform: scale(1) } }
+
+/* ------------------------------------------------------------------
+   A page bar that stays put under the dashboard header while you
+   scroll. --dash-header-h is published by DashboardLayout and drops to
+   0 when the header slides away on phones, so the two never overlap.
+   ------------------------------------------------------------------ */
+.dash-sticky-bar{
+  position:sticky;
+  top:var(--dash-header-h,0px);
+  z-index:19;
+  background:rgba(255,255,255,.93);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  transition:top .3s ease;
+}
+html.dark .dash-sticky-bar{background:rgba(11,16,32,.93);}

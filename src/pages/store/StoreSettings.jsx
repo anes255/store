@@ -1,20 +1,21 @@
 import useStaffAccess from '../../hooks/useStaffAccess';
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { motion as SMotion, AnimatePresence as SAnimatePresence } from 'framer-motion';
 import { fuzzyScore } from '../../components/shared/CommandPalette';
 import HoldToConfirm from '../../components/shared/HoldToConfirm';
 import { DELETION_COOLDOWN_DAYS, deletionDaysLeft } from '../../utils/storeDeletion';
 import PasswordInput from '../../components/shared/PasswordInput';
 import { useTranslation } from 'react-i18next';
-import { ownerApi, aiApi, publicRoleTemplatesApi } from '../../utils/api';
+import { ownerApi, aiApi, publicRoleTemplatesApi, getPlatformInfo } from '../../utils/api';
 import { useStoreManagement, useAuthStore, useAdminTheme } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
 import { CHECKOUT_FIELDS, fieldState } from '../../utils/checkoutFields';
 import WhatsAppConfigModal,{WA_STATUSES,WA_STATUS_LABELS} from '../../components/shared/WhatsAppConfigModal';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag, Search } from 'lucide-react';
+import { PlayCircle,Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag, Search } from 'lucide-react';
 import { ALL_PERMISSIONS, PERM_GROUPS } from '../../utils/permissions';
 import { useActionLabel, useActivityFormat, timeAgo as timeAgoLabel } from './workers/shared';
 
@@ -63,6 +64,79 @@ function SubscriptionSection(){
 }
 
 // ============ CHECKOUT PREVIEW ============
+const YT_ID = (url) => {
+  const m = String(url || '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+};
+
+// The guide the platform's super admin writes in the page builder. Read-only
+// here: store owners watch it, they do not edit it.
+function HowToUse() {
+  const { t } = useTranslation();
+  const [blocks, setBlocks] = useState(null);
+  useEffect(() => {
+    getPlatformInfo()
+      .then((r) => { try { setBlocks(JSON.parse(r.data?.howto_blocks || '[]')); } catch { setBlocks([]); } })
+      .catch(() => setBlocks([]));
+  }, []);
+
+  if (blocks === null) return <div className="glass-card-solid p-10 grid place-items-center"><div className="w-7 h-7 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin" /></div>;
+  if (!blocks.length) return (
+    <div className="glass-card-solid p-10 text-center">
+      <PlayCircle size={40} className="mx-auto text-gray-300 mb-3" />
+      <p className="font-bold text-gray-700">{t('ui.settings.howToEmpty', 'Nothing here yet')}</p>
+      <p className="text-sm text-gray-400 mt-1">{t('ui.settings.howToEmptyHelp', 'Guides and videos appear here as soon as they are published.')}</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {blocks.map((b, i) => {
+        if (b.type === 'spacer') return <div key={i} style={{ height: Math.min(80, parseInt(b.height, 10) || 24) }} />;
+        if (b.type === 'video') {
+          const id = YT_ID(b.url);
+          return (
+            <div key={i} className="glass-card-solid p-4 sm:p-6">
+              {b.title && <h3 className="font-bold text-lg mb-3">{b.title}</h3>}
+              {id
+                ? <div className="relative pb-[56.25%] rounded-2xl overflow-hidden bg-black"><iframe src={`https://www.youtube.com/embed/${id}`} title={b.title || 'video'} className="absolute inset-0 w-full h-full" frameBorder="0" allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture" allowFullScreen /></div>
+                : b.url
+                  ? <video src={b.url} controls className="w-full rounded-2xl bg-black" />
+                  : <p className="text-sm text-gray-400">{t('ui.settings.howToNoVideo', 'No video set for this section yet.')}</p>}
+            </div>
+          );
+        }
+        if (b.type === 'image') return (
+          <div key={i} className="glass-card-solid p-4 sm:p-6">
+            {b.src ? <img src={b.src} alt={b.alt || ''} className="w-full rounded-2xl" style={{ borderRadius: (parseInt(b.borderRadius, 10) || 16) + 'px' }} /> : null}
+          </div>
+        );
+        if (b.type === 'features' && Array.isArray(b.items)) return (
+          <div key={i} className="glass-card-solid p-4 sm:p-6">
+            {b.title && <h3 className="font-bold text-lg mb-3">{b.title}</h3>}
+            <div className="grid sm:grid-cols-2 gap-3">
+              {b.items.map((it, j) => (
+                <div key={j} className="rounded-2xl border border-gray-100 p-3">
+                  <p className="font-bold text-sm">{it.icon} {it.title}</p>
+                  {it.desc && <p className="text-sm text-gray-500 mt-1">{it.desc}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+        if (b.title || b.subtitle || b.content) return (
+          <div key={i} className="glass-card-solid p-4 sm:p-6">
+            {b.title && <h3 className="font-bold text-lg">{b.title}</h3>}
+            {b.subtitle && <p className="text-sm text-gray-500 mt-1">{b.subtitle}</p>}
+            {b.content && <p className="text-sm text-gray-600 mt-2 whitespace-pre-line">{b.content}</p>}
+          </div>
+        );
+        return null;
+      })}
+    </div>
+  );
+}
+
 // The real checkout page, loaded in a phone-sized frame in preview mode
 // (sample product, nothing is ordered or saved). Unsaved settings are sent
 // to it as they change, so the preview is exactly what buyers will see.
@@ -86,21 +160,24 @@ function CheckoutPreviewFrame({ s, mode, maxHeight, fitInside = false }) {
     const ro = new ResizeObserver(([e]) => setBoxW(e.contentRect.width));
     ro.observe(el); return () => ro.disconnect();
   }, []);
-  const W = mode === 'mobile' ? 390 : 1280, H = mode === 'mobile' ? 800 : 820, bezel = mode === 'mobile' ? 12 : 8;
+  const W = mode === 'mobile' ? 390 : 1280, baseH = mode === 'mobile' ? 800 : 820, bezel = mode === 'mobile' ? 12 : 8;
   const fitW = boxW ? (boxW - bezel) / W : 0;
-  const fitH = maxHeight ? (maxHeight - bezel) / H : Infinity;
-  // Inline, the preview takes the full width of its panel and the panel
-  // scrolls if that makes it tall — it used to be capped by height and by
-  // scale 1, which left a band of empty panel beside and under the phone.
+  const fitH = maxHeight ? (maxHeight - bezel) / baseH : Infinity;
+  // Inline, the preview takes the whole panel: the width sets the scale, and
+  // the frame is then made as tall as the panel so more of the checkout page
+  // shows instead of a band of empty panel under a short desktop strip.
   // Expanded, the whole page has to be visible at once, so height wins there.
   const scale = Math.max(0.1, Math.min(fitInside ? Math.min(fitW, fitH) : fitW, 3));
+  const H = (!fitInside && maxHeight && scale > 0)
+    ? Math.min(4000, Math.max(520, Math.round((maxHeight - bezel) / scale)))
+    : baseH;
   const frameH = H * scale + bezel;
   return (
     <div ref={boxRef} className="w-full"
-      style={fitInside || !maxHeight ? undefined : { maxHeight, overflowY: frameH > maxHeight ? 'auto' : 'visible', overflowX: 'hidden' }}>
+      style={fitInside || !maxHeight ? undefined : { maxHeight, overflowY: frameH > maxHeight + 1 ? 'auto' : 'visible', overflowX: 'hidden' }}>
       {boxW > 0 && (
         <div className={`mx-auto overflow-hidden shadow-2xl bg-white relative ${mode === 'mobile' ? 'rounded-[1.6rem] border-[6px] border-gray-800' : 'rounded-xl border-4 border-gray-800'}`}
-          style={{ width: W * scale + bezel, height: H * scale + bezel }}>
+          style={{ width: W * scale + bezel, height: frameH }}>
           {!loaded && <div className="absolute inset-0 grid place-items-center"><div className="w-7 h-7 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin" /></div>}
           <iframe ref={frameRef} title="checkout-preview" src={`/s/${s.slug}/checkout?preview=1`} onLoad={() => setLoaded(true)}
             style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: '0 0', border: 0, opacity: loaded ? 1 : 0 }} />
@@ -749,12 +826,12 @@ export default function StoreSettings(){
   const deleteAccount=async()=>{try{await ownerApi.deleteAccount({password:deletePw});toast.success(t('storePage.accountDeleted','Account deleted'));logout();window.location.href='/';}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
 
   const T=({label,desc,checked,onChange})=>(<label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"><div><p className="font-medium text-sm text-gray-800">{label}</p>{desc&&<p className="text-xs text-gray-400 mt-0.5">{desc}</p>}</div><div className={`w-11 h-6 rounded-full transition-colors ${checked?'bg-brand-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${checked?'translate-x-5':'translate-x-0.5'}`}/></div><input type="checkbox" className="sr-only" checked={checked||false} onChange={onChange}/></label>);
-  const secs=[{id:'store-details',icon:Store,l:t('storePage.secStoreDetails','Store Details')},{id:'customization',icon:Palette,l:t('storePage.secCustomization','Customization')},{id:'dashboard-config',icon:Layout,l:t('storePage.secDashboard','Dashboard')},{id:'users',icon:Users,l:t('storePage.secUsersPerms','Users & Permissions')},{id:'checkout',icon:ShoppingCart,l:t('storePage.secCheckout','Checkout')},{id:'payments',icon:CreditCard,l:t('storePage.secPayments','Payments')},{id:'taxes',icon:Percent,l:t('storePage.secTaxes','Taxes')},{id:'notifications',icon:Bell,l:t('storePage.secNotifications','Notifications')},{id:'orders-config',icon:Package,l:t('storePage.secOrders','Orders')},{id:'inventory',icon:BarChart3,l:t('storePage.secInventory','Inventory')},{id:'domains',icon:Globe,l:t('storePage.secDomains','Domains')},{id:'ai',icon:Bot,l:t('storePage.secAi','AI Messaging')},{id:'tracking-pixels',icon:TrendingUp,l:t('storePage.secTrackingPixels','Tracking Pixels')},{id:'subscription',icon:Zap,l:t('storePage.secSubscription','Subscription')},{id:'account',icon:SI,l:t('storePage.secAccount','Account')}];
+  const secs=[{id:'store-details',icon:Store,l:t('storePage.secStoreDetails','Store Details')},{id:'customization',icon:Palette,l:t('storePage.secCustomization','Customization')},{id:'dashboard-config',icon:Layout,l:t('storePage.secDashboard','Dashboard')},{id:'how-to',icon:PlayCircle,l:t('storePage.secHowTo','How to use')},{id:'checkout',icon:ShoppingCart,l:t('storePage.secCheckout','Checkout')},{id:'payments',icon:CreditCard,l:t('storePage.secPayments','Payments')},{id:'taxes',icon:Percent,l:t('storePage.secTaxes','Taxes')},{id:'notifications',icon:Bell,l:t('storePage.secNotifications','Notifications')},{id:'orders-config',icon:Package,l:t('storePage.secOrders','Orders')},{id:'inventory',icon:BarChart3,l:t('storePage.secInventory','Inventory')},{id:'domains',icon:Globe,l:t('storePage.secDomains','Domains')},{id:'ai',icon:Bot,l:t('storePage.secAi','AI Messaging')},{id:'tracking-pixels',icon:TrendingUp,l:t('storePage.secTrackingPixels','Tracking Pixels')},{id:'subscription',icon:Zap,l:t('storePage.secSubscription','Subscription')},{id:'account',icon:SI,l:t('storePage.secAccount','Account')}];
   const storeDomain=currentStore?.slug?`${currentStore.slug}.ender-store.com`:'';
 
   const activeSec=secs.find(x=>x.id===sec);
   // Settings search — type to filter the sections, Enter jumps to the best one.
-  const SEC_KEYWORDS={'store-details':'name logo phone address whatsapp button contact','customization':'colors colours theme font background header design','dashboard-config':'dashboard sidebar admin','users':'staff team members roles permissions','checkout':'checkout form fields coupon order button','payments':'cod ccp baridimob payment','taxes':'tax vat','notifications':'alerts push email notifications','orders-config':'order number prefix archive','inventory':'stock low threshold oversell','domains':'domain dns custom','ai':'chatbot ai assistant','tracking-pixels':'pixel facebook tiktok google analytics','subscription':'plan billing subscription','account':'password profile email delete store'};
+  const SEC_KEYWORDS={'store-details':'name logo phone address whatsapp button contact','customization':'colors colours theme font background header design','dashboard-config':'dashboard sidebar admin','how-to':'help guide tutorial video videos how to use learn','checkout':'checkout form fields coupon order button','payments':'cod ccp baridimob payment','taxes':'tax vat','notifications':'alerts push email notifications','orders-config':'order number prefix archive','inventory':'stock low threshold oversell','domains':'domain dns custom','ai':'chatbot ai assistant','tracking-pixels':'pixel facebook tiktok google analytics','subscription':'plan billing subscription','account':'password profile email delete store'};
   const secMatches=(()=>{const q=settingsQuery.trim();if(!q)return secs;return secs.map(x=>({x,m:fuzzyScore(q,x.l)||fuzzyScore(q,SEC_KEYWORDS[x.id]||'')||(String(SEC_KEYWORDS[x.id]||'').includes(q.toLowerCase())?{score:0}:null)})).filter(r=>r.m).sort((a,b)=>b.m.score-a.m.score).map(r=>r.x);})();
   const SettingsSearch=(
     <div className="relative mb-2">
@@ -853,91 +930,17 @@ export default function StoreSettings(){
 
 {sec==='dashboard-config'&&<div className="glass-card-solid p-4 sm:p-6"><SH icon={Layout} title={t('ui.settings.commandCenter', 'Command Center')} subtitle={t('ui.settings.configureYourPrimaryWorkflowHub', 'Configure your primary workflow hub.')} accent="brand"/><div className="mt-6 space-y-4"><div className="flex items-center gap-2"><Sliders size={16} className="text-brand-500"/><h4 className="font-bold text-sm">{t('ui.settings.moduleVisibility', 'Module Visibility')}</h4></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><T label={t('ui.settings.actionBar', 'Action Bar')} desc={t('ui.settings.quickEntryTools', 'Quick-entry tools')} checked={s.dash_action!==false} onChange={e=>setV('dash_action',e.target.checked)}/><T label={t('ui.settings.telemetry', 'Telemetry')} desc={t('ui.settings.coreFinancialMetrics', 'Core financial metrics')} checked={s.dash_telemetry!==false} onChange={e=>setV('dash_telemetry',e.target.checked)}/><T label={t('ui.settings.pulseCharts', 'Pulse Charts')} desc={t('ui.settings.visualTrendAnalysis', 'Visual trend analysis')} checked={s.dash_pulse!==false} onChange={e=>setV('dash_pulse',e.target.checked)}/><T label={t('ui.settings.logStream', 'Log Stream')} desc={t('ui.settings.realTimeOrderData', 'Real-time order data')} checked={s.dash_log!==false} onChange={e=>setV('dash_log',e.target.checked)}/></div></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"><div className="p-5 bg-gray-50 rounded-xl"><h4 className="font-bold text-sm mb-2">{t('ui.settings.greeting', 'Greeting')}</h4><input className="input-field" value={s.dash_greeting||'Welcome back! 👋'} onChange={set('dash_greeting')}/><T label={t('ui.settings.showDate', 'Show Date')} desc={t('ui.settings.displaySystemDate', 'Display system date')} checked={s.dash_date!==false} onChange={e=>setV('dash_date',e.target.checked)}/></div><div className="p-5 bg-gray-50 rounded-xl"><h4 className="font-bold text-sm mb-2">{t('ui.settings.chartType', 'Chart Type')}</h4><div className="flex gap-2 mb-2">{['AREA','LINE','BAR'].map(ct=>(<button key={ct} onClick={()=>setV('chart_type',ct)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${(s.chart_type||'AREA')===ct?'bg-brand-500 text-white':'bg-gray-200 text-gray-500'}`}>{t(`ui.settings.chart.${ct}`, ct)}</button>))}</div></div></div></div>}
 
-{sec==='users'&&<>
-{/* Activity log lives at the top so admins see what's happened most recently. */}
-<UsersActivityLog storeId={currentStore?.id} isDark={settingsIsDark} t={t}/>
-<div className="glass-card-solid p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 mb-4"><span className="text-sm font-bold text-brand-600 border-b-2 border-brand-500 pb-2">{t('ui.settings.teamMembers', 'Team Members')}</span><button onClick={()=>setShowStaff(true)} className="btn-primary text-xs flex items-center gap-1"><Plus size={14}/>{t('ui.settings.createNewUser', 'Create New User')}</button></div>
-{staff.length===0?<p className="text-center py-8 text-gray-400 text-sm">{t('ui.settings.noTeamMembersYet', 'No team members yet')}</p>:
-<div className="space-y-2">{staff.map(x=>{
-  // Prefer the full role string (tpl_<id> or <uuid>) so the select matches
-  // its option values. Fall back to a prefixed role_template_id if only that
-  // column exists on the staff row.
-  const cur = x.role || (x.role_template_id ? 'tpl_'+x.role_template_id : '');
-  return(
-  <div key={x.id} className="p-3 sm:p-4 rounded-xl bg-gray-50 border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
-    <div className="flex items-center gap-3 min-w-0 flex-1">
-      <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm shrink-0">{x.name?.[0]?.toUpperCase()}</div>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-gray-800 truncate">{x.name}</p>
-        <p className="text-xs text-gray-400 truncate">{x.email||x.phone||'—'}</p>
-      </div>
-    </div>
-    <select className="input-field !py-1.5 !px-2 text-sm w-full sm:w-52 shrink-0" value={cur} onChange={e=>changeStaffRole(x.id,e.target.value)}>
-      <option value="">{t('ui.settings.selectRole', '— Select role —')}</option>
-      <optgroup label={t('ui.settings.platformRoles', 'Platform Roles')}>{platformTemplates.map(tpl=>{const lang=(document.documentElement.lang||'en').slice(0,2);const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||t('ui.settings.role', 'Role');return(<option key={'tpl_'+tpl.id} value={'tpl_'+tpl.id}>{name}</option>);})}</optgroup>
-      {storeRoles.length>0&&<optgroup label={t('ui.settings.myStoreRoles', 'My Store Roles')}>{storeRoles.map(tpl=><option key={tpl.id} value={tpl.id}>{t(`workers.roleName.${tpl.name}`, tpl.name)}</option>)}</optgroup>}
-      {/* When the saved role matches none of the options, still show it so the select is not stuck on "Select role —" */}
-      {cur&&!platformTemplates.some(t=>'tpl_'+t.id===cur)&&!storeRoles.some(t=>String(t.id)===String(cur))&&<option value={cur}>{t(`workers.roleName.${cur.replace(/^tpl_/,'').replace(/_/g,' ')}`, cur.replace(/^tpl_/,'').replace(/_/g,' '))}</option>}
-    </select>
-    <div className="flex items-center gap-2 shrink-0">
-      <button onClick={()=>openEditStaff(x)} className="flex items-center gap-1 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold shadow-sm">
-        <Edit2 size={13}/>{t('ui.settings.edit', 'Edit')}
-      </button>
-      <button onClick={()=>removeStaff(x.id)} className="p-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-500" title={t('ui.settings.remove', 'Remove')}><Trash2 size={14}/></button>
-    </div>
-  </div>);})}</div>}
-</div>
-<div className="glass-card-solid p-4 sm:p-6"><div className="flex items-center justify-between mb-4"><h3 className={`font-bold ${settingsIsDark?'text-gray-100':'text-gray-900'}`}>{t('ui.settings.myStoreRolesPermissions', 'My Store Roles & Permissions')}</h3><button onClick={()=>setEditRole({name:'',description:'',permissions:[]})} className="btn-primary text-xs flex items-center gap-1"><Plus size={14}/>{t('ui.settings.newRole', 'New Role')}</button></div><p className="text-[11px] text-gray-400 mb-4">{t('ui.settings.customRolesHelp','Custom roles you define here affect only this store. They work alongside platform-defined roles.')}</p><div className="space-y-3">{storeRoles.length===0&&<p className={`text-sm ${settingsIsDark?'text-gray-400':'text-gray-500'}`}>{t('ui.settings.noCustomRoles','No custom roles yet. Click "New Role" to create one.')}</p>}{storeRoles.map(tpl=>(<div key={tpl.id} className={`flex items-center justify-between p-4 rounded-xl ${settingsIsDark?'bg-gray-800 border border-gray-700':'bg-gray-50'}`}><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">{tpl.name?.[0]?.toUpperCase()}</div><div><p className={`font-bold ${settingsIsDark?'text-gray-100':'text-gray-800'}`}>{t(`workers.roleName.${tpl.name}`, tpl.name)} <span className="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">{t('ui.settings.storeBadge','STORE')}</span></p><p className={`text-xs ${settingsIsDark?'text-gray-400':'text-gray-400'}`}>{(tpl.description ? t(`workers.roleDesc.${tpl.name}`, tpl.description) : t('workers.nPermissions', '{{n}} permissions', { n: (tpl.permissions||[]).length }))}</p></div></div><div className="flex gap-1"><button onClick={()=>setEditRole({id:tpl.id,name:tpl.name,description:tpl.description||'',permissions:tpl.permissions||[]})} className="p-1.5 hover:bg-gray-200 rounded text-gray-500"><Edit2 size={14}/></button><button onClick={()=>deleteRole(tpl.id)} className="p-1.5 hover:bg-red-50 rounded text-red-400"><Trash2 size={14}/></button></div></div>))}</div>
-<div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-  <h4 className={`font-bold text-sm mb-3 ${settingsIsDark?'text-gray-300':'text-gray-500'}`}>{t('ui.settings.platformDefinedRoles', 'Platform-Defined Roles')}</h4>
-  <p className="text-[11px] text-gray-400 mb-4">{t('ui.settings.clickCustomizeToCopyA', 'Click "Customize" to copy a platform role into a store-scoped role you can edit.')}</p>
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-    {platformTemplates.length===0&&<p className="text-sm text-gray-400 col-span-full">{t('ui.settings.noneDefinedYet', 'None defined yet.')}</p>}
-    {platformTemplates.map(tpl=>{
-      const lang=(document.documentElement.lang||'en').slice(0,2);
-      const name=(tpl.name&&(tpl.name[lang]||tpl.name.en))||t('ui.settings.role', 'Role');
-      const desc=(tpl.description&&(tpl.description[lang]||tpl.description.en))||'';
-      const meta=ROLE_META(name);
-      const perms=tpl.permissions||[];
-      const highlights=highlightedPerms(perms,t).slice(0,4);
-      return(
-        <div key={'tpl_'+tpl.id} className={`relative overflow-hidden rounded-2xl border ${settingsIsDark?'border-gray-700 bg-gray-800':'border-gray-100 bg-white'} transition-all hover:shadow-lg hover:-translate-y-0.5`}>
-          <div className="absolute inset-x-0 top-0 h-1.5" style={{background:`linear-gradient(90deg, ${meta.color1}, ${meta.color2})`}}/>
-          <div className="p-4">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-sm" style={{background:`linear-gradient(135deg, ${meta.color1}22, ${meta.color2}22)`,border:`1px solid ${meta.color1}33`}}>{meta.emoji}</div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className={`font-extrabold text-sm ${settingsIsDark?'text-white':'text-gray-900'} truncate`}>{name}</p>
-                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full text-white shrink-0" style={{background:meta.color1}}>{t('ui.settings.platformBadge','PLATFORM')}</span>
-                </div>
-                {desc&&<p className={`text-[11px] mt-0.5 ${settingsIsDark?'text-gray-400':'text-gray-500'} line-clamp-2`}>{desc}</p>}
-                <p className="text-[10px] text-gray-400 mt-1 font-mono">{t('ui.settings.nPermissions','{{n}} permissions',{n:perms.length})}</p>
-              </div>
-            </div>
-            {highlights.length>0&&(
-              <div className="space-y-1 mb-3">
-                {highlights.map((h,i)=>(
-                  <div key={i} className="flex items-center gap-1.5 text-[11px]">
-                    <Check size={11} className="text-emerald-500 shrink-0"/>
-                    <span className={settingsIsDark?'text-gray-300':'text-gray-700'}>{h}</span>
-                  </div>
-                ))}
-                {perms.length>highlights.length&&(
-                  <p className="text-[10px] text-gray-400 ml-4">{t('ui.settings.plusMore','+{{n}} more',{n:perms.length-highlights.length})}</p>
-                )}
-              </div>
-            )}
-            <button onClick={()=>customizePlatformRole(tpl)} className="w-full mt-1 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all" style={{background:`linear-gradient(135deg, ${meta.color1}, ${meta.color2})`}}>
-              <Edit2 size={12}/>{t('ui.settings.customize', 'Customize')}
-            </button>
-          </div>
-        </div>
-      );
-    })}
+{/* "Users & Permissions" moved to Workers › Roles & permissions, which
+    covers the same ground with per-worker pay, activity and job types. */}
+{sec==='users'&&(
+  <div className="glass-card-solid p-6 text-center">
+    <h3 className="font-bold text-lg mb-1">{t('ui.settings.usersMoved','Team roles moved')}</h3>
+    <p className="text-sm text-gray-500 mb-4">{t('ui.settings.usersMovedHelp','Workers, their roles and what each of them may do are all managed on the Workers pages now.')}</p>
+    <Link to="/dashboard/workers/roles" className="btn-primary text-sm inline-block">{t('ui.settings.openWorkerRoles','Open roles & permissions')}</Link>
   </div>
-</div></div>
-{editRole&&<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={()=>setEditRole(null)}><div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="p-5 border-b flex items-center justify-between"><h3 className="font-bold text-lg">{editRole.id?t('ui.settings.editRole', 'Edit Role'):t('ui.settings.newRole', 'New Role')}</h3><button onClick={()=>setEditRole(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button></div><div className="p-5 space-y-4"><div><label className="input-label">{t('ui.settings.roleName', 'Role Name')}</label><input className="input-field" value={editRole.name} onChange={e=>setEditRole({...editRole,name:e.target.value})} placeholder={t('ui.settings.eGShippingManager', 'e.g. Shipping Manager')}/></div><div><label className="input-label">{t('ui.settings.description', 'Description')}</label><input className="input-field" value={editRole.description} onChange={e=>setEditRole({...editRole,description:e.target.value})} placeholder={t('ui.settings.optionalDescription', 'Optional description')}/></div><div><label className="input-label">{t('ui.settings.permissions', 'Permissions (')}{editRole.permissions?.length||0}/{ALL_PERMISSIONS.length})</label><div className="space-y-3 mt-2">{PERM_GROUPS.map(group=>(<div key={group} className="p-3 bg-gray-50 rounded-xl"><p className="text-xs font-bold text-gray-500 uppercase mb-2">{t(`workers.permGroup.${group.toLowerCase()}`,group)}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{ALL_PERMISSIONS.filter(p=>p.group===group).map(p=>{const on=(editRole.permissions||[]).includes(p.key);return(<label key={p.key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white"><input type="checkbox" checked={on} onChange={()=>togglePerm(p.key)}/><span className="text-sm text-gray-700">{t(`workers.perm.${p.key}`,p.label)}</span></label>);})}</div></div>))}</div></div></div><div className="p-5 border-t flex justify-end gap-2"><button onClick={()=>setEditRole(null)} className="btn-ghost text-sm">{t('ui.settings.cancel', 'Cancel')}</button><button onClick={saveRole} className="btn-primary text-sm flex items-center gap-1"><Save size={14}/>{t('ui.settings.saveRole', 'Save Role')}</button></div></div></div>}</>}
+)}
+
+{sec==='how-to'&&<HowToUse/>}
 
 {sec==='checkout'&&<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6"><div className="space-y-4 min-w-0"><SH icon={ShoppingCart} title={t('ui.settings.purchaseFlow', 'Purchase Flow')} subtitle={t('ui.settings.optimizeVisitorToCustomerConversion', 'Optimize visitor to customer conversion.')} accent="purple"/>
 

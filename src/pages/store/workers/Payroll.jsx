@@ -44,6 +44,15 @@ export default function Payroll() {
   const n = (i, a) => (i.counts && i.counts[a] != null ? i.counts[a] : (Array.isArray(i.breakdown) ? i.breakdown : []).filter((l) => l.action === a).reduce((s, l) => s + (l.count || 0), 0));
   const c = (i, a) => (Array.isArray(i.breakdown) ? i.breakdown : []).filter((l) => l.action === a).reduce((s, l) => s + (l.amount || 0), 0);
   const months = MONTHS(i18n.language);
+  // Payroll is stored one line per currency, so a worker paid partly in DZD
+  // and partly in EUR used to appear twice. One row per worker, with each
+  // currency listed inside it.
+  const rows = useMemo(() => {
+    const m = new Map();
+    items.forEach((i) => { const k = String(i.staff_id || i.id); if (!m.has(k)) m.set(k, []); m.get(k).push(i); });
+    return [...m.values()];
+  }, [items]);
+  const money2 = (list, pick) => list.map((i) => <span key={i.id} className="block whitespace-nowrap">{pick(i)}</span>);
 
   const recalc = async () => { setBusy(true); try { const { data } = await workersApi.calculatePayroll(sid, year, month); setD(data); toast.success(t('workers.recalculated', 'Payroll recalculated (approved lines unchanged)')); } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); } setBusy(false); };
   const approveAll = async () => {
@@ -87,29 +96,32 @@ export default function Payroll() {
           <div className="hidden lg:block glass-card-solid overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">{[t('workers.worker', 'Worker'), t('workers.job', 'Job'), t('workers.fixedSalary', 'Fixed salary'), t('workers.completedOrders', 'Completed'), t('workers.completedCommission', 'Completed comm.'), t('workers.confirmedOrders', 'Confirmed'), t('workers.confirmedCommission', 'Confirmed comm.'), t('workers.bonuses', 'Bonuses'), t('workers.deductions', 'Deductions'), t('workers.netSalary', 'Net salary'), t('workers.status', 'Status')].map((h) => <th key={h} className="px-3 py-3 text-start whitespace-nowrap">{h}</th>)}</tr></thead>
-              <tbody>{items.map((i) => (
+              <tbody>{rows.map((group) => { const i = group[0]; return (
                 <tr key={i.id} className="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer" onClick={() => setOpenId(i.id)}>
                   <td className="px-3 py-2.5"><div className="flex items-center gap-2.5"><Avatar worker={{ name: i.worker_name, avatar: i.avatar }} size={34} /><span className="font-bold text-gray-900 whitespace-nowrap">{i.worker_name}</span></div></td>
                   <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{i.job_type ? t(`workers.jobName.${i.job_type}`, i.job_type) : '—'}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{formatMoney(i.fixed_amount, i.currency)}</td>
-                  <td className="px-3 py-2.5 tabular-nums">{n(i, 'completed') || '—'}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{c(i, 'completed') ? formatMoney(c(i, 'completed'), i.currency) : '—'}</td>
-                  <td className="px-3 py-2.5 tabular-nums">{n(i, 'confirmed') || '—'}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{c(i, 'confirmed') ? formatMoney(c(i, 'confirmed'), i.currency) : '—'}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{parseFloat(i.bonuses) ? formatMoney(i.bonuses, i.currency) : '—'}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{parseFloat(i.deductions) ? formatMoney(i.deductions, i.currency) : '—'}</td>
-                  <td className="px-3 py-2.5 font-black text-gray-900 whitespace-nowrap">{formatMoney(due(i), i.currency)}{i.locked && <Lock size={11} className="inline ms-1 text-gray-400" />}</td>
-                  <td className="px-3 py-2.5"><StatusBadge status={i.status} /></td>
-                </tr>))}</tbody>
+                  <td className="px-3 py-2.5">{money2(group, (x) => formatMoney(x.fixed_amount, x.currency))}</td>
+                  <td className="px-3 py-2.5 tabular-nums">{group.reduce((s, x) => s + n(x, 'completed'), 0) || '—'}</td>
+                  <td className="px-3 py-2.5">{money2(group.filter((x) => c(x, 'completed')), (x) => formatMoney(c(x, 'completed'), x.currency))}{group.every((x) => !c(x, 'completed')) && '—'}</td>
+                  <td className="px-3 py-2.5 tabular-nums">{group.reduce((s, x) => s + n(x, 'confirmed'), 0) || '—'}</td>
+                  <td className="px-3 py-2.5">{money2(group.filter((x) => c(x, 'confirmed')), (x) => formatMoney(c(x, 'confirmed'), x.currency))}{group.every((x) => !c(x, 'confirmed')) && '—'}</td>
+                  <td className="px-3 py-2.5">{money2(group.filter((x) => parseFloat(x.bonuses)), (x) => formatMoney(x.bonuses, x.currency))}{group.every((x) => !parseFloat(x.bonuses)) && '—'}</td>
+                  <td className="px-3 py-2.5">{money2(group.filter((x) => parseFloat(x.deductions)), (x) => formatMoney(x.deductions, x.currency))}{group.every((x) => !parseFloat(x.deductions)) && '—'}</td>
+                  <td className="px-3 py-2.5 font-black text-gray-900">{group.map((x) => (
+                    <button key={x.id} type="button" onClick={(e) => { e.stopPropagation(); setOpenId(x.id); }} className="block whitespace-nowrap hover:underline">
+                      {formatMoney(due(x), x.currency)}{x.locked && <Lock size={11} className="inline ms-1 text-gray-400" />}
+                    </button>))}</td>
+                  <td className="px-3 py-2.5">{[...new Set(group.map((x) => x.status))].map((s) => <StatusBadge key={s} status={s} />)}</td>
+                </tr>); })}</tbody>
             </table>
           </div>
           <div className="lg:hidden space-y-2">
-            {items.map((i) => (
+            {rows.map((group) => { const i = group[0]; return (
               <button key={i.id} onClick={() => setOpenId(i.id)} className="w-full glass-card-solid p-3 flex items-center gap-3 text-start">
                 <Avatar worker={{ name: i.worker_name, avatar: i.avatar }} size={42} />
                 <span className="flex-1 min-w-0"><span className="block font-bold text-gray-900 truncate">{i.worker_name}</span><span className="block text-[11px] text-gray-400 truncate">{i.job_type ? t(`workers.jobName.${i.job_type}`, i.job_type) : ''}</span></span>
-                <span className="text-end shrink-0"><span className="block font-black text-gray-900">{formatMoney(due(i), i.currency)}</span><StatusBadge status={i.status} /></span>
-              </button>))}
+                <span className="text-end shrink-0">{group.map((x) => <span key={x.id} className="block font-black text-gray-900 whitespace-nowrap">{formatMoney(due(x), x.currency)}</span>)}{[...new Set(group.map((x) => x.status))].map((s) => <StatusBadge key={s} status={s} />)}</span>
+              </button>); })}
           </div>
         </>}
       </>}

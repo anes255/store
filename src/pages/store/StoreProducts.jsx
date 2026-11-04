@@ -55,6 +55,9 @@ export default function StoreProducts() {
       return data;
     } catch { toast.error(t('products.failed','Failed')); return null; }
   };
+  // Making a subcategory needs a parent, so the button opens a short list of
+  // the main categories instead of only living inside the product form.
+  const [subParentOpen, setSubParentOpen] = useState(false);
   // Names for the filter list: "Computers › RAM".
   const catLabel = (c) => { const p = parentOf(categories, c.id); return p ? `${p.name_en || p.name} › ${c.name_en || c.name}` : (c.name_en || c.name); };
   const [loading, setLoading] = useState(true);
@@ -196,6 +199,25 @@ export default function StoreProducts() {
           </React.Fragment>))}
         </select>
         <button onClick={()=>addCategory()} className="btn-ghost text-xs flex items-center gap-1 shrink-0" title={t('products.addCategory','Add category')}><Plus size={12}/>{t('products.category','Category')}</button>
+        <div className="relative shrink-0">
+          <button onClick={()=>setSubParentOpen(o=>!o)} disabled={!topLevel(categories).length}
+            className="btn-ghost text-xs flex items-center gap-1 disabled:opacity-40"
+            title={topLevel(categories).length ? t('products.addSubcategory','Add subcategory') : t('products.addCategoryFirst','Create a category first')}>
+            <Plus size={12}/>{t('products.subcategory','Subcategory')}
+          </button>
+          {subParentOpen && (<>
+            <div className="fixed inset-0 z-20" onClick={()=>setSubParentOpen(false)}/>
+            <div className="absolute z-30 mt-1 min-w-[12rem] max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl p-1">
+              <p className="px-2 py-1 text-[10px] font-bold uppercase text-gray-400">{t('products.insideWhich','Inside which category?')}</p>
+              {topLevel(categories).map(c=>(
+                <button key={c.id} onClick={async()=>{ setSubParentOpen(false); await addCategory(c.id); }}
+                  className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100">
+                  {c.name_en||c.name}
+                </button>
+              ))}
+            </div>
+          </>)}
+        </div>
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0 ml-auto sm:ml-0">
           <button onClick={()=>setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode==='grid'?'bg-white shadow-sm':''}`} title={t('products.gridView','Grid view')}><LayoutGrid size={14} className={viewMode==='grid'?'text-brand-600':'text-gray-400'}/></button>
           <button onClick={()=>setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode==='list'?'bg-white shadow-sm':''}`} title={t('products.listView','List view')}><LayoutList size={14} className={viewMode==='list'?'text-brand-600':'text-gray-400'}/></button>

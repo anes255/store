@@ -19,6 +19,7 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
   const [result, setResult] = useState(null);
   const [auto, setAuto] = useState({ enabled: false, worker_ids: [], max_open: 0 });
   const [autoSaving, setAutoSaving] = useState(false);
+  const [waiting, setWaiting] = useState(null); // orders with no worker yet
 
   useEffect(() => {
     if (!open || !sid) return;
@@ -27,18 +28,49 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
     workersApi.autoAssignSettings(sid).then((r) => setAuto(r.data)).catch(() => {});
   }, [open, sid]);
 
+  // How many orders are actually waiting — the splits below are built from it.
+  useEffect(() => {
+    if (!open || !sid) return;
+    workersApi.autoAssignAvailable(sid, withCallFailed).then((r) => setWaiting(r.data?.available ?? null)).catch(() => setWaiting(null));
+  }, [open, sid, withCallFailed]);
+
   const toggle = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
   const num = Math.max(0, parseInt(n, 10) || 0);
   const preview = mode === 'per_worker'
     ? t('workers.distPreviewPer', 'Up to {{total}} orders: {{n}} for each of {{w}} worker(s).', { total: num * picked.length, n: num, w: picked.length })
     : t('workers.distPreviewTotal', '{{total}} orders split evenly: about {{each}} for each of {{w}} worker(s).', { total: num, each: picked.length ? Math.ceil(num / picked.length) : 0, w: picked.length });
 
+  // The exact share each worker ends up with: "5 + 5" or "2 + 2 + 2 + 2 + 2".
+  const shares = (() => {
+    const w = picked.length;
+    if (!w || !num) return [];
+    const take = mode === 'per_worker'
+      ? Math.min(num * w, waiting == null ? num * w : waiting)
+      : Math.min(num, waiting == null ? num : waiting);
+    const cap = mode === 'per_worker' ? num : Infinity;
+    const out = new Array(w).fill(0);
+    let left = take, i = 0, guard = 0;
+    while (left > 0 && guard < take + w + 1) { if (out[i] < cap) { out[i]++; left--; } i = (i + 1) % w; guard++; }
+    return out;
+  })();
+
+  // Ready-made splits for the orders that are waiting: "5 each", "2 each"…
+  const splitOptions = (() => {
+    const w = picked.length, av = waiting || 0;
+    if (!w || !av) return [];
+    const sizes = new Set([Math.ceil(av / w)]);
+    for (const k of [1, 2, 3, 5, 10]) if (k * w <= av) sizes.add(k);
+    return [...sizes].filter((s) => s > 0).sort((a, b) => a - b).slice(0, 5);
+  })();
+
   const run = async () => {
     if (!picked.length) return toast.error(t('workers.distPickWorkers', 'Pick at least one worker'));
     if (!num) return toast.error(t('workers.distGiveNumber', 'Give the number of orders'));
+    if (!sid) return toast.error(t('workers.distNoStore', 'No store selected'));
     setBusy(true);
     try {
       const { data } = await workersApi.autoAssign(sid, { worker_ids: picked, [mode]: num, include_call_failed: withCallFailed });
+      workersApi.autoAssignAvailable(sid, withCallFailed).then((r) => setWaiting(r.data?.available ?? null)).catch(() => {});
       setResult(data);
       toast.success(data.assigned ? t('workers.distDone', '{{n}} order(s) distributed', { n: data.assigned }) : t('workers.distNone', 'No unassigned new orders to distribute'));
       if (data.assigned) onDone?.();
@@ -83,7 +115,32 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
               </div>
               <input type="number" min="1" className="input-field !w-28 text-sm" value={n} onChange={(e) => setN(e.target.value)} />
             </div>
+            {waiting != null && (
+              <p className="text-xs text-gray-500 mt-2">
+                {t('workers.distWaiting', '{{n}} order(s) waiting for a worker.', { n: waiting })}
+                {splitOptions.length > 0 && <> {t('workers.distSplitHint', 'Pick a share:')}</>}
+              </p>
+            )}
+            {splitOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {splitOptions.map((s) => (
+                  <button key={s} type="button" onClick={() => { setMode('per_worker'); setN(String(s)); }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${mode === 'per_worker' && num === s ? 'border-brand-500 bg-brand-500/10 text-brand-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                    {t('workers.distEach', '{{n}} each', { n: s })}
+                  </button>
+                ))}
+                <button type="button" onClick={() => { setMode('total'); setN(String(waiting)); }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${mode === 'total' && num === waiting ? 'border-brand-500 bg-brand-500/10 text-brand-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                  {t('workers.distAllEvenly', 'All {{n}}, split evenly', { n: waiting })}
+                </button>
+              </div>
+            )}
             <p className="text-xs text-gray-500 mt-2">{preview}</p>
+            {shares.length > 0 && (
+              <p className="text-xs font-bold text-gray-700 mt-1">
+                {t('workers.distSplit', 'Split')}: {shares.join(' + ')} = {shares.reduce((a, b) => a + b, 0)}
+              </p>
+            )}
             <label className="flex items-center gap-2 mt-3 text-sm text-gray-700 cursor-pointer"><input type="checkbox" checked={withCallFailed} onChange={(e) => setWithCallFailed(e.target.checked)} />{t('workers.distWithCallFailed', 'Also include orders where a call failed')}</label>
             <p className="text-[11px] text-gray-400 mt-1">{t('workers.distRules', 'Only unassigned new orders are handed out, oldest first. Workers with less open work get theirs first.')}</p>
           </div>

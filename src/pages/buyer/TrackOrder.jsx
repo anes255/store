@@ -8,6 +8,7 @@ import { storeApi } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { Truck, Search, ArrowLeft, Package, Check, Clock, Ban, ShoppingBag, Phone, MapPin, CreditCard, Hash, Box, Home } from 'lucide-react';
 import { isValidAlgerianPhone } from '../../utils/phone';
+import { variantText } from '../../utils/variantText';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { useStoreFont } from '../../utils/storeFont';
 import ScrollToTopButton from '../../components/shared/ScrollToTopButton';
@@ -425,7 +426,7 @@ export default function TrackOrder() {
                               : <div className="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center shrink-0"><Package size={16} className="text-gray-600" /></div>}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-white truncate">{item.product_name || item.name}</p>
-                              {item.variant_label && <p className="text-[10px] text-gray-500">{item.variant_label}</p>}
+                              {(variantText(item.variant_label) || variantText(item.variant_info)) && <p className="text-[10px] text-gray-500">{variantText(item.variant_label) || variantText(item.variant_info)}</p>}
                               <p className="text-xs text-gray-400">{t('store.qty', 'Qty')}: {item.quantity}{store.tracking_show_price && <><span className="mx-1.5 text-gray-600">|</span>{parseFloat(item.price || item.unit_price || 0).toLocaleString()} {currency}</>}</p>
                             </div>
                             {store.tracking_show_price && <p className="text-sm font-bold text-white shrink-0">{(parseFloat(item.price || item.unit_price || 0) * (item.quantity || 1)).toLocaleString()} {currency}</p>}
