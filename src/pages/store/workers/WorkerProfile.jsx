@@ -108,7 +108,7 @@ export default function WorkerProfile() {
             <div><label className="input-label">{t('workers.dob', 'Date of birth')}</label><input type="date" className="input-field" value={form.date_of_birth} onChange={(ev) => setForm({ ...form, date_of_birth: ev.target.value })} /></div>
             <div><label className="input-label">{t('workers.job', 'Job')}</label><select className="input-field" value={form.job_type} onChange={(ev) => setForm({ ...form, job_type: ev.target.value })}><option value="">—</option>{jobs.map((j) => <option key={j.id} value={j.name}>{t(`workers.jobName.${j.name}`, j.name)}</option>)}</select></div>
             <div className="sm:col-span-2"><label className="input-label">{t('workers.role', 'Role')}</label><select className="input-field" value={form.role_id} onChange={(ev) => setForm({ ...form, role_id: ev.target.value })}><option value="">—</option>{roles.map((r) => <option key={r.id} value={r.id}>{t(`workers.roleName.${r.name}`, r.name)}</option>)}</select>
-              <p className="text-[11px] text-gray-400 mt-1">{t('workers.roleChangeNote', 'Changing the role does not change the permissions below — use "Apply role permissions" on the Permissions tab.')}</p></div>
+              <p className="text-[11px] text-gray-400 mt-1">{t('workers.roleChangeNote2', 'With nothing ticked under Permissions, the permissions of the role apply. Tick some to override them — use "Add role permissions" on the Permissions tab.')}</p></div>
           </div>
           <div><label className="input-label">{t('workers.notes', 'Notes')}</label><textarea className="input-field" rows={2} value={form.notes} onChange={(ev) => setForm({ ...form, notes: ev.target.value })} /></div>
           <div className="flex justify-end gap-2">

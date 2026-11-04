@@ -40,5 +40,9 @@ export default function useStaffAccess() {
   const perms = isStaff ? normalizePerms(live ?? user?.permissions) : null;
   const can = (key) => !perms || perms.has(key);
   const canAny = (...keys) => !perms || keys.flat().some((k) => perms.has(k));
-  return { isStaff, perms, can, canAny };
+  // The server's answer has landed (or there is nothing to wait for). Until
+  // then a staff member whose login carried no permissions must not be told
+  // they are locked out of a page they are in fact allowed to open.
+  const ready = !isStaff || live !== undefined || normalizePerms(user?.permissions).size > 0;
+  return { isStaff, perms, can, canAny, ready };
 }

@@ -535,7 +535,8 @@ export default function DashboardLayout({children}){
   // items to the permissions their store admin granted. Owners see everything.
   // Live permissions for the selected store (refreshed from the server, so
   // changes by the admin apply without logging out). null = owner.
-  const staffPerms = useStaffAccess().perms;
+  const staffAccess = useStaffAccess();
+  const staffPerms = staffAccess.perms;
   const hasStaffPerm=(path)=>{
     if(!staffPerms)return true;
     const need=PERM_GATE_MAP[path];
@@ -850,6 +851,9 @@ export default function DashboardLayout({children}){
       <div className={`p-3 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'}`} style={theme.backgroundColor?{background:theme.backgroundColor}:undefined}>
         {(()=>{
           if(!isStaffBlocked(location.pathname))return children;
+          // Still waiting for this store's permissions — do not accuse them
+          // of being locked out of a page they may well be allowed to open.
+          if(!staffAccess.ready)return <div className="py-24 grid place-items-center"><div className="w-8 h-8 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
           // Send them to the part of this area their role does cover rather
           // than leaving them on a dead end they can do nothing with.
           const dest=resolveStaffPath(location.pathname);
