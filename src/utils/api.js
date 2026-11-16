@@ -457,6 +457,7 @@ export const workersApi = {
   autoAssignSettings: (sid) => api.get(`${W(sid)}/orders/auto-assign/settings`),
   autoDistributeSettings: (sid) => api.get(`${W(sid)}/orders/auto-distribute/settings`),
   saveAutoDistributeSettings: (sid, data) => api.put(`${W(sid)}/orders/auto-distribute/settings`, data),
+  runAutoDistribute: (sid) => api.post(`${W(sid)}/orders/auto-distribute/run`),
   autoAssignAvailable: (sid, includeCallFailed) => api.get(`${W(sid)}/orders/auto-assign/available`, { params: { include_call_failed: includeCallFailed ? 1 : 0 } }),
   saveAutoAssignSettings: (sid, data) => api.put(`${W(sid)}/orders/auto-assign/settings`, data),
   logOrderAction: (sid, oid, action) => api.post(`${W(sid)}/orders/${oid}/log-action`, { action }),

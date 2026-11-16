@@ -22,7 +22,7 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
   const [waiting, setWaiting] = useState(null); // orders with no worker yet
   // Handing orders out in batches once enough have piled up. Not the same as
   // the per-order automatic assignment below it.
-  const [batch, setBatch] = useState({ enabled: false, worker_ids: [], per_worker: 5, min_waiting: 10, include_call_failed: false });
+  const [batch, setBatch] = useState({ enabled: false, worker_ids: [], every_minutes: 30, include_call_failed: false });
   const [batchSaving, setBatchSaving] = useState(false);
 
   useEffect(() => {
@@ -166,31 +166,39 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" className="mt-1" checked={batch.enabled} disabled={batchSaving}
                 onChange={(e) => saveBatch({ ...batch, enabled: e.target.checked, worker_ids: batch.worker_ids.length ? batch.worker_ids : picked })} />
-              <span><span className="flex items-center gap-1.5 text-sm font-bold text-gray-900"><Shuffle size={14} className="text-brand-500" />{t('workers.batchTitle', 'Hand orders out in batches')}</span>
-                <span className="block text-xs text-gray-500 mt-0.5">{t('workers.batchHelp', 'Once enough orders have piled up, give each chosen worker a set number at once. Different from assigning every new order as it arrives.')}</span></span>
+              <span><span className="flex items-center gap-1.5 text-sm font-bold text-gray-900"><Shuffle size={14} className="text-brand-500" />{t('workers.batchTitle', 'Share orders out on a timer')}</span>
+                <span className="block text-xs text-gray-500 mt-0.5">{t('workers.batchHelp', 'Every so often, count the orders waiting and split them evenly between the chosen workers. Eight orders over two workers is four each; twenty is ten each. Nobody has to press Distribute.')}</span></span>
             </label>
             {batch.enabled && (
               <div className="mt-4 space-y-3">
                 <WorkerPick list={batch.worker_ids} onToggle={(id) => saveBatch({ ...batch, worker_ids: toggle(batch.worker_ids, id) })} />
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="flex flex-wrap items-end gap-2">
                   <div>
-                    <p className="input-label">{t('workers.batchPerWorker', 'Orders per worker, each time')}</p>
-                    <input type="number" min="1" className="input-field text-sm" value={batch.per_worker || ''}
-                      onChange={(e) => setBatch({ ...batch, per_worker: e.target.value })}
-                      onBlur={() => saveBatch({ ...batch, per_worker: Math.max(1, parseInt(batch.per_worker, 10) || 5) })} />
+                    <p className="input-label">{t('workers.batchEvery', 'How often')}</p>
+                    <select className="input-field text-sm" value={batch.every_minutes}
+                      onChange={(e) => saveBatch({ ...batch, every_minutes: parseInt(e.target.value, 10) })}>
+                      {[5, 10, 15, 30, 60, 120, 240, 480].map((m) => (
+                        <option key={m} value={m}>{m < 60 ? t('workers.everyNMin', 'Every {{n}} minutes', { n: m }) : t('workers.everyNHour', 'Every {{n}} hour(s)', { n: m / 60 })}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div>
-                    <p className="input-label">{t('workers.batchMinWaiting', 'Wait until this many are waiting')}</p>
-                    <input type="number" min="1" className="input-field text-sm" value={batch.min_waiting || ''}
-                      onChange={(e) => setBatch({ ...batch, min_waiting: e.target.value })}
-                      onBlur={() => saveBatch({ ...batch, min_waiting: Math.max(1, parseInt(batch.min_waiting, 10) || 10) })} />
-                  </div>
+                  <button type="button" className="btn-ghost text-xs" disabled={batchSaving}
+                    onClick={async () => {
+                      try {
+                        const { data } = await workersApi.runAutoDistribute(sid);
+                        toast.success(data.assigned ? t('workers.distDone', '{{n}} order(s) distributed', { n: data.assigned }) : t('workers.distNone', 'No unassigned new orders to distribute'));
+                        if (data.assigned) onDone?.();
+                        workersApi.autoAssignAvailable(sid, withCallFailed).then((r) => setWaiting(r.data?.available ?? null)).catch(() => {});
+                      } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
+                    }}>
+                    {t('workers.runNow', 'Run a round now')}
+                  </button>
                 </div>
                 <p className="text-[11px] text-gray-400">
-                  {t('workers.batchExample', 'With {{n}} chosen, {{p}} each and a threshold of {{m}}: nothing happens until {{m}} orders are waiting, then {{total}} go out in one pass.', {
-                    n: (batch.worker_ids || []).length, p: parseInt(batch.per_worker, 10) || 0, m: parseInt(batch.min_waiting, 10) || 0,
-                    total: ((batch.worker_ids || []).length) * (parseInt(batch.per_worker, 10) || 0),
-                  })}
+                  {(batch.worker_ids || []).length && waiting
+                    ? t('workers.batchPreview', 'Right now that would be {{n}} waiting over {{w}} worker(s): about {{each}} each.', {
+                        n: waiting, w: (batch.worker_ids || []).length, each: Math.ceil(waiting / (batch.worker_ids || []).length) })
+                    : t('workers.batchIdle', 'Whatever is waiting when the next round comes gets shared out evenly.')}
                 </p>
                 <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                   <input type="checkbox" checked={!!batch.include_call_failed} onChange={(e) => saveBatch({ ...batch, include_call_failed: e.target.checked })} />
