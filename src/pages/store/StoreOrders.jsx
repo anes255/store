@@ -184,6 +184,13 @@ export default function StoreOrders() {
     } catch (e) { toast.error(e?.response?.data?.error || t('orders.failed', 'Failed')); }
   };
   const [selectedItems, setSelectedItems] = useState(new Set());
+  // Workers start on their own orders; owners always see everything.
+  const [mineOnly, setMineOnly] = useState(() => {
+    if (!isStaff) return false;
+    try { const v = localStorage.getItem('orders.mineOnly'); if (v !== null) return v === '1'; } catch {}
+    return true;
+  });
+  useEffect(() => { try { localStorage.setItem('orders.mineOnly', mineOnly ? '1' : '0'); } catch {} }, [mineOnly]);
   // Every status change on the open order, and who made it.
   const [orderTimeline, setOrderTimeline] = useState(null);
   useEffect(() => {
@@ -342,6 +349,7 @@ export default function StoreOrders() {
       const wantPreparingBucket = effectiveFilter === 'preparing';
       const wantArchive = effectiveFilter === 'archived';
       const params = searchQ ? { search: searchQ } : {};
+      if (isStaff && mineOnly) params.assigned = 'me';
       if (wantArchive) { params.archived = 'only'; }
       else if (!wantPreparingBucket && effectiveFilter !== 'all') { params.status = effectiveFilter; }
       const { data } = await orderApi.getAll(currentStore.id, params);
@@ -359,7 +367,7 @@ export default function StoreOrders() {
     if (pathFilter && filter !== pathFilter) { setFilter(pathFilter); setLoading(true); loadOrders(pathFilter); }
     else if (!pathFilter && (filter === 'preparing' || filter === 'archived')) { setFilter('all'); setLoading(true); loadOrders('all'); }
     else { setLoading(true); loadOrders(); }
-  }, [currentStore?.id, filter, searchQ, location.pathname]);
+  }, [currentStore?.id, filter, searchQ, location.pathname, mineOnly]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/delivery-companies`).then(r => setCompanies(r.data || [])).catch(() => {}); }, [currentStore?.id]);
   const [shippingWilayas, setShippingWilayas] = useState([]);
   useEffect(() => { if (currentStore?.id) api.get(`/manage/stores/${currentStore.id}/shipping-wilayas`).then(r => { const d = r.data; setShippingWilayas(Array.isArray(d) ? d : Array.isArray(d?.wilayas) ? d.wilayas : []); }).catch(() => {}); }, [currentStore?.id]);
@@ -1025,6 +1033,17 @@ export default function StoreOrders() {
       </div>}
 
       {/* Orders header — on phones the status chips ride along with it */}
+      {isStaff && (
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex bg-gray-100 rounded-xl p-1">
+            {[[true, t('orders.mine', 'My orders')], [false, t('orders.allOrders', 'All orders')]].map(([v, l]) => (
+              <button key={String(v)} onClick={() => setMineOnly(v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold ${mineOnly === v ? 'bg-white shadow-sm text-brand-600' : 'text-gray-500'}`}>{l}</button>
+            ))}
+          </div>
+          {mineOnly && <span className="text-[11px] text-gray-400">{t('orders.mineHint', 'Only the orders assigned to you.')}</span>}
+        </div>
+      )}
       <div className="dash-sticky-bar sm:!static sm:!bg-transparent sm:backdrop-blur-none -mx-4 px-4 sm:mx-0 sm:px-0 pt-2 pb-1 sm:pt-0 sm:pb-0 mb-2 sm:mb-0">
       {!isPreparingPage && (
         <div className="sm:hidden mb-2 overflow-x-auto -mx-1 px-1">
