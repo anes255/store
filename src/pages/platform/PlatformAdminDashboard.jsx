@@ -987,6 +987,26 @@ function PageBuilder(){
 
   const uploadImage=(idx)=>(e)=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>updateBlock(idx,'src',r.result);r.readAsDataURL(f);};
 
+  // Uploading a video, rather than only pasting a YouTube link. The file is
+  // stored on the server and the block keeps its URL, so the settings stay
+  // small and the browser can cache and seek it.
+  const[videoUp,setVideoUp]=useState({});
+  const uploadVideo=(idx)=>async(e)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    e.target.value='';
+    if(!/^video\//.test(file.type||''))return toast.error(t('ui.admin.pickAVideo','Choose a video file'));
+    if(file.size>64*1024*1024)return toast.error(t('ui.admin.videoTooBig','That video is over 64 MB'));
+    setVideoUp(s=>({...s,[idx]:0}));
+    try{
+      const{data}=await platformApi.uploadMedia(file,(p)=>setVideoUp(s=>({...s,[idx]:p})));
+      updateBlock(idx,'url',data.url);
+      toast.success(t('ui.admin.videoUploaded','Video uploaded'));
+    }catch(err){
+      toast.error(err?.response?.data?.error||t('ui.admin.uploadFailed','Upload failed'));
+    }
+    setVideoUp(s=>{const n={...s};delete n[idx];return n;});
+  };
+
   // Color+text input helper
   const F=({label,value,onChange,type='text',placeholder=''})=>{
     return(<div><label className="text-[10px] font-bold text-gray-400 uppercase">{label}</label>
@@ -1014,7 +1034,27 @@ function PageBuilder(){
       case'testimonials':return(<>{common}<div className="grid grid-cols-2 gap-2"><F label={t('ui.admin.title', 'Title')} value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label={t('ui.admin.columns', 'Columns')} value={block.columns} onChange={v=>updateBlock(idx,'columns',v)} type="number"/></div>{(block.items||[]).map((tm,ti)=><div key={ti} className="flex gap-1 mt-1 items-start p-2 bg-white rounded-lg border"><div className="flex-1 grid grid-cols-3 gap-1"><input className="px-1 py-0.5 border rounded text-xs" value={tm.name} onChange={e=>updateItem(idx,ti,'name',e.target.value)} placeholder={t('ui.admin.name', 'Name')}/><input className="px-1 py-0.5 border rounded text-xs" value={tm.role} onChange={e=>updateItem(idx,ti,'role',e.target.value)} placeholder={t('ui.admin.role', 'Role')}/><input className="px-1 py-0.5 border rounded text-xs col-span-2" value={tm.text} onChange={e=>updateItem(idx,ti,'text',e.target.value)} placeholder={t('ui.admin.quote', 'Quote')}/></div><button onClick={()=>removeItem(idx,ti)} className="text-red-400 p-0.5"><Trash2 size={10}/></button></div>)}<button onClick={()=>addItem(idx,{name:'New Person',text:'Great platform!',role:'User'})} className="text-xs text-brand-600 font-bold mt-1">{t('ui.admin.addTestimonial', '+ Add Testimonial')}</button></>);
       case'stats':return(<>{common}<div className="grid grid-cols-2 gap-2"><F label={t('ui.admin.title', 'Title')} value={block.title} onChange={v=>updateBlock(idx,'title',v)}/><F label={t('ui.admin.accentColor', 'Accent Color')} value={block.accentColor} onChange={v=>updateBlock(idx,'accentColor',v)} type="color"/></div>{(block.items||[]).map((s,si)=><div key={si} className="flex gap-1 mt-1 items-center"><input className="px-1 py-0.5 border rounded text-xs w-20" value={s.value} onChange={e=>updateItem(idx,si,'value',e.target.value)} placeholder="500+"/><input className="px-1 py-0.5 border rounded text-xs flex-1" value={s.label} onChange={e=>updateItem(idx,si,'label',e.target.value)} placeholder={t('ui.admin.label', 'Label')}/><button onClick={()=>removeItem(idx,si)} className="text-red-400"><Trash2 size={10}/></button></div>)}<button onClick={()=>addItem(idx,{value:'100+',label:t('ui.admin.newStat', 'New Stat')})} className="text-xs text-brand-600 font-bold mt-1">{t('ui.admin.addStat', '+ Add Stat')}</button></>);
       case'image':return<>{common}<div className="grid grid-cols-3 gap-2"><F label={t('ui.admin.width', 'Width (%)')} value={block.width} onChange={v=>updateBlock(idx,'width',v)} type="number"/><F label={t('ui.admin.heightPx0Auto', 'Height (px, 0=auto)')} value={block.height} onChange={v=>updateBlock(idx,'height',v)} type="number"/><F label={t('ui.admin.borderRadiusPx', 'Border Radius (px)')} value={block.borderRadius} onChange={v=>updateBlock(idx,'borderRadius',v)} type="number"/></div><div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('ui.admin.position', 'Position')}</label><div className="flex gap-1 mt-0.5">{[{v:'far-left',l:'⬅️ Far Left'},{v:'left',l:'◀ Left'},{v:'center',l:'⬛ Center'},{v:'right',l:'▶ Right'},{v:'far-right',l:'➡️ Far Right'}].map(p=><button key={p.v} onClick={()=>updateBlock(idx,'position',p.v)} className={`px-2 py-1 rounded text-[9px] font-bold ${(block.position||'center')===p.v?'bg-brand-500 text-white':'bg-gray-200 text-gray-600'}`}>{p.l}</button>)}</div></div><F label={t('ui.admin.linkUrlOptional', 'Link URL (optional)')} value={block.link} onChange={v=>updateBlock(idx,'link',v)} placeholder="https://..."/><F label={t('ui.admin.altText', 'Alt Text')} value={block.alt} onChange={v=>updateBlock(idx,'alt',v)} placeholder={t('ui.admin.imageDescription', 'Image description')}/>{block.src?<div className="mt-1 relative"><img src={block.src} className="w-full rounded-lg border max-h-32 object-cover"/><button onClick={()=>updateBlock(idx,'src','')} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full"><X size={10}/></button></div>:<div className="mt-1 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-brand-400" onClick={()=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=uploadImage(idx);inp.click();}}><Image size={20} className="mx-auto text-gray-400 mb-1"/><p className="text-xs text-gray-500">{t('ui.admin.clickToUploadImage', 'Click to upload image')}</p></div>}</>;
-      case'video':return<>{common}<F label={t('ui.admin.youtubeVimeoUrl', 'YouTube/Vimeo URL')} value={block.url} onChange={v=>updateBlock(idx,'url',v)} placeholder="https://youtube.com/watch?v=..."/><F label={t('ui.admin.title', 'Title')} value={block.title} onChange={v=>updateBlock(idx,'title',v)}/></>;
+      case'video':return(<>{common}
+        <F label={t('ui.admin.youtubeVimeoUrl', 'YouTube/Vimeo URL')} value={block.url} onChange={v=>updateBlock(idx,'url',v)} placeholder="https://youtube.com/watch?v=..."/>
+        <div className="mt-2">
+          <label className="text-[10px] font-bold text-gray-400 uppercase">{t('ui.admin.orUploadVideo','or upload a video')}</label>
+          {videoUp[idx]!==undefined?(
+            <div className="mt-1">
+              <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden"><div className="h-full bg-brand-500 transition-all" style={{width:`${videoUp[idx]||0}%`}}/></div>
+              <p className="text-[10px] text-gray-400 mt-1">{t('ui.admin.uploadingPct','Uploading… {{n}}%',{n:videoUp[idx]||0})}</p>
+            </div>
+          ):(
+            <div className="mt-1 flex items-center gap-2">
+              <label className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 cursor-pointer">
+                {t('ui.admin.chooseVideo','Choose a video')}
+                <input type="file" accept="video/*" className="hidden" onChange={uploadVideo(idx)}/>
+              </label>
+              {block.url&&!/youtu|vimeo/i.test(block.url)&&<span className="text-[10px] text-emerald-600 font-bold truncate">{t('ui.admin.videoReady','Uploaded')}</span>}
+            </div>
+          )}
+          <p className="text-[10px] text-gray-400 mt-1">{t('ui.admin.videoHint','MP4 or WebM, up to 64 MB. An uploaded video replaces the link above.')}</p>
+        </div>
+        <F label={t('ui.admin.title', 'Title')} value={block.title} onChange={v=>updateBlock(idx,'title',v)}/></>);
       case'spacer':return<div className="grid grid-cols-2 gap-2"><F label={t('ui.admin.heightPx', 'Height (px)')} value={block.height} onChange={v=>updateBlock(idx,'height',v)} type="number"/><F label={t('ui.admin.background', 'Background')} value={block.bgColor} onChange={v=>updateBlock(idx,'bgColor',v)} type="color"/></div>;
       default:return null;
     }

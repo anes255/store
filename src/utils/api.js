@@ -82,6 +82,14 @@ const invalidatePlatform = () => invalidateCache('pf:');
 // Platform Admin
 export const platformApi = {
   login: (data) => api.post('/platform/login', data),
+  // A video is sent as raw bytes, not base64 JSON: a third smaller on the
+  // wire, and it comes back as a URL rather than being stored in settings.
+  uploadMedia: (file, onProgress) => api.post('/platform/media', file, {
+    headers: { 'Content-Type': file.type || 'application/octet-stream', 'X-Filename': encodeURIComponent(file.name || '') },
+    onUploadProgress: (e) => { if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100)); },
+    timeout: 0,
+  }),
+  deleteMedia: (id) => api.delete(`/platform/media/${id}`),
   getSettings: () => cachedGet('pf:settings', () => api.get('/platform/settings')),
   updateSettings: (data) => api.put('/platform/settings', data).then(r => { invalidateCache('pf:settings'); return r; }),
   getDashboard: () => cachedGet('pf:dash', () => api.get('/platform/dashboard')),
@@ -206,6 +214,26 @@ export const productApi = {
   createCoupon: (storeId, data) => api.post(`/manage/stores/${storeId}/coupons`, data),
 };
 
+// Offers & coupons. Changing one changes what every cart costs, so each
+// write clears the cached storefront reads as well as its own list.
+const clearPromos = (r) => { invalidateCache('promo'); invalidateCache('prods'); invalidateCache('prod'); return r; };
+export const promotionApi = {
+  listOffers: (sid, params) => api.get(`/manage/stores/${sid}/offers`, { params }),
+  createOffer: (sid, data) => api.post(`/manage/stores/${sid}/offers`, data).then(clearPromos),
+  updateOffer: (sid, id, data) => api.put(`/manage/stores/${sid}/offers/${id}`, data).then(clearPromos),
+  setOfferStatus: (sid, id, status) => api.patch(`/manage/stores/${sid}/offers/${id}/status`, { status }).then(clearPromos),
+  deleteOffer: (sid, id) => api.delete(`/manage/stores/${sid}/offers/${id}`).then(clearPromos),
+
+  listCoupons: (sid, params) => api.get(`/manage/stores/${sid}/promo-coupons`, { params }),
+  createCoupon: (sid, data) => api.post(`/manage/stores/${sid}/promo-coupons`, data).then(clearPromos),
+  updateCoupon: (sid, id, data) => api.put(`/manage/stores/${sid}/promo-coupons/${id}`, data).then(clearPromos),
+  setCouponStatus: (sid, id, status) => api.patch(`/manage/stores/${sid}/promo-coupons/${id}/status`, { status }).then(clearPromos),
+  deleteCoupon: (sid, id) => api.delete(`/manage/stores/${sid}/promo-coupons/${id}`).then(clearPromos),
+  couponRedemptions: (sid, id, params) => api.get(`/manage/stores/${sid}/promo-coupons/${id}/redemptions`, { params }),
+
+  analytics: (sid, params) => api.get(`/manage/stores/${sid}/promotions/analytics`, { params }),
+};
+
 // Orders
 export const orderApi = {
   getAll: (storeId, params) => cachedGet(`mords:${storeId}:${JSON.stringify(params||{})}`, () => api.get(`/manage/stores/${storeId}/orders`, { params })),
@@ -318,6 +346,9 @@ export const storeApi = {
   cancelOrder: (slug, orderId) => api.post(`/store/${slug}/orders/${orderId}/cancel`),
   deleteOrder: (slug, orderId) => api.delete(`/store/${slug}/orders/${orderId}`),
   validateCoupon: (slug, data) => api.post(`/store/${slug}/validate-coupon`, data),
+  // Prices a cart server-side: the only source of the figures the buyer reads.
+  quote: (slug, data) => api.post(`/store/${slug}/quote`, data),
+  liveOffers: (slug) => cachedGet(`promo:offers:${slug}`, () => api.get(`/store/${slug}/offers`)),
   getPages: (slug) => api.get(`/store/${slug}/pages`),
   // Reviews
   getProductReviews: (slug, productSlug) => api.get(`/store/${slug}/products/${productSlug}/reviews`),

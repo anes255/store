@@ -1,7 +1,7 @@
 import React,{useState,useEffect,useRef} from'react';import{createPortal}from'react-dom';import{Link,Navigate,useLocation,useNavigate}from'react-router-dom';import{useAuthStore,useStoreManagement,useLangStore,useAdminTheme}from'../../hooks/useStore';import{useTranslation}from'react-i18next';import LanguageSwitcher from'./LanguageSwitcher';import ThemePanel from'./ThemePanel';import usePlanFeatures from'../../hooks/usePlanFeatures';import useStaffAccess from'../../hooks/useStaffAccess';
 import useGlobalSearch from '../../hooks/useGlobalSearch';import{Briefcase,Home as House,User,LayoutDashboard,ShoppingCart,Package,Settings,Users,ChevronDown,ChevronLeft,Globe,Zap,LogOut,Search,Bell,Menu,X,Eye,Truck,BarChart3,DollarSign,CreditCard,GripVertical,Percent,LayoutTemplate,Lock,Target,Check,Plus}from'lucide-react';
 import CommandPalette from './CommandPalette';
-import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon } from 'lucide-react';
+import { Sun, Moon, LogOut as LogOutIcon, Store as StoreIcon, Palette as PaletteIcon, Tag } from 'lucide-react';
 import toast from'react-hot-toast';
 import{deletionDaysLeft}from'../../utils/storeDeletion';
 
@@ -63,6 +63,9 @@ const PERM_GATE_MAP = {
   '/dashboard/workers/activity': ['workers_view','workers_manage','staff_manage'],
   '/dashboard/landing-pages': 'builder_edit',
   '/dashboard/offers': 'offers_manage',
+  '/dashboard/coupons': 'offers_manage',
+  '/dashboard/promotions/analytics': ['offers_manage','analytics_view'],
+  '/dashboard/product-sales': 'offers_manage',
   '/dashboard/order-tracking': ['tracking_view','orders_view'],
   '/dashboard/status-management': 'settings_edit',
   '/dashboard/form-settings': 'settings_edit',
@@ -83,7 +86,10 @@ const STAFF_FALLBACKS = {
   '/dashboard/abandoned': ['/dashboard/orders', '/dashboard/preparing'],
   '/dashboard/products': ['/dashboard/stock', '/dashboard/offers'],
   '/dashboard/stock': ['/dashboard/products'],
-  '/dashboard/offers': ['/dashboard/products'],
+  '/dashboard/offers': ['/dashboard/coupons', '/dashboard/products'],
+  '/dashboard/coupons': ['/dashboard/offers', '/dashboard/products'],
+  '/dashboard/promotions/analytics': ['/dashboard/offers', '/dashboard/analytics'],
+  '/dashboard/product-sales': ['/dashboard/offers', '/dashboard/products'],
   '/dashboard/analytics': ['/dashboard', '/dashboard/orders'],
   '/dashboard/costs': ['/dashboard/taxes', '/dashboard/billing', '/dashboard/workers/payroll'],
   '/dashboard/taxes': ['/dashboard/costs'],
@@ -368,7 +374,9 @@ const DEFAULT_ITEMS = [
   {id:'orders',type:'group',icon:'ShoppingCart',label:'sidebar.orders',children:[
     {to:'/dashboard/orders',label:'sidebar.ordersList'},{to:'/dashboard/abandoned',label:'sidebar.abandonedOrders'},{to:'/dashboard/preparing',label:'sidebar.preparing'},{to:'/dashboard/orders-archive',label:'sidebar.ordersArchive'}]},
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
-    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/offers',label:'sidebar.offers'},{to:'/dashboard/landing-pages',label:'sidebar.landingPages'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
+    {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/landing-pages',label:'sidebar.landingPages'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
+  {id:'promotions',type:'group',icon:'Tag',label:'sidebar.promotions',children:[
+    {to:'/dashboard/offers',label:'sidebar.offers'},{to:'/dashboard/offers?tab=tiered',label:'sidebar.buyMoreSave'},{to:'/dashboard/offers?tab=scheduled',label:'sidebar.scheduledOffers'},{to:'/dashboard/coupons',label:'sidebar.coupons'},{to:'/dashboard/promotions/analytics',label:'sidebar.promotionAnalytics'},{to:'/dashboard/product-sales',label:'sidebar.productSales'}]},
   {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
     {to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
@@ -383,7 +391,7 @@ const DEFAULT_ITEMS = [
   {id:'billing',type:'link',to:'/dashboard/billing',icon:'CreditCard',label:'sidebar.billing'},
 ];
 
-const ICONS = {House,User,Briefcase,LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target};
+const ICONS = {House,User,Briefcase,LayoutDashboard,ShoppingCart,Package,Globe,Zap,Truck,Users,BarChart3,DollarSign,CreditCard,Settings,Percent,LayoutTemplate,Target,Tag};
 
 export default function DashboardLayout({children}){
   const{t}=useTranslation();const location=useLocation();const navigate=useNavigate();
@@ -569,9 +577,9 @@ export default function DashboardLayout({children}){
     // it just takes them to the part of it they are allowed to work on.
     const dest=resolveStaffPath(to);
     if(!dest)return null;
-    if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pc:pc}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
+    if(gated)return(<button onClick={e=>handleGated(e,label)} className="flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm opacity-50 w-full" style={{color:isDark?pc:pc}}><Icon size={18}/>{sidebarOpen&&<span className="flex items-center gap-1">{label}<Lock size={12} className="text-gray-400"/></span>}</button>);
     const active=isActive(dest)||isActive(to);
-    return(<Link to={dest} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
+    return(<Link to={dest} className={`flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm transition-all ${active?'text-white font-semibold shadow-lg':''}`}
       style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:isDark?pc:pc}}
       onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');e.currentTarget.style.color=isDark?pc:pc;}}}
       onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pc:pc;}}}
@@ -583,12 +591,12 @@ export default function DashboardLayout({children}){
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
     const segment=to.split('/').pop();
     const gated=isGated(segment);
-    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-12 py-1.5 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pc+'80':pc}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
+    if(gated)return(<button onClick={e=>handleGated(e,lbl)} className="pl-11 py-1 block text-sm cursor-not-allowed w-full text-left" style={{color:isDark?pc+'80':pc}}><span className="flex items-center gap-1">{lbl}<Lock size={10}/></span></button>);
     const active=isActive(dest)||isActive(to);
     to=dest;
     // The current sub-page gets the same filled highlight as a selected main
     // page (it used to be only a colour change, easy to miss).
-    return(<Link to={to} className={`ml-3 mr-1 my-0.5 pl-9 pr-3 py-1.5 block text-sm rounded-xl transition-all ${active?'font-semibold text-white shadow-md':''}`}
+    return(<Link to={to} className={`ml-3 mr-1 pl-8 pr-3 py-1 block text-sm rounded-lg transition-all ${active?'font-semibold text-white shadow-md':''}`}
       style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:pc}}
       onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');}}}
       onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';}}}
@@ -634,7 +642,7 @@ export default function DashboardLayout({children}){
             <div className="flex items-center">
               {sidebarOpen&&<div className="opacity-0 group-hover:opacity-40 px-0.5"><GripVertical size={12} className="text-gray-400"/></div>}
               {(()=>{const childActive=item.children.some(c=>isActive(c.to));const base=childActive?(isDark?pc+'22':pc+'14'):'';return(
-              <button onClick={()=>toggle(item.id)} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all ${childActive?'font-semibold':''}`}
+              <button onClick={()=>toggle(item.id)} className={`flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm w-full justify-between flex-1 transition-all ${childActive?'font-semibold':''}`}
                 style={{color:pc,backgroundColor:base}}
                 onMouseEnter={e=>{e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');}}
                 onMouseLeave={e=>{e.currentTarget.style.backgroundColor=base;}}
@@ -719,7 +727,7 @@ export default function DashboardLayout({children}){
         />
         {sideQuery&&<button onClick={()=>setSideQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
       </div>}
-      <nav className={`flex-1 px-2 py-3 space-y-0.5 overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
+      <nav className={`flex-1 px-2 py-2 space-y-px overflow-y-auto text-sm ${isDark?'text-gray-300':'text-gray-700'}`}>
         {sidebarOpen&&<div className="px-3 pt-2 pb-1 flex items-center justify-between">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{color:pc}}>{t('sidebar.mainMenu','Main Menu')}</p>
           {(()=>{const groupIds=items.filter(it=>it.type!=='link'&&it.children).map(it=>it.id);const allOpen=groupIds.length>0&&groupIds.every(id=>openMenus[id]);return(
@@ -750,25 +758,26 @@ export default function DashboardLayout({children}){
             const lbl=typeof item.label==='string'&&item.label.startsWith('sidebar.')?t(item.label):item.label;
             if(item.type==='link')return(<SLink key={item.id} to={item.to} icon={Icon} label={lbl}/>);
             return(<div key={item.id}>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lbl}</div>
+              <div className="px-3 pt-1.5 pb-0.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lbl}</div>
               {item.children.map(c=><SubLink key={c.to} to={c.to} label={c.label}/>)}
             </div>);
           });
         })()}
       </nav>
       <div className={`border-t shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sidebarOpen?'p-3':'p-2'} ${isDark?'border-gray-800':'border-gray-100'}`}>
-        <div className={`flex items-center ${sidebarOpen?'gap-2 rounded-xl p-2.5':'justify-center rounded-lg p-2'} mb-2`} style={{backgroundColor:pc+'15'}}><UserBubble user={user} pc={pc} size={32}/>{sidebarOpen&&<div className="min-w-0"><p className={`text-xs font-bold truncate ${isDark?'text-gray-200':'text-gray-800'}`}>{user?.name||t('ui.layout.user', 'User')}</p><p className="text-[10px] text-gray-400 truncate">{user?.is_staff?((user.staff_role_label&&t(`workers.roleName.${user.staff_role_label}`,t(`workers.jobName.${user.staff_role_label}`,user.staff_role_label)))||(typeof user.staff_role==='string'&&!user.staff_role.startsWith('tpl_')&&!user.staff_role.startsWith('st_')?user.staff_role.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):t('sidebar.staffRole','Staff'))):t('sidebar.adminRole','Admin')}</p></div>}</div>
-        {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center ${sidebarOpen?'gap-3 px-4':'justify-center px-0'} py-2.5 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
+        {/* The name and photo live in the header; repeating them here only
+            cost a row of sidebar. */}
+        {!isMobile&&<button onClick={()=>setSidebarOpen(!sidebarOpen)} className={`flex items-center ${sidebarOpen?'gap-3 px-3':'justify-center px-0'} py-2 rounded-xl font-medium text-sm w-full transition-all ${isDark?'text-gray-400 hover:bg-white/5':'text-gray-600 hover:bg-gray-100'}`}><ChevronLeft size={18} className={`transition-transform ${sidebarOpen?'':'rotate-180'}`}/>{sidebarOpen&&<span>{t('sidebar.collapse','Collapse')}</span>}</button>}
         <button
           type="button"
           onClick={()=>navigate('/dashboard/settings')}
-          className={`flex items-center ${sidebarOpen?'gap-3 px-4':'justify-center px-0'} py-2.5 rounded-xl font-medium text-sm w-full transition-all mb-1 ${isDark?'text-gray-300 hover:bg-white/5':'text-gray-700 hover:bg-gray-100'}`}
+          className={`flex items-center ${sidebarOpen?'gap-3 px-3':'justify-center px-0'} py-2 rounded-xl font-medium text-sm w-full transition-all mb-1 ${isDark?'text-gray-300 hover:bg-white/5':'text-gray-700 hover:bg-gray-100'}`}
           title={!sidebarOpen?t('sidebar.settings','Settings'):''}
         ><Settings size={18}/>{sidebarOpen&&<span>{t('sidebar.settings','Settings')}</span>}</button>
         <button
           type="button"
           onClick={(e)=>{e.preventDefault();e.stopPropagation();try{logout();}catch{}try{localStorage.removeItem('token');}catch{}window.location.href='/login';}}
-          className={`flex items-center ${sidebarOpen?'gap-3 px-4':'justify-center px-0'} py-2.5 rounded-xl font-medium text-sm w-full text-red-500 cursor-pointer transition-all ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}
+          className={`flex items-center ${sidebarOpen?'gap-3 px-3':'justify-center px-0'} py-2 rounded-xl font-medium text-sm w-full text-red-500 cursor-pointer transition-all ${isDark?'hover:bg-red-500/10':'hover:bg-red-50'}`}
           title={!sidebarOpen?t('sidebar.disconnect','Disconnect'):''}
         ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>

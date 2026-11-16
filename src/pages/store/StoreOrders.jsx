@@ -1287,31 +1287,29 @@ export default function StoreOrders() {
               <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0"><Trash2 size={18}/></div>
               <div>
                 <h2 className="text-lg font-black text-gray-900">{deleteConfirm.ids.length>1?t('ui.orders.deleteNOrders','Delete {{n}} orders?',{n:deleteConfirm.ids.length}):t('ui.orders.deleteOneOrder','Delete 1 order?')}</h2>
-                <p className="text-sm text-gray-500 mt-1">{deleteConfirm.ids.length>1?t('ui.orders.archiveBeforeDeleteMany','Do you want to archive them before deleting? Archived orders can be restored from the vault.'):t('ui.orders.archiveBeforeDeleteOne','Do you want to archive it before deleting? Archived orders can be restored from the vault.')}</p>
+                <p className="text-sm text-gray-500 mt-1">{deleteConfirm.ids.length>1?t('ui.orders.archiveOrDeleteMany','Move them to the archive to keep them out of the way, or delete them. Deleted orders go to the vault and can still be restored.'):t('ui.orders.archiveOrDeleteOne','Move it to the archive to keep it out of the way, or delete it. Deleted orders go to the vault and can still be restored.')}</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 mt-5">
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
-                  const tid = toast.loading(t('ui.orders.archivingDeleting', 'Archiving & deleting...'));
+                  const tid = toast.loading(t('ui.orders.archiving', 'Moving to the archive...'));
                   setDeleteConfirm(null);
                   try {
                     await orderApi.bulkArchive(currentStore.id, ids, true);
-                    const { data } = await orderApi.bulkDelete(currentStore.id, ids);
                     toast.dismiss(tid);
-                    const n = typeof data?.count === 'number' ? data.count : ids.length;
-                    toast.success(t('ui.orders.archivedDeletedN', '{{n}} order(s) archived & deleted', { n }));
+                    toast.success(t('ui.orders.archivedN', '{{n}} order(s) moved to the archive', { n: ids.length }));
                     setOrders((prev) => prev.filter((o) => !ids.includes(o.id)));
                   } catch (e) {
                     toast.dismiss(tid);
-                    toast.error(e?.response?.data?.error || t('ui.orders.deleteFailed', 'Could not delete those orders'));
+                    toast.error(e?.response?.data?.error || t('ui.orders.archiveFailed', 'Could not archive those orders'));
                   }
                   clearSelection(); loadOrders();
                 }}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-2"
               >
-                {t('ui.orders.archiveDelete', 'Archive & Delete')}
+                {t('ui.orders.moveToArchive', 'Move to the archive')}
               </button>
               <button
                 onClick={async () => {

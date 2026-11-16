@@ -13,6 +13,8 @@ import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import ThemePanel from '../../components/shared/ThemePanel';
 import { useStoreFont } from '../../utils/storeFont';
 import { StoreBrand, StoreBottomNav } from '../../components/shared/StoreNav';
+import BuyMoreSave from '../../components/shared/BuyMoreSave';
+import { bestOfferFor, toUnits, fromUnits } from '../../utils/offerPricing';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Full-screen image lightbox with zoom controls. Supports:
@@ -259,15 +261,30 @@ export default function ProductDetail() {
   const [store, setStore] = useState(cachedStore);
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  // The offers this shop is running. The ladder below and the price at
+  // the top are worked out from them with the same rules the server uses,
+  // so the three figures a buyer sees never disagree.
+  const [liveOffers, setLiveOffers] = useState([]);
+  useEffect(() => {
+    if (!storeSlug) return;
+    storeApi.liveOffers(storeSlug)
+      .then((r) => setLiveOffers((r.data?.offers || []).filter((o) => o.show_on_product !== false)))
+      .catch(() => setLiveOffers([]));
+  }, [storeSlug]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   // The gallery is a snap-scrolling strip: scrolling it updates the dot/thumb,
   // and the arrows and thumbnails scroll it instead of swapping the <img>.
   const galleryRef = useRef(null);
   const scrollRaf = useRef(0);
+  const glideTimer = useRef(0);
+  const gliding = useRef(false);
   const onGalleryScroll = () => {
     const el = galleryRef.current;
     if (!el || !el.clientWidth) return;
+    // While a glide is running the index is already where it is going; the
+    // frames in between would otherwise drag the highlight backwards.
+    if (gliding.current) return;
     cancelAnimationFrame(scrollRaf.current);
     scrollRaf.current = requestAnimationFrame(() => {
       const i = Math.round(Math.abs(el.scrollLeft) / el.clientWidth);
@@ -280,9 +297,19 @@ export default function ProductDetail() {
     if (!el || !n) return;
     const idx = ((i % n) + n) % n;
     const rtl = getComputedStyle(el).direction === 'rtl';
-    el.scrollTo({ left: (rtl ? -1 : 1) * idx * el.clientWidth, behavior: 'smooth' });
     setSelectedImage(idx);
+    gliding.current = true;
+    // The strip stays on `auto` so a finger moves it one to one; smooth is
+    // turned on only for this move, whatever the inline style says.
+    el.style.scrollBehavior = 'smooth';
+    el.scrollTo({ left: (rtl ? -1 : 1) * idx * el.clientWidth, behavior: 'smooth' });
+    clearTimeout(glideTimer.current);
+    glideTimer.current = setTimeout(() => {
+      el.style.scrollBehavior = 'auto';
+      gliding.current = false;
+    }, 420);
   };
+  useEffect(() => () => { clearTimeout(glideTimer.current); cancelAnimationFrame(scrollRaf.current); }, []);
   // Lightbox: when set, an overlay shows that image full-screen.
   const [lightboxIdx, setLightboxIdx] = useState(null);
   useStoreFont(store);
@@ -354,9 +381,8 @@ export default function ProductDetail() {
   const basePrice = offerPct > 0 ? Math.round(rawBasePrice * (1 - offerPct / 100)) : rawBasePrice;
   // Sum all price adjustments from selected variants
   const priceAdj = selectedIdxes.reduce((sum, idx) => sum + (parseFloat(variants[idx]?.price_adjustment) || 0), 0);
-  // Quantity offers (tiered "buy N, save") are presented at checkout, not here,
-  // so the product price reflects only the sale + variant adjustments.
-  const finalPrice = basePrice + priceAdj;
+  // The price of one, before any offer that depends on how many are bought.
+  const unitPrice = basePrice + priceAdj;
   // New variants are created with stock 0, so most owners never fill it in.
   // Treating that 0 as "sold out" disabled Add to Cart the moment a buyer
   // picked a variant. Per-variant stock only counts when the owner actually
@@ -386,6 +412,17 @@ export default function ProductDetail() {
     if (parts.length === 1) return parts[0];
     return { selections: parts, label: variantLabel };
   };
+
+  // What this quantity actually costs once the best offer is applied, and
+  // what one of them works out at. Changing the quantity changes both, so
+  // the price at the top of the page follows the ladder below it.
+  const pickedVariant = buildVariantObj();
+  const lineOffer = bestOfferFor({
+    product, offers: liveOffers, unitUnits: toUnits(unitPrice), quantity, variant: pickedVariant,
+  });
+  const lineTotal = fromUnits(toUnits(unitPrice) * quantity - (lineOffer ? lineOffer.discount : 0));
+  const lineSaving = fromUnits(lineOffer ? lineOffer.discount : 0);
+  const finalPrice = quantity > 0 ? Math.round((lineTotal / quantity) * 100) / 100 : unitPrice;
 
   const selectVariant = (type, idx) => {
     setSelectedVariants(prev => ({
@@ -557,6 +594,17 @@ export default function ProductDetail() {
             </div>
             {/* Offer timer */}
             <ProductOfferCountdown product={product} />
+
+            {/* The savings ladder. Picking a row sets the quantity, and the
+                price above follows it. */}
+            <BuyMoreSave
+              product={product} offers={liveOffers} unitPrice={unitPrice} variant={pickedVariant}
+              quantity={quantity} onPick={setQuantity} currency={currency} pc={pc} />
+            {lineSaving > 0 && (
+              <p className="mt-2 text-sm font-bold text-emerald-600">
+                {t('store.youSaveOnThis', 'You save {{v}} on {{n}} item(s)', { v: `${lineSaving.toLocaleString()} ${currency}`, n: quantity })}
+              </p>
+            )}
 
             {/* ═══ VARIANT SELECTORS ═══ */}
             {groupTypes.length > 0 && (

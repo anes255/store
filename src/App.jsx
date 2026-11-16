@@ -121,6 +121,9 @@ const StatusManagement=lazy(()=>import('./pages/store/StatusManagement'));
 const TrackingOrders=lazy(()=>import('./pages/store/TrackingOrders'));
 const SmartReviews=lazy(()=>import('./pages/store/SmartReviews'));
 const StoreOffers=lazy(()=>import('./pages/store/StoreOffers'));
+const OffersPage=lazy(()=>import('./pages/store/promotions/OffersPage'));
+const CouponsPage=lazy(()=>import('./pages/store/promotions/CouponsPage'));
+const PromotionAnalytics=lazy(()=>import('./pages/store/promotions/PromotionAnalytics'));
 const TrackingPixels=lazy(()=>import('./pages/store/TrackingPixels'));
 const LandingPageBuilder=lazy(()=>import('./pages/store/LandingPageBuilder'));
 // Buyer
@@ -188,7 +191,11 @@ export default function App(){return(<><PlatformMeta/><CustomDomainRedirect/><Da
 <Route path="/dashboard/tracking-orders" element={<P><TrackingOrders/></P>}/>
 <Route path="/dashboard/smart-reviews" element={<P><SmartReviews/></P>}/>
 <Route path="/dashboard/tracking-pixels" element={<P><TrackingPixels/></P>}/>
-<Route path="/dashboard/offers" element={<P><StoreOffers/></P>}/>
+<Route path="/dashboard/offers" element={<P><OffersPage/></P>}/>
+<Route path="/dashboard/coupons" element={<P><CouponsPage/></P>}/>
+<Route path="/dashboard/promotions/analytics" element={<P><PromotionAnalytics/></P>}/>
+{/* the product-by-product sale editor the Offers page used to be */}
+<Route path="/dashboard/product-sales" element={<P><StoreOffers/></P>}/>
 <Route path="/dashboard/form-settings" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/logo" element={<P><StoreSettings/></P>}/>
 <Route path="/dashboard/themes" element={<P><StoreSettings/></P>}/>

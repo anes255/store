@@ -104,9 +104,25 @@ function loadCart() {
   try { const v = JSON.parse(localStorage.getItem('cart') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
 }
 
+// The code the buyer applied, kept beside the cart so a refresh, a back
+// button or a reopened tab does not quietly drop their discount. It is only
+// a convenience: the server checks the code again before charging anything.
+function saveCoupon(code) {
+  try {
+    if (code) localStorage.setItem('cartCoupon', String(code));
+    else localStorage.removeItem('cartCoupon');
+  } catch {}
+}
+function loadCoupon() {
+  try { return localStorage.getItem('cartCoupon') || ''; } catch { return ''; }
+}
+
 export const useCartStore = create((set, get) => ({
   items: loadCart(),
   storeSlug: localStorage.getItem('cartStoreSlug') || null,
+  coupon: loadCoupon(),
+
+  setCoupon: (code) => { saveCoupon(code); set({ coupon: code || '' }); },
 
   addItem: (product, quantity = 1, variant = null) => {
     const items = get().items;
@@ -166,7 +182,8 @@ export const useCartStore = create((set, get) => ({
 
   clearCart: () => {
     try { localStorage.removeItem('cart'); } catch {}
-    set({ items: [] });
+    saveCoupon('');
+    set({ items: [], coupon: '' });
   },
 
   setStoreSlug: (slug) => {

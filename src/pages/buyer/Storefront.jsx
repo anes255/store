@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import Checkout from './Checkout';
 import ProductQuickAdd from '../../components/shared/ProductQuickAdd';
 import { initPixels, trackAddToCart, trackViewContent } from '../../utils/trackingPixels';
+import { offerBadge } from '../../utils/offerPricing';
 
 // Ending-soon offer banner with live countdown. Merchants configure it in
 // Settings → Customization → Offer & Sale Branding (offer_enabled + fields).
@@ -585,7 +586,7 @@ function ProductOfferTimerBody({ product, h, m }) {
 }
 
 // ============ DARK PRODUCT CARD ============
-function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, onView, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart }) {
+function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, openQuickAdd, openDetail, onView, wishlist, toggleWishlist, onBuyNow, themeMode, addToCart, offers }) {
   const { t } = useTranslation();
   const href = `/s/${storeSlug}/product/${product.slug || product.id}`;
   const thumb = getThumb(product);
@@ -613,6 +614,9 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
   const isLight = themeMode === 'light';
   // Percentage off, shown as a corner badge on phones.
   const discountPct = onSale ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
+  // What the offer running on this product actually gives, in a few words:
+  // "SAVE 20%", "BUY 2 SAVE 400 DZD", "FREE SHIPPING".
+  const promoBadge = offerBadge(product, offers, t, (v) => `${Number(v || 0).toLocaleString()} ${currency}`);
 
   return (
     <div className={`rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group relative ${inCart ? 'ring-2 ring-yellow-400' : ''}`}
@@ -629,8 +633,12 @@ function DarkProductCard({ product, storeSlug, pc, currency, getName, getThumb, 
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleWishlist(product); }}
           className={`absolute top-1 left-1 sm:top-4 sm:left-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 touch-manipulation ${inWishlist ? 'bg-red-500 text-white' : 'bg-gray-900 text-white hover:text-red-300 hover:bg-black'}`}
           aria-label={t('ui.shop.addToFavorites', 'Add to favorites')}><Heart size={14} fill={inWishlist ? 'white' : 'none'} /></button>
-        {onSale && discountPct > 0 && <span className="sm:hidden absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-md shadow-lg">-{discountPct}%</span>}
-        {onSale && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg">{product.sale_badge_text || t('ui.shop.saleBadge','SALE')}</span>}
+        {(promoBadge || (onSale && discountPct > 0)) && (
+          <span className="sm:hidden absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-md shadow-lg">
+            {promoBadge || `-${discountPct}%`}
+          </span>
+        )}
+        {(promoBadge || onSale) && <span className="hidden sm:inline-block absolute bottom-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg max-w-[85%] truncate">{promoBadge || product.sale_badge_text || t('ui.shop.saleBadge','SALE')}</span>}
         <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (inCart) { const idx = cartItems.findIndex(i => i.product_id === product.id); if (idx >= 0) removeItem(idx); } else { openQuickAdd(product); } }}
           className={`absolute bottom-1 right-1 sm:bottom-auto sm:top-4 sm:right-4 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform border border-white/10 ${inCart ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-900 text-white hover:bg-black'}`}
           style={justAdded ? { backgroundColor: '#10b981', color: '#fff', transform: 'scale(1.18)' } : undefined}
@@ -718,6 +726,14 @@ export default function Storefront() {
   const wishlist = wishlistItems.map(p=>p.id);
   const [store, setStore] = useState(() => { try { return JSON.parse(localStorage.getItem('storeCache_' + storeSlug) || 'null'); } catch { return null; } });
   useStoreLanguage(store);
+  // The offers this shop is running, so each card can say what it gives.
+  const [liveOffers, setLiveOffers] = useState([]);
+  useEffect(() => {
+    if (!storeSlug) return;
+    storeApi.liveOffers(storeSlug)
+      .then((r) => setLiveOffers((r.data?.offers || []).filter((o) => o.show_on_storefront !== false)))
+      .catch(() => setLiveOffers([]));
+  }, [storeSlug]);
   const [products, setProducts] = useState(() => { try { const c = sessionStorage.getItem('prodsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [categories, setCategories] = useState(() => { try { const c = sessionStorage.getItem('catsCache_' + storeSlug); return c ? JSON.parse(c) : []; } catch { return []; } });
   const [search, setSearch] = useState('');
@@ -1235,7 +1251,7 @@ export default function Storefront() {
               <DarkProductCard key={product.id} product={product} storeSlug={storeSlug} pc={pc}
                 currency={store.currency||'DZD'} getName={getName} getThumb={getThumb}
                 openQuickAdd={openQuickAdd} openDetail={openDetail} onView={(p) => { try { trackViewContent(store?.tracking_pixels, p); } catch {} }}
-                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow} themeMode={buyerTheme.mode} addToCart={addItem}/>
+                wishlist={wishlist} toggleWishlist={toggleWishlist} onBuyNow={handleBuyNow} themeMode={buyerTheme.mode} addToCart={addItem} offers={liveOffers}/>
             ))}
           </div>
         );})()}
