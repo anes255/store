@@ -344,6 +344,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if ((def === 'home' || def === 'desk') && !shipTypeTouched.current) setForm(prev => (prev.shipping_type === def ? prev : { ...prev, shipping_type: def }));
   }, [store?.default_shipping_type]);
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [appliedCode, setAppliedCode] = useState(() => { try { return localStorage.getItem('cartCoupon') || ''; } catch { return ''; } });
   // Keep the applied code beside the cart, so a refresh does not quietly
   // drop the buyer's discount on the last step.
   useEffect(() => {
@@ -352,7 +353,6 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       else localStorage.removeItem('cartCoupon');
     } catch {}
   }, [appliedCode]);
-  const [appliedCode, setAppliedCode] = useState(() => { try { return localStorage.getItem('cartCoupon') || ''; } catch { return ''; } });
   // The server's own pricing of this cart. While it is null the page falls
   // back to its local sums, so nothing flickers on a slow connection.
   const [quote, setQuote] = useState(null);
