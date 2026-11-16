@@ -20,12 +20,17 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
   const [auto, setAuto] = useState({ enabled: false, worker_ids: [], max_open: 0 });
   const [autoSaving, setAutoSaving] = useState(false);
   const [waiting, setWaiting] = useState(null); // orders with no worker yet
+  // Handing orders out in batches once enough have piled up. Not the same as
+  // the per-order automatic assignment below it.
+  const [batch, setBatch] = useState({ enabled: false, worker_ids: [], per_worker: 5, min_waiting: 10, include_call_failed: false });
+  const [batchSaving, setBatchSaving] = useState(false);
 
   useEffect(() => {
     if (!open || !sid) return;
     setResult(null);
     workersApi.assignableWorkers(sid).then((r) => { const w = r.data.workers || []; setWorkers(w); setPicked(w.map((x) => x.id)); }).catch(() => setWorkers([]));
     workersApi.autoAssignSettings(sid).then((r) => setAuto(r.data)).catch(() => {});
+    workersApi.autoDistributeSettings(sid).then((r) => setBatch(r.data)).catch(() => {});
   }, [open, sid]);
 
   // How many orders are actually waiting — the splits below are built from it.
@@ -76,6 +81,12 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
       if (data.assigned) onDone?.();
     } catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
     setBusy(false);
+  };
+  const saveBatch = async (next) => {
+    setBatch(next); setBatchSaving(true);
+    try { const { data } = await workersApi.saveAutoDistributeSettings(sid, next); setBatch(data); toast.success(t('workers.saved', 'Saved')); }
+    catch (e) { toast.error(e?.response?.data?.error || t('workers.failed', 'Failed')); }
+    setBatchSaving(false);
   };
   const saveAuto = async (next) => {
     setAuto(next); setAutoSaving(true);
@@ -151,6 +162,44 @@ export default function DistributeOrders({ sid, open, onClose, onDone }) {
               {result.assigned < (mode === 'per_worker' ? num * picked.length : num) && <p className="text-[11px] text-emerald-700/80 mt-1">{t('workers.distFewer', 'There were fewer unassigned new orders than requested.')}</p>}
             </div>
           )}
+          <div className="rounded-2xl border border-gray-200 p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" className="mt-1" checked={batch.enabled} disabled={batchSaving}
+                onChange={(e) => saveBatch({ ...batch, enabled: e.target.checked, worker_ids: batch.worker_ids.length ? batch.worker_ids : picked })} />
+              <span><span className="flex items-center gap-1.5 text-sm font-bold text-gray-900"><Shuffle size={14} className="text-brand-500" />{t('workers.batchTitle', 'Hand orders out in batches')}</span>
+                <span className="block text-xs text-gray-500 mt-0.5">{t('workers.batchHelp', 'Once enough orders have piled up, give each chosen worker a set number at once. Different from assigning every new order as it arrives.')}</span></span>
+            </label>
+            {batch.enabled && (
+              <div className="mt-4 space-y-3">
+                <WorkerPick list={batch.worker_ids} onToggle={(id) => saveBatch({ ...batch, worker_ids: toggle(batch.worker_ids, id) })} />
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <p className="input-label">{t('workers.batchPerWorker', 'Orders per worker, each time')}</p>
+                    <input type="number" min="1" className="input-field text-sm" value={batch.per_worker || ''}
+                      onChange={(e) => setBatch({ ...batch, per_worker: e.target.value })}
+                      onBlur={() => saveBatch({ ...batch, per_worker: Math.max(1, parseInt(batch.per_worker, 10) || 5) })} />
+                  </div>
+                  <div>
+                    <p className="input-label">{t('workers.batchMinWaiting', 'Wait until this many are waiting')}</p>
+                    <input type="number" min="1" className="input-field text-sm" value={batch.min_waiting || ''}
+                      onChange={(e) => setBatch({ ...batch, min_waiting: e.target.value })}
+                      onBlur={() => saveBatch({ ...batch, min_waiting: Math.max(1, parseInt(batch.min_waiting, 10) || 10) })} />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  {t('workers.batchExample', 'With {{n}} chosen, {{p}} each and a threshold of {{m}}: nothing happens until {{m}} orders are waiting, then {{total}} go out in one pass.', {
+                    n: (batch.worker_ids || []).length, p: parseInt(batch.per_worker, 10) || 0, m: parseInt(batch.min_waiting, 10) || 0,
+                    total: ((batch.worker_ids || []).length) * (parseInt(batch.per_worker, 10) || 0),
+                  })}
+                </p>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input type="checkbox" checked={!!batch.include_call_failed} onChange={(e) => saveBatch({ ...batch, include_call_failed: e.target.checked })} />
+                  {t('workers.distWithCallFailed', 'Also include orders where a call failed')}
+                </label>
+              </div>
+            )}
+          </div>
+
           <div className="rounded-2xl border border-gray-200 p-4">
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" className="mt-1" checked={auto.enabled} disabled={autoSaving} onChange={(e) => saveAuto({ ...auto, enabled: e.target.checked, worker_ids: auto.worker_ids.length ? auto.worker_ids : picked })} />

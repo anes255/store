@@ -6,10 +6,18 @@ import { orderApi } from '../../utils/api';
 import api from '../../utils/api';
 import { useStoreManagement } from '../../hooks/useStore';
 import DashboardLayout from '../../components/shared/DashboardLayout';
+import WILAYA_CITIES from '../../data/wilayaCities';
+import { bilingualLabel } from '../../data/wilayaTranslations';
+
+// Wilaya name (however it is spelt) -> its number. The zip and the
+// wilaya number on an order both come from this, so there is one list.
+const WILAYA_NUMBERS = { 'adrar':'01','chlef':'02','laghouat':'03','oum el bouaghi':'04','batna':'05','béjaïa':'06','bejaia':'06','biskra':'07','béchar':'08','bechar':'08','blida':'09','bouira':'10','tamanrasset':'11','tébessa':'12','tebessa':'12','tlemcen':'13','tiaret':'14','tizi ouzou':'15','alger':'16','algiers':'16','djelfa':'17','jijel':'18','sétif':'19','setif':'19','saïda':'20','saida':'20','skikda':'21','sidi bel abbès':'22','sidi bel abbes':'22','annaba':'23','guelma':'24','constantine':'25','médéa':'26','medea':'26','mostaganem':'27','msila':'28','m’sila':'28','mascara':'29','ouargla':'30','oran':'31','el bayadh':'32','illizi':'33','bordj bou arréridj':'34','boumerdès':'35','boumerdes':'35','el tarf':'36','tindouf':'37','tissemsilt':'38','el oued':'39','khenchela':'40','souk ahras':'41','tipaza':'42','mila':'43','aïn defla':'44','ain defla':'44','naâma':'45','naama':'45','aïn témouchent':'46','ain temouchent':'46','ghardaïa':'47','ghardaia':'47','relizane':'48','timimoun':'49','bordj badji mokhtar':'50','ouled djellal':'51','béni abbès':'52','beni abbes':'52','in salah':'53','in guezzam':'54','touggourt':'55','djanet':'56','el m\'ghair':'57','el meghaier':'57','el menia':'58' };
+const WILAYA_NAMES = Object.keys(WILAYA_CITIES);
+const WILAYA_CODES = Object.fromEntries(WILAYA_NAMES.map((n) => [n, WILAYA_NUMBERS[n.trim().toLowerCase()] || '']));
 import DateRangeFilter from '../../components/shared/DateRangeFilter';
 import toast from 'react-hot-toast';
 import { getEnAr } from '../../data/wilayaTranslations';
-import { AlertTriangle, Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer , Shuffle } from 'lucide-react';
+import { AlertTriangle, Search, Eye, X, Truck, Check, Clock, Package, Ban, Phone, MapPin, CreditCard, Calendar, ChevronRight, ChevronDown, ChevronUp, ChevronLeft, User, Mail, RefreshCw, Download, MessageSquare, PhoneMissed, PhoneOff, RotateCcw, Hourglass, ShoppingBag, Loader2, CheckSquare, Square, Trash2, Columns, GripVertical, BarChart3, Plus, Send, Home, Hash, DollarSign, Percent, Tag, Globe, Building2, FileText, Copy, ExternalLink, MessageCircle, Image as ImgIcon, Printer , Shuffle, Archive } from 'lucide-react';
 import useStaffAccess from '../../hooks/useStaffAccess';
 import { workersApi } from '../../utils/api';
 import DistributeOrders from './workers/DistributeOrders';
@@ -176,6 +184,17 @@ export default function StoreOrders() {
     } catch (e) { toast.error(e?.response?.data?.error || t('orders.failed', 'Failed')); }
   };
   const [selectedItems, setSelectedItems] = useState(new Set());
+  // Every status change on the open order, and who made it.
+  const [orderTimeline, setOrderTimeline] = useState(null);
+  useEffect(() => {
+    if (!selectedOrder?.id || !currentStore?.id) { setOrderTimeline(null); return; }
+    let dead = false;
+    setOrderTimeline(null);
+    workersApi.orderTimeline(currentStore.id, selectedOrder.id)
+      .then((r) => { if (!dead) setOrderTimeline(r.data?.timeline || []); })
+      .catch(() => { if (!dead) setOrderTimeline([]); });
+    return () => { dead = true; };
+  }, [selectedOrder?.id, currentStore?.id]);
   const [companies, setCompanies] = useState([]);
   const [trackingForm, setTrackingForm] = useState({ tracking_number: '', delivery_company_id: '' });
   const [savingTracking, setSavingTracking] = useState(false);
@@ -1197,15 +1216,16 @@ export default function StoreOrders() {
           <span className="text-xs sm:text-sm font-bold shrink-0">{t('ui.orders.nSel','{{n}} sel.',{n:selectedItems.size})}</span>
           <div className="w-px h-5 bg-gray-600 shrink-0"/>
           {/* Bulk assign to a worker */}
-          {canAssign && assignables.length > 0 && <div className="shrink-0">
+          {canAssign && assignables.length > 0 && !isArchivePage && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='assign'?null:'assign')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 rounded-lg text-xs font-bold"><User size={12}/><span className="hidden sm:inline">{t('orders.assign','Assign')}</span> <ChevronDown size={10}/></button>
           </div>}
           {/* Bulk status change */}
-          {canStatus && <div className="shrink-0">
+          {canStatus && !isArchivePage && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='status'?null:'status')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold"><RefreshCw size={12}/><span className="hidden sm:inline">{t('ui.orders.status', 'Status')}</span> <ChevronDown size={10}/></button>
           </div>}
-          {/* On the Preparing page only Status + Print are allowed */}
-          {!isPreparingPage && (<>
+          {/* On the Preparing page only Status + Print are allowed; on the
+              Archive page only Export, Print and Delete. */}
+          {!isPreparingPage && !isArchivePage && (<>
           {/* Bulk financial status change */}
           {canEdit && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='payment'?null:'payment')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-bold"><DollarSign size={12}/><span className="hidden sm:inline">{t('ui.orders.payment', 'Payment')}</span> <ChevronDown size={10}/></button>
@@ -1216,8 +1236,8 @@ export default function StoreOrders() {
           {canDispatch && <div className="shrink-0">
             <button type="button" onClick={()=>setBulkMenu(m=>m==='carrier'?null:'carrier')} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-bold"><Truck size={12}/><span className="hidden sm:inline">{t('orders.bulkTransfer','Transfer')}</span> <ChevronDown size={10}/></button>
           </div>}
-          <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
           </>)}
+          <button onClick={() => exportCsv(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold shrink-0"><Download size={12}/><span className="hidden sm:inline">{t('orders.export','Export')}</span></button>
           <div className="flex items-center rounded-lg bg-blue-600 shrink-0 overflow-hidden">
             <button onClick={() => printOrders(orders.filter(o => selectedItems.has(o.id)))} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 hover:bg-blue-500 text-xs font-bold"><Printer size={12}/><span className="hidden sm:inline">{t('orders.print','Print')}</span></button>
             <select
@@ -1286,12 +1306,12 @@ export default function StoreOrders() {
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0"><Trash2 size={18}/></div>
               <div>
-                <h2 className="text-lg font-black text-gray-900">{deleteConfirm.ids.length>1?t('ui.orders.deleteNOrders','Delete {{n}} orders?',{n:deleteConfirm.ids.length}):t('ui.orders.deleteOneOrder','Delete 1 order?')}</h2>
-                <p className="text-sm text-gray-500 mt-1">{deleteConfirm.ids.length>1?t('ui.orders.archiveOrDeleteMany','Move them to the archive to keep them out of the way, or delete them. Deleted orders go to the vault and can still be restored.'):t('ui.orders.archiveOrDeleteOne','Move it to the archive to keep it out of the way, or delete it. Deleted orders go to the vault and can still be restored.')}</p>
+                <h2 className="text-lg font-black text-gray-900">{deleteConfirm.ids.length>1?t('ui.orders.whatToDoN','{{n}} orders — what next?',{n:deleteConfirm.ids.length}):t('ui.orders.whatToDoOne','This order — what next?')}</h2>
+                <p className="text-sm text-gray-500 mt-1">{isArchivePage?t('ui.orders.deleteFromArchive','Deleted orders go to the vault and can still be restored from there.'):(deleteConfirm.ids.length>1?t('ui.orders.archiveOrDeleteMany','Archiving keeps them, out of the way, on the Archive page. Deleting sends them to the vault, where they can still be restored.'):t('ui.orders.archiveOrDeleteOne','Archiving keeps it, out of the way, on the Archive page. Deleting sends it to the vault, where it can still be restored.'))}</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 mt-5">
-              <button
+              {!isArchivePage && <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
                   const tid = toast.loading(t('ui.orders.archiving', 'Moving to the archive...'));
@@ -1309,8 +1329,8 @@ export default function StoreOrders() {
                 }}
                 className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-2"
               >
-                {t('ui.orders.moveToArchive', 'Move to the archive')}
-              </button>
+                <Archive size={14}/>{t('ui.orders.archiveOnly', 'Archive')}
+              </button>}
               <button
                 onClick={async () => {
                   const ids = deleteConfirm.ids;
@@ -1328,9 +1348,9 @@ export default function StoreOrders() {
                   }
                   clearSelection(); loadOrders();
                 }}
-                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm"
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm flex items-center justify-center gap-2"
               >
-                {t('ui.orders.deleteWithoutArchiving', 'Delete without archiving')}
+                <Trash2 size={14}/>{t('ui.orders.deleteOnly', 'Delete')}
               </button>
               <button onClick={() => setDeleteConfirm(null)} className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm">{t('ui.orders.cancel', 'Cancel')}</button>
             </div>
@@ -1421,6 +1441,37 @@ export default function StoreOrders() {
                   <p className="text-sm text-gray-500 mt-1">{[selectedOrder.shipping_city, selectedOrder.shipping_wilaya].filter(Boolean).join(', ')}</p>
                   <p className="text-sm mt-2 flex items-center gap-2"><CreditCard size={14} className="text-gray-400"/><span className="uppercase text-xs font-bold">{selectedOrder.payment_method?.replace('_',' ')}</span></p>
                 </div>
+              </div>
+
+              {/* Who did what, in order */}
+              <div className="p-4 bg-gray-50 rounded-2xl">
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{t('orders.handledBy','Handled by')}</p>
+                {orderTimeline === null ? (
+                  <div className="h-10 rounded-lg bg-gray-100 animate-pulse"/>
+                ) : !orderTimeline.length ? (
+                  <p className="text-sm text-gray-400">{t('orders.noHistory','Nothing has been recorded for this order yet.')}</p>
+                ) : (<>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {[...new Set(orderTimeline.map((e) => e.worker).filter(Boolean))].map((w) => (
+                      <span key={w} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700">
+                        <User size={10} className="text-gray-400"/>{w}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    {orderTimeline.map((e, i) => (
+                      <div key={i} className="flex items-start gap-2 text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 shrink-0"/>
+                        <span className="min-w-0 flex-1">
+                          <span className="font-bold text-gray-800">{e.worker || t('orders.owner','Owner')}</span>
+                          <span className="text-gray-500"> · {t(`orders.action.${e.action}`, e.action)}</span>
+                          {e.new_status && <span className="text-gray-400"> → {statusConfig[e.new_status]?.label || e.new_status}</span>}
+                        </span>
+                        <span className="text-gray-400 shrink-0">{new Date(e.created_at).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>)}
               </div>
 
               <div>
@@ -1569,6 +1620,13 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
   const { t } = useTranslation();
   const { type, order: o } = action;
   const [localPatch, setLocalPatch] = useState({});
+  // The wilaya and commune currently chosen in the address panel. They start
+  // from the order so an existing address is shown selected, not blank.
+  const [pickedWilaya, setPickedWilaya] = useState(() => {
+    const cur = String(o.shipping_wilaya || '').trim().toLowerCase();
+    return WILAYA_NAMES.find((w) => w.toLowerCase() === cur) || (o.shipping_wilaya || '');
+  });
+  const [pickedCity, setPickedCity] = useState(o.shipping_city || '');
   const cur = o.currency || 'DZD';
 
   const set = (k) => (e) => setLocalPatch(prev => ({ ...prev, [k]: e.target.value }));
@@ -1816,7 +1874,7 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         const n = String(o.shipping_wilaya || '').trim().toLowerCase();
         if (!n) return '';
         // 58 wilayas — minimal map; expand as needed.
-        const M = { 'adrar':'01','chlef':'02','laghouat':'03','oum el bouaghi':'04','batna':'05','béjaïa':'06','bejaia':'06','biskra':'07','béchar':'08','bechar':'08','blida':'09','bouira':'10','tamanrasset':'11','tébessa':'12','tebessa':'12','tlemcen':'13','tiaret':'14','tizi ouzou':'15','alger':'16','algiers':'16','djelfa':'17','jijel':'18','sétif':'19','setif':'19','saïda':'20','saida':'20','skikda':'21','sidi bel abbès':'22','sidi bel abbes':'22','annaba':'23','guelma':'24','constantine':'25','médéa':'26','medea':'26','mostaganem':'27','msila':'28','m’sila':'28','mascara':'29','ouargla':'30','oran':'31','el bayadh':'32','illizi':'33','bordj bou arréridj':'34','boumerdès':'35','boumerdes':'35','el tarf':'36','tindouf':'37','tissemsilt':'38','el oued':'39','khenchela':'40','souk ahras':'41','tipaza':'42','mila':'43','aïn defla':'44','ain defla':'44','naâma':'45','naama':'45','aïn témouchent':'46','ain temouchent':'46','ghardaïa':'47','ghardaia':'47','relizane':'48','timimoun':'49','bordj badji mokhtar':'50','ouled djellal':'51','béni abbès':'52','beni abbes':'52','in salah':'53','in guezzam':'54','touggourt':'55','djanet':'56','el m\'ghair':'57','el meghaier':'57','el menia':'58' };
+        const M = WILAYA_NUMBERS;
         return M[n] || '';
       } catch { return ''; }
     })();
@@ -1826,19 +1884,50 @@ function QuickActionDrawer({ action, onClose, onOpenFullDetail, onUpdateStatus, 
         <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.street','Street')}</label>
         <input defaultValue={o.shipping_address || ''} onChange={set('shipping_address')} className="input-field w-full"/>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.cityCommune','City (Commune) *')}</label><input defaultValue={o.shipping_city || ''} onChange={set('shipping_city')} className={`input-field w-full ${!o.shipping_city ? 'border-amber-400 ring-1 ring-amber-300' : ''}`} placeholder={t('orders.qa.requiredForDispatch','Required for dispatch')}/></div>
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.wilaya','Wilaya')}</label>
-            <input defaultValue={o.shipping_wilaya || ''} onChange={set('shipping_wilaya')} className="input-field w-full"/>
-            {(o.shipping_wilaya_code || wnFromName) && (
-              <p className="text-[10px] text-gray-400 mt-1">N°: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{o.shipping_wilaya_code || wnFromName}</span></p>
-            )}
+            <select value={pickedWilaya} className="input-field w-full"
+              onChange={(e) => {
+                const name = e.target.value;
+                setPickedWilaya(name);
+                setPickedCity('');
+                // The zip and the wilaya number are not separate facts: they
+                // follow from the wilaya, so they are set here and shown
+                // read-only below.
+                const code = WILAYA_CODES[name] || '';
+                setLocalPatch((p) => ({ ...p, shipping_wilaya: name, shipping_city: '', shipping_wilaya_code: code, shipping_zip: code ? `${code}000` : '' }));
+              }}>
+              <option value="">{t('orders.qa.pickWilaya','Choose a wilaya…')}</option>
+              {WILAYA_NAMES.map((w) => (
+                <option key={w} value={w}>{WILAYA_CODES[w] ? `${WILAYA_CODES[w]} · ` : ''}{bilingualLabel(w)}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.cityCommune','City (Commune) *')}</label>
+            <select value={pickedCity} disabled={!pickedWilaya} className="input-field w-full disabled:opacity-50"
+              onChange={(e) => { setPickedCity(e.target.value); setLocalPatch((p) => ({ ...p, shipping_city: e.target.value })); }}>
+              <option value="">{pickedWilaya ? t('orders.qa.pickCommune','Choose a commune…') : t('orders.qa.wilayaFirst','Pick a wilaya first')}</option>
+              {(WILAYA_CITIES[pickedWilaya] || []).map((c) => (
+                <option key={c} value={c}>{bilingualLabel(c)}</option>
+              ))}
+              {pickedCity && !(WILAYA_CITIES[pickedWilaya] || []).includes(pickedCity) && <option value={pickedCity}>{pickedCity}</option>}
+            </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.zip','Zip')}</label><input defaultValue={o.shipping_zip || ''} onChange={set('shipping_zip')} className="input-field w-full font-mono"/></div>
-          <div><label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.wilayaNumber','N° Wilaya')}</label><input defaultValue={o.shipping_wilaya_code || wnFromName || ''} onChange={set('shipping_wilaya_code')} className="input-field w-full font-mono" placeholder="01-58"/></div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase">{t('orders.qa.zip','Zip')}</label>
+            <input value={(localPatch.shipping_zip !== undefined ? localPatch.shipping_zip : (o.shipping_zip || ''))} readOnly disabled
+              className="input-field w-full bg-gray-50 text-gray-500 cursor-not-allowed"/>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-400 uppercase">{t('col.wilayaNumber','N° Wilaya')}</label>
+            <input value={(localPatch.shipping_wilaya_code !== undefined ? localPatch.shipping_wilaya_code : (o.shipping_wilaya_code || wnFromName || ''))} readOnly disabled
+              className="input-field w-full bg-gray-50 text-gray-500 font-mono cursor-not-allowed"/>
+          </div>
         </div>
+        <p className="text-[10px] text-gray-400">{t('orders.qa.zipFollows','The zip and the wilaya number follow the wilaya you pick.')}</p>
         <button onClick={save} className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm">{t('orders.qa.saveAddress','Save Address')}</button>
       </div>
     );

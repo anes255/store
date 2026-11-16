@@ -782,7 +782,7 @@ export default function DashboardLayout({children}){
         ><LogOut size={18}/>{sidebarOpen&&<span>{t('sidebar.disconnect','Disconnect')}</span>}</button>
       </div>
     </aside>
-    <main style={{...(theme.backgroundColor?{background:theme.backgroundColor}:{}),'--dash-header-h':(headerHidden?0:headerH)+'px'}} className={`flex-1 min-w-0 transition-all duration-300 min-h-screen overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
+    <main style={{...(theme.backgroundColor?{background:theme.backgroundColor}:{}),'--dash-header-h':(headerHidden?0:headerH)+'px','--dash-bg':theme.backgroundColor||(isDark?'#030712':'#f9fafb')}} className={`flex-1 min-w-0 transition-all duration-300 min-h-screen overflow-x-hidden ${isDark?'bg-gray-950 text-gray-100':'bg-gray-50 text-gray-900'} ${isMobile?'ml-0':(sidebarOpen?'ml-56':'ml-16')}`}>
       <header ref={headerRef} className={`sticky top-0 z-20 backdrop-blur-xl border-b px-4 md:px-6 py-3 flex items-center gap-2 transition-transform duration-300 ${isDark?'bg-gray-900/90 border-gray-800':'bg-white/90 border-gray-100'} ${headerHidden?'-translate-y-full':'translate-y-0'}`}>
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
           {isMobile&&<button onClick={()=>setSidebarOpen(true)} className={`p-2 rounded-xl lg:hidden ${isDark?'hover:bg-white/10 text-gray-400':'hover:bg-gray-100 text-gray-600'}`}><Menu size={20}/></button>}

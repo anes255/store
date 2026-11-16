@@ -580,9 +580,8 @@ html.admin-dark input:-webkit-autofill,html.platform-dark input:-webkit-autofill
   position:sticky;
   top:var(--dash-header-h,0px);
   z-index:19;
-  background:rgba(255,255,255,.93);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  /* --dash-bg is whatever the dashboard content area is painted with, so the
+     bar never shows as a pale band over a dark theme. */
+  background:var(--dash-bg,#f9fafb);
   transition:top .3s ease;
 }
-html.dark .dash-sticky-bar{background:rgba(11,16,32,.93);}
