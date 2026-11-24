@@ -15,9 +15,14 @@ import OfferEditor, { OFFER_TYPES } from './OfferEditor';
 
 const TABS = [
   { key: 'all', label: 'All offers' },
+  { key: 'percentage', label: 'Percentage' },
+  { key: 'fixed', label: 'Fixed amount' },
   { key: 'tiered', label: 'Buy more & save' },
+  { key: 'bxgy', label: 'Buy X get Y' },
+  { key: 'free_shipping', label: 'Free shipping' },
   { key: 'scheduled', label: 'Scheduled' },
 ];
+const TYPE_TABS = new Set(['percentage', 'fixed', 'tiered', 'bxgy', 'free_shipping']);
 const PAGE_SIZE = 20;
 
 export default function OffersPage() {
@@ -60,7 +65,7 @@ export default function OffersPage() {
   const filtered = useMemo(() => {
     const now = Date.now();
     let list = offers || [];
-    if (tab === 'tiered') list = list.filter((o) => o.offer_type === 'tiered');
+    if (TYPE_TABS.has(tab)) list = list.filter((o) => o.offer_type === tab);
     if (tab === 'scheduled') list = list.filter((o) => o.starts_at && new Date(o.starts_at).getTime() > now);
     if (status) {
       list = list.filter((o) => {
@@ -125,15 +130,15 @@ export default function OffersPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Link to="/dashboard/coupons" className="btn-ghost text-sm flex items-center gap-1.5"><Ticket size={14} />{t('promo.coupons', 'Coupons')}</Link>
           <Link to="/dashboard/promotions/analytics" className="btn-ghost text-sm flex items-center gap-1.5"><BarChart3 size={14} />{t('promo.analytics', 'Analytics')}</Link>
-          {canEdit && <button onClick={() => setEditing({})} className="btn-primary text-sm flex items-center gap-1.5"><Plus size={14} />{t('promo.createOffer', 'Create offer')}</button>}
+          {canEdit && <button onClick={() => setEditing(TYPE_TABS.has(tab) ? { offer_type: tab } : {})} className="btn-primary text-sm flex items-center gap-1.5"><Plus size={14} />{t('promo.createOffer', 'Create offer')}</button>}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex bg-gray-100 rounded-xl p-1">
+        <div className="flex flex-wrap bg-gray-100 rounded-xl p-1 gap-0.5">
           {TABS.map((x) => (
             <button key={x.key} onClick={() => setParams(x.key === 'all' ? {} : { tab: x.key }, { replace: true })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${tab === x.key ? 'bg-white shadow-sm text-brand-600' : 'text-gray-500'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap ${tab === x.key ? 'bg-white shadow-sm text-brand-600' : 'text-gray-500 hover:text-gray-700'}`}>
               {x.key === 'tiered' && <Layers size={12} />}{x.key === 'scheduled' && <Calendar size={12} />}
               {t(`promo.tab.${x.key}`, x.label)}
             </button>
@@ -232,7 +237,7 @@ export default function OffersPage() {
           )}
 
       {editing && (
-        <OfferEditor open onClose={() => setEditing(null)} sid={sid} offer={editing.id ? editing : null}
+        <OfferEditor open onClose={() => setEditing(null)} sid={sid} offer={editing.id ? editing : null} newType={editing.offer_type}
           products={products} categories={categories} currency={currency} onSaved={load} />
       )}
 

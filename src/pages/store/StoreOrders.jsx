@@ -981,7 +981,7 @@ export default function StoreOrders() {
           <span className="text-[11px] text-gray-400">{t('ui.orders.showingOnlyOrdersCurrentlyBeing', 'Showing only orders currently being prepared.')}</span>
         </div>
       ) : (
-        <div className="mb-3 overflow-x-auto -mx-1 px-1 hidden sm:block">
+        <div className={`mb-3 overflow-x-auto -mx-1 px-1 ${isArchivePage ? 'hidden' : 'hidden sm:block'}`}>
           <div className="flex items-center gap-2 w-max sm:w-auto sm:flex-wrap">
             {filters.map(f => {
               const isActive = filter === f.key;
@@ -1003,9 +1003,9 @@ export default function StoreOrders() {
       {!isPreparingPage && <div className="glass-card-solid p-4 mb-4">
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">{t('orders.allStatuses','All statuses')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div>
+          <div className={isArchivePage ? 'hidden' : ''}>
             <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">{t('orders.status','Status')}</label>
-            <select value={filter} onChange={e => setFilter(e.target.value)} disabled={isPreparingPage} title={isPreparingPage ? t('orders.lockedPreparing','Locked to Preparing on this page') : ''} className={`input-field !py-2 text-sm w-full ${isPreparingPage ? 'opacity-60 cursor-not-allowed' : ''}`}>
+            <select value={filter} onChange={e => setFilter(e.target.value)} disabled={isPreparingPage} title={isPreparingPage ? t('orders.lockedPreparing','Locked to Preparing on this page') : ''} className={`input-field text-sm py-1.5 px-3 rounded-xl bg-white border border-gray-200 w-full min-w-[140px] ${isPreparingPage ? 'opacity-60 cursor-not-allowed' : ''}`}>
               <option value="all">{t('orders.allStatuses','All statuses')}</option>
               {allStatuses.map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
             </select>
@@ -1045,7 +1045,7 @@ export default function StoreOrders() {
         </div>
       )}
       <div className="dash-sticky-bar sm:!static sm:!bg-transparent sm:backdrop-blur-none -mx-4 px-4 sm:mx-0 sm:px-0 pt-2 pb-1 sm:pt-0 sm:pb-0 mb-2 sm:mb-0">
-      {!isPreparingPage && (
+      {!isPreparingPage && !isArchivePage && (
         <div className="sm:hidden mb-2 overflow-x-auto -mx-1 px-1">
           <div className="flex items-center gap-2 w-max">
             {filters.map(f => {
@@ -1071,11 +1071,11 @@ export default function StoreOrders() {
           <button onClick={async () => { setRefreshing(true); try { const m = await import('../../utils/api'); m.invalidateCache?.('mords'); } catch {} await loadOrders(); setRefreshing(false); }} disabled={refreshing} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider disabled:opacity-60" title={t('common.refresh','Refresh')}>
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''}/>{t('common.refresh','Refresh')}
           </button>
-          {canAssign && <button onClick={() => setDistributeOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider"><Shuffle size={13}/>{t('workers.distShort', 'Distribute')}</button>}
+          {canAssign && !isArchivePage && <button onClick={() => setDistributeOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider"><Shuffle size={13}/>{t('workers.distShort', 'Distribute')}</button>}
           <button onClick={() => exportCsv(filteredOrders)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <Download size={13}/>{t('orders.export','Export')}
           </button>
-          {(!isStaff || can('staff_manage')) && <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+          {(!isStaff || can('staff_manage')) && !isArchivePage && <button onClick={() => setAdminStatsOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
             <BarChart3 size={13}/>{t('orders.adminStats','Admin Stats')}
           </button>}
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1" title={t('ui.orders.orderRowSize', 'Order row size')}>
@@ -1091,7 +1091,7 @@ export default function StoreOrders() {
             <span className="px-1 text-[10px] font-bold text-gray-500 tabular-nums">{Math.round(colScale*100)}%</span>
             <button onClick={() => setColScale(Math.min(1.5, +(colScale+0.1).toFixed(2)))} className="px-2 py-1 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-white">+</button>
           </div>
-          {!isPreparingPage && <ColumnsPicker
+          {!isPreparingPage && !isArchivePage && <ColumnsPicker
             open={columnPickerOpen}
             setOpen={setColumnPickerOpen}
             activeColumns={pinnedColumns}
@@ -1099,7 +1099,7 @@ export default function StoreOrders() {
             toggleColumn={toggleColumn}
             moveColumn={moveColumn}
           />}
-          {canEdit && <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
+          {canEdit && !isArchivePage && <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider">
             <Plus size={13}/>{t('orders.createOrder','Create Order')}
           </button>}
         </div>

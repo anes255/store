@@ -4,18 +4,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ownerApi, platformApi } from '../../utils/api';
-import { useAuthStore, useStoreManagement, useAdminTheme } from '../../hooks/useStore';
+import { useAuthStore, useStoreManagement, usePlatformTheme } from '../../hooks/useStore';
 import AuthShell, { AuthTabs } from '../../components/shared/AuthShell';
+import BrandMark, { usePlatformBrand } from '../../components/shared/BrandMark';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { ShoppingBag, Mail, Lock, ArrowRight, Eye, EyeOff, Store as StoreIcon, Check, Shield, RefreshCw, KeyRound, Phone, ArrowLeft } from 'lucide-react';
 import api from '../../utils/api';
 
 export default function OwnerLogin() {
   const { t } = useTranslation();
-  // Same theme the owner's dashboard uses, so the two match.
-  const theme = useAdminTheme();
+  // The main site's own theme — the colours a visitor just saw on the
+  // landing page, not the dashboard's, which they have not reached yet.
+  // Shared with BrandMark, so moving between Login and Register does
+  // not ask for the same settings twice.
+  const { brand } = usePlatformBrand();
+  const theme = usePlatformTheme();
   useEffect(() => { theme.init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const pc = theme.primaryColor || '#7C3AED';
+  const pc = brand.primary || theme.primaryColor || '#7C3AED';
   const dark = theme.mode === 'dark';
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
@@ -110,13 +115,6 @@ export default function OwnerLogin() {
 
   // Brand comes exclusively from the super-admin's platform settings.
   // Empty until /platform/info responds; render the name only once set.
-  const [brand, setBrand] = useState({ logo: '', favicon: '', name: '' });
-  useEffect(() => {
-    getPlatformInfo().then(r => {
-      const d = r.data || {};
-      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || '' });
-    }).catch(() => {});
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setLoading(true);
@@ -214,11 +212,7 @@ export default function OwnerLogin() {
     <>
       <div className="flex items-center justify-between mb-6">
         <Link to="/" className="flex items-center gap-2">
-          {brand.logo || brand.favicon ? (
-            <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg" style={{ boxShadow: `0 8px 20px ${pc}4d` }} />
-          ) : (
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: pc, boxShadow: `0 8px 20px ${pc}4d` }}><ShoppingBag size={20} className="text-white" /></div>
-          )}
+          <BrandMark size={40} pc={pc} radius="1rem" />
           {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
         </Link>
         <LanguageSwitcher />

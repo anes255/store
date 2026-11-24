@@ -376,7 +376,15 @@ const DEFAULT_ITEMS = [
   {id:'products',type:'group',icon:'Package',label:'sidebar.products',children:[
     {to:'/dashboard/products',label:'sidebar.productsList'},{to:'/dashboard/stock',label:'sidebar.stockManager'},{to:'/dashboard/landing-pages',label:'sidebar.landingPages'},{to:'/dashboard/smart-reviews',label:'sidebar.smartReviews'}]},
   {id:'promotions',type:'group',icon:'Tag',label:'sidebar.promotions',children:[
-    {to:'/dashboard/offers',label:'sidebar.offers'},{to:'/dashboard/offers?tab=tiered',label:'sidebar.buyMoreSave'},{to:'/dashboard/offers?tab=scheduled',label:'sidebar.scheduledOffers'},{to:'/dashboard/coupons',label:'sidebar.coupons'},{to:'/dashboard/promotions/analytics',label:'sidebar.promotionAnalytics'},{to:'/dashboard/product-sales',label:'sidebar.productSales'}]},
+    {to:'/dashboard/offers',label:'sidebar.offers'},
+    // the kinds of offer, shown only while Offers is the page in view
+    {to:'/dashboard/offers?tab=percentage',label:'sidebar.offerPercentage',under:'/dashboard/offers'},
+    {to:'/dashboard/offers?tab=fixed',label:'sidebar.offerFixed',under:'/dashboard/offers'},
+    {to:'/dashboard/offers?tab=tiered',label:'sidebar.buyMoreSave',under:'/dashboard/offers'},
+    {to:'/dashboard/offers?tab=bxgy',label:'sidebar.offerBxgy',under:'/dashboard/offers'},
+    {to:'/dashboard/offers?tab=free_shipping',label:'sidebar.offerFreeShipping',under:'/dashboard/offers'},
+    {to:'/dashboard/offers?tab=scheduled',label:'sidebar.scheduledOffers',under:'/dashboard/offers'},
+    {to:'/dashboard/coupons',label:'sidebar.coupons'},{to:'/dashboard/promotions/analytics',label:'sidebar.promotionAnalytics'},{to:'/dashboard/product-sales',label:'sidebar.productSales'}]},
   {id:'store',type:'group',icon:'Globe',label:'sidebar.store',children:[
     {to:'/dashboard/contact',label:'sidebar.contactInfo'},{to:'/dashboard/faqs',label:'sidebar.faqs'},{to:'/dashboard/about',label:'sidebar.about'}]},
   {id:'delivery',type:'group',icon:'Truck',label:'sidebar.delivery',children:[
@@ -534,7 +542,18 @@ export default function DashboardLayout({children}){
 
   const toggle=(k)=>setOpenMenus({...openMenus,[k]:!openMenus[k]});
   // Links may carry ?tab= (the worker's own page): match the tab too.
-  const isActive=(p)=>{const[path,q]=p.split('?');if(location.pathname!==path)return false;if(path!=='/dashboard/me')return true;const onProfile=new URLSearchParams(location.search).get('tab')==='profile';return new URLSearchParams(q||'').get('tab')==='profile'?onProfile:!onProfile;};
+  const isActive=(p)=>{
+    const[path,q]=p.split('?');
+    if(location.pathname!==path)return false;
+    const cur=new URLSearchParams(location.search);
+    if(path==='/dashboard/me'){
+      const onProfile=cur.get('tab')==='profile';
+      return new URLSearchParams(q||'').get('tab')==='profile'?onProfile:!onProfile;
+    }
+    if(!q)return !cur.get('tab');
+    for(const[k,v]of new URLSearchParams(q))if(cur.get(k)!==v)return false;
+    return true;
+  };
   // Open the group that holds the current page so its highlighted entry is visible.
   useEffect(()=>{const g=items.find(it=>Array.isArray(it.children)&&it.children.some(c=>c.to===location.pathname));if(g&&!openMenus[g.id])setOpenMenus(m=>({...m,[g.id]:true}));},[location.pathname]); // eslint-disable-line
 
@@ -585,7 +604,7 @@ export default function DashboardLayout({children}){
       onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';e.currentTarget.style.color=isDark?pc:pc;}}}
     ><Icon size={18}/>{sidebarOpen&&<span>{label}</span>}</Link>);
   };
-  const SubLink=({to,label})=>{
+  const SubLink=({to,label,nested})=>{
     const dest=resolveStaffPath(to);
     if(!dest)return null;
     const lbl=typeof label==='string'&&label.startsWith('sidebar.')?t(label):label;
@@ -596,7 +615,7 @@ export default function DashboardLayout({children}){
     to=dest;
     // The current sub-page gets the same filled highlight as a selected main
     // page (it used to be only a colour change, easy to miss).
-    return(<Link to={to} className={`ml-3 mr-1 pl-8 pr-3 py-1 block text-sm rounded-lg transition-all ${active?'font-semibold text-white shadow-md':''}`}
+    return(<Link to={to} className={`${nested?'ml-6 mr-1 pl-7':'ml-3 mr-1 pl-8'} pr-3 py-1 block text-sm rounded-lg transition-all ${active?'font-semibold text-white shadow-md':''}`}
       style={active?{backgroundColor:pc,boxShadow:`0 4px 12px ${pc}40`}:{color:pc}}
       onMouseEnter={e=>{if(!active){e.currentTarget.style.backgroundColor=isDark?pc+'15':(pc+'12');}}}
       onMouseLeave={e=>{if(!active){e.currentTarget.style.backgroundColor='';}}}
@@ -651,7 +670,7 @@ export default function DashboardLayout({children}){
                 {sidebarOpen&&<ChevronDown size={14} className={`transition-transform ${openMenus[item.id]?'rotate-180':''}`}/>}
               </button>);})()}
             </div>
-            {openMenus[item.id]&&sidebarOpen&&<div className="pb-1">{item.children.map(c=><SubLink key={c.to} to={c.to} label={c.label}/>)}</div>}
+            {openMenus[item.id]&&sidebarOpen&&<div className="pb-1">{item.children.filter(c=>!c.under||location.pathname===c.under).map(c=><SubLink key={c.to} to={c.to} label={c.label} nested={!!c.under}/>)}</div>}
           </div>
         )}
       </div>
@@ -759,7 +778,7 @@ export default function DashboardLayout({children}){
             if(item.type==='link')return(<SLink key={item.id} to={item.to} icon={Icon} label={lbl}/>);
             return(<div key={item.id}>
               <div className="px-3 pt-1.5 pb-0.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{lbl}</div>
-              {item.children.map(c=><SubLink key={c.to} to={c.to} label={c.label}/>)}
+              {item.children.filter(c=>!c.under||location.pathname===c.under).map(c=><SubLink key={c.to} to={c.to} label={c.label} nested={!!c.under}/>)}
             </div>);
           });
         })()}

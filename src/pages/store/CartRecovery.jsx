@@ -134,9 +134,6 @@ export default function CartRecovery() {
         {(stats.checkout_abandoned>0)&&<StatCard k="checkout" icon={MapPin} color="bg-amber-500" label={t('recovery.checkoutAbandoned','Checkout Abandoned')} value={stats.checkout_abandoned}/>}
       </div>
 
-      {/* Automated sequences — admin-editable timing */}
-      <CartRecoveryConfig store={currentStore} onSaved={()=>load()} />
-
       {/* Filters — same set as the Orders page */}
       <div className="glass-card-solid p-4 mb-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -321,6 +318,9 @@ export default function CartRecovery() {
         </div>
         );
       })()}
+
+      {/* Automated sequences — the timings behind the list above */}
+      <CartRecoveryConfig store={currentStore} onSaved={()=>load()} />
     </DashboardLayout>
   );
 }

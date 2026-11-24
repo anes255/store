@@ -7,8 +7,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ownerApi } from '../../utils/api';
-import { useAuthStore, useAdminTheme } from '../../hooks/useStore';
+import { useAuthStore, usePlatformTheme } from '../../hooks/useStore';
 import AuthShell, { AuthTabs } from '../../components/shared/AuthShell';
+import BrandMark, { usePlatformBrand } from '../../components/shared/BrandMark';
 import { bilingualLabel } from '../../data/wilayaTranslations';
 import LanguageSwitcher from '../../components/shared/LanguageSwitcher';
 import { ShoppingBag, Mail, Lock, User, Phone, MapPin, ArrowRight, Eye, EyeOff, MessageCircle, ArrowLeft, Check } from 'lucide-react';
@@ -18,9 +19,12 @@ export default function OwnerRegister() {
   const { t } = useTranslation();
   // The owner's own dashboard theme drives this screen too, so signing up
   // looks like the product they are signing up to.
-  const theme = useAdminTheme();
+  // Shared with BrandMark, so moving between Login and Register does
+  // not ask for the same settings twice.
+  const { brand } = usePlatformBrand();
+  const theme = usePlatformTheme();
   useEffect(() => { theme.init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const pc = theme.primaryColor || '#7C3AED';
+  const pc = brand.primary || theme.primaryColor || '#7C3AED';
   const dark = theme.mode === 'dark';
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
@@ -41,13 +45,6 @@ export default function OwnerRegister() {
   const [resendIn, setResendIn] = useState(0);
   // Platform branding comes exclusively from the super admin's settings —
   // no hard-coded fallback name is shown if the API hasn't responded yet.
-  const [brand, setBrand] = useState({ logo: '', favicon: '', name: '' });
-  useEffect(() => {
-    getPlatformInfo().then(r => {
-      const d = r.data || {};
-      setBrand({ logo: d.site_logo || '', favicon: d.favicon || '', name: d.site_name || '' });
-    }).catch(() => {});
-  }, []);
 
   React.useEffect(() => {
     if (resendIn <= 0) return;
@@ -119,11 +116,7 @@ export default function OwnerRegister() {
     <>
       <div className="flex items-center justify-between mb-6">
         <Link to="/" className="flex items-center gap-2">
-          {brand.logo || brand.favicon ? (
-            <img src={brand.logo || brand.favicon} alt="" className="w-10 h-10 rounded-2xl object-cover bg-white shadow-lg" style={{ boxShadow: `0 8px 20px ${pc}4d` }} />
-          ) : (
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: pc, boxShadow: `0 8px 20px ${pc}4d` }}><ShoppingBag size={20} className="text-white" /></div>
-          )}
+          <BrandMark size={40} pc={pc} radius="1rem" />
           {brand.name && <span className="text-xl font-extrabold font-display">{brand.name}</span>}
         </Link>
         <LanguageSwitcher />

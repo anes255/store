@@ -40,10 +40,10 @@ export function offerToForm(o) {
   };
 }
 
-export default function OfferEditor({ open, onClose, sid, offer, products, categories, currency, onSaved }) {
+export default function OfferEditor({ open, onClose, sid, offer, products, categories, currency, onSaved, newType }) {
   const { t } = useTranslation();
   const money = useMoney(currency);
-  const [f, setF] = useState(() => (offer ? offerToForm(offer) : { ...EMPTY_OFFER }));
+  const [f, setF] = useState(() => (offer ? offerToForm(offer) : { ...EMPTY_OFFER, ...(newType ? { offer_type: newType } : {}) }));
   const [saving, setSaving] = useState(false);
   const [pq, setPq] = useState('');
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }));
@@ -52,7 +52,7 @@ export default function OfferEditor({ open, onClose, sid, offer, products, categ
   // reset when a different offer is opened in the same drawer
   const key = offer?.id || 'new';
   const [seen, setSeen] = useState(key);
-  if (seen !== key) { setSeen(key); setF(offer ? offerToForm(offer) : { ...EMPTY_OFFER }); }
+  if (seen !== key) { setSeen(key); setF(offer ? offerToForm(offer) : { ...EMPTY_OFFER, ...(newType ? { offer_type: newType } : {}) }); }
 
   const shown = useMemo(() => {
     const q = pq.trim().toLowerCase();
