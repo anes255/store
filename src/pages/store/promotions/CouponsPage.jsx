@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Plus, Search, Ticket, Pause, Play, Trash2, Edit2, Copy, Save, Tag, BarChart3, Users,
+  Plus, Search, Ticket, Pause, Play, Trash2, Edit2, Copy, Save, Tag, BarChart3, Users, Wand2,
 } from 'lucide-react';
 import DashboardLayout from '../../../components/shared/DashboardLayout';
 import { useStoreManagement } from '../../../hooks/useStore';
@@ -25,6 +25,35 @@ const EMPTY = {
   usage_limit: '', usage_per_customer: '', status: 'active',
 };
 
+// Words a shopper can read back over the phone: no O/0 or I/1 to confuse,
+// and a theme drawn from what the coupon actually does.
+const CODE_WORDS = ['SAVE', 'DEAL', 'BONUS', 'EXTRA', 'TREAT', 'LUCKY', 'HELLO', 'MERCI', 'SHUKRAN', 'FIRST', 'VIP', 'FLASH'];
+const SEASONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'];
+const NO_LOOKALIKES = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function suggestCode(form, taken = []) {
+  const used = new Set(taken.map((c) => String(c).toUpperCase()));
+  const season = SEASONS[Math.floor(new Date().getMonth() / 3) % 4];
+  const value = form.discount_type === 'percent' ? Math.round(Number(form.discount_percent) || 0)
+    : form.discount_type === 'fixed' ? Math.round(Number(form.discount_amount) || 0) : 0;
+
+  const stems = [];
+  if (form.discount_type === 'free_shipping' || form.free_shipping) stems.push('FREESHIP', 'SHIPFREE', `${season}SHIP`);
+  if (value > 0) stems.push(`SAVE${value}`, `${season}${value}`, `DEAL${value}`);
+  CODE_WORDS.forEach((w) => stems.push(value > 0 ? `${w}${value}` : w));
+  stems.push(season);
+
+  for (const s of stems) if (s && !used.has(s)) return s;
+  // everything obvious is taken: add a short, unmistakable suffix
+  for (let i = 0; i < 50; i += 1) {
+    const base = stems[0] || 'SAVE';
+    const tail = Array.from({ length: 3 }, () => NO_LOOKALIKES[Math.floor(Math.random() * NO_LOOKALIKES.length)]).join('');
+    const code = `${base}${tail}`;
+    if (!used.has(code)) return code;
+  }
+  return `SAVE${Date.now().toString(36).toUpperCase().slice(-4)}`;
+}
+
 const arr = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } } return []; };
 
 function toForm(c) {
@@ -39,7 +68,7 @@ function toForm(c) {
 }
 
 // A code the buyer types in. Offers apply on their own; this does not.
-function CouponEditor({ open, onClose, sid, coupon, products, categories, currency, onSaved }) {
+function CouponEditor({ open, onClose, sid, coupon, products, categories, currency, onSaved, takenCodes = [] }) {
   const { t } = useTranslation();
   const money = useMoney(currency);
   const [f, setF] = useState(() => (coupon ? toForm(coupon) : { ...EMPTY }));
@@ -96,7 +125,14 @@ function CouponEditor({ open, onClose, sid, coupon, products, categories, curren
 
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label={t('promo.code', 'Coupon code')} hint={t('promo.codeHint', 'What the buyer types. Case does not matter.')}>
-          <input className="input-field font-mono uppercase" value={f.code} onChange={(e) => set('code')(e.target.value.toUpperCase())} placeholder="WELCOME10" />
+          <div className="flex gap-2">
+            <input className="input-field font-mono uppercase flex-1" value={f.code} onChange={(e) => set('code')(e.target.value.toUpperCase())} placeholder="WELCOME10" />
+            <button type="button" onClick={() => set('code')(suggestCode(f, takenCodes))}
+              title={t('promo.generateHint', 'Builds a code from the discount, skipping ones already in use')}
+              className="btn-ghost text-xs flex items-center gap-1 shrink-0 whitespace-nowrap">
+              <Wand2 size={13} />{t('promo.generate', 'Generate')}
+            </button>
+          </div>
         </Field>
         <Field label={t('promo.name', 'Name')} hint={t('promo.couponNameHint', 'For your own records.')}>
           <input className="input-field" value={f.name || ''} onChange={(e) => set('name')(e.target.value)} />
@@ -404,7 +440,8 @@ export default function CouponsPage() {
 
       {editing && (
         <CouponEditor open onClose={() => setEditing(null)} sid={sid} coupon={editing.id ? editing : null}
-          products={products} categories={categories} currency={currency} onSaved={load} />
+          products={products} categories={categories} currency={currency} onSaved={load}
+          takenCodes={(coupons || []).filter((c) => c.id !== editing.id).map((c) => c.code)} />
       )}
 
       {uses && (

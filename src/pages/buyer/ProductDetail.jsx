@@ -15,7 +15,7 @@ import { useStoreFont } from '../../utils/storeFont';
 import { StoreBrand, StoreBottomNav } from '../../components/shared/StoreNav';
 import BuyMoreSave from '../../components/shared/BuyMoreSave';
 import ProductReviews from '../../components/shared/ProductReviews';
-import { bestOfferFor, toUnits, fromUnits } from '../../utils/offerPricing';
+import { bestOfferFor, offerCovers, toUnits, fromUnits } from '../../utils/offerPricing';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Full-screen image lightbox with zoom controls. Supports:
@@ -601,6 +601,24 @@ export default function ProductDetail() {
             <BuyMoreSave
               product={product} offers={liveOffers} unitPrice={unitPrice} variant={pickedVariant}
               quantity={quantity} onPick={setQuantity} currency={currency} pc={pc} />
+            {(() => {
+              // "Buy 3 get 1": once three are in the box, the fourth is free,
+              // and one more tap gets it.
+              const bx = (liveOffers || []).find((o) => o.offer_type === 'bxgy'
+                && Number(o.buy_quantity) > 0 && Number(o.get_quantity) > 0
+                && offerCovers(o, product, pickedVariant));
+              if (!bx) return null;
+              const buy = Number(bx.buy_quantity); const get = Number(bx.get_quantity);
+              const free = Math.floor(quantity / (buy + get)) * get;
+              const toNext = (buy + get) - (quantity % (buy + get));
+              return (
+                <p className="mt-2 text-sm font-bold rounded-xl px-3 py-2" style={{ backgroundColor: `${pc}14`, color: pc }}>
+                  {free > 0
+                    ? t('store.bxgyFree', '+{{n}} free included', { n: free })
+                    : t('store.bxgyAddMore', 'Add {{n}} more and {{g}} is free', { n: toNext, g: get })}
+                </p>
+              );
+            })()}
             {lineSaving > 0 && (
               <p className="mt-2 text-sm font-bold text-emerald-600">
                 {t('store.youSaveOnThis', 'You save {{v}} on {{n}} item(s)', { v: `${lineSaving.toLocaleString()} ${currency}`, n: quantity })}

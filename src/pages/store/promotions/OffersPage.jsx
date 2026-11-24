@@ -66,7 +66,7 @@ export default function OffersPage() {
     const now = Date.now();
     let list = offers || [];
     if (TYPE_TABS.has(tab)) list = list.filter((o) => o.offer_type === tab);
-    if (tab === 'scheduled') list = list.filter((o) => o.starts_at && new Date(o.starts_at).getTime() > now);
+    if (tab === 'scheduled') list = list.filter((o) => o.starts_at || o.ends_at);
     if (status) {
       list = list.filter((o) => {
         const ended = o.ends_at && new Date(o.ends_at).getTime() < now;
@@ -191,6 +191,12 @@ export default function OffersPage() {
                           {o.starts_at ? new Date(o.starts_at).toLocaleDateString() : t('promo.now', 'Now')}
                           {' → '}
                           {o.ends_at ? new Date(o.ends_at).toLocaleDateString() : t('promo.noEnd', 'No end')}
+                          {(() => {
+                            const now = Date.now();
+                            if (o.starts_at && new Date(o.starts_at).getTime() > now) return <span className="block text-blue-600 font-bold">{t('promo.startsIn', 'Starts {{d}}', { d: new Date(o.starts_at).toLocaleDateString() })}</span>;
+                            if (o.ends_at && new Date(o.ends_at).getTime() > now) return <span className="block text-amber-600 font-bold">{t('promo.endsOn', 'Ends {{d}}', { d: new Date(o.ends_at).toLocaleDateString() })}</span>;
+                            return null;
+                          })()}
                         </td>
                         <td className="px-3 py-2.5"><StatusBadge status={o.status} startsAt={o.starts_at} endsAt={o.ends_at} /></td>
                         <td className="px-3 py-2.5">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import BrandMark from './BrandMark';
 
 /**
  * The frame every sign-in / sign-up screen sits in.
@@ -10,7 +11,7 @@ import { motion } from 'framer-motion';
  * They all render through here now, tinted with whichever accent colour the
  * person's theme is set to.
  */
-export default function AuthShell({ pc = '#7C3AED', dark = false, header = null, children, overlay = null, maxWidth = 'max-w-md' }) {
+export default function AuthShell({ pc = '#7C3AED', dark = false, header = null, children, overlay = null, maxWidth = 'max-w-md', swapping = false }) {
   return (
     <div
       className={`customer-auth-scope auth-shell min-h-screen flex flex-col relative overflow-hidden ${dark ? 'auth-dark text-gray-100' : ''}`}
@@ -42,7 +43,20 @@ export default function AuthShell({ pc = '#7C3AED', dark = false, header = null,
           }}
         >
           {header}
-          {children}
+          <motion.div initial={false}
+            animate={{ opacity: swapping ? 0 : 1, scale: swapping ? 0.97 : 1, filter: swapping ? 'blur(6px)' : 'blur(0px)' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }} style={{ pointerEvents: swapping ? 'none' : undefined }}>
+            {children}
+          </motion.div>
+          {/* the logo holds the card while the forms swap */}
+          <motion.div aria-hidden className="absolute inset-0 grid place-items-center pointer-events-none" initial={false}
+            animate={{ opacity: swapping ? 1 : 0 }} transition={{ duration: 0.18 }}>
+            <motion.div className="relative" initial={false}
+              animate={{ scale: swapping ? 1 : 0.6, rotate: swapping ? 0 : -12 }} transition={{ type: 'spring', stiffness: 380, damping: 22 }}>
+              <span className="absolute -inset-2 rounded-[22px] border-2 animate-spin" style={{ borderColor: pc, borderTopColor: 'transparent', animationDuration: '0.9s' }} />
+              <BrandMark size={64} pc={pc} radius="1rem" />
+            </motion.div>
+          </motion.div>
         </motion.div>
       </div>
       {/* Dialogs live outside the card: its backdrop-blur would otherwise

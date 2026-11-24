@@ -22,6 +22,16 @@ export default function OwnerRegister() {
   // Shared with BrandMark, so moving between Login and Register does
   // not ask for the same settings twice.
   const { brand } = usePlatformBrand();
+  // Leaving for the other form: blur this one, hold the logo, then move.
+  // The same beat the storefront's sign-in uses.
+  const [swapping, setSwapping] = useState(false);
+  const swapTimer = React.useRef(null);
+  useEffect(() => () => clearTimeout(swapTimer.current), []);
+  const swapTo = (path) => {
+    if (swapping) return;
+    setSwapping(true);
+    swapTimer.current = setTimeout(() => navigate(path), 220);
+  };
   const theme = usePlatformTheme();
   useEffect(() => { theme.init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const pc = brand.primary || theme.primaryColor || '#7C3AED';
@@ -121,12 +131,12 @@ export default function OwnerRegister() {
         </Link>
         <LanguageSwitcher />
       </div>
-      {step === 1 && <AuthTabs value="register" pc={pc} labels={{ login: t('auth.login'), register: t('auth.register') }} onChange={(m) => { if (m === 'login') navigate('/login'); }} />}
+      {step === 1 && <AuthTabs value="register" pc={pc} labels={{ login: t('auth.login'), register: t('auth.register') }} onChange={(m) => { if (m === 'login') swapTo('/login'); }} />}
     </>
   );
 
   return (
-    <AuthShell pc={pc} dark={dark} header={header}>
+    <AuthShell pc={pc} dark={dark} header={header} swapping={swapping}>
       <>
 
           {step === 1 ? (<>

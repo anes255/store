@@ -33,7 +33,8 @@ export default function BuyMoreSave({ product, offers, unitPrice, variant, quant
               key={row.quantity}
               type="button"
               onClick={() => onPick?.(row.quantity)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-start transition-colors ${on ? 'bg-brand-500/5' : 'hover:bg-gray-50'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-start transition-colors ${on ? '' : 'hover:bg-gray-50'}`}
+              style={on ? { backgroundColor: `${pc}14`, boxShadow: `inset 3px 0 0 ${pc}` } : undefined}
             >
               <span
                 className="w-5 h-5 rounded-full border-2 grid place-items-center shrink-0"
