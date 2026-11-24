@@ -344,15 +344,20 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     if ((def === 'home' || def === 'desk') && !shipTypeTouched.current) setForm(prev => (prev.shipping_type === def ? prev : { ...prev, shipping_type: def }));
   }, [store?.default_shipping_type]);
   const [couponDiscount, setCouponDiscount] = useState(0);
-  const [appliedCode, setAppliedCode] = useState(() => { try { return localStorage.getItem('cartCoupon') || ''; } catch { return ''; } });
+  const [appliedCodes, setAppliedCodes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cartCoupons') || '[]').filter(Boolean); } catch { return []; }
+  });
   // Keep the applied code beside the cart, so a refresh does not quietly
   // drop the buyer's discount on the last step.
   useEffect(() => {
     try {
-      if (appliedCode) localStorage.setItem('cartCoupon', appliedCode);
-      else localStorage.removeItem('cartCoupon');
+      if (appliedCodes.length) localStorage.setItem('cartCoupons', JSON.stringify(appliedCodes));
+      else localStorage.removeItem('cartCoupons');
     } catch {}
-  }, [appliedCode]);
+  }, [appliedCodes]);
+  // One place to compare the list by value, so the pricing effect below does
+  // not re-run on every render just because the array is a new object.
+  const codesKey = appliedCodes.join('|');
   // The server's own pricing of this cart. While it is null the page falls
   // back to its local sums, so nothing flickers on a slow connection.
   const [quote, setQuote] = useState(null);
@@ -498,6 +503,25 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
   // Everything below prefers the server's answer and falls back to the
   // local sum only until it arrives.
   const offerDiscount = quote ? Number(quote.offer_discount) || 0 : 0;
+  // What the server says each line costs, looked up by product and variant.
+  // Without this the lines kept showing the plain price while the total
+  // underneath showed the discounted one.
+  const quoteLine = (item) => {
+    if (!quote || !Array.isArray(quote.items)) return null;
+    const pid = String(item.product_id || item.id || '');
+    const want = JSON.stringify(item.variant || null);
+    return quote.items.find((q) => String(q.product_id) === pid && JSON.stringify(q.variant_info || null) === want)
+      || quote.items.find((q) => String(q.product_id) === pid)
+      || null;
+  };
+  const lineTotalOf = (item) => {
+    const q = quoteLine(item);
+    return q ? Number(q.total_price) || 0 : getItemPrice(item) * (item.quantity || 1);
+  };
+  const lineSavingOf = (item) => {
+    const q = quoteLine(item);
+    return q ? Number(q.line_discount) || 0 : 0;
+  };
   const couponOff = quote ? Number(quote.coupon_discount) || 0 : couponDiscount;
   const shownSubtotal = quote ? Number(quote.subtotal) || 0 : subtotal;
   const shownShipping = quote ? Number(quote.shipping_cost) || 0 : shipping;
@@ -513,7 +537,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     const h = setTimeout(() => {
       storeApi.quote(storeSlug, {
         items: items.map((it) => ({ product_id: it.product_id || it.id, quantity: it.quantity, variant: it.variant || null })),
-        coupon_code: appliedCode || undefined,
+        coupon_codes: appliedCodes,
         shipping_type: form.shipping_type,
         shipping_wilaya: form.shipping_wilaya,
         delivery_company_id: form.delivery_company_id || undefined,
@@ -525,7 +549,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       }).catch(() => { if (!dead) setQuote(null); });
     }, 250);
     return () => { dead = true; clearTimeout(h); };
-  }, [storeSlug, items, appliedCode, form.shipping_type, form.shipping_wilaya, form.delivery_company_id, form.customer_phone]); // eslint-disable-line
+  }, [storeSlug, items, codesKey, form.shipping_type, form.shipping_wilaya, form.delivery_company_id, form.customer_phone]); // eslint-disable-line
 
   // Checked by the server, which knows the rules and the usage counts. A
   // refusal comes back named, so the buyer is told what is actually wrong.
@@ -535,30 +559,29 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
     setCheckingCoupon(true);
     setCouponError(null);
     try {
+      if (appliedCodes.includes(code)) { setCheckingCoupon(false); return setCouponError(t('checkout.couponAlready', 'That code is already applied')); }
       const { data } = await storeApi.validateCoupon(storeSlug, {
         code,
+        coupon_codes: appliedCodes,
         items: items.map((it) => ({ product_id: it.product_id || it.id, quantity: it.quantity, variant: it.variant || null })),
         shipping_type: form.shipping_type,
         shipping_wilaya: form.shipping_wilaya,
         delivery_company_id: form.delivery_company_id || undefined,
         customer_phone: form.customer_phone || undefined,
       });
-      setAppliedCode(code);
+      setAppliedCodes((c) => [...c, code]);
+      setForm((s) => ({ ...s, coupon_code: '' }));
       if (data.quote) { setQuote(data.quote); setCouponDiscount(Number(data.quote.coupon_discount) || 0); }
       toast.success(t('checkout.couponApplied', 'Coupon applied'));
     } catch (e) {
       const reason = e?.response?.data?.reason || e?.response?.data?.error;
-      setAppliedCode('');
-      setCouponDiscount(0);
       setCouponError(couponMessage(reason, t, e?.response?.data));
     }
     setCheckingCoupon(false);
   };
 
-  const removeCoupon = () => {
-    setAppliedCode('');
-    setForm((s) => ({ ...s, coupon_code: '' }));
-    setCouponDiscount(0);
+  const removeCoupon = (code) => {
+    setAppliedCodes((c) => (code ? c.filter((x) => x !== code) : []));
     setCouponError(null);
   };
 
@@ -627,7 +650,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
       const authRole = useAuthStore.getState().role;
       const customer_id = authRole === 'customer' && authUser?.id ? authUser.id : undefined;
       const snapshot = [];
-      const { data } = await storeApi.placeOrder(storeSlug, { ...form, coupon_code: appliedCode || undefined, shipping_type: form.shipping_type, customer_id, items: items.map((it, idx) => {
+      const { data } = await storeApi.placeOrder(storeSlug, { ...form, coupon_codes: appliedCodes, coupon_code: appliedCodes[0] || undefined, shipping_type: form.shipping_type, customer_id, items: items.map((it, idx) => {
         const variants = parseVariants(it);
         const unitVars = perUnitVariants[idx] || [];
         let variant = it.variant;
@@ -1308,7 +1331,7 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
                         );
                       })()}
                     </div>
-                    <div className="text-right"><p className="font-bold text-sm text-gray-900">{(getItemPrice(item) * item.quantity).toLocaleString()}</p><button onClick={() => trashItem(i, item)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
+                    <div className="text-right"><p className="font-bold text-sm text-gray-900">{lineTotalOf(item).toLocaleString()}</p>{lineSavingOf(item) > 0 && <p className="text-[10px] font-bold text-emerald-600 whitespace-nowrap">-{lineSavingOf(item).toLocaleString()}</p>}<button onClick={() => trashItem(i, item)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button></div>
                   </div>
                   );
                 })}
@@ -1316,32 +1339,38 @@ export default function Checkout({ isModal = false, onClose, storeSlug: storeSlu
               {/* Coupon code. Checked by the server, which is also what
                   prices the order, so what it says here is what is charged. */}
               <div className="mb-4">
-                {appliedCode ? (
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
-                    <Check size={15} className="text-emerald-600 shrink-0"/>
-                    <span className="flex-1 min-w-0">
-                      <span className="block font-mono font-black text-sm text-emerald-800 truncate">{appliedCode}</span>
-                      {couponOff > 0 && <span className="block text-[11px] font-bold text-emerald-700">-{couponOff.toLocaleString()} {store.currency||'DZD'}</span>}
-                    </span>
-                    <button onClick={removeCoupon} className="text-[11px] font-bold text-emerald-700 hover:underline shrink-0">{t('checkout.removeCoupon','Remove')}</button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input className="input-field text-sm flex-1 uppercase" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code}
-                      onChange={(e)=>{setCouponError(null);set('coupon_code')(e);}}
-                      onKeyDown={(e)=>{if(e.key==='Enter'){e.preventDefault();validateCoupon();}}}/>
-                    <button onClick={validateCoupon} disabled={checkingCoupon||!String(form.coupon_code||'').trim()}
-                      className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200 disabled:opacity-50">
-                      {checkingCoupon ? t('checkout.checking','Checking…') : t('checkout.apply','Apply')}
-                    </button>
+                {appliedCodes.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {appliedCodes.map((code) => {
+                      const applied = (quote?.coupons || []).find((c) => String(c.code).toUpperCase() === code.toUpperCase());
+                      return (
+                        <div key={code} className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+                          <Check size={15} className="text-emerald-600 shrink-0"/>
+                          <span className="flex-1 min-w-0">
+                            <span className="block font-mono font-black text-sm text-emerald-800 truncate">{code}</span>
+                            {applied?.discount > 0 && <span className="block text-[11px] font-bold text-emerald-700">-{Number(applied.discount).toLocaleString()} {store.currency||'DZD'}</span>}
+                          </span>
+                          <button onClick={() => removeCoupon(code)} className="text-[11px] font-bold text-emerald-700 hover:underline shrink-0">{t('checkout.removeCoupon','Remove')}</button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
+                <div className="flex gap-2">
+                  <input className="input-field text-sm flex-1 uppercase" placeholder={t('checkout.couponCode','Coupon code')} value={form.coupon_code}
+                    onChange={(e)=>{setCouponError(null);set('coupon_code')(e);}}
+                    onKeyDown={(e)=>{if(e.key==='Enter'){e.preventDefault();validateCoupon();}}}/>
+                  <button onClick={validateCoupon} disabled={checkingCoupon||!String(form.coupon_code||'').trim()}
+                    className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-200 disabled:opacity-50">
+                    {checkingCoupon ? t('checkout.checking','Checking…') : t('checkout.apply','Apply')}
+                  </button>
+                </div>
                 {couponError && <p className="mt-1.5 text-[11px] font-semibold text-red-600">{couponError}</p>}
               </div>
               <div className="space-y-2 border-t border-gray-200 pt-4">
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.subtotal','Subtotal')}</span><span className="font-semibold text-gray-900">{(quote ? Number(quote.original_subtotal)||0 : subtotal).toLocaleString()} {store.currency||'DZD'}</span></div>
                 {offerDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.offerDiscount','Offer discount')}</span><span className="text-emerald-600 font-semibold">-{offerDiscount.toLocaleString()} {store.currency||'DZD'}</span></div>}
-                <div className="flex justify-between text-sm"><span className="text-gray-500 flex items-center gap-1"><Truck size={14}/> {t('checkout.shipping','Shipping')}</span><span className="font-semibold text-gray-900">{freeShipping ? <span className="text-emerald-600 font-bold">{baseShipping > 0 && <s className="text-gray-400 font-normal mr-1.5">{baseShipping.toLocaleString()}</s>}{t('checkout.freeShipping','Free')}</span> : shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500 flex items-center gap-1"><Truck size={14}/> {t('checkout.shipping','Shipping')}</span><span className="font-semibold text-gray-900">{(quote ? quote.free_shipping : freeShipping) ? <span className="text-emerald-600 font-bold">{baseShipping > 0 && <s className="text-gray-400 font-normal mr-1.5">{baseShipping.toLocaleString()}</s>}{t('checkout.freeShipping','Free')}</span> : shipping > 0 ? `${shipping.toLocaleString()} ${store.currency||'DZD'}` : (form.shipping_wilaya ? `0 ${store.currency||'DZD'}` : '—')}</span></div>
                 {freeShipRemaining > 0 && <div className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5">🚚 {t('checkout.freeShipHint','Add {{amount}} more for free shipping',{amount:`${freeShipRemaining.toLocaleString()} ${store.currency||'DZD'}`})}</div>}
                 {couponOff > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">{t('checkout.couponDiscount','Coupon discount')}</span><span className="text-emerald-600 font-semibold">-{couponOff.toLocaleString()} {store.currency||'DZD'}</span></div>}
                 <div className="flex justify-between font-extrabold text-xl pt-2 border-t border-gray-200"><span className="text-gray-900">{t('checkout.total','Total')}</span><span style={{color: pc}}>{total.toLocaleString()} {store.currency||'DZD'}</span></div>
