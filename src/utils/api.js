@@ -351,8 +351,23 @@ export const storeApi = {
   liveOffers: (slug) => cachedGet(`promo:offers:${slug}`, () => api.get(`/store/${slug}/offers`)),
   getPages: (slug) => api.get(`/store/${slug}/pages`),
   // Reviews
-  getProductReviews: (slug, productSlug) => api.get(`/store/${slug}/products/${productSlug}/reviews`),
+  getProductReviews: (slug, productSlug, params) => api.get(`/store/${slug}/products/${productSlug}/reviews`, { params }),
   submitReview: (slug, productSlug, data) => api.post(`/store/${slug}/products/${productSlug}/reviews`, data),
+  reviewEligibility: (slug, productSlug, params) => api.get(`/store/${slug}/products/${productSlug}/reviews/eligibility`, { params }),
+  // Media goes up as raw bytes once the review exists, one file per request,
+  // so a slow upload never costs the shopper the words they wrote.
+  uploadReviewMedia: (slug, reviewId, file, { duration, onProgress } = {}) => api.post(
+    `/store/${slug}/reviews/${reviewId}/media`, file,
+    {
+      headers: { 'Content-Type': file.type || 'application/octet-stream', ...(duration ? { 'X-Duration': String(Math.round(duration)) } : {}) },
+      onUploadProgress: (e) => { if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100)); },
+      timeout: 0,
+    }),
+  reviewMediaUrl: (slug, mediaId) => `${API_URL}/store/${slug}/review-media/${mediaId}`,
+  voteReview: (slug, reviewId, helpful, visitorKey) =>
+    api.post(`/store/${slug}/reviews/${reviewId}/helpful`, { helpful }, { headers: { 'X-Visitor-Key': visitorKey } }),
+  reportReview: (slug, reviewId, data, visitorKey) =>
+    api.post(`/store/${slug}/reviews/${reviewId}/report`, data, { headers: { 'X-Visitor-Key': visitorKey } }),
   // Public tracking
   trackOrders: (slug, phone) => api.get(`/store/${slug}/track?phone=${phone}`),
   trackByOrderId: (slug, orderId) => api.get(`/store/${slug}/track?order_id=${encodeURIComponent(orderId)}`),

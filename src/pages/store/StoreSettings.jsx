@@ -15,7 +15,7 @@ import { CHECKOUT_FIELDS, fieldState } from '../../utils/checkoutFields';
 import WhatsAppConfigModal,{WA_STATUSES,WA_STATUS_LABELS} from '../../components/shared/WhatsAppConfigModal';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
-import { PlayCircle,Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag, Search } from 'lucide-react';
+import { Star,PlayCircle,Save,Store,Palette,CreditCard,Truck,Bot,Upload,Globe,Users,ShoppingCart,Settings as SI,Bell,BarChart3,Shield,Tag,Code,Type,MessageSquare,Eye,Trash2,Plus,Check,Layout,Sliders,Zap,Lock,Package,Percent,AlertTriangle,Mail,Smartphone,QrCode,Copy,ExternalLink,RefreshCw,Key,User,Activity,Hash,TrendingUp,Sparkles,ChevronLeft,ChevronRight,X,Send,Wifi,WifiOff,Clock,MessageCircle,Phone,Edit2,ShoppingBag, Search } from 'lucide-react';
 import { ALL_PERMISSIONS, PERM_GROUPS } from '../../utils/permissions';
 import { useActionLabel, useActivityFormat, timeAgo as timeAgoLabel } from './workers/shared';
 
@@ -68,6 +68,111 @@ const YT_ID = (url) => {
   const m = String(url || '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/);
   return m ? m[1] : null;
 };
+
+// Settings -> Reviews. Everything the review system reads, in one place.
+function ReviewSettings({ storeId }) {
+  const { t } = useTranslation();
+  const [s, setS] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!storeId) return;
+    api.get(`/manage/stores/${storeId}/review-settings`)
+      .then((r) => setS(r.data))
+      .catch(() => setS(null));
+  }, [storeId]);
+
+  const save = async (patch) => {
+    const next = { ...s, ...patch };
+    setS(next);
+    setSaving(true);
+    try { const { data } = await api.put(`/manage/stores/${storeId}/review-settings`, next); setS(data); }
+    catch (e) { toast.error(e?.response?.data?.error || t('ui.settings.failed', 'Failed')); }
+    setSaving(false);
+  };
+
+  if (!s) return <div className="glass-card-solid p-10 grid place-items-center"><div className="w-7 h-7 border-[3px] border-gray-200 border-t-brand-500 rounded-full animate-spin"/></div>;
+
+  const Row = ({ k, label, hint, disabled }) => (
+    <label className={`flex items-start gap-3 py-2 ${disabled ? 'opacity-50' : 'cursor-pointer'}`}>
+      <input type="checkbox" className="mt-1 shrink-0" checked={!!s[k]} disabled={disabled || saving} onChange={(e) => save({ [k]: e.target.checked })} />
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-gray-800">{label}</span>
+        {hint && <span className="block text-[11px] text-gray-400 mt-0.5">{hint}</span>}
+      </span>
+    </label>
+  );
+  const Num = ({ k, label, hint, min = 0, max = 999 }) => (
+    <div>
+      <label className="input-label text-xs">{label}</label>
+      <input type="number" min={min} max={max} className="input-field" value={s[k] ?? ''}
+        onChange={(e) => setS({ ...s, [k]: e.target.value })}
+        onBlur={() => save({ [k]: Math.max(min, Math.min(max, parseInt(s[k], 10) || min)) })} />
+      {hint && <p className="text-[11px] text-gray-400 mt-1">{hint}</p>}
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="glass-card-solid p-4 sm:p-6">
+        <h3 className="font-bold mb-1">{t('ui.settings.reviewsTitle', 'Reviews')}</h3>
+        <p className="text-sm text-gray-400 mb-4">{t('ui.settings.reviewsSubtitle', 'What buyers may leave on your products, and what happens to it.')}</p>
+        <div className="divide-y divide-gray-50">
+          <Row k="enabled" label={t('ui.settings.revEnable', 'Enable reviews')} hint={t('ui.settings.revEnableHint', 'Turning this off hides the review section and stops new ones.')} />
+          <Row k="verified_badge" label={t('ui.settings.revVerified', 'Show the Verified Purchase badge')} />
+          <Row k="require_approval" label={t('ui.settings.revApproval', 'Hold every review for approval')} hint={t('ui.settings.revApprovalHint', 'Off, a review appears at once unless something about it looks wrong.')} />
+          <Row k="allow_photos" label={t('ui.settings.revPhotos', 'Allow photos')} />
+          <Row k="allow_videos" label={t('ui.settings.revVideos', 'Allow a short video')} />
+          <Row k="allow_seller_replies" label={t('ui.settings.revReplies', 'Allow replies from the store')} />
+          <Row k="allow_helpful_votes" label={t('ui.settings.revVotes', 'Allow “was this helpful?”')} />
+          <Row k="allow_editing" label={t('ui.settings.revEditing', 'Let a buyer edit their review')} />
+          <Row k="enable_reports" label={t('ui.settings.revReports', 'Let shoppers report a review')} />
+          <Row k="ai_moderation" label={t('ui.settings.revAiMod', 'AI moderation')} hint={t('ui.settings.revAiModHint', 'Scores each review for spam and abuse. It never rejects one for being negative.')} />
+          <Row k="ai_analytics" label={t('ui.settings.revAiAnalytics', 'AI review summaries')} />
+        </div>
+      </div>
+
+      <div className="glass-card-solid p-4 sm:p-6">
+        <h3 className="font-bold mb-3">{t('ui.settings.revLimits', 'Limits')}</h3>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <Num k="max_photos" label={t('ui.settings.revMaxPhotos', 'Maximum photos')} min={0} max={10} />
+          <Num k="max_videos" label={t('ui.settings.revMaxVideos', 'Maximum videos')} min={0} max={3} />
+          <Num k="max_video_seconds" label={t('ui.settings.revMaxVideoSecs', 'Video length (seconds)')} min={5} max={300} />
+        </div>
+      </div>
+
+      <div className="glass-card-solid p-4 sm:p-6">
+        <h3 className="font-bold mb-1">{t('ui.settings.revRequests', 'Asking for reviews')}</h3>
+        <p className="text-sm text-gray-400 mb-3">{t('ui.settings.revRequestsHint', 'A message once the order has arrived. Nothing is sent before the delay you set.')}</p>
+        <div className="divide-y divide-gray-50 mb-3">
+          <Row k="auto_request" label={t('ui.settings.revAutoRequest', 'Ask automatically after delivery')} />
+          <Row k="auto_reminder" label={t('ui.settings.revReminder', 'Send one reminder')} disabled={!s.auto_request} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Num k="request_delay_days" label={t('ui.settings.revDelay', 'Days after delivery')} min={1} max={60} />
+          <Num k="reminder_delay_days" label={t('ui.settings.revReminderDelay', 'Days before the reminder')} min={1} max={60} />
+        </div>
+      </div>
+
+      <div className="glass-card-solid p-4 sm:p-6">
+        <h3 className="font-bold mb-1">{t('ui.settings.revRewards', 'Rewards')}</h3>
+        <p className="text-sm text-gray-400 mb-3">
+          {t('ui.settings.revRewardsHint', 'Points for leaving a review. The reward is for writing one, never for writing a good one — a five-star review earns exactly what a one-star review earns.')}
+        </p>
+        <div className="divide-y divide-gray-50 mb-3">
+          <Row k="reward_enabled" label={t('ui.settings.revRewardOn', 'Reward customers for reviewing')} />
+        </div>
+        {s.reward_enabled && (
+          <div className="grid sm:grid-cols-3 gap-3">
+            <Num k="reward_points" label={t('ui.settings.revRewardPoints', 'Points for a review')} min={0} max={10000} />
+            <Num k="reward_points_photo" label={t('ui.settings.revRewardPhoto', 'Extra, with a photo')} min={0} max={10000} />
+            <Num k="reward_points_video" label={t('ui.settings.revRewardVideo', 'Extra, with a video')} min={0} max={10000} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // The guide the platform's super admin writes in the page builder. Read-only
 // here: store owners watch it, they do not edit it.
@@ -826,12 +931,12 @@ export default function StoreSettings(){
   const deleteAccount=async()=>{try{await ownerApi.deleteAccount({password:deletePw});toast.success(t('storePage.accountDeleted','Account deleted'));logout();window.location.href='/';}catch(e){toast.error(e.response?.data?.error||t('storePage.failed','Failed'));}};
 
   const T=({label,desc,checked,onChange})=>(<label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"><div><p className="font-medium text-sm text-gray-800">{label}</p>{desc&&<p className="text-xs text-gray-400 mt-0.5">{desc}</p>}</div><div className={`w-11 h-6 rounded-full transition-colors ${checked?'bg-brand-500':'bg-gray-300'} relative`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${checked?'translate-x-5':'translate-x-0.5'}`}/></div><input type="checkbox" className="sr-only" checked={checked||false} onChange={onChange}/></label>);
-  const secs=[{id:'store-details',icon:Store,l:t('storePage.secStoreDetails','Store Details')},{id:'customization',icon:Palette,l:t('storePage.secCustomization','Customization')},{id:'dashboard-config',icon:Layout,l:t('storePage.secDashboard','Dashboard')},{id:'how-to',icon:PlayCircle,l:t('storePage.secHowTo','How to use')},{id:'checkout',icon:ShoppingCart,l:t('storePage.secCheckout','Checkout')},{id:'payments',icon:CreditCard,l:t('storePage.secPayments','Payments')},{id:'taxes',icon:Percent,l:t('storePage.secTaxes','Taxes')},{id:'notifications',icon:Bell,l:t('storePage.secNotifications','Notifications')},{id:'orders-config',icon:Package,l:t('storePage.secOrders','Orders')},{id:'inventory',icon:BarChart3,l:t('storePage.secInventory','Inventory')},{id:'domains',icon:Globe,l:t('storePage.secDomains','Domains')},{id:'ai',icon:Bot,l:t('storePage.secAi','AI Messaging')},{id:'tracking-pixels',icon:TrendingUp,l:t('storePage.secTrackingPixels','Tracking Pixels')},{id:'subscription',icon:Zap,l:t('storePage.secSubscription','Subscription')},{id:'account',icon:SI,l:t('storePage.secAccount','Account')}];
+  const secs=[{id:'store-details',icon:Store,l:t('storePage.secStoreDetails','Store Details')},{id:'customization',icon:Palette,l:t('storePage.secCustomization','Customization')},{id:'dashboard-config',icon:Layout,l:t('storePage.secDashboard','Dashboard')},{id:'how-to',icon:PlayCircle,l:t('storePage.secHowTo','How to use')},{id:'reviews',icon:Star,l:t('storePage.secReviews','Reviews')},{id:'checkout',icon:ShoppingCart,l:t('storePage.secCheckout','Checkout')},{id:'payments',icon:CreditCard,l:t('storePage.secPayments','Payments')},{id:'taxes',icon:Percent,l:t('storePage.secTaxes','Taxes')},{id:'notifications',icon:Bell,l:t('storePage.secNotifications','Notifications')},{id:'orders-config',icon:Package,l:t('storePage.secOrders','Orders')},{id:'inventory',icon:BarChart3,l:t('storePage.secInventory','Inventory')},{id:'domains',icon:Globe,l:t('storePage.secDomains','Domains')},{id:'ai',icon:Bot,l:t('storePage.secAi','AI Messaging')},{id:'tracking-pixels',icon:TrendingUp,l:t('storePage.secTrackingPixels','Tracking Pixels')},{id:'subscription',icon:Zap,l:t('storePage.secSubscription','Subscription')},{id:'account',icon:SI,l:t('storePage.secAccount','Account')}];
   const storeDomain=currentStore?.slug?`${currentStore.slug}.ender-store.com`:'';
 
   const activeSec=secs.find(x=>x.id===sec);
   // Settings search — type to filter the sections, Enter jumps to the best one.
-  const SEC_KEYWORDS={'store-details':'name logo phone address whatsapp button contact','customization':'colors colours theme font background header design','dashboard-config':'dashboard sidebar admin','how-to':'help guide tutorial video videos how to use learn','checkout':'checkout form fields coupon order button','payments':'cod ccp baridimob payment','taxes':'tax vat','notifications':'alerts push email notifications','orders-config':'order number prefix archive','inventory':'stock low threshold oversell','domains':'domain dns custom','ai':'chatbot ai assistant','tracking-pixels':'pixel facebook tiktok google analytics','subscription':'plan billing subscription','account':'password profile email delete store'};
+  const SEC_KEYWORDS={'store-details':'name logo phone address whatsapp button contact','customization':'colors colours theme font background header design','dashboard-config':'dashboard sidebar admin','how-to':'help guide tutorial video videos how to use learn','reviews':'reviews ratings stars moderation verified photos replies','checkout':'checkout form fields coupon order button','payments':'cod ccp baridimob payment','taxes':'tax vat','notifications':'alerts push email notifications','orders-config':'order number prefix archive','inventory':'stock low threshold oversell','domains':'domain dns custom','ai':'chatbot ai assistant','tracking-pixels':'pixel facebook tiktok google analytics','subscription':'plan billing subscription','account':'password profile email delete store'};
   const secMatches=(()=>{const q=settingsQuery.trim();if(!q)return secs;return secs.map(x=>({x,m:fuzzyScore(q,x.l)||fuzzyScore(q,SEC_KEYWORDS[x.id]||'')||(String(SEC_KEYWORDS[x.id]||'').includes(q.toLowerCase())?{score:0}:null)})).filter(r=>r.m).sort((a,b)=>b.m.score-a.m.score).map(r=>r.x);})();
   const SettingsSearch=(
     <div className="relative mb-2">
@@ -941,6 +1046,8 @@ export default function StoreSettings(){
 )}
 
 {sec==='how-to'&&<HowToUse/>}
+
+{sec==='reviews'&&<ReviewSettings storeId={currentStore?.id}/>}
 
 {sec==='checkout'&&<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6"><div className="space-y-4 min-w-0"><SH icon={ShoppingCart} title={t('ui.settings.purchaseFlow', 'Purchase Flow')} subtitle={t('ui.settings.optimizeVisitorToCustomerConversion', 'Optimize visitor to customer conversion.')} accent="purple"/>
 
